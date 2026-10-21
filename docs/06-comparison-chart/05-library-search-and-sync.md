@@ -395,6 +395,7 @@
 | Restart agent conversation | [✅][l-agent-status] | ? | ? | ? |
 | Agent limits and resets | [✅][l-agent-status] | ? | ? | ? |
 | Agent reasoning effort picker | [✅][l-agent-status] | ? | ? | ? |
+| Pickers name the selection | [✅][l-agent-status] | ? | ? | ? |
 | Agents name their consoles | [✅][l-agent-name] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Console links open | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Command pinned at top | [✅][l-console-pin] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

@@ -565,6 +565,7 @@
 | Hidden HTML editable | [✅][l-formats] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Raw HTML read-only | [✅][l-formats] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | HTML pages typed on | [✅][l-html-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Running page typed on | [✅][l-html-edit] | ? | ? | ? |
 | JSON values editable | [✅][l-data-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | YAML values editable | [✅][l-data-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Read-only YAML explained | [✅][l-data-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

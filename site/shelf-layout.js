@@ -108,7 +108,11 @@ function readList(html) {
     const section = body.slice(start.index + start[0].length, at + 1 < starts.length ? starts[at + 1].index : body.length);
     return { name: words(start[1]), lines: [...section.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)].map((line) => line[1]) };
   });
-  return { title: title[1], paragraphs: intro.match(/<p\b[^>]*>[\s\S]*?<\/p>/g) || [], bays, list: body.slice(starts[0].index), pager: pager ? pager[0] : '' };
+  // The paragraphs after the last bay's list are the shelf's foot, as a copyright line is, and stand under the list rather than inside it.
+  const rest = body.slice(starts[0].index);
+  const foot = /<\/(?:ul|ol)>((?:\s*<p\b[^>]*>(?:(?!<\/p>)[\s\S])*<\/p>)+)\s*$/.exec(rest);
+  const list = foot ? rest.slice(0, foot.index + foot[0].length - foot[1].length) : rest;
+  return { title: title[1], paragraphs: intro.match(/<p\b[^>]*>[\s\S]*?<\/p>/g) || [], bays, list, foot: foot ? foot[1].trim() : '', pager: pager ? pager[0] : '' };
 }
 
 /** A spine's thickness from its book's words, on a scale where twice the words is the same step wherever it falls. */
@@ -337,6 +341,7 @@ export function layoutShelf(html, data) {
     keyMarkup(data),
     `<div class="shelf-case">${shelfMarkup(data, { order })}</div>`,
     `<details class="shelf-list"><summary>Every book as a list</summary>${list.paragraphs.slice(credit ? 2 : 1).join('')}${list.list}</details>`,
+    list.foot,
     list.pager,
     '</article>',
   ].join('\n');

@@ -137,12 +137,16 @@ An [email](01-rendering.md#email-eml) edits where you read it too: the subject, 
 
 ### Editing an HTML file
 
-An [HTML file](01-rendering.md#html-files) of your own opens as the page it is. Open the reading [padlock](#the-padlock) and the page stays on screen, drawn from the file in the app, with its words ready to type on where they are drawn — a heading, a linked title, a badge, a table cell, a paragraph.
+On the desktop, an [HTML file](01-rendering.md#html-files) stays live with the reading [padlock](#the-padlock) open or shut, so its scripts and controls keep working. Open the padlock, click a proved run of words written in the file, and type there. Save writes the change to the file; Undo and Redo update those same words on the running page. Opening or closing the padlock keeps the page running.
+
+Only unchanged, unambiguous authored text can take the caret. Words built by a script, repeated text that cannot be paired uniquely, native fields and words a script has moved or replaced keep their existing behavior. Paste adds plain text within that run; typing changes no tags or styles. Use the [code view](#code-view) for the rest of the file.
+
+Where the live page cannot start, or in a browser, the file opens as a contained copy. Open the reading padlock to type on that copy's words where they are drawn — a heading, a linked title, a badge, a table cell, a paragraph. The following rules apply to that copy.
 
 - **Only the words change.** What you type is written between the file's own tags, so a link keeps its address, a badge its class and a row its style, and a word repeated elsewhere on the page is left alone.
 - **Some words cannot be typed on here.** Words the page draws differently from how the file writes them, and anything the app does not draw at all, say so when you type on them; change those in the [code view](#code-view). `Enter` adds no new line, because a new line would be a new element.
 - **A press on a link puts the caret in its words.** `Ctrl`+click (`Cmd`+click on macOS) still follows it.
-- **Nothing is written until Save**, and Save keeps the padlock open and the caret where it was. Shut the padlock and the running page comes back where you left it, showing what you saved; unsaved typing waits for the padlock to open again.
+- **Nothing is written until Save**, and Save keeps the padlock open and the caret where it was. Shutting the padlock leaves the contained copy on screen; unsaved typing waits for the padlock to open again.
 - **A web address has no padlock.** Only a file of your own has somewhere to save to.
 
 ### The fields at the top of a note
@@ -612,7 +616,7 @@ What the *reading view* offers differs by format, because a block can only be ed
 | Markdown blocks that cannot round-trip losslessly | Edit their exact source in place. [Block gutter](#the-block-gutter). A checkbox in such a table is the exception: it ticks where it sits, whatever else the table holds |
 | Markdown blocks the page never draws — an HTML comment, a `<script>` or `<style>` block | Nothing is drawn for them, so there is nothing to click; edited in the code view. Every other block in the document stays editable around them |
 | A block of raw HTML the page does draw — a `<figure>` holding its caption, a wrapper written with its content inside it | Read-only where it is drawn, because the file gives that whole block one range and the markup inside it none; edited in the code view. Every other block in the note stays editable around it, and a wrapper written with a blank line before and after its content leaves the Markdown inside it editable as ordinary blocks |
-| HTML | With the reading padlock open, type on the page's words where they are drawn; only the words between the file's own tags are written. Words the page draws differently from the file, and anything it does not draw, are edited in the code view — see [Editing an HTML file](#editing-an-html-file) |
+| HTML | Open the reading padlock to type on unchanged, unambiguous words authored in the live desktop file. Script-built or changed words use the code view. A contained copy keeps its existing text editing — see [Editing an HTML file](#editing-an-html-file) |
 | XML blocks whose drawn words are the file's own bytes | Type on the words where they are drawn; the edit is spliced between the element's own tags. A comment is the same, between its `<!--` marks. [Block gutter](#the-block-gutter) |
 | An XML table's cells and column headings | Type on any value whose words are the file's own bytes, including one of several joined by a comma and one drawn from inside a tag; a column heading opens onto the tag itself and renames that element in every record |
 | A value written inside an XML tag | Type on the words where they are drawn, including the lone value an empty element is drawn by; only the bytes between that value's quotes are written, and the quote that closes it is refused |

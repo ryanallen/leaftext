@@ -213,6 +213,29 @@ export async function filesUnder(dir, rel = '', found = []) {
   return found.sort();
 }
 
+/** The marks a site's page wears on its startup card and its home button, each the app's own: Leaftext's by default, and another site's where it names its own. */
+export const BRAND_MARKS = {
+  card: (icon) => `<span class="lt-icon lt-icon-${icon} startup-card-mark" aria-hidden="true"></span>`,
+  label: (name) => `aria-label="${name} is starting"`,
+  name: (name) => `<span class="startup-card-name">${name}</span>`,
+  home: (icon) => `<button type="button" id="homeButton" class="brand-button" aria-label="Home" title="Home">\n      <span class="lt-icon lt-icon-${icon}"></span>`,
+};
+
+/** The app's page wearing a site's own name and mark where Leaftext's stand, refused where the page no longer carries one of them. */
+export function brandPage(page, { name, icon }) {
+  const escaped = String(name).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  let branded = page;
+  for (const [part, mark] of Object.entries(BRAND_MARKS)) {
+    const from = mark(part === 'card' || part === 'home' ? 'leaf' : 'Leaftext');
+    if (!branded.includes(from)) throw new Error(`the app's page carries no ${part} for a site to wear its own on: ${from}`);
+    branded = branded.replace(from, mark(part === 'card' || part === 'home' ? icon : escaped));
+  }
+  return branded;
+}
+
+/** The layouts a listing may name a document for, each a key of the loader's own table in `web/preview/boot.js`. */
+export const LAYOUT_KINDS = ['shelf'];
+
 /** The document a site opens on: the README at its top, else the index there, else the first it lists. The host falls back to the same rule for a folder export with no listing of its own to say. */
 export function landingOf(documents) {
   const top = documents.map((entry) => entry.path).filter((path) => !path.includes('/'));
@@ -222,7 +245,7 @@ export function landingOf(documents) {
 /**
  * The page and the listing that make `folder` into the app, served where its documents already are.
  *
- * `assets` is where the front end is fetched from. `fragment` is the site's own lines. The landing document is drawn into the page, so the first response carries its words for a crawler and for a reader whose module has not arrived yet; the host's first render draws the same document over it. `layout`, where a site has one, is what the landing's drawn words pass through before they are written in.
+ * `assets` is where the front end is fetched from. `fragment` is the site's own lines. The landing document is drawn into the page, so the first response carries its words for a crawler and for a reader whose module has not arrived yet; the host's first render draws the same document over it. `layout`, where a site has one, is what the landing's drawn words pass through before they are written in, handed the landing's path beside them.
  */
 export async function inPlaceSite(leaf, folder, paths, { name, assets, fragment = '', imageSizes = '', layout = null, pages = false, siteRoot = '' }) {
   const found = await listDocuments(leaf, folder, paths);
@@ -233,7 +256,7 @@ export async function inPlaceSite(leaf, folder, paths, { name, assets, fragment 
   // Drawn with no image base, because in place a picture's address as written already resolves.
   leaf.setImageBase('');
   const drawn = landing ? (leaf.renderBytes(await readFile(join(folder, landing.split('/').join(sep))), landing) || {}).html || '' : '';
-  const words = layout && drawn ? layout(drawn) : drawn;
+  const words = layout && drawn ? layout(drawn, landing) : drawn;
   const { head, foot } = splitFragment(fragment);
   const page = sitePage(leaf.page(), leaf.boot(), { assets, head, foot, words: pages ? pageLinks(words, landing, pagePaths) : words, siteRoot });
   const listing = { name, documentBase: '', landing, documents: documents.map(({ depth, ...entry }) => ({ ...entry, ...(pages && entry.path === landing ? { page: '/' } : {}), ...(pagePaths.has(entry.path) ? { page: `/${addressOf(pagePaths.get(entry.path))}` } : {}) })) };

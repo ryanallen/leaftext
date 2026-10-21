@@ -18,11 +18,11 @@ With the plugin installed, Codex and Claude consoles use the conversation title 
 
 ### The agent's status under its console
 
-Leaftext shows the agent's logo, then **Model**, **Effort** and **Context**, under a console as soon as it recognizes Claude Code, Codex or Antigravity. These controls work without the plugin, and all three are grayed out while the agent is working. With the plugin installed, the same row also shows what the agent's own session reports: Codex's model, context and limits, or Claude Code's, Antigravity's and Gemini CLI's model and tokens used. A figure the session never reported is left out. Until a model or context figure arrives, its button keeps the neutral label. On a narrow console the folder goes first, then the cost, then the limits and finally the effort button.
+Leaftext shows the agent's logo, then **Model**, **Effort** and **Context**, under a console as soon as it recognizes Claude Code, Codex or Antigravity. These controls work without the plugin, and all three are grayed out while the agent is working. With the plugin installed, the same row also shows what the agent's own session reports: Codex's model, context and limits, or Claude Code's, Antigravity's and Gemini CLI's model and tokens used. A figure the session never reported is left out. Until a model, effort or context figure arrives, its button keeps the neutral label. A reported context capacity appears before usage arrives, without an empty usage meter. On a narrow console the folder goes first, then the cost, then the limits and finally the effort button.
 
 Press **Model**, or the reported model, to change it. One press opens the agent's own model picker, where the agent lists the exact versions your account can use and marks the one in use. The label keeps the last reported model until the agent reports again, which may take another ordinary answer.
 
-Press **Effort** beside the model to open the agent's reasoning choices in one press. Claude Code and Antigravity open their effort pickers; Codex opens its model picker, where confirming the current model reaches its reasoning levels. The agent shows which levels your current model supports and which is selected, and handles saving or canceling the choice. Leaftext keeps its button labeled **Effort** because the status report does not include the active level. If the button has yielded on a narrow console, the model's full picker also offers effort choices.
+Press **Effort** beside the model to open the agent's reasoning choices in one press. Claude Code and Antigravity open their effort pickers; Codex opens its model picker, where confirming the current model reaches its reasoning levels. The agent shows which levels your current model supports and which is selected, and handles saving or canceling the choice. The button shows the reported level, such as **Medium**, once the native session supplies it; until then it reads **Effort**. If the button has yielded on a narrow console, the model's full picker also offers effort choices.
 
 ![The Effort button opening Codex in a Leaftext console, with a sample status record](../../imgs/console-effort-v1.png)
 
@@ -30,13 +30,7 @@ Press **Context**, or the reported context figure, for **Compact the conversatio
 
 These controls wait for the agent to finish and for its prompt to be empty. Send or clear an unfinished message before choosing a model, effort or conversation command. Leaftext types the command, waits to see it in the prompt, then presses Enter separately. Typing, switching consoles or closing one cancels that Enter. If the command has not appeared within two seconds, Leaftext leaves it for you to submit. It never clears your message. Consoles and their input belong to the installed app; the browser cannot send these commands.
 
-Claude Code hands the context it has used, both limits and the session's cost only to a status line you set yourself. To show them in the row, add this to your Claude Code `settings.json`:
-
-```json
-"statusLine": { "type": "command", "command": "leaftext --harness status-line" }
-```
-
-Inside a Leaftext console it prints nothing, because the row shows the same figures; in any other terminal it prints them as one plain line.
+Starting `claude` in a Leaftext console automatically relays its native selected model, effort, context capacity, limits and cost to the row. Your own custom status line keeps its input and output, and your settings stay unchanged. The relay applies only to that launch. An explicit path to the native executable bypasses the console helper, and managed policy can prevent the callback; the row shows only reports it actually receives.
 
 To watch a note change while the agent works on it, put the console beside the note: drag its tab onto the right half of the page, choose **Open beside** on the tab, or press `Ctrl+\` (`Cmd+\` on a Mac). See [two documents side by side](02-navigation.md#two-documents-side-by-side).
 

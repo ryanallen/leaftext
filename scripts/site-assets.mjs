@@ -104,7 +104,7 @@ export const BUILT_BOOK_MODULE = join(root, 'web', 'dist', 'leaftext-book.wasm')
 export const FRONT_PAGE = 'index.html';
 export const LISTING = 'documents.json';
 export const FRONT_DOCUMENT = 'README.md';
-/** The documents other than the landing that the site lays out, each by the name of its layout in the loader. None today: the shelves under `arthurian/` and `buddhism/` are kept on disk and not served, and a shelf the site serves again is named here as `'arthurian/index.md': 'shelf'`. */
+/** The documents other than the landing that the site lays out, each by the name of its layout in the loader. None today: the shelf under `arthurian/` is kept on disk and not served, and a shelf the site serves again is named here as `'arthurian/index.md': 'shelf'`. */
 export const SITE_LAYOUTS = {};
 
 /** What the site publishes as documents, and what its trail calls it. Everything else in the repository — the discovery files, the scripts, the themes — is served as it is and never offered as a page. */

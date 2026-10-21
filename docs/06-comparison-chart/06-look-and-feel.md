@@ -22,6 +22,7 @@
 | New family each launch | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | No repeats before all | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rotation survives restarts | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| A theme per window | [✅][l-choose] | ? | ? | ? |
 | Random card morphs | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Theme color bar | [✅][l-families] | ? | ? | ? |
 | System appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |

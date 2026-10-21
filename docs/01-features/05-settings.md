@@ -129,7 +129,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 ### Theme
 
 - The palette button at the foot of the [library](03-library.md#browsing) pane opens the [theme picker](06-themes.md#choose); its tooltip names the family and appearance you are on
-- Saved as `theme_family` (family or `random`) and `theme_mode` (appearance)
+- Saved as `theme_family` (family or `random`) and `theme_mode` (appearance) for the first window; every other window keeps its own, as `theme_family` and `theme_mode` on its entry in `more_windows`, and an entry without them wears the first window's
 - New installs default to `random` and `daylight`; once you pick a theme your choice is saved and used from then on
 - Choosing [Random](06-themes.md#random) draws a fresh family at each launch; `theme_random_used` records the families already shown in the current no-repeat cycle so the rotation survives restarts
 
