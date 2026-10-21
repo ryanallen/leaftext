@@ -3,7 +3,7 @@ name: Publish the site
 # leaftext.com, with the app's own renderer served beside its pages.
 #
 # This repository has no source in it, so it compiles nothing. The renderer is
-# built where the source lives and pinned here by that repository's own
+# built where the source lives and committed here by that repository's own
 # `hand-over-site` recipe, which is the one thing that crosses the seam between
 # the two. What is left here is the site's own: move the pictures, bake the front
 # page, upload, deploy.
@@ -81,8 +81,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install the verified pinned renderer
-        run: node scripts/renderer-bundle.mjs --install
 
       # The WebP an earlier run already paid for. Full effort costs two and a
       # half minutes across the set, and the key is the contents of the masters,
@@ -119,7 +117,7 @@ jobs:
       # documents it opens: the site's lines from site-page.html in its head, the
       # README already drawn into it so a cold visitor and a crawler read the
       # words out of the first response, and documents.json beside it for the
-      # pane and the pager. It draws through the verified app module installed
+      # pane and the pager. It draws through the app module committed
       # under assets/leaftext/app/, and refuses a module that does not render or
       # a page with nothing in it — which is what stops a hand-over that went
       # wrong reaching the deploy step below.

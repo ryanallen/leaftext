@@ -278,12 +278,12 @@ export function publishedAssets(app, plainBytes, colorsBytes, bookBytes) {
 /**
  * The project this run is drawing for.
  *
- * Private side, that is the manifest. On `--bake` there is no manifest at all — the public repository holds the site and no source — so it comes out of the `version.json` installed from the hand-over’s verified renderer pin, which is the same line read through the same rule.
+ * Private side, that is the manifest. On `--bake` there is no manifest at all — the public repository holds the site and no source — so it comes out of the `version.json` committed by the hand-over, which is the same line read through the same rule.
  */
 export function siteProject({ bakeOnly = false } = {}) {
   if (!bakeOnly) return project();
   const path = join(root, VERSION_PATH);
-  if (!existsSync(path)) throw new Error(`${VERSION_PATH} is not here, so the bake cannot say which project this site is. Install the verified site-renderer.json bundle before baking.`);
+  if (!existsSync(path)) throw new Error(`${VERSION_PATH} is not here, so the bake cannot say which project this site is. Run the source hand-over with its complete built renderer before baking.`);
   return project(JSON.parse(readFileSync(path, 'utf8')));
 }
 
@@ -349,7 +349,7 @@ async function main() {
   if (!existsSync(appSource)) {
     console.error(
       bakeOnly
-        ? `${APP_MODULE_PATH} is not here, so there is no app to write the pages with. Install the verified site-renderer.json bundle before baking; a missing or invalid bundle must stop before deployment.`
+        ? `${APP_MODULE_PATH} is not here, so there is no app to write the pages with. Run the source hand-over with its complete built renderer before baking; missing modules stop deployment.`
         : 'the browser module is not built — run: just build-web'
     );
     process.exit(1);
