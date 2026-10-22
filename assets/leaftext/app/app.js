@@ -44116,6 +44116,8 @@ function makeConsoleLayer(id) {
     for (const bytes of entry.pending) opening += entry.decoder.decode(bytes, { stream: true });
     entry.pending = [];
     entry.pendingBytes = 0;
+    if (entry.replaySize) terminal.resize(...entry.replaySize);
+    entry.replaySize = null;
     terminal.write(opening, () => {
       entry.map = null;
       consoleWritten(id, entry);
@@ -44487,7 +44489,7 @@ function writeConsoleOutput(id, entry, text) {
 }
 
 
-window.leafConsoleReplay = (id, encoded) => {
+window.leafConsoleReplay = (id, encoded, columns, rows) => {
   const bytes = consoleBytes(encoded);
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   closeConsoleModel(entry);
@@ -44504,16 +44506,20 @@ window.leafConsoleReplay = (id, encoded) => {
   entry.oscOpen = false;
   entry.pending = [bytes];
   entry.pendingBytes = bytes.length;
+  entry.replaySize = Number.isInteger(columns) && columns > 0 && columns <= 65535 && Number.isInteger(rows) && rows > 0 && rows <= 65535 ? [columns, rows] : null;
   if (!entry.terminal) return;
   entry.pending = [];
   entry.pendingBytes = 0;
   entry.terminal.reset();
+  if (entry.replaySize) entry.terminal.resize(...entry.replaySize);
+  entry.replaySize = null;
   for (const marker of [...entry.markers]) marker.dispose();
   entry.terminal.write(entry.decoder.decode(bytes, { stream: true }), () => {
     entry.map = null;
     consoleWritten(id, entry);
     if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
   });
+  if (entry.fit && !entry.layer.hidden) refreshConsoleGrid(id, entry);
 };
 
 function cancelConsoleModel(entry) {
@@ -45139,6 +45145,12 @@ function consolePromptBox(rows, cursor, ruled = false) {
   return null;
 }
 
+const ANTIGRAVITY_MODE_HINTS = [
+  'Accept-edits mode: file edits auto-approved (shift+tab to cycle)',
+  'Auto mode: edits & safe commands auto-approved (shift+tab to cycle)',
+  'Plan mode: research & plan only (shift+tab to cycle)',
+];
+
 
 function consoleModelPrompt(entry, agent) {
   const terminal = entry.terminal;
@@ -45172,6 +45184,10 @@ function consoleModelPrompt(entry, agent) {
       if (end >= terminal.rows || end - top >= 12 || cursor >= end || (agent !== 'codex' && !CONSOLE_PROMPT_RULE.test(text(end)))) break;
       const words = input.join('\n');
       if (!words.trim()) return { kind: 'empty', top };
+      if (agent === 'antigravity' && input.length === 1 && cursor === top && active.cursorX === column) {
+        const hint = words.trimEnd();
+        if (ANTIGRAVITY_MODE_HINTS.some(full => hint === full || hint.endsWith('...') && hint.length - 3 > full.indexOf(':') && full.startsWith(hint.slice(0, -3)))) return { kind: 'empty', top };
+      }
       let faint = cursor === top && active.cursorX === column && input.length === 1;
       for (let at = column; faint && at < line.length; at += 1) {
         const cell = read(top)?.getCell(at);
