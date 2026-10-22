@@ -8432,12 +8432,13 @@ body.library-resizing button {
 .console-status-controls { display: inline-flex; align-items: center; gap: var(--lt-space-4); flex: none; }
 
 .console-status-model .lt-icon-chevron-down { width: 10px; height: 10px; }
-.console-status-model { appearance: none; border: none; border-radius: var(--lt-radius-sm); padding: 0 var(--lt-space-4); background: transparent; color: inherit; font: inherit; cursor: pointer; }
-@media (hover: hover) { .console-status-model:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
+.console-status-model, .console-status-account { appearance: none; border: none; border-radius: var(--lt-radius-sm); padding: 0 var(--lt-space-4); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+@media (hover: hover) { .console-status-model:hover, .console-status-account:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
 .console-status-model:disabled { background: transparent; border: none; color: var(--lt-navigation-button-disabled-foreground); cursor: default; }
 @media (hover: hover) { .console-status-model:disabled:hover { background: transparent; color: var(--lt-navigation-button-disabled-foreground); } }
 .console-status-model[aria-expanded="true"] { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); }
-.console-status-model:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
+.console-status-account-input { width: calc(var(--lt-space-48) * 3); min-width: 0; box-sizing: border-box; font: inherit; color: var(--lt-markdown-foreground); background: var(--lt-background); border: var(--lt-stroke-1) solid var(--lt-focus-ring); border-radius: var(--lt-radius-sm); padding: 0 var(--lt-space-4); }
+.console-status-model:focus-visible, .console-status-account:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .console-status-meter { display: inline-block; width: var(--lt-space-48); height: var(--lt-space-4); border-radius: var(--lt-radius-full); background: var(--lt-border); overflow: hidden; }
 .console-status-fill { display: block; height: 100%; background: var(--lt-primary-ink); }
 .reader-column.is-under-console, .console-front .reader-toolbar { visibility: hidden; }

@@ -33,6 +33,7 @@ export const COMMANDS = {
   openRecent: [ANSWERED],
   newDocument: [REFUSED, 'a new document would have nowhere to be saved'],
   newConsole: [REFUSED, 'a published page cannot start a local command line'],
+  renameConsoleAccount: [REFUSED, 'this page has no console account to rename'],
   consoleInput: [REFUSED, 'a published page has no console process to receive input'],
   consolePaste: [REFUSED, 'a published page has no console process to receive pasted text'],
   consoleCopy: [REFUSED, 'a published page has no console to copy from'],

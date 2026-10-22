@@ -21671,6 +21671,11 @@ window.leafSwapChapter = (swap) => {
 
 
 window.leafSwapTableCell = (swap) => {
+  if (swap?.checkbox) return receiveTableCheckboxSwap(swap);
+  applyTableCellSwap(swap);
+};
+
+function applyTableCellSwap(swap, pending = null) {
   const doc = currentState && currentState.document;
   const body = app.querySelector('.document-body');
   if (!swap || !doc || doc.path !== swap.path || codeViewActive || !body) return;
@@ -21678,26 +21683,39 @@ window.leafSwapTableCell = (swap) => {
   const row = table && table.tagName === 'TABLE' ? tableRowElements(table)[swap.row] : null;
   const cell = row ? row.children[swap.column] : null;
   const active = document.activeElement;
+  const holder = document.createElement('div');
+  holder.innerHTML = swap.html;
+  const boxes = holder.querySelectorAll('input[type="checkbox"]');
+  const focusedBox = pending && active === pending.box && cell?.contains(active) && boxes.length === 1;
   
-  if (!cell || cell.tagName !== 'TD' || (active && cell.contains(active))) {
+  if (!cell || cell.tagName !== 'TD' || (active && cell.contains(active) && !focusedBox) ||
+      (pending && (boxes.length !== 1 || !cell.contains(pending.box) || !applyTableCheckboxWrites(swap, pending, table)))) {
     send({ command: 'refreshDocument' });
     return;
   }
   const grips = Array.from(cell.children).filter(isTableSizingGrip);
-  const holder = document.createElement('div');
-  holder.innerHTML = swap.html;
-  cell.replaceChildren(...Array.from(holder.childNodes), ...grips);
+  const latest = !pending || pending.box.__checkboxToken === swap.checkbox.token;
+  if (latest) {
+    cell.replaceChildren(...Array.from(holder.childNodes), ...grips);
+    if (pending) {
+      const box = boxes[0];
+      bindTableCheckbox(table, box);
+      if (focusedBox) box.focus({ preventScroll: true });
+    }
+  }
   
   if (table.__lensPending) table.__lensPending.delete(`${swap.row},${swap.column}`);
-  if (table.__editCells) table.__editCells = tableCellTexts(table);
-  if (typeof table.__editBaseline === 'string') table.__editBaseline = blockDomToSource(table);
+  if (!pending) {
+    if (table.__editCells) table.__editCells = tableCellTexts(table);
+    if (typeof table.__editBaseline === 'string') table.__editBaseline = blockDomToSource(table);
+  }
   
   doc.cellSwapped = true;
   doc.source = documentSourceBytes();
   currentState.renderKey = swap.renderKey;
   window.leafDocumentWords(swap.path, swap.words);
   refreshSwappedTableLens(table);
-};
+}
 
 function updateSwappedHeadingOutline(fresh, oldId) {
   const rows = readDocumentOutlineRows();
@@ -24930,16 +24948,21 @@ function bindTableCheckboxes() {
 function bindTableCheckboxesIn(table) {
   const { start, end } = rangeOf(table, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
-  table.querySelectorAll('td input[type="checkbox"]').forEach((box) => {
-    const cell = box.closest('td');
-    box.removeAttribute('disabled');
-    box.addEventListener('task-set', () => drawTaskDone(box));
-    box.addEventListener('change', () => {
-      drawTaskDone(box);
-      const position = tableCellPosition(table, cell);
-      const whole = position ? null : tableWysiwygSafe(table) ? tableDomToMarkdown(table) : sliceSourceBytes(start, end);
-      sendCheckboxBlockEdit(table, start, end, whole, position, box);
-    });
+  table.querySelectorAll('td input[type="checkbox"]').forEach((box) => bindTableCheckbox(table, box));
+}
+
+function bindTableCheckbox(table, box) {
+  if (box.__tableCheckboxBound) return;
+  box.__tableCheckboxBound = true;
+  const cell = box.closest('td');
+  box.removeAttribute('disabled');
+  box.addEventListener('task-set', () => drawTaskDone(box));
+  box.addEventListener('change', () => {
+    drawTaskDone(box);
+    const { start, end } = rangeOf(table, 'block');
+    const position = tableCellPosition(table, cell);
+    const whole = position ? null : tableWysiwygSafe(table) ? tableDomToMarkdown(table) : sliceSourceBytes(start, end);
+    sendCheckboxBlockEdit(table, start, end, whole, position, box);
   });
 }
 
@@ -27315,6 +27338,33 @@ function commitBlockLeaving(el, start, end, text) {
 
 const tableCheckboxPending = new Map();
 
+function receiveTableCheckboxSwap(swap) {
+  const pending = tableCheckboxPending.get(swap.checkbox.token);
+  if (pending && !pending.applied) pending.receive(swap);
+}
+
+
+function applyTableCheckboxWrites(swap, pending, table) {
+  const receipt = swap.checkbox;
+  const range = rangeOf(table, 'block');
+  const writes = receipt.writes;
+  if (pending.stale || pending.sent || pending.document !== currentState?.document || pending.path !== swap.path || activeDocumentPath() !== pending.path ||
+      pending.reader !== app || pending.el !== table || !table.isConnected || !pending.box.isConnected ||
+      range.start !== pending.start || range.end !== pending.end || pending.start !== swap.start ||
+      pending.cell.row !== swap.row || pending.cell.column !== swap.column ||
+      documentSourceLength() !== receipt.beforeLen || !Number.isSafeInteger(receipt.afterLen) ||
+      !Array.isArray(writes) || writes.length !== 1) return false;
+  const [write] = writes;
+  if (!write || !Number.isSafeInteger(write.start) || !Number.isSafeInteger(write.end) ||
+      write.start < range.start || write.end < write.start || write.end > range.end ||
+      typeof write.prior !== 'string' || typeof write.text !== 'string' ||
+      sliceSourceBytes(write.start, write.end) !== write.prior ||
+      receipt.beforeLen + utf8ByteLength(write.text) - (write.end - write.start) !== receipt.afterLen) return false;
+  window.leafEditWritten({ writes });
+  pending.applied = true;
+  return true;
+}
+
 window.leafTableCheckboxFallback = (token) => tableCheckboxPending.get(token)?.fallback();
 
 function sendTableCheckboxFallback(token) {
@@ -27359,6 +27409,7 @@ function sendCheckboxBlockEdit(el, start, end, text, cell, box) {
     el.__checkboxGeneration = generation;
     box.__checkboxToken = token;
     const pending = { el, box, start, end, cell, path, member, generation, reader: app, document: currentState?.document, sent: false, fallback: inThisColumn(() => sendTableCheckboxFallback(token)) };
+    pending.receive = inThisColumn((swap) => applyTableCellSwap(swap, pending));
     tableCheckboxPending.set(token, pending);
     pending.timer = columnTimer(() => {
       if (!tableCheckboxPending.has(token)) return;
@@ -44699,6 +44750,7 @@ function consoleStatusFields(record) {
   const controls = ['claude', 'codex', 'antigravity'].includes(record.agent);
   const agent = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', gemini: 'Gemini CLI' }[record.agent];
   if (agent) fields.push({ field: 'agent', text: agent, agent: record.agent });
+  if (record.account) fields.push({ field: 'account', text: record.account });
   if (record.model || controls) fields.push({ field: 'model', text: record.model || 'Model' });
   if (controls) fields.push({ field: 'effort', text: record.effort ? record.effort[0].toUpperCase() + record.effort.slice(1) : 'Effort' });
   const size = record.contextWindow;
@@ -44719,15 +44771,17 @@ function consoleStatusFields(record) {
 }
 
 function drawConsoleStatus(id, entry) {
+  if (entry.accountEditing) return;
   closeConsoleModel(entry);
   const strip = entry.status;
   const record = consoleControlRecord(entry);
   const fields = record ? consoleStatusFields(record) : [];
   const items = fields.map(field => {
     const model = field.field === 'model' && ['claude', 'codex', 'antigravity'].includes(record.agent);
+    const account = field.field === 'account';
     const effort = field.field === 'effort';
     const context = field.field === 'context' && ['claude', 'codex', 'antigravity'].includes(record.agent);
-    const item = document.createElement(model || effort || context ? 'button' : 'span');
+    const item = document.createElement(model || effort || context || account ? 'button' : 'span');
     item.className = field.field === 'agent' ? 'console-status-field console-status-agent' : 'console-status-field';
     item.dataset.field = field.field;
     
@@ -44757,6 +44811,16 @@ function drawConsoleStatus(id, entry) {
       wait.dataset.wait = '';
       wait.textContent = field.wait;
       item.appendChild(wait);
+    }
+    if (account) {
+      item.type = 'button';
+      item.classList.add('console-status-account');
+      item.title = 'Rename this account';
+      item.setAttribute('aria-label', `Rename this account: ${field.text}`);
+      item.addEventListener('click', event => {
+        event.stopPropagation();
+        renameConsoleAccount(id, entry, item);
+      });
     }
     if (model || effort || context) {
       item.type = 'button';
@@ -44815,12 +44879,41 @@ function drawConsoleStatus(id, entry) {
   if (resets.length) entry.statusTimer = setTimeout(() => drawConsoleStatus(id, entry), Math.min(...resets, 2 ** 31 - 1));
 }
 
+function renameConsoleAccount(id, entry, button) {
+  entry.accountEditing = true;
+  const input = document.createElement('input');
+  input.className = 'console-status-field console-status-account-input';
+  input.dataset.field = 'account';
+  input.setAttribute('aria-label', 'Account name');
+  input.maxLength = 160;
+  input.value = button.textContent;
+  button.replaceWith(input);
+  let finished = false;
+  const finish = save => {
+    if (finished) return;
+    finished = true;
+    input.replaceWith(button);
+    entry.accountEditing = false;
+    const name = input.value.trim();
+    if (save && name && name !== button.textContent) send({ command: 'renameConsoleAccount', id, name });
+    drawConsoleStatus(id, entry);
+  };
+  input.addEventListener('keydown', event => {
+    event.stopPropagation();
+    if (event.key === 'Enter') { event.preventDefault(); finish(true); }
+    else if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', () => finish(true));
+  input.focus();
+  input.select();
+}
+
 
 function fitConsoleStatus(entry) {
   const strip = entry.status;
   if (!strip || strip.hidden) return;
   for (const item of strip.querySelectorAll('[data-field], [data-wait]')) item.hidden = false;
-  for (const selector of ['[data-field="folder"]', '[data-field="cost"]', '[data-wait]', '[data-field="limits"]', '[data-field="effort"]']) {
+  for (const selector of ['[data-field="folder"]', '[data-field="cost"]', '[data-wait]', '[data-field="limits"]', '[data-field="effort"]', '[data-field="account"]']) {
     if (!(strip.clientWidth > 0) || strip.scrollWidth <= strip.clientWidth) return;
     for (const item of strip.querySelectorAll(selector)) item.hidden = true;
   }

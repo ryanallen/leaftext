@@ -389,6 +389,7 @@
 | Screenshot pasted into console | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Finished console marked | [✅][l-console-done] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents in one list | [✅][l-console-agents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agent account names | [✅][l-agent-status] | ? | ? | ? |
 | Agent context status | [✅][l-agent-status] | ? | ? | ? |
 | Agent model picker | [✅][l-agent-status] | ? | ? | ? |
 | Compact agent conversation | [✅][l-agent-status] | ? | ? | ? |
