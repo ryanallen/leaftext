@@ -131,7 +131,7 @@ export function reachedParts(book) {
 /** The year a book was written for standing it in order, or null where nobody knows. */
 const writtenYear = (book) => (book.written.from ?? book.written.to ?? null);
 
-/** The bays the shelf stands in for one order, each holding its books in the order they stand. Story order keeps every bay, an empty one saying so; the two dated orders keep only the bays a book stands in, in time. */
+/** The bays the shelf stands in for one order, each holding its books in the order they stand. Story order keeps every bay, an empty one saying so; the two dated orders keep only the bays a book stands in, in time; the tradition order gives each school its tradition names before a semicolon a bay, the oldest school first. */
 export function baysFor(data, order) {
   if (order === 'written' || order === 'printed') {
     const year = order === 'written' ? writtenYear : (book) => (book.printed ? book.printed.from : null);
@@ -149,6 +149,18 @@ export function baysFor(data, order) {
       beside: key === Infinity,
       books: groups.get(key).sort((a, b) => (year(a) ?? 0) - (year(b) ?? 0) || data.books.indexOf(a) - data.books.indexOf(b)),
     }));
+  }
+  if (order === 'tradition') {
+    const earliest = (books) => Math.min(...books.map((book) => writtenYear(book) ?? Infinity));
+    const groups = new Map();
+    for (const book of data.books) {
+      const school = String(book.tradition || '').split(';')[0].trim() || UNDATED;
+      if (!groups.has(school)) groups.set(school, []);
+      groups.get(school).push(book);
+    }
+    return [...groups.entries()]
+      .map(([school, books]) => ({ name: school, plate: school, beside: false, books: books.sort((a, b) => (writtenYear(a) ?? Infinity) - (writtenYear(b) ?? Infinity) || data.books.indexOf(a) - data.books.indexOf(b)) }))
+      .sort((a, b) => earliest(a.books) - earliest(b.books) || data.books.indexOf(a.books[0]) - data.books.indexOf(b.books[0]));
   }
   return data.bays.map((bay, at) => ({ name: bay.name, plate: bay.plate, beside: !!bay.beside, index: at, books: data.books.filter((book) => book.bay === at) }));
 }
@@ -341,7 +353,7 @@ export function layoutShelf(html, data) {
     keyMarkup(data),
     `<div class="shelf-case">${shelfMarkup(data, { order })}</div>`,
     `<details class="shelf-list"><summary>Every book as a list</summary>${list.paragraphs.slice(credit ? 2 : 1).join('')}${list.list}</details>`,
-    list.foot,
+    list.foot.replace(/<p\b[^>]*>/g, '<p class="shelf-foot">'),
     list.pager,
     '</article>',
   ].join('\n');

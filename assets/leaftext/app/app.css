@@ -15640,6 +15640,12 @@ h2.shelf-book-title {
 }
 
 
+p.shelf-foot {
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+}
+
+
 @media (max-width: 720px) {
   .shelf-book-pages {
     grid-template-columns: 1fr;
