@@ -43133,11 +43133,16 @@ function consoleCodexFolderTrust(lines) {
   return footer === newest && choice > footer && question > choice;
 }
 
+function consoleCodexSignIn(lines) {
+  return lines.some(line => /^\s*Welcome to Codex(?:,|\s*$)/.test(line))
+    && lines.some(line => /^\s*(?:[>›]\s*)?(?:1\.\s*)?Sign in with ChatGPT(?:\s|$)/.test(line));
+}
+
 function consoleAgentState(entry, screenLines) {
   const rule = consoleAgentAsks[entry.agent];
   if (!rule) return null;
   const lines = screenLines || consoleBottomLines(entry, rule.lines);
-  if (lines.some(rule.asks) || (entry.agent === 'codex' && consoleCodexFolderTrust(lines))) return 'needs';
+  if (lines.some(rule.asks) || (entry.agent === 'codex' && (consoleCodexFolderTrust(lines) || (entry.terminal?.buffer?.active.type === 'alternate' && consoleCodexSignIn(lines))))) return 'needs';
   if (entry.agent === 'codex') {
     
     if (lines.some(line => /^\s*[•◦] [^(]+\([^)]*esc to interrupt\)/.test(line))) {
@@ -43554,15 +43559,22 @@ function consoleAntigravityMark(line) {
   return /^\s*(?:\? for shortcuts|esc to cancel)\s{2,}\S/.test(line) || /(?:^|\s{2})[^\s·][^·]* · (?:minimal|low|medium|high|xhigh|max)\s*$/.test(line) || /^\W*Antigravity CLI \d/.test(line.trim()) || /^\s*Keyboard:\s*↑\/↓\s+Navigate(?:\s+←\/→\s+Effort)?\s+enter\s+Select\s+esc\s+Go Back\s*$/.test(line);
 }
 
+function consoleClaudeFolderTrust(lines) {
+  return /^\s*Enter to confirm · Esc to cancel\s*$/.test(lines[0] || '') &&
+    lines.some(line => /^\s*(?:[❯>]\s*)?Yes, I trust this folder\s*$/.test(line)) &&
+    lines.some(line => /^\s*(?:[❯>]\s*)?No, exit\s*$/.test(line)) &&
+    lines.some(line => /^\s*Claude Code'll be able to read, edit, and execute files here\.\s*$/.test(line));
+}
+
 function readConsoleAgent(id, entry) {
   const type = entry.terminal.buffer.active.type;
   
   const screenLines = consoleBottomLines(entry, Math.max(consoleAgentAsks.codex.lines, consoleAgentAsks.antigravity.lines));
   if (type !== 'alternate') entry.screenAgent = null;
   else if (!entry.titleAgent && !entry.screenAgent) {
-    if (screenLines.slice(0, 4).some(line => /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(line))) entry.screenAgent = 'codex';
+    if (screenLines.slice(0, 4).some(line => /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(line)) || consoleCodexSignIn(screenLines)) entry.screenAgent = 'codex';
   }
-  if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = screenLines.slice(0, 8).some(consoleAntigravityMark) ? 'antigravity' : null;
+  if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) ? 'antigravity' : null;
   entry.agent = entry.titleAgent || entry.screenAgent || null;
   reportConsoleAgent(id, entry, screenLines);
 }
@@ -48932,16 +48944,22 @@ function measureWideTables(root = app) {
     
     const changed = new Set();
     let queued = 0;
+    
+    const decideMoved = () => {
+      queued = 0;
+      if (wideTableResizeObserver !== observer) return;
+      if (railWidthIsMoving() || document.body.classList.contains('split-resizing')) {
+        queued = requestAnimationFrame(decideMoved);
+        return;
+      }
+      const moved = Array.from(changed);
+      changed.clear();
+      decideTableLanes(moved);
+    };
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) changed.add(entry.target);
       if (queued) return;
-      queued = requestAnimationFrame(() => {
-        queued = 0;
-        const moved = Array.from(changed);
-        changed.clear();
-        if (wideTableResizeObserver !== observer) return;
-        decideTableLanes(moved);
-      });
+      queued = requestAnimationFrame(decideMoved);
     });
     wideTableResizeObserver = observer;
     lanes.forEach((lane) => observer.observe(lane));
@@ -49323,6 +49341,18 @@ if (app) {
     markMissingImage(event.target);
   }, true);
 }
+
+function applyFrontmatterAsks(root) {
+  const table = root.querySelector('.frontmatter');
+  if (!table) return;
+  const body = root.querySelector('.document-body');
+  const asked = (table.dataset.leafDocClasses || '').split(/\s+/).filter(Boolean);
+  if (body) body.classList.add(...asked);
+  
+  const unread = table.dataset.leafUnread || '';
+  if (unread && window.leafShowNotice) window.leafShowNotice(`Some of this note's fields were not read: ${unread}`);
+}
+
 function setCodeCopyLabel(button, label) {
   button.setAttribute('aria-label', label);
   button.title = label;
@@ -49408,17 +49438,6 @@ function flashCodeCopied(button) {
     button.classList.remove('is-copied');
     setCodeCopyLabel(button, 'Copy code');
   }, 1400);
-}
-
-function applyFrontmatterAsks(root) {
-  const table = root.querySelector('.frontmatter');
-  if (!table) return;
-  const body = root.querySelector('.document-body');
-  const asked = (table.dataset.leafDocClasses || '').split(/\s+/).filter(Boolean);
-  if (body) body.classList.add(...asked);
-  
-  const unread = table.dataset.leafUnread || '';
-  if (unread && window.leafShowNotice) window.leafShowNotice(`Some of this note's fields were not read: ${unread}`);
 }
 
 
