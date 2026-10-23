@@ -4,6 +4,8 @@
 
 The navigation model is simple from the outside and fairly careful under the hood. Each tab keeps its own file history and its own in-document scroll history.
 
+Links inside note and glossary sheets follow the same route as links in the document. Web and mail links open in their usual app while Leaftext keeps its tabs and controls. Control-click (Command-click on a Mac) or a middle click keeps a local page in the background; Shift-click sends a saved web page to the browser. A link that misses this route cannot replace the reader or open a popup: Leaftext keeps the page and explains that the link could not open. Reloading the reader clears its loading card without resizing the window again.
+
 ## Summary
 
 | Feature | What it means |

@@ -21918,6 +21918,7 @@ window.leafSetWorkspace = (state) => {
   if (graphViewOpen && activeWebTab() && activeWebTab().webId !== previousWebId) graphSetActive(activeWebTab().url, true, false);
   renderReaderToolbar(readerViewsStand());
   renderTabs(currentState);
+  renderNavigation();
   
   const path = activeDocumentPath();
   if (path !== librarySelectedPath) followFileInLibrary(path, false);
@@ -45662,20 +45663,35 @@ glossaryFullLink.addEventListener('click', (event) => {
   send({ command: 'openLink', href: glossaryHrefBase, scroll_anchor: currentScrollAnchor() });
 });
 glossarySheetBody.addEventListener('click', (event) => {
+  if (event.defaultPrevented || (event.button !== undefined && event.button !== 0)) return;
+  followSheetLink(event, !!newPageModifierHeld(event));
+});
+glossarySheetBody.addEventListener('auxclick', (event) => {
+  if (!event.defaultPrevented && event.button === 1) followSheetLink(event, true);
+});
+glossarySheetBody.addEventListener('mousedown', (event) => {
+  if (event.button === 1 && event.target.closest('a[href]')) event.preventDefault();
+});
+function followSheetLink(event, newPage) {
   const link = event.target.closest('a');
   if (!link) return;
   const rawHref = link.getAttribute('href') || '';
-  if (!rawHref || /^[a-z]+:\/\//i.test(rawHref) || rawHref.startsWith('mailto:')) return;
+  if (!rawHref) return;
   event.preventDefault();
+  if (event.shiftKey && linkIsSavedPage(rawHref)) {
+    dismissGlossary();
+    send({ command: 'openLinkInBrowser', href: rawHref });
+    return;
+  }
   
   if (glossarySheetHolds === 'note') {
-    const note = localFootnoteTarget(link, rawHref, footnoteSheetDocument);
+    const note = newPage ? null : localFootnoteTarget(link, rawHref, footnoteSheetDocument);
     if (note) {
       showFootnoteSheet(link, rawHref, note);
       return;
     }
-    if (!glossaryAnchorFromHref(rawHref)) dismissGlossary();
-    sendDocumentLink(link, false);
+    if (!newPage && !glossaryAnchorFromHref(rawHref)) dismissGlossary();
+    sendDocumentLink(link, newPage);
     return;
   }
   const within = glossaryAnchorFromHref(rawHref) || (rawHref.startsWith('#') ? rawHref.slice(1) : '');
@@ -45684,9 +45700,9 @@ glossarySheetBody.addEventListener('click', (event) => {
     send({ command: 'openGlossary', href: glossaryHrefBase + '#' + within });
     return;
   }
-  dismissGlossary();
-  send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor() });
-});
+  if (!newPage) dismissGlossary();
+  sendDocumentLink(link, newPage);
+}
 const linkHoverTip = document.createElement('div');
 linkHoverTip.className = 'link-hover-tip';
 linkHoverTip.hidden = true;
@@ -50266,6 +50282,15 @@ function pinTableColumnWidths(cells, widths) {
     cell.style.maxWidth = px;
   });
 }
+function tableSizingNarrowest(cells) {
+  const pins = cells.map((cell) => [cell.style.width, cell.style.minWidth, cell.style.maxWidth]);
+  pinTableColumnWidths(cells, cells.map(() => 1));
+  const minimums = tableSizingWidths(cells).map((width) => Math.max(TABLE_COLUMN_FLOOR, width));
+  cells.forEach((cell, at) => {
+    [cell.style.width, cell.style.minWidth, cell.style.maxWidth] = pins[at];
+  });
+  return minimums;
+}
 function pinTableRowHeights(rows, heights) {
   rows.forEach((row, at) => { row.style.height = heights[at] == null ? '' : heights[at] + 'px'; });
 }
@@ -50544,7 +50569,7 @@ function applyTableSizingPlacement(table) {
 function holdTableAtDrawnColumns(drag, sizes, held, cap) {
   const drawn = tableSizingWidths(drag.parts);
   const wanted = drawn.reduce((sum, one) => sum + one, 0) + drag.borders;
-  if (Math.abs(wanted - held.width) <= 0.5) return;
+  if (wanted === held.width) return;
   
   const limit = Math.max(cap, drag.sizes.reduce((sum, one) => sum + one, 0) + drag.borders);
   if (wanted > limit + 0.5) {
@@ -50563,8 +50588,16 @@ function applyPendingTableSize() {
   if (drag.pending === drag.applied) { drag.pending = null; return; }
   withColumn(drag.owner, () => {
     const sizes = drag.sizes.slice();
-    sizes[drag.at] = drag.pending;
     const delta = drag.pending - drag.base;
+    const changed = [];
+    if (drag.minimums && delta < 0) {
+      let remaining = -delta;
+      for (const at of drag.order) {
+        const take = Math.min(remaining, Math.max(0, sizes[at] - drag.minimums[at]));
+        if (take > 0) { sizes[at] -= take; changed.push(at); remaining -= take; }
+        if (remaining <= 0) break;
+      }
+    } else { sizes[drag.at] = drag.pending; changed.push(drag.at); }
     const container = drag.kind === 'column' ? tableSizingContainer(drag.table) : null;
     
     const cap = container && !drag.edge ? tableSizingCap(container, drag.placement) : Infinity;
@@ -50581,7 +50614,17 @@ function applyPendingTableSize() {
     } else if (drag.edge === 'top') held.block = Math.max(-drag.gap, drag.placement.block - delta);
     drag.table.__tableSizingPlacement = held;
     applyTableSizingPlacement(drag.table);
-    if (drag.kind === 'column' && !drag.edge) holdTableAtDrawnColumns(drag, sizes, held, cap);
+    if (drag.kind === 'column') {
+      if (!drag.edge || !drag.clipped) holdTableAtDrawnColumns(drag, sizes, held, cap);
+      if (drag.edge) {
+        const previous = held.edgeColumns || {};
+        held.edgeColumns = { ...previous, [drag.edge]: [...new Set([...(previous[drag.edge] || []), ...changed])] };
+      }
+      if (drag.edge === 'left') {
+        held.leading = drag.placement.leading + drag.placement.width - held.width;
+        applyTableSizingPlacement(drag.table);
+      }
+    }
     drag.table.scrollLeft = drag.scrollLeft;
     const rectangle = drag.table.getBoundingClientRect();
     const drift = drag.edge === 'top' ? rectangle.bottom - drag.rectangle.bottom : rectangle.top - drag.rectangle.top;
@@ -50641,10 +50684,15 @@ document.addEventListener('pointerdown', (event) => {
     const base = aimed.parts[aimed.at].getBoundingClientRect()[row ? 'height' : 'width'];
     const sizes = row ? aimed.parts.map((part) => part.style.height ? parseFloat(part.style.height) : null) : tableSizingWidths(aimed.parts);
     let floor = row ? tableRowContentHeight(aimed.parts[aimed.at]) : TABLE_COLUMN_FLOOR;
-    if (aimed.edge === 'right' || aimed.edge === 'left') floor = Math.max(floor, base - rectangle.width + TABLE_COLUMN_FLOOR);
+    const outline = aimed.edge === 'right' || aimed.edge === 'left';
+    const minimums = outline ? tableSizingNarrowest(aimed.parts) : null;
+    const order = outline ? sizes.map((_, at) => at) : null;
+    if (aimed.edge === 'right') order.reverse();
+    if (outline) floor = Math.max(base - rectangle.width + TABLE_COLUMN_FLOOR, base - sizes.reduce((sum, width, at) => sum + Math.max(0, width - minimums[at]), 0));
+    const clipped = outline && sizes.reduce((sum, width) => sum + width, 0) > rectangle.width + 0.5;
     const turn = (aimed.table.__tableSizingTurn || 0) + 1;
     aimed.table.__tableSizingTurn = turn;
-    tableSizeDrag = { ...aimed, turn, owner, pointerId: event.pointerId, sizes, borders: row ? 0 : Math.max(0, rectangle.width - sizes.reduce((sum, one) => sum + one, 0)), base, floor, from: row ? event.clientY : event.clientX, frame: 0, pending: null, placement: { ...placement, width: rectangle.width }, rectangle, gap, reader: readerScrollElement(), scrollLeft: aimed.table.scrollLeft || 0 };
+    tableSizeDrag = { ...aimed, turn, owner, pointerId: event.pointerId, sizes, minimums, order, clipped, borders: row ? 0 : Math.max(0, rectangle.width - sizes.reduce((sum, one) => sum + one, 0)), base, floor, from: row ? event.clientY : event.clientX, frame: 0, pending: null, placement: { ...placement, width: rectangle.width }, rectangle, gap, reader: readerScrollElement(), scrollLeft: aimed.table.scrollLeft || 0 };
     leafHoldPointer(aimed.grip, event.pointerId);
     document.body.classList.add('table-resizing');
     document.body.classList.toggle('is-row', row);
@@ -50672,6 +50720,11 @@ document.addEventListener('dblclick', (event) => {
     const sizes = aimed.parts.map((part) => part.style[aimed.kind === 'row' ? 'height' : 'width'] ? parseFloat(part.style[aimed.kind === 'row' ? 'height' : 'width']) : null);
     aimed.table.__tableSizingTurn = (aimed.table.__tableSizingTurn || 0) + 1;
     sizes[aimed.at] = null;
+    const placement = aimed.table.__tableSizingPlacement;
+    if (aimed.kind === 'column' && aimed.edge && placement && placement.edgeColumns) {
+      for (const at of placement.edgeColumns[aimed.edge] || []) sizes[at] = null;
+      placement.edgeColumns = { ...placement.edgeColumns, [aimed.edge]: [] };
+    }
     if (aimed.kind === 'row') pinTableRowHeights(aimed.parts, sizes);
     else pinTableColumnWidths(aimed.parts, sizes);
     if (aimed.edge) {
