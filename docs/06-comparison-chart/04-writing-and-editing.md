@@ -659,6 +659,9 @@
 | Circling agent warned | [✅][l-agent-circle] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agent plugin install | [✅][l-agent-plugin] | ? | [❌][t-seen] | [❌][c-seen] |
 | Agents held to checks | [✅][l-agent-harness] | ? | [❌][t-seen] | [❌][c-seen] |
+| Drop paths into console | [✅][l-agent-drop] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agent conversation as chat | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Choose agent's folder | [✅][l-agent-folder] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 [l-new]: ../01-features/07-editing.md#new-document
 [l-inline]: ../01-features/07-editing.md#inline-editing-the-reading-view
@@ -737,4 +740,7 @@
 [l-agent-circle]: ../01-features/10-agents.md#an-agent-going-round-in-circles-is-told
 [l-agent-plugin]: ../01-features/10-agents.md#install-the-plugin
 [l-agent-harness]: ../01-features/10-agents.md#hold-an-agent-to-your-checks
+[l-agent-drop]: ../01-features/10-agents.md#run-the-agent-in-a-console
+[l-agent-chat]: ../01-features/10-agents.md#the-conversation-as-a-chat
+[l-agent-folder]: ../01-features/10-agents.md#the-agents-status-under-its-console
 [o-cli]: https://obsidian.md/help/cli

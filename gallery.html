@@ -3881,6 +3881,8 @@
   --lt-radius-lg: 8px;
   --lt-radius-xl: 10px;
   --lt-radius-2xl: 14px;
+  --lt-radius-3xl: 16px;
+  --lt-radius-4xl: 20px;
   --lt-radius-pill: 999px;
   --lt-radius-full: 50%;
   --lt-radius-window: 20px;
@@ -8436,6 +8438,11 @@ body.library-resizing button {
   padding: var(--console-inset-top) var(--lt-space-8) var(--lt-space-8);
 }
 .console-layer[hidden] { display: none; }
+
+.console-layer.is-drop-target {
+  outline: var(--lt-stroke-2) solid var(--lt-accent);
+  outline-offset: calc(var(--lt-stroke-2) * -1);
+}
 /* A console standing in the right-hand card, in that card's track. */
 .console-layer.is-right-card { grid-column: 5; }
 /* Two cards are two whole cards, the same as a page's. */
@@ -8456,6 +8463,12 @@ body.library-resizing button {
 @media (hover: hover) { .console-status-model:disabled:hover { background: transparent; color: var(--lt-navigation-button-disabled-foreground); } }
 .console-status-model[aria-expanded="true"] { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); }
 .console-status-account-input { width: calc(var(--lt-space-48) * 3); min-width: 0; box-sizing: border-box; font: inherit; color: var(--lt-markdown-foreground); background: var(--lt-background); border: var(--lt-stroke-1) solid var(--lt-focus-ring); border-radius: var(--lt-radius-sm); padding: 0 var(--lt-space-4); }
+.console-status-folder { appearance: none; border: none; border-radius: var(--lt-radius-sm); padding: 0 var(--lt-space-4); background: transparent; color: inherit; font: inherit; cursor: pointer; min-width: 0; flex: 0 1 auto; }
+@media (hover: hover) { .console-status-folder:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
+.console-status-folder[aria-expanded="true"] { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); }
+.console-status-folder .lt-icon-folder { width: 12px; height: 12px; flex: none; }
+.console-status-folder-name { overflow: hidden; text-overflow: ellipsis; max-width: calc(var(--lt-space-48) * 4); }
+.console-status-folder:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .console-status-model:focus-visible, .console-status-account:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .console-status-meter { display: inline-block; width: var(--lt-space-48); height: var(--lt-space-4); border-radius: var(--lt-radius-full); background: var(--lt-border); overflow: hidden; }
 .console-status-fill { display: block; height: 100%; background: var(--lt-primary-ink); }
@@ -8508,6 +8521,74 @@ body.library-resizing button {
 /* The hover wash goes over the console color rather than in place of it, so the terminal never shows through the command. */
 .console-pin-row::before { content: ""; position: absolute; inset: 0; z-index: var(--lt-z-below); pointer-events: none; background: transparent; transition: background-color var(--lt-duration-120) var(--lt-ease); }
 @media (hover: hover) { .console-pin-row:hover::before { background: var(--lt-wash-hover); } }
+/* The conversation drawn as Scholar's chat over the terminal's area, at the pinned command's layer; the terminal stays under it, live, for the screens the page cannot read. */
+.console-chat { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); right: var(--lt-space-8); bottom: var(--lt-space-8); z-index: 5; display: flex; flex-direction: column; overflow: hidden; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-5); }
+.console-chat-log { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; user-select: text; }
+.console-chat[hidden] { display: none; }
+.console-chat.is-above-status { bottom: calc(var(--lt-space-8) + var(--lt-space-24)); }
+/* Two rules, kept apart: `scrollbar-width` on a box kills every ::-webkit-scrollbar rule on it. */
+.console-chat-log.has-rail { scrollbar-width: none; }
+.console-chat-log.has-rail::-webkit-scrollbar { width: 0; }
+.console-chat-turns { display: flex; flex-direction: column; gap: var(--lt-space-16); padding: var(--lt-space-16); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-5); color: var(--lt-markdown-foreground); }
+.console-turn { display: flex; flex-direction: column; gap: var(--lt-space-16); min-width: 0; }
+.console-bubble { align-self: flex-end; max-width: 88%; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border-radius: var(--lt-radius-3xl) var(--lt-radius-3xl) 0 var(--lt-radius-3xl); background: var(--lt-surface-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.console-reply { display: flex; flex-direction: column; gap: var(--lt-space-8); align-self: stretch; min-width: 0; }
+.console-chat-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* The terminal's own face: a theme's code face borrows box characters from another font, and a table's right edge drifts. */
+.console-chat-mono { white-space: pre; overflow-x: auto; font-family: monospace; font-size: var(--lt-text-13); line-height: var(--lt-leading-1-35); }
+.console-chat-link { color: var(--lt-link); text-decoration: underline; cursor: pointer; }
+@media (hover: hover) { .console-chat-link:hover { color: var(--lt-link-hover); } }
+.console-note { align-self: flex-start; max-width: 100%; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); white-space: pre-wrap; overflow-wrap: anywhere; }
+.console-reply-actions { display: flex; align-items: center; gap: var(--lt-space-4); color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+.console-working, .console-copy { appearance: none; display: inline-flex; align-items: center; gap: var(--lt-space-6); border: none; border-radius: var(--lt-radius-md); padding: var(--lt-space-2) var(--lt-space-6); background: transparent; color: var(--lt-muted-foreground); font: inherit; cursor: pointer; }
+.console-working:disabled { cursor: default; }
+.console-working .lt-icon { width: 12px; height: 12px; transform: rotate(-90deg); transition: transform var(--lt-duration-150) var(--lt-ease); }
+.console-working[aria-expanded="true"] .lt-icon { transform: none; }
+/* The copy press stands unseen until the turn is under the pointer or the press has the keys. */
+.console-copy { color: transparent; }
+.console-copy .lt-icon { width: 14px; height: 14px; }
+@media (hover: hover) { .console-turn:hover .console-copy { color: var(--lt-muted-foreground); } .console-working:not(:disabled):hover, .console-copy:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
+.console-copy:focus-visible, .console-working:focus-visible { color: var(--lt-markdown-foreground); outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
+.console-work { display: flex; flex-direction: column; gap: var(--lt-space-6); padding-left: var(--lt-space-12); border-left: var(--lt-stroke-2) solid var(--lt-border); color: var(--lt-muted-foreground); font-size: var(--lt-text-13); }
+.console-work[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .console-working .lt-icon { transition: none; } }
+/* Scholar's composer at the foot of the chat, over the agent's own input rows: a bordered field 20 pixels round, its chips, the words, then attach, `/` and the mode on the left and the round send on the right. */
+.console-composer { position: relative; flex: none; display: flex; flex-direction: column; gap: var(--lt-space-8); margin: 0 var(--lt-space-12) var(--lt-space-12); padding: var(--lt-space-10) var(--lt-space-10) var(--lt-space-8) var(--lt-space-14); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-4xl); background: var(--lt-surface-elevated); cursor: text; transition: border-color var(--lt-duration-150) var(--lt-ease); }
+@media (hover: hover) { .console-composer:hover { border-color: var(--lt-border-strong); } }
+.console-composer:focus-within { border-color: var(--lt-focus-ring); }
+.console-composer-field { box-sizing: border-box; width: 100%; min-height: 0; margin: 0; padding: 0; border: none; outline: none; resize: none; overflow-y: auto; background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-45); }
+.console-composer-field::placeholder { color: var(--lt-muted-foreground); }
+.console-composer-chips { display: flex; flex-wrap: wrap; gap: var(--lt-space-6); }
+.console-composer-chips[hidden] { display: none; }
+.console-composer-chip { display: inline-flex; align-items: center; gap: var(--lt-space-6); max-width: 100%; padding: var(--lt-space-2) var(--lt-space-4) var(--lt-space-2) var(--lt-space-10); border-radius: var(--lt-radius-pill); background: var(--lt-surface-muted); color: var(--lt-foreground); font-size: var(--lt-text-12); line-height: var(--lt-leading-1-35); cursor: default; }
+.console-composer-chip .lt-icon { width: 12px; height: 12px; flex: none; }
+.console-composer-chip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.console-composer-chip-remove { appearance: none; display: inline-flex; align-items: center; justify-content: center; flex: none; width: 18px; height: 18px; border: none; border-radius: var(--lt-radius-full); padding: 0; background: transparent; color: var(--lt-muted-foreground); cursor: pointer; }
+.console-composer-chip-remove .lt-icon { width: 10px; height: 10px; }
+.console-composer-row { display: flex; align-items: center; justify-content: space-between; gap: var(--lt-space-8); }
+.console-composer-tools { display: flex; align-items: center; gap: var(--lt-space-4); min-width: 0; }
+.console-composer-tool, .console-composer-mode { appearance: none; display: inline-flex; align-items: center; justify-content: center; flex: none; border: none; background: transparent; color: var(--lt-muted-foreground); font: inherit; cursor: pointer; }
+.console-composer-tool { width: 32px; height: 32px; border-radius: var(--lt-radius-md); font-family: monospace; font-size: var(--lt-text-15); }
+.console-composer-tool .lt-icon { width: 16px; height: 16px; }
+.console-composer-mode { height: 24px; padding: 0 var(--lt-space-10); border-radius: var(--lt-radius-pill); font-size: var(--lt-text-12); white-space: nowrap; }
+.console-composer-mode[hidden] { display: none; }
+/* The round send in the theme's action color, gray with nothing to send, and the stop press while the agent works. */
+.console-composer-send { appearance: none; display: grid; place-items: center; flex: none; width: 32px; height: 32px; border: none; border-radius: var(--lt-radius-full); padding: 0; background: var(--lt-primary); color: var(--lt-primary-foreground); cursor: pointer; }
+.console-composer-send .lt-icon { width: 16px; height: 16px; transform: rotate(-90deg); }
+.console-composer-send.is-off { background: var(--lt-surface-sunken); color: var(--lt-muted-foreground); cursor: default; }
+.console-composer-send.is-stop { background: var(--lt-surface-elevated); color: var(--lt-foreground); border: var(--lt-stroke-1) solid var(--lt-border); }
+.console-composer-send.is-stop .lt-icon { display: none; }
+.console-composer-send.is-stop::after { content: ""; width: 10px; height: 10px; border-radius: var(--lt-radius-xs); background: currentColor; }
+@media (hover: hover) { .console-composer-tool:hover, .console-composer-mode:hover, .console-composer-chip-remove:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
+.console-composer-tool:focus-visible, .console-composer-mode:focus-visible, .console-composer-send:focus-visible, .console-composer-chip-remove:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: var(--lt-stroke-1); }
+/* The `@` list stands over the composer, one folder's entries, the one Enter takes lit. */
+.console-file-list { position: absolute; left: 0; right: 0; bottom: calc(100% + var(--lt-space-6)); max-height: 240px; overflow-y: auto; padding: var(--lt-space-4); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); background: var(--lt-surface-elevated); font-size: var(--lt-text-13); }
+.console-file-list[hidden] { display: none; }
+.console-file-list-row { display: flex; align-items: center; gap: var(--lt-space-6); padding: var(--lt-space-4) var(--lt-space-8); border-radius: var(--lt-radius-md); color: var(--lt-foreground); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.console-file-list-row .lt-icon { width: 14px; height: 14px; flex: none; color: var(--lt-muted-foreground); }
+.console-file-list-row.is-active { background: var(--lt-wash-hover); }
+.console-file-list-note { padding: var(--lt-space-4) var(--lt-space-8); color: var(--lt-muted-foreground); }
+@media (prefers-reduced-motion: reduce) { .console-composer { transition: none; } }
 /* The floating bar: the views, then the edits, parked over the foot of the page. Placed by the grid rather than inside the scroller, so it holds still while the document moves under it, and centered because it belongs to the page rather than to either edge of the window. */
 /* How much room the page leaves at its foot for the bar: the bar's own height plus the gap it floats above the edge, and nothing at all when it is not there. */
 :root {
@@ -19788,7 +19869,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 200 values that do not change with the theme, all 114 icons, and all 179 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 202 values that do not change with the theme, all 114 icons, and all 187 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19818,9 +19899,9 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>200</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>202</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>114</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>179</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>187</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -19925,7 +20006,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">200 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">202 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -19933,6 +20014,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="value"><code>lt-radius-lg</code><i class="demo tile" style="border-radius:var(--lt-radius-lg)"></i><code>8px</code></div>
 <div class="value"><code>lt-radius-xl</code><i class="demo tile" style="border-radius:var(--lt-radius-xl)"></i><code>10px</code></div>
 <div class="value"><code>lt-radius-2xl</code><i class="demo tile" style="border-radius:var(--lt-radius-2xl)"></i><code>14px</code></div>
+<div class="value"><code>lt-radius-3xl</code><i class="demo tile" style="border-radius:var(--lt-radius-3xl)"></i><code>16px</code></div>
+<div class="value"><code>lt-radius-4xl</code><i class="demo tile" style="border-radius:var(--lt-radius-4xl)"></i><code>20px</code></div>
 <div class="value"><code>lt-radius-pill</code><i class="demo tile" style="border-radius:var(--lt-radius-pill)"></i><code>999px</code></div>
 <div class="value"><code>lt-radius-full</code><i class="demo tile" style="border-radius:var(--lt-radius-full)"></i><code>50%</code></div>
 <div class="value"><code>lt-radius-window</code><i class="demo tile" style="border-radius:var(--lt-radius-window)"></i><code>20px</code></div>
@@ -20288,7 +20371,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">179 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">187 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -20522,12 +20605,12 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="library-foot" style="position:relative;height:66px;width:240px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Themes"><span class="lt-icon lt-icon-theme"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Scheduled tasks"><span class="lt-icon lt-icon-check-circle"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Favorites"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Recent"><span class="lt-icon lt-icon-recent"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Search"><span class="lt-icon lt-icon-search"></span></button></div></div></div>
 </section>
 <section class="part">
-<header><h3>Console surface</h3><code class="built">.console-layer</code><span class="built">console.js, with a 12px inset below the app bar named --console-inset-top, 8px at its other edges, held off the left frame by --reader-gutter while the library is shut as the page is, and the terminal's own scroll bar held down while the minimap is shown; while it stands in a card it marks that card's edge fade is-under-console, which takes the fade off, so the text a program puts at the console's top and bottom edges reads at full strength</span></header>
-<div class="stage"><div class="console-layer"><div class="console-terminal"></div></div></div>
+<header><h3>Console surface</h3><code class="built">.console-layer</code><span class="built">console.js, with the existing accent outline while a library carry or outside drop is over the visible console (is-drop-target), and with a 12px inset below the app bar named --console-inset-top, 8px at its other edges, held off the left frame by --reader-gutter while the library is shut as the page is, and the terminal's own scroll bar held down while the minimap is shown; while it stands in a card it marks that card's edge fade is-under-console, which takes the fade off, so the text a program puts at the console's top and bottom edges reads at full strength</span></header>
+<div class="stage"><div class="console-layer is-drop-target"><div class="console-terminal"></div></div></div>
 </section>
 <section class="part">
-<header><h3>Console status</h3><code class="built">.console-status</code><span class="built">console-status.js, from the record the host hands it for the agent session in that console: one row at the foot of the console layer, the terminal (is-above-status) one row shorter above it; the agent's logo alone, its name as the hover title and spoken label (console-status-agent), or its name where it has no logo, the account name immediately after the logo (console-status-account), a button titled Rename this account that becomes a selected text box (console-status-account-input): Enter or blur saves, Escape cancels, empty or unchanged names save nothing, remaining pressable while the agent works; its reported model (console-status-model, a button for Claude Code, Codex and Antigravity that opens the agent's own model picker in one press), the reported effort on its button (console-status-effort), with Effort when unknown, for those same agents, opening their own effort choice in one press, the context capacity before usage is reported, then context used with a small meter (console-status-meter, console-status-fill), a menu button for Claude Code, Codex and Antigravity offering Compact the conversation and Start a new conversation, all three controls disabled with a title saying to wait while the agent works, each limit with its meter and reset, the cost and the folder, a field the session did not report left out; where the row would run past its width the folder goes first, then the cost, then the limits then the effort control and finally the account; shown for recognized Claude Code, Codex and Antigravity even without a report, with neutral Model, Effort and Context controls, the three standing 4 pixels apart in one group (console-status-controls); reported figures enrich the row and unknown figures stay absent</span></header>
-<div class="stage"><div class="console-status"><span class="console-status-field console-status-agent" data-field="agent" title="Codex" role="img" aria-label="Codex"><span class="lt-icon lt-icon-agent-codex" aria-hidden="true"></span></span><span class="console-status-controls"><button type="button" class="console-status-field console-status-account" data-field="account" title="Rename this account">Default account</button><button type="button" class="console-status-field console-status-model" data-field="model" aria-label="Change model: gpt-6-sol">gpt-6-sol</button><button type="button" class="console-status-field console-status-model console-status-effort" data-field="effort" aria-label="Change reasoning effort">Effort</button><button type="button" class="console-status-field console-status-model" data-field="context" aria-label="Free up context: Context 36k of 258k" aria-haspopup="menu" aria-expanded="false"><span class="console-status-meter"><span class="console-status-fill" style="width:14%"></span></span>Context 36k of 258k<span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></button></span><span class="console-status-field" data-field="limits"><span class="console-status-meter"><span class="console-status-fill" style="width:21%"></span></span>Weekly 21% used · resets in 4d 2h</span><span class="console-status-field" data-field="folder">app</span></div></div>
+<header><h3>Console status</h3><code class="built">.console-status</code><span class="built">console-status.js, from the record the host hands it for the agent session in that console: one row at the foot of the console layer, the terminal (is-above-status) one row shorter above it; the agent's logo alone, its name as the hover title and spoken label (console-status-agent), or its name where it has no logo, the account name immediately after the logo (console-status-account), a button titled Rename this account that becomes a selected text box (console-status-account-input): Enter or blur saves, Escape cancels, empty or unchanged names save nothing, remaining pressable while the agent works; its reported model (console-status-model, a button for Claude Code, Codex and Antigravity that opens the agent's own model picker in one press), the reported effort on its button (console-status-effort), with Effort when unknown, for those same agents, opening their own effort choice in one press, the context capacity before usage is reported, then context used with a small meter (console-status-meter, console-status-fill), a menu button for Claude Code, Codex and Antigravity offering Compact the conversation and Start a new conversation, all three controls disabled with a title saying to wait while the agent works, each limit with its meter and reset, the cost and the folder, a field the session did not report left out; for Claude Code, Codex and Antigravity the folder is a button (console-status-folder, its name in console-status-folder-name cut short with an ellipsis, Folder before any report, the whole path as its title and spoken label) opening a menu above itself of one directory's folders, the folder above, Move this conversation here for Claude Code or New conversation in this folder for Codex and Antigravity, and Choose another folder; where the row would run past its width a plain folder goes first, then the cost, then the limits then the effort control, then the account and last the folder button, whose console's tab menu reaches the same menu; shown for recognized Claude Code, Codex and Antigravity even without a report, with neutral Model, Effort and Context controls, the three standing 4 pixels apart in one group (console-status-controls); reported figures enrich the row and unknown figures stay absent</span></header>
+<div class="stage"><div class="console-status"><span class="console-status-field console-status-agent" data-field="agent" title="Codex" role="img" aria-label="Codex"><span class="lt-icon lt-icon-agent-codex" aria-hidden="true"></span></span><span class="console-status-controls"><button type="button" class="console-status-field console-status-account" data-field="account" title="Rename this account">Default account</button><button type="button" class="console-status-field console-status-model" data-field="model" aria-label="Change model: gpt-6-sol">gpt-6-sol</button><button type="button" class="console-status-field console-status-model console-status-effort" data-field="effort" aria-label="Change reasoning effort">Effort</button><button type="button" class="console-status-field console-status-model" data-field="context" aria-label="Free up context: Context 36k of 258k" aria-haspopup="menu" aria-expanded="false"><span class="console-status-meter"><span class="console-status-fill" style="width:14%"></span></span>Context 36k of 258k<span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></button></span><span class="console-status-field" data-field="limits"><span class="console-status-meter"><span class="console-status-fill" style="width:21%"></span></span>Weekly 21% used · resets in 4d 2h</span><button type="button" class="console-status-field console-status-folder" data-field="folder" title="C:/work/app" aria-label="New conversation in another folder: C:/work/app" aria-haspopup="menu" aria-expanded="false"><span class="lt-icon lt-icon-folder" aria-hidden="true"></span><span class="console-status-folder-name">app</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Console map rail</h3><code class="built">.console-minimap</code><span class="built">minimap.js</span></header>
@@ -20724,6 +20807,38 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Pinned command</h3><code class="built">.console-pin</code><span class="built">console-sticky.js</span></header>
 <div class="stage"><div class="console-pin"><div class="console-pin-row">C:\vault&gt; cargo test --all</div></div></div>
+</section>
+<section class="part">
+<header><h3>Console chat</h3><code class="built">.console-chat</code><span class="built">console-chat.js, over the terminal's area of a console running Claude Code or Codex while the page reads a whole conversation off its screen, and gone at once for any screen it cannot read: the turns 16 pixels apart in one scrolling log, held at its foot while the reader is there; the agent's opening rows first (console-chat-opening), words keeping their line breaks (console-chat-text), runs of box and block characters in the terminal's face (console-chat-mono), and web addresses that open through the app (console-chat-link); the rail mirrors it while it shows</span></header>
+<div class="stage"><div class="console-chat" role="log" aria-label="Conversation"><div class="console-chat-turns"><div class="console-reply console-chat-opening"><div class="console-chat-mono"> ▐▛███▛█   Claude Code v2.1.309</div></div><div class="console-turn"><div class="console-bubble">Run dir here.</div><div class="console-reply"><div class="console-chat-text">The directory has two files. See <a class="console-chat-link" href="https://example.com">https://example.com</a></div></div></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Console bubble</h3><code class="built">.console-bubble</code><span class="built">console-chat.js: the prompt that was sent, on the right, filled, its bottom-right corner square, at most 88% of the column, Scholar's user bubble</span></header>
+<div class="stage"><div class="console-bubble">Create a file named note.txt containing the word hi.</div></div>
+</section>
+<section class="part">
+<header><h3>Console reply</h3><code class="built">.console-reply</code><span class="built">console-chat.js: the agent's answer after its last tool, bare on the left, then a row holding the folded working line and a copy press that shows on hover and on keyboard focus (console-copy)</span></header>
+<div class="stage"><div class="console-reply"><div class="console-chat-text">I created note.txt.</div><div class="console-reply-actions"><button type="button" class="console-working" aria-expanded="false"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>Worked for 5s · done 9:22 AM</button><button type="button" class="console-copy" title="Copy the answer" aria-label="Copy the answer"><span class="lt-icon lt-icon-copy" aria-hidden="true"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Console note</h3><code class="built">.console-note</code><span class="built">console-chat.js: a notice the agent boxed in rounded box characters, as Codex boxes its update notice, drawn as a bordered note with the box gone</span></header>
+<div class="stage"><div class="console-note">Update available! 0.163.0 -&gt; 0.164.0</div></div>
+</section>
+<section class="part">
+<header><h3>Console composer</h3><code class="built">.console-composer</code><span class="built">console-composer.js, at the foot of the console's chat over the agent's own input rows, Scholar's composer: a bordered field 20 pixels round on the raised surface, its border stronger under the pointer and the focus ring's color while the words have the keys, a press on its padding putting the caret in the field; the words (console-composer-field, the agent's own placeholder, Enter sends and Shift+Enter is a new line, growing to eight lines), then attach and / (console-composer-tool) and Claude Code's mode or Codex's permissions (console-composer-mode) on the left, and the round send in the action color on the right (console-composer-send), gray with nothing to send (is-off) and a stop press while the agent works (is-stop)</span></header>
+<div class="stage"><div class="console-composer"><textarea class="console-composer-field" rows="1" aria-label="Message to Codex" placeholder="Ask Codex to do anything"></textarea><div class="console-composer-row"><div class="console-composer-tools"><button type="button" class="console-composer-tool" aria-label="Attach a file"><span class="lt-icon lt-icon-new" aria-hidden="true"></span></button><button type="button" class="console-composer-tool" aria-label="The agent's commands">/</button><button type="button" class="console-composer-mode" aria-label="Change the permission mode">Accept edits on</button></div><button type="button" class="console-composer-send is-off" aria-label="Send"><span class="lt-icon lt-icon-forward-long" aria-hidden="true"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Console composer chip</h3><code class="built">.console-composer-chip</code><span class="built">console-composer.js: a file the message carries — the document beside the console, a file attached, a picture pasted or a file chosen from the @ list — named on a pill with its path as the hover title and a press to take it off (console-composer-chip-remove); the chips sit over the words (console-composer-chips)</span></header>
+<div class="stage"><div class="console-composer-chips"><span class="console-composer-chip" title="C:\notes\README.md"><span class="lt-icon lt-icon-document" aria-hidden="true"></span><span class="console-composer-chip-name">README.md</span><button type="button" class="console-composer-chip-remove" aria-label="Take README.md off the message"><span class="lt-icon lt-icon-close" aria-hidden="true"></span></button></span></div></div>
+</section>
+<section class="part">
+<header><h3>Console file list</h3><code class="built">.console-file-list</code><span class="built">console-composer.js, over the composer while a word opens with @: one folder's entries of the console's folder, narrowed as the word is typed, the one Enter takes lit (is-active), a folder opening the next listing and a file becoming a chip; a line in place of rows while it reads, finds nothing or cannot read (console-file-list-note)</span></header>
+<div class="stage"><div class="console-file-list" role="listbox" aria-label="Files in the folder"><div class="console-file-list-row is-active" role="option" aria-selected="true"><span class="lt-icon lt-icon-folder" aria-hidden="true"></span>src/</div><div class="console-file-list-row" role="option" aria-selected="false"><span class="lt-icon lt-icon-document" aria-hidden="true"></span>README.md</div></div></div>
+</section>
+<section class="part">
+<header><h3>Console working</h3><code class="built">.console-work</code><span class="built">console-chat.js: the agent's working or finished line under its answer (console-working), pressed to open the tool lines and what the agent said between them (console-work), indented behind a rule</span></header>
+<div class="stage"><div class="console-reply"><button type="button" class="console-working" aria-expanded="true"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>Worked for 18s • 9:17 AM</button><div class="console-work"><div class="console-chat-text">Ran dir</div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Copy button</h3><code class="built">.code-copy</code><span class="built">decorate.js</span></header>

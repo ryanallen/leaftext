@@ -10,15 +10,33 @@ Leaftext's installed app can answer an agent through MCP. Keep Leaftext open, ad
 
 Open a [console in the library](03-library.md#console) and type the installed agent's ordinary command. The agent uses its own model address, model choice and credentials, just as it does when you start it in another terminal. Set those in the agent's own configuration; Leaftext has no model address or key field and does not make the model request.
 
+Drag a file, picture or folder from the library, Explorer or Finder onto the console to type its full path into the line you are writing. Pick several library rows to insert their paths together. The console lights while it can take the drop, quotes the paths and adds a space so you can keep typing. Dropping a path never sends the line or moves the file. This also works in a console's own window.
+
+When the console shows a message box, the path goes into that box at the cursor and keeps the rest of your draft.
+
 The agent also keeps everything else it loads in an ordinary terminal: the project's rules, its skills, its hooks and its plugins. Leaftext starts your own shell in the library's folder with your own environment, and the agent reads its configuration by its own rules, so each skill is there and each hook runs once, exactly as it would elsewhere. The [Leaftext plugin](#install-the-plugin) adds its document tools beside your other plugins without replacing any of them.
 
 Remote tool servers, such as a company's own, are set up in the agent's own settings the way that agent's documentation describes, and work in a Leaftext console the same as anywhere. The `mcp.json` file in Leaftext's settings folder is not passed to an agent you run in a console.
 
 With the plugin installed, Codex and Claude consoles use the conversation title the agent has saved, on both the tab and the **Agents** row. This works when the agent has turned its own terminal title off. The name appears once a hook can read it; until then, the console reads the first five words of the prompt without its skill, pasted-picture placeholder or path folders. The agent can explicitly name its console through `leaftext_name`, which takes priority over the automatic topic. Hover the tab or row to read the original prompt. Starting over with `/clear`, `/new` or `/reset`, switching conversations, or leaving the agent clears the previous name. Other agents keep their native terminal titles and prompt fallback.
 
+### The conversation as a chat
+
+While Claude Code or Codex sits at its own prompt or works on an answer, the console shows the conversation as a chat: what you sent in a bubble on the right, the agent's answer as plain text on the left, and the agent's opening lines above the first message. The tools the agent ran and what it said along the way fold under its **Worked for** line; press the line to open them. Point at an answer to copy it. Tables, banners and boxes keep the terminal's own lettering, and web addresses open through Leaftext.
+
+At the foot is a message box in place of the agent's own input line. Type there and press Enter to send, or Shift+Enter for a new line. While the agent works, the round button stops it, and so does Escape. Up in an empty box brings back what you sent before. The box carries:
+
+- **+** to attach a file, and a pasted picture, each riding with the message as its path.
+- The document standing beside the console, or the last document you had open, as a chip; press its × to leave it off. It goes with the next message once.
+- `@` at the start of a word to pick a file from the console's folder, one folder at a time.
+- `/`, which hands you the agent's own command list.
+- For Claude Code, its permission mode; press it, or Shift+Tab in the box, to step to the next mode. For Codex, its permissions, which opens Codex's own list.
+
+Whenever the agent shows something of its own — a question before it runs a command, a list, a sign-in, a picker — or you type into the agent's own line, the chat steps aside and the whole terminal comes back with the keys in it. Answer there, and the chat returns when the agent is back at its prompt, with whatever you had typed in the message box still in it. Other agents and ordinary shells always show the terminal.
+
 ### The agent's status under its console
 
-Leaftext shows the agent's logo, then **Model**, **Effort** and **Context**, under a console as soon as it recognizes Claude Code, Codex or Antigravity. These controls work without the plugin, and all three are grayed out while the agent is working. With the plugin installed, the same row also shows what the agent's own session reports: Codex's model, context and limits, or Claude Code's, Antigravity's and Gemini CLI's model and tokens used. A figure the session never reported is left out. Until a model, effort or context figure arrives, its button keeps the neutral label. A reported context capacity appears before usage arrives, without an empty usage meter. On a narrow console the folder goes first, then the cost, then the limits, then the effort button and finally the account name.
+Leaftext shows the agent's logo, then **Model**, **Effort** and **Context**, under a console as soon as it recognizes Claude Code, Codex or Antigravity. These controls work without the plugin, and all three are grayed out while the agent is working. With the plugin installed, the same row also shows what the agent's own session reports: Codex's model, context and limits, or Claude Code's, Antigravity's and Gemini CLI's model and tokens used. A figure the session never reported is left out. Until a model, effort or context figure arrives, its button keeps the neutral label. A reported context capacity appears before usage arrives, without an empty usage meter. On a narrow console the cost goes first, then the limits, then the effort button, then the account name and last the folder button.
 
 Claude Code and Codex also report which account folder they use. Its name appears beside the logo: **Default account** for the default folder, or the folder name for another account. Press the name to rename it in Leaftext. Enter or leaving the field saves; Escape cancels. Empty or unchanged names save nothing. The name stays pressable while the agent works, and the saved name appears in every console and window using that same agent and account folder, including after restarting Leaftext. These names are [kept on this machine](05-settings.md#files).
 
@@ -28,9 +46,16 @@ Press **Effort** beside the model to open the agent's reasoning choices in one p
 
 ![The Effort button opening Codex in a Leaftext console, with a sample status record](../../imgs/console-effort-v1.png)
 
-Press **Context**, or the reported context figure, for **Compact the conversation** or **Start a new conversation**. The new conversation keeps the old one on disk for the agent's own resume. These actions work even before the agent reports its context usage.
+Press **Context**, or the reported context figure, for **Compact the conversation** or **Start a new conversation**. The new conversation keeps the old one on disk for the agent's own resume. For Claude Code and Codex the same menu has **Resume a conversation**, which opens the agent's own list of past conversations. These actions work even before the agent reports its context usage.
 
 These controls wait for the agent to finish and for its prompt to be empty. Antigravity's own mode hint counts as an empty prompt, including when the console cuts it short. Send or clear an unfinished message before choosing a model, effort or conversation command. Leaftext types the command, waits to see it in the prompt, then presses Enter separately. Typing, switching consoles or closing one cancels that Enter. If the command has not appeared within two seconds, Leaftext leaves it for you to submit. It never clears your message. Consoles and their input belong to the installed app; the browser cannot send these commands.
+
+**Choose the folder an agent works in.** The folder button at the end of the row names the folder the agent last said it works in, or reads **Folder** until it says; hover it for the whole path. Press it for a menu of the folders in that one folder: press a folder to look inside it, or the arrow row to go up, and **Choose another folder…** to pick one in the system's folder window. Only the folder you are looking at is read, and the library pane stays where it was.
+
+- **Claude Code** — **Move this conversation here** types Claude's own `/cd` with that folder, and the same conversation goes on there. The button changes only once Claude itself reports working in the new folder; if it does not say so, the button keeps the old folder and Leaftext tells you.
+- **Codex and Antigravity** — Codex refuses to change folder in the session Leaftext starts, and Antigravity keeps a conversation in its own project, so **New conversation in this folder** opens a new console in that folder and starts the agent there with its usual settings. The conversation you were in stays open in its own console, untouched.
+
+When the console is too narrow to show the folder button, right-click the console's tab for the same menu.
 
 Starting `codex` in a Leaftext console reports its selected model, effort, folder and available account limits before the first prompt. Native model and effort changes appear immediately. A fresh conversation starts with zero context; a resumed conversation shows saved usage when available, then follows native updates. The plugin hooks remain a fallback. Missing quota windows and dollar cost stay absent. An explicit native executable path bypasses the console helper.
 

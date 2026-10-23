@@ -12643,6 +12643,8 @@ function fillContextMenu(menu, entries, level) {
       const picture = contextMenuPicture;
       const tableCell = contextMenuTableCell;
       hideContextMenu();
+      
+      if (entry.run) { entry.run(); return; }
       if (entry.action === 'copySelection') {
         copyRich(selected, selectedHtml);
         return;
@@ -12704,6 +12706,15 @@ appSurface.addEventListener('keydown', contextMenuKeydown);
 function clampContextMenu(x, y) {
   leafPlaceFloating(contextMenu, x, y);
 }
+
+function showConsoleTabMenu(x, y, entries) {
+  contextMenuPath = null;
+  contextMenuTargetKind = 'consoleTab';
+  dismissLinkHoverTip();
+  buildContextMenu(entries);
+  clampContextMenu(x, y);
+  leafFocusForKeyboard(contextMenu.querySelector('.context-menu-item:not(:disabled)'));
+}
 function showContextMenu(x, y, path, kind, link, picture, tableCell, unreadable) {
   
   const holdingConsole = contextMenuPressConsoleId === undefined ? consoleHoldingKeyboard() : contextMenuPressConsoleId;
@@ -12762,6 +12773,14 @@ document.addEventListener('contextmenu', (event) => {
   if (picture && !event.target.closest('[contenteditable="true"]') && pictureMenuTarget(picture)) {
     event.preventDefault();
     showContextMenu(event.clientX, event.clientY, picture.getAttribute('src') || '', 'picture', null, picture);
+    return;
+  }
+  
+  const consoleTab = event.target.closest ? event.target.closest('.console-tab[data-console-id]') : null;
+  const consoleRows = consoleTab ? consoleTabMenuRows(consoleTab) : null;
+  if (consoleRows) {
+    event.preventDefault();
+    showConsoleTabMenu(event.clientX, event.clientY, consoleRows);
     return;
   }
   
@@ -18012,6 +18031,7 @@ function holdLibraryPress(button, event, act) {
     paths: path ? libraryPathsFor(path) : [],
     chip: null,
     target: null,
+    consoleId: null,
     frame: 0,
     at: null,
   };
@@ -18049,9 +18069,13 @@ function libraryDropTargetAt(x, y) {
   if (libraryTree.contains(hit)) return { element: libraryTree, folder: libraryFolderHere() };
   return null;
 }
+function libraryCarryTargetAt(x, y) {
+  return consoleDropTarget(document.elementFromPoint(x, y)) || libraryDropTargetAt(x, y);
+}
 function lightLibraryTarget(target) {
   const carry = libraryCarry;
-  const next = target && libraryFolderTakes(target.folder, carry.paths) ? target : null;
+  if (target && target.kind === 'console' && carry.consoleId === null) carry.consoleId = target.id;
+  const next = target && (target.kind === 'console' ? target.id === carry.consoleId : libraryFolderTakes(target.folder, carry.paths)) ? target : null;
   if ((carry.target && carry.target.element) === (next && next.element)) {
     carry.target = next;
     return;
@@ -18067,7 +18091,7 @@ function drawLibraryCarry() {
   if (!carry.at) return;
   
   carry.chip.style.transform = `translate(${carry.at.x - carry.origin.left}px, ${carry.at.y - carry.origin.top}px)`;
-  lightLibraryTarget(libraryDropTargetAt(carry.at.x, carry.at.y));
+  lightLibraryTarget(libraryCarryTargetAt(carry.at.x, carry.at.y));
 }
 function startLibraryCarry() {
   const carry = libraryCarry;
@@ -18127,11 +18151,12 @@ document.addEventListener('pointerup', (event) => {
     return;
   }
   
-  lightLibraryTarget(libraryDropTargetAt(event.clientX, event.clientY));
+  lightLibraryTarget(libraryCarryTargetAt(event.clientX, event.clientY));
   const target = carry.target;
   endLibraryCarry();
   if (!target) return;
-  send({ command: 'pasteFile', paths: carry.paths, intoFolder: target.folder, cut: !libraryCarryCopies(event) });
+  if (target.kind === 'console') send({ command: 'consoleTypePaths', id: target.id, paths: carry.paths, compose: target.compose });
+  else send({ command: 'pasteFile', paths: carry.paths, intoFolder: target.folder, cut: !libraryCarryCopies(event) });
   clearLibraryPicks();
 });
 
@@ -18157,8 +18182,11 @@ window.addEventListener('keydown', (event) => {
 
 let outsideDropFiles = [];
 let outsideDropLit = null;
+let outsideDropConsoleId = null;
 
 function outsideDropPlaceAt(x, y) {
+  const console = consoleDropTarget(document.elementFromPoint(x, y));
+  if (console) return console;
   const folder = libraryDropTargetAt(x, y);
   if (folder) return { kind: 'folder', element: folder.element, folder: folder.folder };
   const hit = document.elementFromPoint(x, y);
@@ -18188,6 +18216,7 @@ function outsideDropValueIsText(format, source) {
 function outsideDropRoute(place, files, drop, format) {
   const paths = files.map((file) => file.path);
   if (!files.length) return { action: 'nothing' };
+  if (place.kind === 'console') return { action: 'console', id: place.id, paths, compose: !!place.compose };
   if (place.kind === 'folder') return { action: 'paste', paths, intoFolder: place.folder, cut: !!drop.shift };
   const pictures = files.filter((file) => file.picture);
   const documents = files.filter((file) => file.readable);
@@ -18232,7 +18261,7 @@ function outsideDropBlockAt(y) {
   return above;
 }
 function lightOutsideDrop(place) {
-  const next = place && place.kind === 'folder' && libraryFolderTakes(place.folder, outsideDropFiles.map((file) => file.path)) ? place.element : null;
+  const next = place && (place.kind === 'console' || (place.kind === 'folder' && libraryFolderTakes(place.folder, outsideDropFiles.map((file) => file.path)))) ? place.element : null;
   if (outsideDropLit === next) return;
   if (outsideDropLit) outsideDropLit.classList.remove('is-drop-target');
   if (next) next.classList.add('is-drop-target');
@@ -18240,6 +18269,7 @@ function lightOutsideDrop(place) {
 }
 function landOutsideDrop(route) {
   switch (route.action) {
+    case 'console': send({ command: 'consoleTypePaths', id: route.id, paths: route.paths, compose: route.compose }); break;
     case 'paste': send({ command: 'pasteFile', paths: route.paths, intoFolder: route.intoFolder, cut: route.cut }); break;
     case 'refuse': leafToast(route.words, 'error'); break;
     case 'code':
@@ -18286,20 +18316,29 @@ function landOutsideDrop(route) {
 }
 window.leafOutsideDrop = (drop) => {
   const moment = drop || {};
+  if (moment.phase === 'enter') outsideDropConsoleId = null;
   if (Array.isArray(moment.files)) outsideDropFiles = moment.files;
   if (moment.phase === 'leave') {
     lightOutsideDrop(null);
     outsideDropFiles = [];
+    outsideDropConsoleId = null;
     return;
   }
   const place = outsideDropPlaceAt(moment.x, moment.y);
+  if (place.kind === 'console' && outsideDropConsoleId === null) outsideDropConsoleId = place.id;
+  const replaced = place.kind === 'console' && place.id !== outsideDropConsoleId;
   if (moment.phase !== 'drop') {
-    lightOutsideDrop(place);
+    lightOutsideDrop(replaced ? null : place);
     return;
   }
   lightOutsideDrop(null);
   const files = outsideDropFiles;
   outsideDropFiles = [];
+  outsideDropConsoleId = null;
+  if (replaced) {
+    leafToast('The console that took the drag is no longer in front.', 'error');
+    return;
+  }
   landOutsideDrop(outsideDropRoute(place, files, moment, currentDocumentFormat));
 };
 
@@ -43629,6 +43668,7 @@ function readConsoleAgent(id, entry) {
   if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) ? 'antigravity' : null;
   entry.agent = entry.titleAgent || entry.screenAgent || null;
   reportConsoleAgent(id, entry, screenLines);
+  refreshConsoleChat(id, entry);
 }
 
 
@@ -44142,10 +44182,13 @@ function makeConsoleLayer(id) {
     };
     holdConsoleLinks(terminal);
     terminal.attachCustomWheelEventHandler(event => consoleWheel(id, entry, event));
-    terminal.onData(data => { if (!/^\x1b\[[IO]$/.test(data)) consoleKeyTyped(id); consolePinInput(entry, data, id); send({ command: 'consoleInput', id, data }); });
+    terminal.onData(data => { if (!/^\x1b\[[IO]$/.test(data)) consoleKeyTyped(id); consolePinInput(entry, data, id); consoleTypedInput(id, entry, data); });
     terminal.onTitleChange(title => consoleTitleSaid(id, title));
     terminal.onScroll(() => consoleScrolled(id, entry));
     entry.terminal = terminal;
+    
+    const focusTerminal = terminal.focus.bind(terminal);
+    terminal.focus = () => { if (!focusConsoleComposer(entry)) focusTerminal(); };
     setupConsolePin(entry);
     paintConsoleTheme(entry);
     entry.fit = fit;
@@ -44159,7 +44202,10 @@ function makeConsoleLayer(id) {
     entry.observer = new ResizeObserver(() => {
       if (layer.hidden) return;
       fitConsoleStatus(entry);
+      const size = `${terminal.cols}x${terminal.rows}`;
       refreshConsoleGrid(id, entry);
+      
+      if (`${terminal.cols}x${terminal.rows}` !== size) leaveConsoleChat(entry);
       if (consoleFrontId !== id) return;
       renderConsolePin(entry);
     });
@@ -44337,6 +44383,45 @@ function sendConsoleSize(id, entry) {
 
 function frontConsoleEntry() { return consoleLayers.get(consoleFrontId) || null; }
 
+function consoleDropTarget(hit) {
+  const layer = hit && hit.closest && hit.closest('.console-layer');
+  const entry = frontConsoleEntry();
+  if (!layer || !layer.isConnected || layer.hidden || !entry || entry.layer !== layer) return null;
+  return { kind: 'console', element: layer, id: consoleFrontId, compose: consoleChatShown(entry) };
+}
+
+window.leafConsolePathsComposed = (id, text) => {
+  const entry = consoleLayers.get(id);
+  if (consoleFrontId !== id || !entry || !entry.layer.isConnected || entry.layer.hidden || !consoleChatShown(entry) || !entry.composer) {
+    leafToast('The console draft that took the drop is no longer visible.', 'error');
+    return;
+  }
+  const field = entry.composer.field;
+  field.setRangeText(text, field.selectionStart, field.selectionEnd, 'end');
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+  field.focus();
+};
+
+window.leafConsolePathsTyped = (id, needsSpace) => {
+  window.leafConsoleFront(id);
+  if (!needsSpace) return;
+  const entry = consoleLayers.get(id);
+  if (!entry) return;
+  const pending = { text: '' };
+  entry.pathPasteInput = pending;
+  
+  setTimeout(() => {
+    if (entry.pathPasteInput !== pending) return;
+    entry.pathPasteInput = null;
+    if (consoleLayers.get(id) === entry && entry.layer.isConnected) send({ command: 'consoleInput', id, data: ' ' + pending.text });
+  }, 50);
+};
+
+function consoleTypedInput(id, entry, data) {
+  if (entry.pathPasteInput) entry.pathPasteInput.text += data;
+  else send({ command: 'consoleInput', id, data });
+}
+
 function consoleScreen(terminal) {
   return terminal.renderer?.getCanvas() || null;
 }
@@ -44391,6 +44476,7 @@ document.addEventListener('keydown', consoleShortcutKey, true);
 function consoleScrollElement() {
   const entry = frontConsoleEntry();
   if (!entry?.terminal) return null;
+  if (consoleChatShown(entry) && entry.chatView) return entry.chatView.log;
   if (!entry.scroll) {
     const terminal = entry.terminal;
     const lineHeight = () => consoleRowHeight(terminal);
@@ -44429,6 +44515,7 @@ function placeConsoleLayers(state = currentState) {
     entry.layer.classList.toggle('is-split', shown && split);
     if (shown && wasHidden && entry.fit) {
       refreshConsoleGrid(id, entry);
+      refreshConsoleChat(id, entry);
     }
   }
   const besideTab = besideCard && state && state.beside && state.tabs ? state.tabs[state.beside.tab] : null;
@@ -44545,6 +44632,8 @@ window.leafConsoleReplay = (id, encoded, columns, rows) => {
   const bytes = consoleBytes(encoded);
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   closeConsoleModel(entry);
+  leaveConsoleChat(entry);
+  entry.chatStart = null;
   clearTimeout(entry.quietTimer);
   entry.quietTimer = 0;
   entry.titleMark = null;
@@ -44611,7 +44700,7 @@ function showConsoleModelMenu(button, items) {
 }
 
 function startConsoleCommand(id, entry, button, record, command) {
-  const allowed = command === '/model' || (['claude', 'antigravity'].includes(record?.agent) && ['/effort', '/compact', '/clear'].includes(command)) || (record?.agent === 'codex' && ['/compact', '/new'].includes(command));
+  const allowed = command === '/model' || (['claude', 'antigravity'].includes(record?.agent) && ['/effort', '/compact', '/clear'].includes(command)) || (record?.agent === 'codex' && ['/compact', '/new'].includes(command)) || (['claude', 'codex'].includes(record?.agent) && command === '/resume');
   if (!allowed) return;
   const note = consoleModelRefusal(id, entry, record);
   if (note) { showConsoleModelMenu(button, [{ note }]); return; }
@@ -44653,6 +44742,8 @@ function openConsoleModel(id, entry, button, effort = false, context = false) {
   const items = refusal ? [{ note: refusal }] : [
     { label: 'Compact the conversation', run: () => choose('/compact') },
     { label: 'Start a new conversation', run: () => choose(record.agent === 'codex' ? '/new' : '/clear') },
+    
+    ...(['claude', 'codex'].includes(record.agent) ? [{ label: 'Resume a conversation', run: () => choose('/resume') }] : []),
   ];
   showConsoleModelMenu(button, items);
 }
@@ -44681,11 +44772,13 @@ function submitConsoleModel(id, entry) {
   if (consoleLayers.get(id) !== entry || consoleFrontId !== id || entry.layer.hidden || document.hidden || keyedColumn !== pending.card || consoleControlRecord(entry) !== pending.record || (entry.agent && entry.agent !== pending.agent)) { cancelConsoleModel(entry); return; }
   const state = consoleAgentState({ ...entry, agent: pending.agent });
   const prompt = consoleModelPrompt(entry, pending.agent);
-  if ((state !== 'rest' && state !== 'done' && !(state === 'needs' && consoleCommandCompletion(entry, pending, prompt))) || (prompt.kind === 'draft' && !pending.command.startsWith(prompt.text))) { cancelConsoleModel(entry); return; }
-  if (prompt.kind !== 'draft' || prompt.text !== pending.command || !prompt.atEnd) return;
+  const folder = pending.folder ? consoleFolderDraft(pending, prompt) : null;
+  if ((state !== 'rest' && state !== 'done' && !(state === 'needs' && consoleCommandCompletion(entry, pending, prompt))) || (prompt.kind === 'draft' && (folder ? folder === 'other' : !pending.command.startsWith(prompt.text)))) { cancelConsoleModel(entry); return; }
+  if (folder ? folder !== 'echoed' : prompt.kind !== 'draft' || prompt.text !== pending.command || !prompt.atEnd) return;
   cancelConsoleModel(entry);
   consoleKeyTyped(id);
   send({ command: 'consoleInput', id, data: '\r' });
+  if (pending.folder) watchConsoleFolderMove(id, entry, pending.folder);
   entry.terminal.focus();
 }
 
@@ -44767,13 +44860,14 @@ function consoleStatusFields(record) {
     fields.push({ field: 'limits', text: `${consoleStatusLimitName(limit.windowMinutes)} ${Math.round(limit.usedPercent)}% used`, wait, meter: limit.usedPercent });
   }
   if (record.cost != null) fields.push({ field: 'cost', text: `$${record.cost.toFixed(2)}` });
-  if (record.folder) fields.push({ field: 'folder', text: record.folder });
+  if (record.folder || controls) fields.push({ field: 'folder', text: record.folder || 'Folder', path: record.folderPath });
   return fields;
 }
 
 function drawConsoleStatus(id, entry) {
   if (entry.accountEditing) return;
-  closeConsoleModel(entry);
+  if (consoleFolderMenuOpen(entry)) cancelConsoleModel(entry);
+  else closeConsoleModel(entry);
   const strip = entry.status;
   const record = consoleControlRecord(entry);
   const fields = record ? consoleStatusFields(record) : [];
@@ -44782,6 +44876,7 @@ function drawConsoleStatus(id, entry) {
     const account = field.field === 'account';
     const effort = field.field === 'effort';
     const context = field.field === 'context' && ['claude', 'codex', 'antigravity'].includes(record.agent);
+    if (field.field === 'folder' && ['claude', 'codex', 'antigravity'].includes(record.agent)) return consoleFolderButton(id, entry, field);
     const item = document.createElement(model || effort || context || account ? 'button' : 'span');
     item.className = field.field === 'agent' ? 'console-status-field console-status-agent' : 'console-status-field';
     item.dataset.field = field.field;
@@ -44865,10 +44960,12 @@ function drawConsoleStatus(id, entry) {
     group.appendChild(item);
   }
   strip.replaceChildren(...row);
+  adoptConsoleFolderAnchor(id, entry);
   const shown = fields.length > 0;
   if (strip.hidden === shown) {
     strip.hidden = !shown;
     entry.host.classList.toggle('is-above-status', shown);
+    entry.chatView?.box.classList.toggle('is-above-status', shown);
     if (entry.terminal && !entry.layer.hidden) refreshConsoleGrid(id, entry);
   }
   fitConsoleStatus(entry);
@@ -44914,7 +45011,7 @@ function fitConsoleStatus(entry) {
   const strip = entry.status;
   if (!strip || strip.hidden) return;
   for (const item of strip.querySelectorAll('[data-field], [data-wait]')) item.hidden = false;
-  for (const selector of ['[data-field="folder"]', '[data-field="cost"]', '[data-wait]', '[data-field="limits"]', '[data-field="effort"]', '[data-field="account"]']) {
+  for (const selector of ['span[data-field="folder"]', '[data-field="cost"]', '[data-wait]', '[data-field="limits"]', '[data-field="effort"]', '[data-field="account"]', 'button[data-field="folder"]']) {
     if (!(strip.clientWidth > 0) || strip.scrollWidth <= strip.clientWidth) return;
     for (const item of strip.querySelectorAll(selector)) item.hidden = true;
   }
@@ -44925,6 +45022,7 @@ window.leafConsoleStatus = (id, record) => {
   const entry = consoleLayers.get(id) || (record ? makeConsoleLayer(id) : null);
   if (!entry) return;
   entry.statusRecord = record && typeof record === 'object' ? record : null;
+  consoleFolderReported(entry, entry.statusRecord);
   drawConsoleStatus(id, entry);
 };
 
@@ -45080,14 +45178,15 @@ function renderConsolePin(entry) {
   }
   if (type === 'alternate') {
     const text = consolePromptNow(entry);
-    if (text === null || entry.layer.hidden) hideConsolePin(entry);
+    
+    if (text === null || entry.layer.hidden || consoleChatShown(entry)) hideConsolePin(entry);
     else drawConsolePin(entry, null, text, false);
     return;
   }
   if (pin.inline) consoleInlineEcho(entry);
   if (pin.sent) consoleSentFound(entry);
   const line = consolePinNow(entry);
-  if (line === null) {
+  if (line === null || consoleChatShown(entry)) {
     hideConsolePin(entry);
     return;
   }
@@ -45288,7 +45387,7 @@ function consoleModelPrompt(entry, agent) {
         if (cell?.getChars()?.trim() && !(cell.isFaint?.() || cell.isDim?.())) faint = false;
       }
       if (faint) return { kind: 'empty', top };
-      return { kind: 'draft', text: words, top, atEnd: input.length === 1 && cursor === top && active.cursorX === line.length };
+      return { kind: 'draft', text: words, top, atEnd: input.length === 1 && cursor === top && active.cursorX === line.length, tailEnd: cursor === end - 1 && active.cursorX === text(end - 1).length };
     }
     return { kind: 'unknown' };
   });
@@ -45415,6 +45514,1127 @@ function consoleInlineEcho(entry) {
   if (marker) pin.sent = { text: inline.text, mark: rows[found].match(CONSOLE_PROMPT_MARK)[0].trimStart() };
   
   if (marker) pin.cut = consolePromptEcho(rows[found]) !== inline.text ? marker : null;
+}
+
+
+
+
+const CONSOLE_CHAT_AGENTS = { claude: ['normal', 'alternate'], codex: ['alternate'] };
+
+const CONSOLE_CHAT_CLAUDE_BANNER = /^\s*\S*\s+Claude Code v\d/;
+
+const CONSOLE_CHAT_BANNER_REACH = 4000;
+
+
+function readConsoleChat(entry) {
+  const terminal = entry.terminal;
+  const agent = entry.agent;
+  const screen = terminal?.buffer.active.type;
+  if (!terminal || !CONSOLE_CHAT_AGENTS[agent]?.includes(screen)) {
+    
+    entry.chatStart = null;
+    return null;
+  }
+  if (/ needs$/.test(entry.agentSaid || '')) return null;
+  return readConsoleScreenOnce(terminal.wasmTerm, () => {
+    const prompt = consoleModelPrompt(entry, agent);
+    if (prompt.kind !== 'empty') return null;
+    const rows = consolePromptRows(entry);
+    if (consolePromptQuestion(entry, rows)) return null;
+    const top = prompt.top;
+    const cover = top - 1;
+    if (cover < 1) return null;
+    const base = consoleBuffer(entry).baseY;
+    const footer = rows.slice(top + 1);
+    const chat = { agent, screen, top, cover, base, to: base + cover, placeholder: consolePromptWords(rows[top]), footer };
+    if (agent === 'codex') {
+      
+      if (footer.filter(line => line.trim()).length > 2) return null;
+      chat.from = 0;
+      return chat;
+    }
+    chat.from = consoleChatClaudeStart(entry, base + cover);
+    chat.mode = footer.map(line => line.trim()).find(line => /^(?:⏵⏵|⏸)\s/.test(line)) || null;
+    return chat;
+  });
+}
+
+
+function consoleChatClaudeStart(entry, below) {
+  const held = entry.chatStart;
+  if (held?.missed) return 0;
+  if (held && held.line < below && consoleLineText(entry, held.line) === held.text) return held.line;
+  for (let line = below - 1; line >= Math.max(0, below - CONSOLE_CHAT_BANNER_REACH); line -= 1) {
+    const text = consoleLineText(entry, line) ?? '';
+    if (!CONSOLE_CHAT_CLAUDE_BANNER.test(text)) continue;
+    entry.chatStart = { line, text };
+    return line;
+  }
+  entry.chatStart = { missed: true };
+  return 0;
+}
+
+
+
+const CONSOLE_CHAT_ITEM = /^[^\sA-Za-z0-9] /;
+
+const CONSOLE_CHAT_ECHO = /^[❯›>] \S/;
+
+const CONSOLE_CHAT_FOLDED = /^ {2}(?:\S.*\(ctrl\+o to expand\)|(?:Ran|Read|Searched|Listed|Wrote|Edited|Updated|Fetched|Called|Found) \d.*)$/;
+const CONSOLE_CHAT_TOOL = {
+  claude: /^● [A-Z][\w.:-]*(?:\(|$)/,
+  codex: /^(?:• (?:Ran|Running|Failed|Explored|Exploring|Edited|Editing|Read|Reading|Searched|Searching|Listed|Called|Calling|Waited|Waiting|Updated|Added|Deleted|Applied|Viewed)\b|✗ )/,
+};
+
+const CONSOLE_CHAT_WORKING = { claude: /^\S \S+…(?: \(.*\))?$/, codex: /^[•◦] Working \(/ };
+const CONSOLE_CHAT_DONE_ROW = { claude: CONSOLE_CHAT_DONE, codex: /^\s*Worked for \d/ };
+
+
+function consoleChatRows(entry, read) {
+  const buffer = consoleBuffer(entry);
+  return readConsoleScreenOnce(entry.terminal.wasmTerm, () => {
+    const rows = [];
+    for (let line = read.from; line < read.to; line += 1) rows.push(buffer.getLine(line)?.translateToString(true) ?? '');
+    return rows;
+  });
+}
+
+
+function consoleChatTurns(agent, rows, cols) {
+  const opening = [];
+  const turns = [];
+  const tool = CONSOLE_CHAT_TOOL[agent];
+  let turn = null;
+  let item = null;
+  for (const raw of rows) {
+    const row = raw.trimEnd();
+    if (CONSOLE_CHAT_ECHO.test(row)) {
+      turn = { echo: [row], items: [], notices: [], done: null, working: null };
+      turns.push(turn);
+      item = { kind: 'echo' };
+      continue;
+    }
+    if (!turn) {
+      opening.push(row);
+      continue;
+    }
+    if (item?.kind === 'echo') {
+      if (/^ {2}\S/.test(row)) {
+        turn.echo.push(row);
+        continue;
+      }
+      item = null;
+    }
+    if (CONSOLE_CHAT_DONE_ROW[agent].test(row)) {
+      turn.done = row.trim();
+      turn.working = null;
+      item = null;
+      continue;
+    }
+    if (CONSOLE_CHAT_WORKING[agent].test(row)) {
+      turn.working = row.trim();
+      item = null;
+      continue;
+    }
+    if (CONSOLE_CHAT_ITEM.test(row) || CONSOLE_CHAT_FOLDED.test(row)) {
+      item = { kind: turn.done ? 'notice' : tool.test(row) || CONSOLE_CHAT_FOLDED.test(row) ? 'tool' : 'answer', rows: [row] };
+      (item.kind === 'notice' ? turn.notices : turn.items).push(item);
+      continue;
+    }
+    if (item) item.rows.push(row);
+  }
+  while (opening.length && !opening.at(-1).trim()) opening.pop();
+  const counts = new Map();
+  return {
+    opening,
+    turns: turns.map(turn => {
+      for (const each of [...turn.items, ...turn.notices]) while (each.rows.length > 1 && !each.rows.at(-1).trim()) each.rows.pop();
+      const lastTool = turn.items.map(each => each.kind).lastIndexOf('tool');
+      
+      const cut = /…$/.test(turn.echo[0]);
+      const joined = consoleChatPrompt(turn.echo, cols);
+      const prompt = cut ? joined.replace(/…$/, '').trimEnd() : joined;
+      const seen = counts.get(prompt) || 0;
+      counts.set(prompt, seen + 1);
+      return { key: `${seen}:${prompt}`, prompt, cut, work: turn.items.slice(0, lastTool + 1), reply: turn.items.slice(lastTool + 1), notices: turn.notices, done: turn.done, working: turn.working };
+    }),
+  };
+}
+
+
+function consoleChatPrompt(rows, cols) {
+  let text = '';
+  rows.forEach((raw, index) => {
+    const row = (index ? raw.replace(/^ {2}/, '') : raw.replace(CONSOLE_PROMPT_MARK, '')).trimEnd();
+    if (!index) {
+      text = row;
+      return;
+    }
+    const before = rows[index - 1].trimEnd();
+    const first = row.split(/\s/)[0] || '';
+    const wrapped = before.length + 1 + first.length > cols - 1;
+    text += !wrapped ? `\n${row}` : before.length >= cols - 2 ? row : ` ${row}`;
+  });
+  return text;
+}
+
+
+function consoleChatItemText(item) {
+  return item.rows.map((row, index) => index ? row.replace(/^ {2}/, '') : row.replace(CONSOLE_CHAT_ITEM, '').replace(/^ {2}(?=\S)/, '')).join('\n');
+}
+
+
+
+
+function refreshConsoleChat(id, entry) {
+  const read = readConsoleChat(entry);
+  if (!read) {
+    if (!consoleComposerHolding(entry)) leaveConsoleChat(entry);
+    return;
+  }
+  const { opening, turns } = consoleChatTurns(read.agent, consoleChatRows(entry, read), entry.terminal.cols);
+  const was = entry.chat?.shown;
+  entry.chat = { ...read, opening, turns, shown: true };
+  entry.layer?.classList.add('console-chatting');
+  const moved = drawConsoleChat(id, entry);
+  if (entry.chatView) {
+    entry.chatView.box.hidden = false;
+    
+    entry.chatView.log.classList.toggle('has-rail', minimapEnabled);
+    drawConsoleComposer(id, entry);
+  }
+  renderConsolePin(entry);
+  if (!was || moved) consoleChatRailChanged(id, entry);
+  
+  if (!was && entry.host?.contains(document.activeElement)) focusConsoleComposer(entry);
+}
+
+
+function leaveConsoleChat(entry) {
+  if (!entry.chat?.shown) return;
+  entry.chat.shown = false;
+  entry.layer?.classList.remove('console-chatting');
+  const composing = Boolean(entry.chatView?.box.contains(document.activeElement));
+  if (entry.chatView) entry.chatView.box.hidden = true;
+  closeConsoleFileList(entry);
+  renderConsolePin(entry);
+  if (composing) entry.terminal?.focus();
+  for (const [id, each] of consoleLayers) if (each === entry) consoleChatRailChanged(id, entry);
+}
+
+function consoleChatShown(entry) {
+  return Boolean(entry.chat?.shown);
+}
+
+
+function consoleChatRailChanged(id, entry) {
+  entry.map = null;
+  entry.scroll = null;
+  if (consoleFrontId === id && typeof scheduleMinimapPreviewUpdate === 'function') scheduleMinimapPreviewUpdate();
+}
+
+
+
+
+
+const CONSOLE_CHAT_MONO = /[─━│┃┄┅┆┇┈┉┊┋┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼═║╔╗╚╝╠╣╦╩╬▀▄█▌▐░▒▓▖▗▘▙▚▛▜▝▞▟]/;
+
+const CONSOLE_CHAT_NOTE_TOP = /^\s*╭─+╮\s*$/;
+const CONSOLE_CHAT_NOTE_FOOT = /^\s*╰─+╯\s*$/;
+const CONSOLE_CHAT_LINK = /\bhttps?:\/\/[^\s<>"'`)\]]+/g;
+
+function consoleChatView(id, entry) {
+  if (entry.chatView) return entry.chatView;
+  
+  const box = document.createElement('div');
+  box.className = entry.host?.classList.contains('is-above-status') ? 'console-chat is-above-status' : 'console-chat';
+  box.hidden = true;
+  const log = document.createElement('div');
+  log.className = 'console-chat-log';
+  log.setAttribute('role', 'log');
+  log.setAttribute('aria-label', 'Conversation');
+  const list = document.createElement('div');
+  list.className = 'console-chat-turns';
+  log.appendChild(list);
+  box.appendChild(log);
+  log.addEventListener('scroll', () => consoleScrolled(id, entry), { passive: true });
+  log.addEventListener('click', event => onConsoleChatClick(id, entry, event));
+  entry.layer.insertBefore(box, entry.status || null);
+  entry.chatView = { box, log, list, nodes: new Map(), open: new Set() };
+  makeConsoleComposer(id, entry, box);
+  return entry.chatView;
+}
+
+
+function drawConsoleChat(id, entry) {
+  if (!entry.layer) return false;
+  const view = consoleChatView(id, entry);
+  const chat = entry.chat;
+  const box = view.log;
+  const held = !view.box.hidden && box.scrollHeight - box.scrollTop - box.clientHeight <= 2;
+  const wanted = [];
+  if (chat.opening.some(row => row.trim())) wanted.push({ key: 'opening', sig: chat.opening.join('\n'), make: () => consoleChatOpening(chat.opening) });
+  for (const turn of chat.turns) wanted.push({ key: turn.key, sig: JSON.stringify(turn), make: () => consoleChatTurn(view, turn) });
+  const nodes = new Map();
+  let moved = false;
+  let at = view.list.firstChild;
+  for (const want of wanted) {
+    let kept = view.nodes.get(want.key);
+    if (!kept || kept.sig !== want.sig) {
+      const node = want.make();
+      if (kept) {
+        if (at === kept.node) at = node;
+        kept.node.replaceWith(node);
+      }
+      kept = { node, sig: want.sig };
+      moved = true;
+    }
+    if (kept.node !== at) {
+      view.list.insertBefore(kept.node, at);
+      moved = true;
+    } else at = at.nextSibling;
+    nodes.set(want.key, kept);
+  }
+  for (const [key, kept] of view.nodes) {
+    if (nodes.get(key) === kept) continue;
+    kept.node.remove();
+    view.open.delete(key);
+    moved = true;
+  }
+  view.nodes = nodes;
+  
+  if (held || view.box.hidden) box.scrollTop = box.scrollHeight;
+  return moved;
+}
+
+function consoleChatOpening(rows) {
+  const node = document.createElement('div');
+  node.className = 'console-reply console-chat-opening';
+  node.appendChild(consoleChatBlocks(rows));
+  return node;
+}
+
+function consoleChatTurn(view, turn) {
+  const node = document.createElement('div');
+  node.className = 'console-turn';
+  const bubble = document.createElement('div');
+  bubble.className = 'console-bubble';
+  bubble.appendChild(consoleChatText(turn.cut ? `${turn.prompt}…` : turn.prompt));
+  node.appendChild(bubble);
+  const reply = document.createElement('div');
+  reply.className = 'console-reply';
+  for (const item of turn.reply) reply.appendChild(consoleChatBlocks(consoleChatItemText(item).split('\n')));
+  const line = turn.done || turn.working;
+  if (line || turn.work.length || turn.reply.length) {
+    const actions = document.createElement('div');
+    actions.className = 'console-reply-actions';
+    if (line || turn.work.length) {
+      const fold = document.createElement('button');
+      fold.type = 'button';
+      fold.className = 'console-working';
+      fold.dataset.turn = turn.key;
+      const open = view.open.has(turn.key);
+      fold.setAttribute('aria-expanded', String(open));
+      if (turn.work.length) {
+        const chevron = document.createElement('span');
+        chevron.className = 'lt-icon lt-icon-chevron-down';
+        chevron.setAttribute('aria-hidden', 'true');
+        fold.appendChild(chevron);
+      } else fold.disabled = true;
+      fold.appendChild(document.createTextNode(line || 'Worked'));
+      actions.appendChild(fold);
+    }
+    if (turn.reply.length) {
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'console-copy';
+      copy.title = 'Copy the answer';
+      copy.setAttribute('aria-label', 'Copy the answer');
+      const icon = document.createElement('span');
+      icon.className = 'lt-icon lt-icon-copy';
+      icon.setAttribute('aria-hidden', 'true');
+      copy.appendChild(icon);
+      actions.appendChild(copy);
+    }
+    reply.appendChild(actions);
+    if (turn.work.length) {
+      const work = document.createElement('div');
+      work.className = 'console-work';
+      work.hidden = !view.open.has(turn.key);
+      for (const item of turn.work) work.appendChild(consoleChatBlocks(consoleChatItemText(item).split('\n')));
+      reply.appendChild(work);
+    }
+  }
+  node.appendChild(reply);
+  for (const notice of turn.notices) node.appendChild(consoleChatBlocks(consoleChatItemText(notice).split('\n')));
+  return node;
+}
+
+
+function consoleChatBlocks(rows) {
+  const out = document.createDocumentFragment();
+  let run = null;
+  const flush = () => {
+    if (!run) return;
+    while (run.rows.length && !run.rows.at(-1).trim()) run.rows.pop();
+    while (run.rows.length && !run.rows[0].trim()) run.rows.shift();
+    if (run.rows.length) {
+      const block = document.createElement('div');
+      block.className = run.kind === 'mono' ? 'console-chat-mono' : 'console-chat-text';
+      block.appendChild(consoleChatText(run.rows.join('\n')));
+      out.appendChild(block);
+    }
+    run = null;
+  };
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (CONSOLE_CHAT_NOTE_TOP.test(row)) {
+      const foot = rows.findIndex((each, at) => at > index && CONSOLE_CHAT_NOTE_FOOT.test(each));
+      if (foot > index) {
+        flush();
+        const note = document.createElement('div');
+        note.className = 'console-note';
+        const inner = rows.slice(index + 1, foot).map(each => each.replace(/^\s*│ ?/, '').replace(/ ?│\s*$/, '').trimEnd());
+        while (inner.length && !inner.at(-1).trim()) inner.pop();
+        note.appendChild(consoleChatText(inner.join('\n')));
+        out.appendChild(note);
+        index = foot;
+        continue;
+      }
+    }
+    const kind = CONSOLE_CHAT_MONO.test(row) ? 'mono' : 'text';
+    if (run && run.kind !== kind && row.trim()) flush();
+    if (!run) run = { kind, rows: [] };
+    run.rows.push(row);
+  }
+  flush();
+  return out;
+}
+
+
+function consoleChatText(text) {
+  const out = document.createDocumentFragment();
+  let from = 0;
+  for (const match of text.matchAll(CONSOLE_CHAT_LINK)) {
+    const address = match[0].replace(/[.,;:!?]+$/, '');
+    if (match.index > from) out.appendChild(document.createTextNode(text.slice(from, match.index)));
+    const link = document.createElement('a');
+    link.className = 'console-chat-link';
+    link.setAttribute('href', address);
+    link.textContent = address;
+    out.appendChild(link);
+    from = match.index + address.length;
+  }
+  if (from < text.length) out.appendChild(document.createTextNode(text.slice(from)));
+  return out;
+}
+
+function onConsoleChatClick(id, entry, event) {
+  const link = event.target.closest?.('.console-chat-link');
+  if (link) {
+    event.preventDefault();
+    openConsoleLink(link.getAttribute('href'));
+    return;
+  }
+  const fold = event.target.closest?.('.console-working');
+  if (fold && !fold.disabled) {
+    const view = entry.chatView;
+    const key = fold.dataset.turn;
+    const open = !view.open.has(key);
+    if (open) view.open.add(key);
+    else view.open.delete(key);
+    fold.setAttribute('aria-expanded', String(open));
+    const work = fold.closest('.console-reply')?.querySelector('.console-work');
+    if (work) work.hidden = !open;
+    consoleChatRailChanged(id, entry);
+    return;
+  }
+  const copy = event.target.closest?.('.console-copy');
+  if (copy) {
+    const node = copy.closest('.console-turn');
+    const key = [...entry.chatView.nodes].find(([, kept]) => kept.node === node)?.[0];
+    const turn = entry.chat?.turns.find(each => each.key === key);
+    if (turn) send({ command: 'consoleCopy', id, text: turn.reply.map(consoleChatItemText).join('\n\n') });
+  }
+}
+
+
+
+
+const CONSOLE_COMPOSER_ENTER_MS = 600;
+
+const CONSOLE_COMPOSER_HOLD_MS = 2000;
+
+const CONSOLE_COMPOSER_LINES = 8;
+const CONSOLE_COMPOSER_NAMES = { claude: 'Claude', codex: 'Codex' };
+
+let consoleComposerRequests = 0;
+
+function makeConsoleComposer(id, entry, frame) {
+  const box = document.createElement('div');
+  box.className = 'console-composer';
+  const chips = document.createElement('div');
+  chips.className = 'console-composer-chips';
+  const field = document.createElement('textarea');
+  field.className = 'console-composer-field';
+  field.rows = 1;
+  field.spellcheck = true;
+  const row = document.createElement('div');
+  row.className = 'console-composer-row';
+  const tools = document.createElement('div');
+  tools.className = 'console-composer-tools';
+  const attach = consoleComposerButton('console-composer-tool', 'Attach a file', 'new');
+  const slash = consoleComposerButton('console-composer-tool', "The agent's commands");
+  slash.textContent = '/';
+  const mode = consoleComposerButton('console-composer-mode', 'Change the permission mode');
+  mode.hidden = true;
+  tools.append(attach, slash, mode);
+  const submit = consoleComposerButton('console-composer-send', 'Send', 'forward-long');
+  row.append(tools, submit);
+  const list = document.createElement('div');
+  list.className = 'console-file-list';
+  list.setAttribute('role', 'listbox');
+  list.setAttribute('aria-label', 'Files in the folder');
+  list.hidden = true;
+  box.append(list, chips, field, row);
+  frame.appendChild(box);
+  const state = { box, chips, field, attach, slash, mode, submit, list, attached: [], history: [], back: -1, kept: '', dropped: null, files: null, request: 0, hold: 0, holdTimer: 0 };
+  entry.composer = state;
+  
+  box.addEventListener('mousedown', event => {
+    if (event.target === box || event.target === chips || event.target === row || event.target === tools) {
+      event.preventDefault();
+      field.focus();
+    }
+  });
+  field.addEventListener('input', () => onConsoleComposerInput(id, entry));
+  field.addEventListener('keydown', event => onConsoleComposerKey(id, entry, event));
+  field.addEventListener('paste', event => onConsoleComposerPaste(id, entry, event));
+  attach.addEventListener('click', () => {
+    state.request = ++consoleComposerRequests;
+    send({ command: 'consoleCompose', id, request: state.request, ask: 'files' });
+  });
+  slash.addEventListener('click', () => consoleComposerToAgent(id, entry, '/' + field.value.replace(/^\//, '')));
+  mode.addEventListener('click', () => consoleComposerMode(id, entry));
+  submit.addEventListener('click', () => {
+    if (consoleComposerWorking(entry) && !consoleComposerHasMessage(entry)) consoleComposerStop(id, entry);
+    else sendConsoleComposer(id, entry);
+  });
+  chips.addEventListener('click', event => {
+    const remove = event.target.closest?.('.console-composer-chip-remove');
+    if (!remove) return;
+    const path = remove.closest('.console-composer-chip')?.dataset.path;
+    if (remove.closest('.console-composer-chip')?.dataset.context) state.dropped = path;
+    else state.attached = state.attached.filter(each => each !== path);
+    drawConsoleComposer(id, entry);
+    field.focus();
+  });
+  list.addEventListener('mousedown', event => {
+    const option = event.target.closest?.('.console-file-list-row');
+    if (!option) return;
+    event.preventDefault();
+    chooseConsoleFile(id, entry, Number(option.dataset.index));
+  });
+  return state;
+}
+
+function consoleComposerButton(className, label, icon) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.title = label;
+  button.setAttribute('aria-label', label);
+  if (icon) {
+    const mark = document.createElement('span');
+    mark.className = `lt-icon lt-icon-${icon}`;
+    mark.setAttribute('aria-hidden', 'true');
+    button.appendChild(mark);
+  }
+  return button;
+}
+
+function focusConsoleComposer(entry) {
+  if (!consoleChatShown(entry) || !entry.composer) return false;
+  entry.composer.field.focus();
+  return true;
+}
+
+function consoleComposerWorking(entry) {
+  return / working$/.test(entry.agentSaid || '');
+}
+
+
+function consoleComposerHasMessage(entry) {
+  return Boolean(entry.composer?.field.value.trim()) || Boolean(entry.composer?.attached.length);
+}
+
+
+function consoleComposerContext(entry) {
+  const tabs = currentState?.tabs || [];
+  const beside = currentState?.beside ? tabs[currentState.beside.tab] : null;
+  const tab = beside?.kind === 'document' && beside.path ? beside : [...tabs].reverse().find(each => each.kind === 'document' && each.path);
+  if (!tab || tab.path === entry.composer?.dropped) return null;
+  return { path: tab.path, name: tab.title || tab.path.split(/[\\/]/).pop() };
+}
+
+function consoleComposerPaths(entry) {
+  const context = consoleComposerContext(entry);
+  return [...(context ? [context.path] : []), ...(entry.composer?.attached || []).filter(path => path !== context?.path)];
+}
+
+
+function drawConsoleComposer(id, entry) {
+  const state = entry.composer;
+  const chat = entry.chat;
+  if (!state || !chat) return;
+  const name = CONSOLE_COMPOSER_NAMES[chat.agent] || 'the agent';
+  const placeholder = chat.placeholder || `Ask ${name}…`;
+  if (state.field.placeholder !== placeholder) state.field.placeholder = placeholder;
+  state.field.setAttribute('aria-label', `Message to ${name}`);
+  const mode = chat.agent === 'claude' ? consoleComposerModeName(chat.mode) : chat.agent === 'codex' ? consoleComposerCodexMode(chat) : null;
+  state.mode.hidden = !mode;
+  if (mode && state.mode.textContent !== mode) state.mode.textContent = mode;
+  const working = consoleComposerWorking(entry);
+  const ready = consoleComposerHasMessage(entry);
+  const stop = working && !ready;
+  state.submit.classList.toggle('is-stop', stop);
+  state.submit.classList.toggle('is-off', !stop && !ready);
+  const label = stop ? 'Stop' : 'Send';
+  if (state.submit.title !== label) {
+    state.submit.title = label;
+    state.submit.setAttribute('aria-label', label);
+  }
+  const context = consoleComposerContext(entry);
+  const wanted = [...(context ? [{ ...context, context: true }] : []), ...state.attached.filter(path => path !== context?.path).map(path => ({ path, name: path.split(/[\\/]/).pop() }))];
+  const drawn = wanted.map(chip => `${chip.context ? 'c' : 'a'}:${chip.path}`).join('|');
+  if (state.chips.dataset.drawn !== drawn) {
+    state.chips.dataset.drawn = drawn;
+    state.chips.replaceChildren(...wanted.map(consoleComposerChip));
+    state.chips.hidden = !wanted.length;
+  }
+  fitConsoleComposerField(state.field);
+}
+
+
+function consoleComposerModeName(line) {
+  const words = String(line || '').replace(/^[^A-Za-z]+/, '').split(/ \(| · /)[0].trim();
+  return words ? words[0].toUpperCase() + words.slice(1) : 'Mode';
+}
+
+
+function consoleComposerCodexMode(chat) {
+  const rows = [...chat.opening, ...chat.turns.flatMap(turn => [...turn.work, ...turn.reply, ...turn.notices].flatMap(item => item.rows))];
+  for (let at = rows.length - 1; at >= 0; at -= 1) {
+    const chosen = /Permission selection requested: (.+)$/.exec(rows[at]);
+    if (chosen) return chosen[1].trim();
+  }
+  return 'Permissions';
+}
+
+function consoleComposerChip(chip) {
+  const node = document.createElement('span');
+  node.className = 'console-composer-chip';
+  node.dataset.path = chip.path;
+  if (chip.context) node.dataset.context = 'true';
+  node.title = chip.path;
+  const icon = document.createElement('span');
+  icon.className = 'lt-icon lt-icon-document';
+  icon.setAttribute('aria-hidden', 'true');
+  const label = document.createElement('span');
+  label.className = 'console-composer-chip-name';
+  label.textContent = chip.name;
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'console-composer-chip-remove';
+  remove.title = `Take ${chip.name} off the message`;
+  remove.setAttribute('aria-label', `Take ${chip.name} off the message`);
+  const cross = document.createElement('span');
+  cross.className = 'lt-icon lt-icon-close';
+  cross.setAttribute('aria-hidden', 'true');
+  remove.appendChild(cross);
+  node.append(icon, label, remove);
+  return node;
+}
+
+
+function fitConsoleComposerField(field) {
+  field.style.height = 'auto';
+  const line = parseFloat(getComputedStyle(field).lineHeight) || 20;
+  const most = line * CONSOLE_COMPOSER_LINES;
+  field.style.height = `${Math.min(most, Math.max(line, field.scrollHeight))}px`;
+}
+
+function onConsoleComposerInput(id, entry) {
+  const state = entry.composer;
+  state.back = -1;
+  
+  if (state.field.value.startsWith('/')) {
+    consoleComposerToAgent(id, entry, state.field.value);
+    return;
+  }
+  consoleComposerMention(id, entry);
+  drawConsoleComposer(id, entry);
+}
+
+function onConsoleComposerKey(id, entry, event) {
+  const state = entry.composer;
+  if (!state.list.hidden && consoleFileListKey(id, entry, event)) return;
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    sendConsoleComposer(id, entry);
+    return;
+  }
+  if (event.key === 'Tab' && event.shiftKey) {
+    event.preventDefault();
+    send({ command: 'consoleInput', id, data: '\x1b[Z' });
+    return;
+  }
+  if (event.key === 'Escape' && consoleComposerWorking(entry)) {
+    event.preventDefault();
+    consoleComposerStop(id, entry);
+    return;
+  }
+  if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !event.shiftKey && consoleComposerRecall(entry, event.key === 'ArrowUp' ? 1 : -1)) {
+    event.preventDefault();
+    drawConsoleComposer(id, entry);
+  }
+}
+
+
+function consoleComposerRecall(entry, step) {
+  const state = entry.composer;
+  if (state.back < 0 && state.field.value) return false;
+  const next = state.back + step;
+  if (next < -1 || next >= state.history.length) return false;
+  state.back = next;
+  state.field.value = next < 0 ? '' : state.history[state.history.length - 1 - next];
+  state.field.selectionStart = state.field.selectionEnd = state.field.value.length;
+  return true;
+}
+
+
+function onConsoleComposerPaste(id, entry, event) {
+  const items = [...(event.clipboardData?.items || [])];
+  if (!items.some(item => item.kind === 'file' && /^image\//.test(item.type)) || event.clipboardData.getData('text/plain')) return;
+  event.preventDefault();
+  entry.composer.request = ++consoleComposerRequests;
+  send({ command: 'consoleCompose', id, request: entry.composer.request, ask: 'picture' });
+}
+
+window.leafConsoleFilesChosen = (id, request, paths) => {
+  const entry = consoleLayers.get(id);
+  if (!entry?.composer || entry.composer.request !== request || !Array.isArray(paths)) return;
+  consoleComposerAttach(id, entry, paths);
+};
+
+window.leafConsolePictureKept = (id, request, answer) => {
+  const entry = consoleLayers.get(id);
+  if (!entry?.composer || entry.composer.request !== request) return;
+  if (answer?.path) consoleComposerAttach(id, entry, [answer.path]);
+  else if (answer?.error) leafToast(answer.error);
+};
+
+function consoleComposerAttach(id, entry, paths) {
+  const state = entry.composer;
+  for (const path of paths) if (typeof path === 'string' && path && !state.attached.includes(path)) state.attached.push(path);
+  drawConsoleComposer(id, entry);
+  state.field.focus();
+}
+
+
+function consoleComposerToAgent(id, entry, text) {
+  const state = entry.composer;
+  state.field.value = '';
+  closeConsoleFileList(entry);
+  consoleKeyTyped(id);
+  send({ command: 'consoleInput', id, data: text });
+  drawConsoleComposer(id, entry);
+}
+
+function consoleComposerStop(id, entry) {
+  send({ command: 'consoleInput', id, data: '\x1b' });
+}
+
+
+function consoleComposerMode(id, entry) {
+  if (entry.chat?.agent === 'claude') {
+    send({ command: 'consoleInput', id, data: '\x1b[Z' });
+    entry.composer.field.focus();
+    return;
+  }
+  consoleComposerToAgent(id, entry, '/permissions');
+  setTimeout(() => send({ command: 'consoleInput', id, data: '\r' }), CONSOLE_COMPOSER_ENTER_MS);
+}
+
+
+function sendConsoleComposer(id, entry) {
+  const state = entry.composer;
+  const text = state.field.value.replace(/\s+$/, '');
+  if (!consoleComposerHasMessage(entry)) return;
+  const paths = consoleComposerPaths(entry);
+  closeConsoleFileList(entry);
+  consoleKeyTyped(id);
+  holdConsoleComposer(id, entry);
+  
+  const marked = Boolean(entry.terminal?.getMode?.(2004));
+  if (paths.length) send({ command: 'consoleTypePaths', id, paths });
+  const words = () => {
+    if (text) send({ command: 'consoleInput', id, data: marked ? `\x1b[200~${text}\x1b[201~` : text });
+    setTimeout(() => send({ command: 'consoleInput', id, data: '\r' }), CONSOLE_COMPOSER_ENTER_MS);
+  };
+  
+  if (paths.length) setTimeout(words, 100);
+  else words();
+  if (text) {
+    consolePromptTold(id, true, text);
+    if (state.history.at(-1) !== text) state.history.push(text);
+  }
+  state.back = -1;
+  state.field.value = '';
+  state.attached = [];
+  if (paths.length && consoleComposerContext(entry)) state.dropped = consoleComposerContext(entry).path;
+  drawConsoleComposer(id, entry);
+}
+
+
+function holdConsoleComposer(id, entry) {
+  const state = entry.composer;
+  state.hold = Date.now() + CONSOLE_COMPOSER_HOLD_MS;
+  clearTimeout(state.holdTimer);
+  state.holdTimer = setTimeout(() => {
+    state.hold = 0;
+    if (consoleLayers.get(id) === entry && entry.terminal) readConsoleAgent(id, entry);
+  }, CONSOLE_COMPOSER_HOLD_MS);
+}
+
+function consoleComposerHolding(entry) {
+  return Boolean(entry.composer && entry.composer.hold > Date.now()) && !/ needs$/.test(entry.agentSaid || '');
+}
+
+
+
+
+function consoleComposerMention(id, entry) {
+  const state = entry.composer;
+  const field = state.field;
+  const before = field.value.slice(0, field.selectionStart);
+  const word = /(?:^|\s)@([^\s@]*)$/.exec(before);
+  if (!word) {
+    closeConsoleFileList(entry);
+    return;
+  }
+  const query = word[1];
+  const slash = query.lastIndexOf('/');
+  const folder = slash >= 0 ? query.slice(0, slash) : '';
+  if (!state.files || state.files.folder !== folder) {
+    state.files = { folder, listing: null, at: 0, paths: state.files?.paths || { '': '' } };
+    state.request = ++consoleComposerRequests;
+    send({ command: 'consoleCompose', id, request: state.request, ask: 'list', path: state.files.paths[folder] ?? '' });
+  }
+  state.files.query = query.slice(slash + 1).toLowerCase();
+  state.files.at = 0;
+  drawConsoleFileList(entry);
+}
+
+window.leafConsoleFilesListed = (id, request, answer) => {
+  const entry = consoleLayers.get(id);
+  const files = entry?.composer?.files;
+  if (!files || entry.composer.request !== request) return;
+  if (answer?.error) {
+    files.listing = { error: answer.error, entries: [] };
+  } else {
+    files.listing = { path: answer.path, entries: (answer.entries || []).filter(row => row && typeof row.name === 'string' && typeof row.path === 'string') };
+    files.paths[files.folder] = answer.path;
+  }
+  drawConsoleFileList(entry);
+};
+
+function consoleFileListRows(files) {
+  const rows = files?.listing?.entries || [];
+  const query = files?.query || '';
+  return rows.filter(row => row.name.toLowerCase().includes(query)).slice(0, 50);
+}
+
+function drawConsoleFileList(entry) {
+  const state = entry.composer;
+  const files = state.files;
+  const rows = consoleFileListRows(files);
+  if (!files || (!files.listing && !rows.length)) {
+    state.list.hidden = false;
+    state.list.replaceChildren(consoleFileListNote('Reading the folder…'));
+    return;
+  }
+  state.list.hidden = false;
+  if (files.listing.error) {
+    state.list.replaceChildren(consoleFileListNote(files.listing.error));
+    return;
+  }
+  if (!rows.length) {
+    state.list.replaceChildren(consoleFileListNote('Nothing here matches.'));
+    return;
+  }
+  files.at = Math.min(files.at, rows.length - 1);
+  state.list.replaceChildren(...rows.map((row, index) => {
+    const option = document.createElement('div');
+    option.className = index === files.at ? 'console-file-list-row is-active' : 'console-file-list-row';
+    option.setAttribute('role', 'option');
+    option.setAttribute('aria-selected', String(index === files.at));
+    option.dataset.index = String(index);
+    const icon = document.createElement('span');
+    icon.className = `lt-icon lt-icon-${row.kind === 'folder' ? 'folder' : 'document'}`;
+    icon.setAttribute('aria-hidden', 'true');
+    option.append(icon, document.createTextNode(row.kind === 'folder' ? `${row.name}/` : row.name));
+    return option;
+  }));
+}
+
+function consoleFileListNote(text) {
+  const note = document.createElement('div');
+  note.className = 'console-file-list-note';
+  note.textContent = text;
+  return note;
+}
+
+function closeConsoleFileList(entry) {
+  const state = entry.composer;
+  if (!state) return;
+  state.files = null;
+  state.list.hidden = true;
+  state.list.replaceChildren();
+}
+
+
+function consoleFileListKey(id, entry, event) {
+  const files = entry.composer.files;
+  const rows = consoleFileListRows(files);
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeConsoleFileList(entry);
+    return true;
+  }
+  if (!rows.length) return false;
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    files.at = (files.at + (event.key === 'ArrowDown' ? 1 : rows.length - 1)) % rows.length;
+    drawConsoleFileList(entry);
+    return true;
+  }
+  if ((event.key === 'Enter' || event.key === 'Tab') && !event.shiftKey) {
+    event.preventDefault();
+    chooseConsoleFile(id, entry, files.at);
+    return true;
+  }
+  return false;
+}
+
+
+function chooseConsoleFile(id, entry, index) {
+  const state = entry.composer;
+  const files = state.files;
+  const row = consoleFileListRows(files)[index];
+  if (!row) return;
+  const field = state.field;
+  const before = field.value.slice(0, field.selectionStart);
+  const after = field.value.slice(field.selectionStart);
+  const word = /(?:^|\s)@([^\s@]*)$/.exec(before);
+  if (!word) return;
+  const start = before.length - word[1].length - 1;
+  if (row.kind === 'folder') {
+    const folder = (files.folder ? `${files.folder}/` : '') + row.name;
+    files.paths[folder] = row.path;
+    field.value = `${before.slice(0, start)}@${folder}/${after}`;
+    field.selectionStart = field.selectionEnd = start + folder.length + 2;
+    consoleComposerMention(id, entry);
+    return;
+  }
+  field.value = (before.slice(0, start) + after).replace(/^\s+/, '');
+  field.selectionStart = field.selectionEnd = Math.max(0, start);
+  closeConsoleFileList(entry);
+  consoleComposerAttach(id, entry, [row.path]);
+}
+
+let consoleFolderRequests = 0;
+const CONSOLE_FOLDER_AGENTS = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity' };
+
+function consoleFolderSame(a, b) {
+  const plain = path => String(path || '').replace(/[\\/]+$/, '').replace(/\\/g, '/');
+  return isMacPlatform ? plain(a) === plain(b) : plain(a).toLowerCase() === plain(b).toLowerCase();
+}
+
+function consoleFolderName(path) {
+  return String(path || '').split(/[\\/]/).filter(Boolean).pop() || String(path || '');
+}
+
+
+function consoleFolderButton(id, entry, field) {
+  const item = document.createElement('button');
+  item.type = 'button';
+  item.className = 'console-status-field console-status-folder';
+  item.dataset.field = 'folder';
+  item.innerHTML = '<span class="lt-icon lt-icon-folder" aria-hidden="true"></span><span class="console-status-folder-name"></span>';
+  item.lastChild.textContent = field.text;
+  const claude = consoleControlRecord(entry)?.agent === 'claude';
+  item.title = field.path || field.text;
+  item.setAttribute('aria-label', `${claude ? 'Change folder' : 'New conversation in another folder'}: ${field.path || (field.text === 'Folder' ? 'the folder this console opened in' : field.text)}`);
+  item.setAttribute('aria-haspopup', 'menu');
+  item.setAttribute('aria-expanded', 'false');
+  const open = event => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (consoleFolderMenuOpen(entry) && entry.folderMenu.anchor === item) hideCrumbMenu();
+    else openConsoleFolder(id, entry, item);
+  };
+  item.addEventListener('pointerdown', event => { if (event.button === 0) open(event); });
+  item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') open(event); });
+  return item;
+}
+
+function consoleFolderMenuOpen(entry) {
+  return !!entry?.folderMenu && crumbMenuOwner === entry.folderMenu.anchor && !crumbMenu.hidden;
+}
+
+
+function openConsoleFolder(id, entry, anchor, path = '', above = true) {
+  if (consoleLayers.get(id) !== entry || !CONSOLE_FOLDER_AGENTS[consoleControlRecord(entry)?.agent]) return;
+  const request = ++consoleFolderRequests;
+  entry.modelMenuCard = keyedColumn;
+  const menu = entry.folderMenu?.anchor === anchor && consoleFolderMenuOpen(entry) ? entry.folderMenu : { anchor, above };
+  menu.request = request;
+  entry.folderMenu = menu;
+  clearTimeout(menu.timer);
+  menu.timer = setTimeout(() => {
+    if (entry.folderMenu === menu && menu.request === request) drawConsoleFolderMenu(id, entry, [{ note: 'The folder did not answer.' }, consoleFolderChooser(id, entry)]);
+  }, durationTokenMilliseconds('--lt-duration-2000') * 5);
+  drawConsoleFolderMenu(id, entry, [{ note: 'Reading the folder…' }]);
+  send({ command: 'consoleFolderList', id, request, path });
+}
+
+function drawConsoleFolderMenu(id, entry, items) {
+  const menu = entry.folderMenu;
+  if (!menu || consoleLayers.get(id) !== entry || !menu.anchor.isConnected) return;
+  menu.items = items;
+  showCrumbMenu(menu.anchor, items);
+  if (crumbMenuOwner !== menu.anchor) return;
+  menu.anchor.setAttribute('aria-expanded', 'true');
+  const rect = menu.anchor.getBoundingClientRect();
+  leafPlaceFloating(crumbMenu, rect.left, menu.above ? rect.top - crumbMenu.offsetHeight - CRUMB_MENU_DROP : rect.bottom + CRUMB_MENU_DROP);
+}
+
+function consoleFolderChooser(id, entry) {
+  return { label: 'Choose another folder…', keepOpen: true, run: () => {
+    entry.folderMenu.request = ++consoleFolderRequests;
+    send({ command: 'consoleChooseFolder', id, request: entry.folderMenu.request });
+  } };
+}
+
+function consoleFolderRows(id, entry, listing) {
+  const agent = consoleControlRecord(entry)?.agent;
+  const go = path => ({ keepOpen: true, title: path, run: () => openConsoleFolder(id, entry, entry.folderMenu.anchor, path) });
+  const use = label => ({ label, title: listing.path, run: () => useConsoleFolder(id, entry, listing.path) });
+  const rows = [{ heading: listing.name || listing.path }];
+  if (listing.current === 'launch') rows.push({ note: `Where this console opened. ${CONSOLE_FOLDER_AGENTS[agent]} has not said which folder it works in.` });
+  if (listing.parent) rows.push({ ...go(listing.parent), label: `↑ ${consoleFolderName(listing.parent)}` });
+  for (const folder of listing.folders) rows.push({ ...go(folder.path), label: folder.name });
+  if (!listing.folders.length) rows.push({ note: 'No folders inside this one.' });
+  if (listing.truncated) rows.push({ note: 'This folder holds more than the menu lists. Choose another folder to reach the rest.' });
+  rows.push('separator', agent === 'claude' ? use('Move this conversation here') : use('New conversation in this folder'));
+  if (agent !== 'claude') rows.push({ note: `${CONSOLE_FOLDER_AGENTS[agent]} starts a new conversation in a new console with its usual settings. This conversation stays open.` });
+  return [...rows, consoleFolderChooser(id, entry)];
+}
+
+function consoleFolderAnswer(id, request) {
+  const entry = consoleLayers.get(id);
+  return entry?.folderMenu?.request === request && consoleFolderMenuOpen(entry) ? entry : null;
+}
+
+window.leafConsoleFolderListed = (id, request, listing) => {
+  const entry = consoleFolderAnswer(id, request);
+  if (!entry) return;
+  clearTimeout(entry.folderMenu.timer);
+  drawConsoleFolderMenu(id, entry, listing?.error ? [{ note: listing.error }, consoleFolderChooser(id, entry)] : consoleFolderRows(id, entry, listing));
+};
+
+
+window.leafConsoleFolderChosen = (id, request, path) => {
+  const entry = consoleLayers.get(id);
+  if (path && entry?.folderMenu?.request === request) openConsoleFolder(id, entry, entry.folderMenu.anchor, path, entry.folderMenu.above);
+};
+
+
+function useConsoleFolder(id, entry, path) {
+  const record = consoleControlRecord(entry);
+  const refusal = record?.agent === 'claude' && consoleModelRefusal(id, entry, record);
+  if (refusal) { leafToast(refusal); return; }
+  entry.folderUse = { request: ++consoleFolderRequests, record, agent: record.agent, card: keyedColumn };
+  send({ command: 'consoleUseFolder', id, request: entry.folderUse.request, agent: record.agent, path });
+}
+
+window.leafConsoleFolderUsed = (id, request, answer) => {
+  const entry = consoleLayers.get(id);
+  const use = entry?.folderUse;
+  if (use?.request !== request) return;
+  entry.folderUse = null;
+  if (answer?.error) leafToast(answer.error);
+  else if (answer?.opened) leafToast(`A new ${CONSOLE_FOLDER_AGENTS[use.agent]} conversation started in ${consoleFolderName(answer.path)}. This one stays open.`);
+  if (!answer?.typed) return;
+  
+  consoleKeyTyped(id);
+  const wait = durationTokenMilliseconds('--lt-duration-2000');
+  const pending = { command: answer.typed, record: use.record, agent: use.agent, card: use.card, until: Date.now() + wait, timer: 0, folder: answer.path };
+  entry.modelPending = pending;
+  pending.timer = setTimeout(() => {
+    if (entry.modelPending !== pending) return;
+    cancelConsoleModel(entry);
+    leafToast('The command is in the console. Press Enter to finish.');
+  }, wait);
+  entry.terminal?.focus();
+};
+
+
+function consoleFolderDraft(pending, prompt) {
+  if (prompt.kind !== 'draft') return 'typing';
+  const plain = text => String(text).replace(/\s+/g, '');
+  const draft = plain(prompt.text);
+  if (draft === plain(pending.command)) return prompt.tailEnd ? 'echoed' : 'typing';
+  return plain(pending.command).startsWith(draft) ? 'typing' : 'other';
+}
+
+
+function watchConsoleFolderMove(id, entry, path) {
+  clearTimeout(entry.folderMove?.timer);
+  const move = { path };
+  entry.folderMove = move;
+  move.timer = setTimeout(() => {
+    if (entry.folderMove !== move) return;
+    entry.folderMove = null;
+    leafToast(`Claude has not reported working in ${consoleFolderName(path)}, so the folder stays as it was.`);
+  }, durationTokenMilliseconds('--lt-duration-2000') * 8);
+}
+
+function consoleFolderReported(entry, record) {
+  if (!entry.folderMove || !consoleFolderSame(record?.folderPath, entry.folderMove.path)) return;
+  clearTimeout(entry.folderMove.timer);
+  entry.folderMove = null;
+  leafToast(`Claude moved this conversation to ${consoleFolderName(record.folderPath)}.`);
+}
+
+
+function adoptConsoleFolderAnchor(id, entry) {
+  const menu = entry.folderMenu;
+  if (!menu?.above || crumbMenuOwner !== menu.anchor || menu.anchor.isConnected) return;
+  const anchor = entry.status?.querySelector('button[data-field="folder"]');
+  if (!anchor) { hideCrumbMenu(); return; }
+  menu.anchor = anchor;
+  drawConsoleFolderMenu(id, entry, menu.items || []);
+}
+
+
+function consoleTabMenuRows(tab) {
+  const id = Number(tab.dataset.consoleId);
+  const entry = consoleLayers.get(id);
+  const agent = entry && consoleControlRecord(entry)?.agent;
+  if (!CONSOLE_FOLDER_AGENTS[agent]) return null;
+  return [{ icon: 'folder', label: agent === 'claude' ? 'Move this conversation to another folder…' : 'New conversation in another folder…', run: () => openConsoleFolder(id, entry, tab, '', false) }];
 }
 
 const driveNotices = new Map();
@@ -53957,7 +55177,41 @@ function measureDocumentMinimap(track) {
 function updateConsoleMinimapPreview(track, content, minimap) {
   const entry = frontConsoleEntry();
   if (!entry?.terminal) return;
+  if (consoleChatShown(entry) && entry.chatView) {
+    drawConsoleChatMinimapPreview(entry, track, content, minimap);
+    return;
+  }
   readConsoleScreenOnce(entry.terminal.wasmTerm, () => drawConsoleMinimapPreview(entry, track, content, minimap));
+}
+
+
+function drawConsoleChatMinimapPreview(entry, track, content, minimap) {
+  const metrics = measureDocumentMinimap(track);
+  const box = entry.chatView.log;
+  const held = entry.map;
+  if (held?.chat && held.frame.isConnected && held.width === metrics.sourceWidth) {
+    held.frame.style.height = `${metrics.scrollHeight}px`;
+    updateMinimapViewport();
+    return;
+  }
+  const frame = document.createElement('div');
+  frame.className = 'document-minimap-frame';
+  frame.style.width = `${metrics.sourceWidth}px`;
+  frame.style.height = `${metrics.scrollHeight}px`;
+  frame.style.transform = `scale(${metrics.previewScale})`;
+  const preview = document.createElement('div');
+  preview.className = 'document-minimap-preview console-minimap-preview console-minimap-chat';
+  preview.style.width = `${metrics.sourceWidth}px`;
+  preview.style.height = `${metrics.scrollHeight}px`;
+  const copy = entry.chatView.list.cloneNode(true);
+  for (const button of copy.querySelectorAll('button')) button.tabIndex = -1;
+  preview.appendChild(copy);
+  frame.appendChild(preview);
+  content.replaceChildren(frame);
+  entry.map = { chat: true, frame, width: metrics.sourceWidth, height: box.scrollHeight };
+  entry.mapOutputPending = false;
+  minimap.classList.remove('is-loading');
+  placeMinimapViewport(minimap, metrics, null);
 }
 
 function drawConsoleMinimapPreview(entry, track, content, minimap) {
