@@ -43177,7 +43177,8 @@ function consoleAgentOf(title) {
 
 
 const consoleAgentAsks = {
-  claude: { lines: 4, asks: line => line.includes('Esc to cancel') },
+  
+  claude: { lines: 4, asks: line => line.trim().split(' · ').includes('Esc to cancel') },
   
   codex: { lines: 12, asks: line => /^\W*Would you like to /.test(line) || /^\s*(?:enter confirm · esc skip|enter continue · esc skip|t trust all · enter review · esc close|space\/enter toggle · esc back)\s*$/.test(line) },
   
@@ -43259,7 +43260,8 @@ function consoleAgentState(entry, screenLines) {
   const rule = consoleAgentAsks[entry.agent];
   if (!rule) return null;
   const lines = screenLines || consoleBottomLines(entry, rule.lines);
-  if (lines.some(rule.asks) || (entry.agent === 'codex' && (consoleCodexFolderTrust(lines) || (entry.terminal?.buffer?.active.type === 'alternate' && consoleCodexSignIn(lines))))) {
+  
+  if (lines.slice(0, rule.lines).some(rule.asks) || (entry.agent === 'codex' && (consoleCodexFolderTrust(lines) || (entry.terminal?.buffer?.active.type === 'alternate' && consoleCodexSignIn(lines))))) {
     entry.codexUpdating = false;
     return 'needs';
   }
@@ -45659,7 +45661,7 @@ const CONSOLE_CHAT_TOOL = {
   codex: /^(?:• (?:Ran|Running|Failed|Explored|Exploring|Edited|Editing|Read|Reading|Searched|Searching|Listed|Called|Calling|Waited|Waiting|Updated|Added|Deleted|Applied|Viewed)\b|• Exited \(status -?\d+\) |✗ )/,
 };
 
-const CONSOLE_CHAT_WORKING = { claude: /^\S \S+…(?: \(.*\))?$/, codex: /^[•◦] Working \(/ };
+const CONSOLE_CHAT_WORKING = { claude: /^\S \S+…(?: \(.*\))?$/, codex: /^[•◦] (?:Working|Waiting for background terminal) \(/ };
 const CONSOLE_CHAT_DONE_ROW = { claude: CONSOLE_CHAT_DONE, codex: CONSOLE_CODEX_WORKED };
 
 
@@ -46193,7 +46195,12 @@ function onConsoleChatClick(id, entry, event) {
     const key = [...entry.chatView.nodes].find(([, kept]) => kept.node === node)?.[0];
     const turn = entry.chat?.turns.find(each => each.key === key);
     if (turn) send({ command: 'consoleCopy', id, text: turn.reply.map(item => turn.record ? item.text : consoleChatItemText(item)).join('\n\n') });
+    return;
   }
+  
+  if (event.target.closest?.('a, button')) return;
+  const selection = window.getSelection?.();
+  if (!selection || selection.isCollapsed) focusConsoleComposer(entry);
 }
 
 
