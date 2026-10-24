@@ -8522,18 +8522,25 @@ body.library-resizing button {
 @media (hover: hover) { .console-chat-link:hover { color: var(--lt-link-hover); } }
 .console-note { align-self: flex-start; max-width: 100%; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); white-space: pre-wrap; overflow-wrap: anywhere; }
 .console-reply-actions { display: flex; align-items: center; gap: var(--lt-space-4); color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
-.console-working, .console-copy { appearance: none; display: inline-flex; align-items: center; gap: var(--lt-space-6); border: none; border-radius: var(--lt-radius-md); padding: var(--lt-space-2) var(--lt-space-6); background: transparent; color: var(--lt-muted-foreground); font: inherit; cursor: pointer; }
-.console-working:disabled { cursor: default; }
-.console-working .lt-icon { width: 12px; height: 12px; transform: rotate(-90deg); transition: transform var(--lt-duration-150) var(--lt-ease); }
-.console-working[aria-expanded="true"] .lt-icon { transform: none; }
+.console-worked, .console-copy { appearance: none; display: inline-flex; align-items: center; gap: var(--lt-space-6); border: none; border-radius: var(--lt-radius-md); padding: var(--lt-space-2) var(--lt-space-6); background: transparent; color: var(--lt-muted-foreground); font: inherit; cursor: pointer; }
+.console-worked:disabled { cursor: default; }
+.console-worked .lt-icon { width: 12px; height: 12px; transform: rotate(-90deg); transition: transform var(--lt-duration-150) var(--lt-ease); }
+.console-worked[aria-expanded="true"] .lt-icon { transform: none; }
 
 .console-copy { color: transparent; }
 .console-copy .lt-icon { width: 14px; height: 14px; }
-@media (hover: hover) { .console-turn:hover .console-copy { color: var(--lt-muted-foreground); } .console-working:not(:disabled):hover, .console-copy:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
-.console-copy:focus-visible, .console-working:focus-visible { color: var(--lt-markdown-foreground); outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
+@media (hover: hover) { .console-turn:hover .console-copy { color: var(--lt-muted-foreground); } .console-worked:not(:disabled):hover, .console-copy:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
+.console-copy:focus-visible, .console-worked:focus-visible { color: var(--lt-markdown-foreground); outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .console-work { display: flex; flex-direction: column; gap: var(--lt-space-6); padding-left: var(--lt-space-12); border-left: var(--lt-stroke-2) solid var(--lt-border); color: var(--lt-muted-foreground); font-size: var(--lt-text-13); }
 .console-work[hidden] { display: none; }
-@media (prefers-reduced-motion: reduce) { .console-working .lt-icon { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .console-worked .lt-icon { transition: none; } }
+
+.console-diff { display: flex; flex-direction: column; max-width: 88%; border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-md); overflow: hidden; font-family: monospace; font-size: var(--lt-text-13); line-height: var(--lt-leading-1-35); }
+.console-diff-head { padding: var(--lt-space-6) var(--lt-space-10); background: var(--lt-surface-elevated); color: var(--lt-muted-foreground); overflow-wrap: anywhere; }
+.console-diff-lines { overflow-x: auto; }
+.console-diff-line { padding: 0 var(--lt-space-10); white-space: pre; color: var(--lt-muted-foreground); }
+.console-diff-line.is-added { background: var(--lt-syntax-inserted-background); color: var(--lt-syntax-inserted); }
+.console-diff-line.is-removed { background: var(--lt-syntax-deleted-background); color: var(--lt-syntax-deleted); }
 
 .console-composer { position: relative; flex: none; display: flex; flex-direction: column; gap: var(--lt-space-8); margin: 0 var(--lt-space-12) var(--lt-space-12); padding: var(--lt-space-10) var(--lt-space-10) var(--lt-space-8) var(--lt-space-14); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-4xl); background: var(--lt-surface-elevated); cursor: text; transition: border-color var(--lt-duration-150) var(--lt-ease); }
 @media (hover: hover) { .console-composer:hover { border-color: var(--lt-border-strong); } }

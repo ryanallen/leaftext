@@ -8540,18 +8540,25 @@ body.library-resizing button {
 @media (hover: hover) { .console-chat-link:hover { color: var(--lt-link-hover); } }
 .console-note { align-self: flex-start; max-width: 100%; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); white-space: pre-wrap; overflow-wrap: anywhere; }
 .console-reply-actions { display: flex; align-items: center; gap: var(--lt-space-4); color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
-.console-working, .console-copy { appearance: none; display: inline-flex; align-items: center; gap: var(--lt-space-6); border: none; border-radius: var(--lt-radius-md); padding: var(--lt-space-2) var(--lt-space-6); background: transparent; color: var(--lt-muted-foreground); font: inherit; cursor: pointer; }
-.console-working:disabled { cursor: default; }
-.console-working .lt-icon { width: 12px; height: 12px; transform: rotate(-90deg); transition: transform var(--lt-duration-150) var(--lt-ease); }
-.console-working[aria-expanded="true"] .lt-icon { transform: none; }
+.console-worked, .console-copy { appearance: none; display: inline-flex; align-items: center; gap: var(--lt-space-6); border: none; border-radius: var(--lt-radius-md); padding: var(--lt-space-2) var(--lt-space-6); background: transparent; color: var(--lt-muted-foreground); font: inherit; cursor: pointer; }
+.console-worked:disabled { cursor: default; }
+.console-worked .lt-icon { width: 12px; height: 12px; transform: rotate(-90deg); transition: transform var(--lt-duration-150) var(--lt-ease); }
+.console-worked[aria-expanded="true"] .lt-icon { transform: none; }
 /* The copy press stands unseen until the turn is under the pointer or the press has the keys. */
 .console-copy { color: transparent; }
 .console-copy .lt-icon { width: 14px; height: 14px; }
-@media (hover: hover) { .console-turn:hover .console-copy { color: var(--lt-muted-foreground); } .console-working:not(:disabled):hover, .console-copy:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
-.console-copy:focus-visible, .console-working:focus-visible { color: var(--lt-markdown-foreground); outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
+@media (hover: hover) { .console-turn:hover .console-copy { color: var(--lt-muted-foreground); } .console-worked:not(:disabled):hover, .console-copy:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
+.console-copy:focus-visible, .console-worked:focus-visible { color: var(--lt-markdown-foreground); outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .console-work { display: flex; flex-direction: column; gap: var(--lt-space-6); padding-left: var(--lt-space-12); border-left: var(--lt-stroke-2) solid var(--lt-border); color: var(--lt-muted-foreground); font-size: var(--lt-text-13); }
 .console-work[hidden] { display: none; }
-@media (prefers-reduced-motion: reduce) { .console-working .lt-icon { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .console-worked .lt-icon { transition: none; } }
+/* An agent's edit, drawn from its own record: the file and its counts, then each line on its side's diff color, scrolling sideways inside the block rather than wrapping. */
+.console-diff { display: flex; flex-direction: column; max-width: 88%; border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-md); overflow: hidden; font-family: monospace; font-size: var(--lt-text-13); line-height: var(--lt-leading-1-35); }
+.console-diff-head { padding: var(--lt-space-6) var(--lt-space-10); background: var(--lt-surface-elevated); color: var(--lt-muted-foreground); overflow-wrap: anywhere; }
+.console-diff-lines { overflow-x: auto; }
+.console-diff-line { padding: 0 var(--lt-space-10); white-space: pre; color: var(--lt-muted-foreground); }
+.console-diff-line.is-added { background: var(--lt-syntax-inserted-background); color: var(--lt-syntax-inserted); }
+.console-diff-line.is-removed { background: var(--lt-syntax-deleted-background); color: var(--lt-syntax-deleted); }
 /* Scholar's composer at the foot of the chat, over the agent's own input rows: a bordered field 20 pixels round, its chips, the words, then attach, `/` and the mode on the left and the round send on the right. */
 .console-composer { position: relative; flex: none; display: flex; flex-direction: column; gap: var(--lt-space-8); margin: 0 var(--lt-space-12) var(--lt-space-12); padding: var(--lt-space-10) var(--lt-space-10) var(--lt-space-8) var(--lt-space-14); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-4xl); background: var(--lt-surface-elevated); cursor: text; transition: border-color var(--lt-duration-150) var(--lt-ease); }
 @media (hover: hover) { .console-composer:hover { border-color: var(--lt-border-strong); } }
@@ -19869,7 +19876,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 202 values that do not change with the theme, all 114 icons, and all 187 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 202 values that do not change with the theme, all 114 icons, and all 188 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19901,7 +19908,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>202</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>114</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>187</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>188</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -20371,7 +20378,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">187 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">188 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -20818,7 +20825,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Console reply</h3><code class="built">.console-reply</code><span class="built">console-chat.js: the agent's answer after its last tool, bare on the left, then a row holding the folded working line and a copy press that shows on hover and on keyboard focus (console-copy)</span></header>
-<div class="stage"><div class="console-reply"><div class="console-chat-text">I created note.txt.</div><div class="console-reply-actions"><button type="button" class="console-working" aria-expanded="false"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>Worked for 5s · done 9:22 AM</button><button type="button" class="console-copy" title="Copy the answer" aria-label="Copy the answer"><span class="lt-icon lt-icon-copy" aria-hidden="true"></span></button></div></div></div>
+<div class="stage"><div class="console-reply"><div class="console-chat-text">I created note.txt.</div><div class="console-reply-actions"><button type="button" class="console-worked" aria-expanded="false"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>Worked for 5s · done 9:22 AM</button><button type="button" class="console-copy" title="Copy the answer" aria-label="Copy the answer"><span class="lt-icon lt-icon-copy" aria-hidden="true"></span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Console note</h3><code class="built">.console-note</code><span class="built">console-chat.js: a notice the agent boxed in rounded box characters, as Codex boxes its update notice, drawn as a bordered note with the box gone</span></header>
@@ -20837,8 +20844,12 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="console-file-list" role="listbox" aria-label="Files in the folder"><div class="console-file-list-row is-active" role="option" aria-selected="true"><span class="lt-icon lt-icon-folder" aria-hidden="true"></span>src/</div><div class="console-file-list-row" role="option" aria-selected="false"><span class="lt-icon lt-icon-document" aria-hidden="true"></span>README.md</div></div></div>
 </section>
 <section class="part">
-<header><h3>Console working</h3><code class="built">.console-work</code><span class="built">console-chat.js: the agent's working or finished line under its answer (console-working), pressed to open the tool lines and what the agent said between them (console-work), indented behind a rule</span></header>
-<div class="stage"><div class="console-reply"><button type="button" class="console-working" aria-expanded="true"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>Worked for 18s • 9:17 AM</button><div class="console-work"><div class="console-chat-text">Ran dir</div></div></div></div>
+<header><h3>Console working</h3><code class="built">.console-work</code><span class="built">console-chat.js: the agent's working or finished line under its answer (console-worked), pressed to open the tool lines and what the agent said between them (console-work), indented behind a rule</span></header>
+<div class="stage"><div class="console-reply"><button type="button" class="console-worked" aria-expanded="true"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>Worked for 18s • 9:17 AM</button><div class="console-work"><div class="console-chat-text">Ran dir</div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Console diff</h3><code class="built">.console-diff</code><span class="built">console-chat.js: an edit the console's agent made, drawn from its own session record between the prompt and the answer — the file and how many lines it removed and added (console-diff-head), then each line, removed lines on the theme's deleted colors and added lines on its inserted colors (console-diff-line), scrolling sideways inside the block (console-diff-lines), and only the first forty lines with a count of the rest</span></header>
+<div class="stage"><div class="console-diff"><div class="console-diff-head">src/assets/shell/console-sticky.js — 1 removed, 2 added</div><div class="console-diff-lines"><div class="console-diff-line">  if (!read) return null;</div><div class="console-diff-line is-removed">- const top = prompt.top;</div><div class="console-diff-line is-added">+ const top = prompt.top ?? footerTop(entry);</div><div class="console-diff-line is-added">+ if (top &lt; 1) return null;</div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Copy button</h3><code class="built">.code-copy</code><span class="built">decorate.js</span></header>

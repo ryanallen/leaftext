@@ -22,17 +22,17 @@ With the plugin installed, Codex and Claude consoles use the conversation title 
 
 ### The conversation as a chat
 
-While Claude Code or Codex sits at its own prompt or works on an answer, the console shows the conversation as a chat: what you sent in a bubble on the right, the agent's answer as plain text on the left, and the agent's opening lines above the first message. The tools the agent ran and what it said along the way fold under its **Worked for** line; press the line to open them. Point at an answer to copy it. Tables, banners and boxes keep the terminal's own lettering, and web addresses open through Leaftext.
+While Claude Code, Codex or Antigravity sits at its own prompt or works on an answer, the console shows the conversation as a chat: what you sent in a bubble on the right, the agent's answer as plain text on the left, and the agent's opening lines above the first message. The chat is drawn from the session record the agent writes as it works, so every turn stays as it was sent and answered however far the terminal scrolls; until the agent names its record, the chat reads the terminal's screen. The tools the agent ran and what it said along the way fold under its **Worked for** line, with a command that failed said so; press the line to open them. Every edit the agent makes to a file is drawn as a diff, the file's name over its removed lines in red and its added lines in green. Point at an answer to copy it. Tables, banners and boxes keep the terminal's own lettering, and web addresses open through Leaftext.
 
 At the foot is a message box in place of the agent's own input line. Type there and press Enter to send, or Shift+Enter for a new line. While the agent works, the round button stops it, and so does Escape. Up in an empty box brings back what you sent before. The box carries:
 
 - **+** to attach a file, and a pasted picture, each riding with the message as its path.
 - The document standing beside the console, or the last document you had open, as a chip; press its × to leave it off. It goes with the next message once.
 - `@` at the start of a word to pick a file from the console's folder, one folder at a time.
-- `/`, which hands you the agent's own command list.
+- The **/** button, which hands you the agent's own command list. A command typed into the box, such as `/help`, stays in the box with the chat and is sent like any message when you press Enter; a file you attached rides after it, and the document beside the console stays off it.
 - For Claude Code, its permission mode; press it, or Shift+Tab in the box, to step to the next mode. For Codex, its permissions, which opens Codex's own list.
 
-Whenever the agent shows something of its own — a question before it runs a command, a list, a sign-in, a picker — or you type into the agent's own line, the chat steps aside and the whole terminal comes back with the keys in it. Answer there, and the chat returns when the agent is back at its prompt, with whatever you had typed in the message box still in it. Other agents and ordinary shells always show the terminal.
+Whenever the agent shows something of its own — a question before it runs a command, a list, a sign-in, a picker — or you type into the agent's own line, the chat steps aside and the whole terminal comes back with the keys in it. Answer there, and the chat returns when the agent is back at its prompt, with whatever you had typed in the message box still in it. Other agents and ordinary shells always show the terminal, and so does Antigravity while it works with no session record named, as it does where the Leaftext plugin is not installed for it.
 
 ### The agent's status under its console
 

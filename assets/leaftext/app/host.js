@@ -39,7 +39,7 @@ export const COMMANDS = {
   consoleUseFolder: [REFUSED, 'a published page has no console agent to move or start'],
   consoleInput: [REFUSED, 'a published page has no console process to receive input'],
   consolePaste: [REFUSED, 'a published page has no console process to receive pasted text'],
-  consoleCompose: [REFUSED, 'a published page has no console whose message could carry a file, a picture or a folder listing'],
+  consoleCompose: [REFUSED, 'a published page has no console whose message could carry a file, a picture or a folder listing, and no agent whose session record the chat could read'],
   consoleTypePaths: [REFUSED, 'a published page has no console process to receive paths'],
   consoleCopy: [REFUSED, 'a published page has no console to copy from'],
   consoleResize: [REFUSED, 'a published page has no console process to resize'],

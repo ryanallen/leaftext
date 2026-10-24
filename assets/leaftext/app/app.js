@@ -43179,7 +43179,7 @@ function consoleAgentOf(title) {
 const consoleAgentAsks = {
   claude: { lines: 4, asks: line => line.includes('Esc to cancel') },
   
-  codex: { lines: 12, asks: line => /^\W*Would you like to /.test(line) || /^\s*(?:enter confirm · esc skip|t trust all · enter review · esc close|space\/enter toggle · esc back)\s*$/.test(line) },
+  codex: { lines: 12, asks: line => /^\W*Would you like to /.test(line) || /^\s*(?:enter confirm · esc skip|enter continue · esc skip|t trust all · enter review · esc close|space\/enter toggle · esc back)\s*$/.test(line) },
   
   antigravity: { lines: 16, asks: line => line.includes('Approve/reject') || (line.includes('↑/↓ Navigate') && !/tab Complete|esc Go Back/.test(line)) },
 };
@@ -43229,19 +43229,64 @@ function consoleCodexSignIn(lines) {
     && lines.some(line => /^\s*(?:[>›]\s*)?(?:1\.\s*)?Sign in with ChatGPT(?:\s|$)/.test(line));
 }
 
+
+function consoleClaudeSetup(lines) {
+  if (/^\s*Syntax (?:theme: .*\(ctrl\+t to disable\)|highlighting disabled \(ctrl\+t to enable\))\s*$/.test(lines[0] || '')) return true;
+  const question = lines.findIndex(line => /^\s*Select login method:\s*$/.test(line));
+  
+  const choice = lines.findIndex(line => /^\s*(?:[>❯]\s*)?\d+\. \S/.test(line));
+  return question > choice && choice >= 0 && choice <= 2 && lines.slice(0, question).some(line => /^\s*(?:[>❯]\s*)?1\. Claude account with subscription\b/.test(line));
+}
+
+
+const CONSOLE_CODEX_WORKED = /^\s*Worked for \d/;
+
+function consoleCodexTurnEnded(lines, input) {
+  const above = lines.slice(input + 1);
+  const echo = above.findIndex(line => /^\s*›(?:\s|$)/.test(line));
+  return (echo < 0 ? above : above.slice(0, echo)).some(line => CONSOLE_CODEX_WORKED.test(line) || /^\s*■ /.test(line));
+}
+
+const CONSOLE_CODEX_UPDATE = /^\s*Updating Codex via `npm install -g @openai\/codex`\.\.\.\s*$/;
+
+function consoleCodexUpdateEnd(line, index, lines) {
+  const failed = /^\s*(?:Error: )?`npm install -g @openai\/codex` failed with status(?:\s|$)/;
+  return /^\s*(?:\uD83C\uDF89 )?Update ran successfully! Please restart Codex\.\s*$/.test(line) || failed.test(line)
+    || (index + 1 < lines.length && failed.test(lines[index + 1] + line.trimStart()));
+}
+
 function consoleAgentState(entry, screenLines) {
   const rule = consoleAgentAsks[entry.agent];
   if (!rule) return null;
   const lines = screenLines || consoleBottomLines(entry, rule.lines);
-  if (lines.some(rule.asks) || (entry.agent === 'codex' && (consoleCodexFolderTrust(lines) || (entry.terminal?.buffer?.active.type === 'alternate' && consoleCodexSignIn(lines))))) return 'needs';
+  if (lines.some(rule.asks) || (entry.agent === 'codex' && (consoleCodexFolderTrust(lines) || (entry.terminal?.buffer?.active.type === 'alternate' && consoleCodexSignIn(lines))))) {
+    entry.codexUpdating = false;
+    return 'needs';
+  }
+  if (entry.agent === 'claude' && consoleClaudeSetup(lines)) return 'needs';
   if (entry.agent === 'codex') {
+    const input = lines.findIndex(line => /^\s*\u203a(?:\s|$)/.test(line));
+    if (entry.terminal?.buffer?.active.type !== 'normal' || input >= 0) entry.codexUpdating = false;
+    else {
+      const start = lines.findIndex(line => CONSOLE_CODEX_UPDATE.test(line));
+      const end = lines.findIndex(consoleCodexUpdateEnd);
+      if (end >= 0 && (start < 0 || end < start)) {
+        entry.codexUpdating = false;
+        return entry.codexRestingState || 'rest';
+      }
+      if (start >= 0) entry.codexUpdating = true;
+      
+      if (entry.codexUpdating) return 'working';
+    }
     
     if (lines.some(line => /^\s*[•◦] [^(]+\([^)]*esc to interrupt\)/.test(line))) {
-      entry.codexRestingState = 'done';
+      entry.codexRestingState = 'answering';
       return 'working';
     }
+    if (entry.codexRestingState === 'answering' && (input < 0 || (!consoleCodexTurnEnded(lines, input) && entry.activity !== 'done'))) return 'working';
+    if (entry.codexRestingState === 'answering') entry.codexRestingState = 'done';
     const resting = entry.codexRestingState || 'rest';
-    if (lines.some(line => /^\s*›(?:\s|$)/.test(line))) return resting;
+    if (input >= 0) return resting;
     return entry.agentSaid === 'codex working' ? 'working' : resting;
   }
   if (entry.agent === 'antigravity') {
@@ -43262,6 +43307,7 @@ function reportConsoleAgent(id, entry, screenLines) {
   if (before.split(' ')[0] !== (entry.agent || '')) {
     entry.antigravityRestingState = 'rest';
     entry.codexRestingState = 'rest';
+    entry.codexUpdating = false;
   }
   const state = consoleAgentState(entry, screenLines);
   const said = `${entry.agent || ''} ${state || ''}`;
@@ -43426,7 +43472,8 @@ function consoleTitleSaid(id, title) {
     entry.quietTimer = 0;
     if (entry.titleMark === 'working' || entry.worked) setConsoleActivity(id, entry, entry.titleMark);
   }
-  reportConsoleAgent(id, entry);
+  if (entry.titleAgent === 'codex' && entry.terminal?.buffer?.active.type === 'normal') readConsoleAgent(id, entry);
+  else reportConsoleAgent(id, entry);
 }
 
 function consoleOutputArrived(id) {
@@ -43449,7 +43496,8 @@ function consoleKeyTyped(id) {
   entry.lastKey = Date.now();
   clearTimeout(entry.quietTimer);
   entry.quietTimer = 0;
-  setConsoleActivity(id, entry, 'quiet');
+  
+  if (entry.titleMark !== 'working') setConsoleActivity(id, entry, 'quiet');
 }
 
 function consoleBellRang(id) {
@@ -43661,11 +43709,20 @@ function readConsoleAgent(id, entry) {
   const type = entry.terminal.buffer.active.type;
   
   const screenLines = consoleBottomLines(entry, Math.max(consoleAgentAsks.codex.lines, consoleAgentAsks.antigravity.lines));
-  if (type !== 'alternate') entry.screenAgent = null;
-  else if (!entry.titleAgent && !entry.screenAgent) {
-    if (screenLines.slice(0, 4).some(line => /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(line)) || consoleCodexSignIn(screenLines)) entry.screenAgent = 'codex';
+  if (type !== 'alternate') {
+    const start = screenLines.findIndex(line => CONSOLE_CODEX_UPDATE.test(line));
+    const prompt = screenLines.findIndex(line => /^\s*(?:(?:[\w.-]+@[\w.-]+ .+ )?[%$#]|(?:PS )?[A-Za-z]:\\.*>|.*\^C[%$#])\s*$/.test(line));
+    const shell = prompt >= 0 && (start < 0 || prompt < start);
+    if (shell && (entry.codexUpdating || entry.agent === 'codex')) {
+      entry.titleAgent = null;
+      entry.codexUpdating = false;
+    }
+    entry.screenAgent = !shell && (entry.codexUpdating || start >= 0 || (entry.screenAgent === 'codex' && screenLines.some(consoleCodexUpdateEnd))) ? 'codex' : null;
   }
-  if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) ? 'antigravity' : null;
+  else if (!entry.titleAgent && !entry.screenAgent) {
+    if (screenLines.slice(0, 4).some(line => /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(line)) || consoleCodexSignIn(screenLines) || (/^\s*enter continue · esc skip\s*$/.test(screenLines[0] || '') && screenLines.some(line => /^\s*Update available · \S+ → \S+\s*$/.test(line)))) entry.screenAgent = 'codex';
+  }
+  if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) || consoleClaudeSetup(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) ? 'antigravity' : null;
   entry.agent = entry.titleAgent || entry.screenAgent || null;
   reportConsoleAgent(id, entry, screenLines);
   refreshConsoleChat(id, entry);
@@ -44115,7 +44172,7 @@ function makeConsoleLayer(id) {
   layer.addEventListener('pointerdown', () => {
     if (id === besideConsoleId()) pressIntoColumn(besideColumn());
   }, true);
-  const entry = { layer, host, status, statusRecord: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, markers: new Set(), activity: 'quiet', titleMark: null, worked: false, codexRestingState: 'rest', antigravityRestingState: 'rest', lastKey: Date.now(), lastResize: 0, quietTimer: 0 };
+  const entry = { layer, host, status, statusRecord: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, markers: new Set(), activity: 'quiet', titleMark: null, worked: false, codexRestingState: 'rest', codexUpdating: false, antigravityRestingState: 'rest', lastKey: Date.now(), lastResize: 0, quietTimer: 0 };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
@@ -44639,6 +44696,7 @@ window.leafConsoleReplay = (id, encoded, columns, rows) => {
   entry.titleMark = null;
   entry.worked = false;
   entry.codexRestingState = 'rest';
+  entry.codexUpdating = false;
   entry.lastKey = Date.now();
   setConsoleActivity(id, entry, 'quiet');
   if (entry.frame) cancelAnimationFrame(entry.frame);
@@ -45034,6 +45092,8 @@ const CONSOLE_PIN_MARK = /\x1b\]133;([AB])[^\x07\x1b]*(?:\x07|\x1b\\)/g;
 
 const CONSOLE_PIN_PARTIAL = /\x1b\](?:1(?:3(?:3(?:;[^\x07\x1b]*)?)?)?)?$/;
 
+const CONSOLE_OUTPUT_MARK = '\x1b]133;C\x1b\\';
+
 const CONSOLE_PROMPT_MARK = /^\s*[❯›>](?:\s|$)/;
 const CONSOLE_PROMPT_RULE = /^\s*─/;
 
@@ -45052,7 +45112,7 @@ function setupConsolePin(entry) {
   box.appendChild(row);
   entry.layer.appendChild(box);
   box.addEventListener('mousedown', event => onConsolePinMouseDown(entry, event));
-  entry.pin = { box, row, marker: null, pending: null, end: null, announcing: false, lastRow: -1, carry: '', drawn: '', screen: 'normal', full: consolePromptFresh(), chat: false, inline: null, cut: null, sent: null };
+  entry.pin = { box, row, marker: null, pending: null, end: null, announcing: false, lastRow: -1, carry: '', drawn: '', screen: 'normal', full: consolePromptFresh(), input: false, output: false, chat: false, inline: null, cut: null, sent: null };
   const write = entry.terminal.write;
   entry.terminal.write = (data, done) => writeConsolePinned(entry, data, write, done);
   entry.terminal.onScroll(() => renderConsolePin(entry));
@@ -45090,6 +45150,10 @@ function consolePinInput(entry, data, id) {
   
   const typed = pin.typed;
   pin.typed = data === '\r' ? false : typed || !/^\x1b\[[IO]$/.test(data);
+  if (pin.input && String(data).includes('\r')) {
+    pin.input = false;
+    pin.output = true;
+  }
   if (data === '\r' && entry.terminal.buffer.active.type === 'alternate') consolePromptTold(id, typed, consolePromptSent(entry));
   if (!String(data).includes('\r') || entry.terminal.buffer.active.type !== 'normal') return;
   if (consoleInlineSent(entry, data, id, typed)) return;
@@ -45114,6 +45178,10 @@ function writeConsolePinned(entry, data, write, done) {
     pin.carry = partial[0];
     text = text.slice(0, partial.index);
   }
+  if (pin.output) {
+    pin.output = false;
+    text = CONSOLE_OUTPUT_MARK + text;
+  }
   if (!text.includes('\x1b]133;')) return write(text, done);
   let from = 0;
   for (const mark of text.matchAll(CONSOLE_PIN_MARK)) {
@@ -45128,6 +45196,7 @@ function writeConsolePinned(entry, data, write, done) {
 function consolePinMark(entry, kind) {
   const pin = entry.pin;
   if (entry.terminal.buffer.active.type !== 'normal') return;
+  pin.input = kind === 'B';
   
   if (kind === 'A') {
     pin.chat = false;
@@ -45519,7 +45588,7 @@ function consoleInlineEcho(entry) {
 
 
 
-const CONSOLE_CHAT_AGENTS = { claude: ['normal', 'alternate'], codex: ['alternate'] };
+const CONSOLE_CHAT_AGENTS = { claude: ['normal', 'alternate'], codex: ['alternate'], antigravity: ['normal', 'alternate'] };
 
 const CONSOLE_CHAT_CLAUDE_BANNER = /^\s*\S*\s+Claude Code v\d/;
 
@@ -45553,6 +45622,10 @@ function readConsoleChat(entry) {
       chat.from = 0;
       return chat;
     }
+    if (agent === 'antigravity') {
+      chat.from = 0;
+      return chat;
+    }
     chat.from = consoleChatClaudeStart(entry, base + cover);
     chat.mode = footer.map(line => line.trim()).find(line => /^(?:⏵⏵|⏸)\s/.test(line)) || null;
     return chat;
@@ -45583,11 +45656,11 @@ const CONSOLE_CHAT_ECHO = /^[❯›>] \S/;
 const CONSOLE_CHAT_FOLDED = /^ {2}(?:\S.*\(ctrl\+o to expand\)|(?:Ran|Read|Searched|Listed|Wrote|Edited|Updated|Fetched|Called|Found) \d.*)$/;
 const CONSOLE_CHAT_TOOL = {
   claude: /^● [A-Z][\w.:-]*(?:\(|$)/,
-  codex: /^(?:• (?:Ran|Running|Failed|Explored|Exploring|Edited|Editing|Read|Reading|Searched|Searching|Listed|Called|Calling|Waited|Waiting|Updated|Added|Deleted|Applied|Viewed)\b|✗ )/,
+  codex: /^(?:• (?:Ran|Running|Failed|Explored|Exploring|Edited|Editing|Read|Reading|Searched|Searching|Listed|Called|Calling|Waited|Waiting|Updated|Added|Deleted|Applied|Viewed)\b|• Exited \(status -?\d+\) |✗ )/,
 };
 
 const CONSOLE_CHAT_WORKING = { claude: /^\S \S+…(?: \(.*\))?$/, codex: /^[•◦] Working \(/ };
-const CONSOLE_CHAT_DONE_ROW = { claude: CONSOLE_CHAT_DONE, codex: /^\s*Worked for \d/ };
+const CONSOLE_CHAT_DONE_ROW = { claude: CONSOLE_CHAT_DONE, codex: CONSOLE_CODEX_WORKED };
 
 
 function consoleChatRows(entry, read) {
@@ -45601,6 +45674,8 @@ function consoleChatRows(entry, read) {
 
 
 function consoleChatTurns(agent, rows, cols) {
+  
+  if (!CONSOLE_CHAT_TOOL[agent]) return { opening: [], turns: [] };
   const opening = [];
   const turns = [];
   const tool = CONSOLE_CHAT_TOOL[agent];
@@ -45692,7 +45767,22 @@ function refreshConsoleChat(id, entry) {
     if (!consoleComposerHolding(entry)) leaveConsoleChat(entry);
     return;
   }
-  const { opening, turns } = consoleChatTurns(read.agent, consoleChatRows(entry, read), entry.terminal.cols);
+  
+  const recorded = entry.chatRecord?.events.length ? consoleRecordTurns(entry, entry.chatRecord, read) : null;
+  
+  if (!recorded && !CONSOLE_CHAT_TOOL[read.agent]) {
+    if (/ working$/.test(entry.agentSaid || '')) entry.chatUnrecorded = true;
+    if (entry.chatUnrecorded) {
+      askConsoleRecord(id, entry);
+      if (!consoleComposerHolding(entry)) leaveConsoleChat(entry);
+      return;
+    }
+  }
+  const { opening, turns } = recorded || consoleChatTurns(read.agent, consoleChatRows(entry, read), entry.terminal.cols);
+  askConsoleRecord(id, entry);
+  
+  clearTimeout(entry.chatRecord.trail);
+  entry.chatRecord.trail = setTimeout(() => askConsoleRecord(id, entry), CONSOLE_RECORD_TRAIL_MS);
   const was = entry.chat?.shown;
   entry.chat = { ...read, opening, turns, shown: true };
   entry.layer?.classList.add('console-chatting');
@@ -45720,6 +45810,152 @@ function leaveConsoleChat(entry) {
   renderConsolePin(entry);
   if (composing) entry.terminal?.focus();
   for (const [id, each] of consoleLayers) if (each === entry) consoleChatRailChanged(id, entry);
+}
+
+
+
+
+let consoleRecordRequests = 0;
+
+function askConsoleRecord(id, entry) {
+  const record = entry.chatRecord || (entry.chatRecord = { file: '', offset: 0, events: [], earlier: false, request: 0, waiting: false, again: false });
+  if (record.waiting) {
+    record.again = true;
+    return;
+  }
+  record.waiting = true;
+  record.request = ++consoleRecordRequests;
+  send({ command: 'consoleCompose', id, request: record.request, ask: 'record', offset: record.offset, path: record.file });
+}
+
+window.leafConsoleRecord = (id, request, answer) => {
+  const entry = consoleLayers.get(id);
+  const record = entry?.chatRecord;
+  if (!record || record.request !== request || !answer) return;
+  record.waiting = false;
+  
+  if (answer.file !== record.file) {
+    record.file = answer.file || '';
+    record.events = [];
+    record.earlier = false;
+  }
+  record.offset = answer.offset || 0;
+  record.earlier ||= Boolean(answer.earlier);
+  const added = Array.isArray(answer.events) ? answer.events : [];
+  const first = !record.events.length;
+  record.events.push(...added);
+  if (record.events.length > CONSOLE_RECORD_EVENTS) record.events.splice(0, record.events.length - CONSOLE_RECORD_EVENTS);
+  if (record.again) {
+    record.again = false;
+    askConsoleRecord(id, entry);
+  }
+  
+  if (added.length && (entry.chat?.shown || first)) refreshConsoleChat(id, entry);
+};
+
+
+const CONSOLE_RECORD_TRAIL_MS = 500;
+
+
+const CONSOLE_RECORD_EVENTS = 20000;
+
+
+function consoleRecordTurns(entry, record, read) {
+  const failed = new Set(record.events.filter(event => event.k === 'result' && event.error).map(event => event.id));
+  const grouped = [];
+  let turn = null;
+  for (const event of record.events) {
+    if (event.k === 'prompt') {
+      turn = { key: `r:${grouped.length}:${event.id}`, prompt: event.text, items: [] };
+      grouped.push(turn);
+      continue;
+    }
+    if (event.k !== 'tool' && event.k !== 'edit' && event.k !== 'reply') continue;
+    if (!turn) {
+      turn = { key: 'r:before', prompt: '', items: [] };
+      grouped.push(turn);
+    }
+    const item = event.k === 'tool' && failed.has(event.id) ? { ...event, failed: true } : event;
+    turn.items.push(event.k === 'edit' ? { ...item, path: consoleRecordPath(entry, event.path) } : event.k === 'tool' ? { ...item, text: consoleRecordPath(entry, event.text) } : item);
+  }
+  const status = consoleChatStatusRow(entry, read);
+  const turns = grouped.map((each, index) => {
+    const last = each.items.findLastIndex(item => item.k !== 'reply');
+    const line = index === grouped.length - 1 ? status : {};
+    return { key: each.key, record: true, prompt: each.prompt, cut: false, work: each.items.slice(0, last + 1), reply: each.items.slice(last + 1), notices: [], done: line.done || null, working: line.working || null };
+  });
+  return { opening: record.earlier ? ['Earlier turns are in the agent’s own history.'] : [], turns };
+}
+
+
+function consoleRecordPath(entry, path) {
+  
+  const folder = String(entry.statusRecord?.folderPath || '').replace(/[\\/]+$/, '').replaceAll('\\', '/');
+  const spelled = String(path || '').replaceAll('\\', '/');
+  if (!folder || spelled.length <= folder.length) return spelled;
+  const head = spelled.slice(0, folder.length);
+  const next = spelled[folder.length];
+  return head.toLowerCase() === folder.toLowerCase() && (next === '\\' || next === '/') ? spelled.slice(folder.length + 1) : spelled;
+}
+
+
+function consoleChatStatusRow(entry, read) {
+  const working = CONSOLE_CHAT_WORKING[read.agent];
+  const done = CONSOLE_CHAT_DONE_ROW[read.agent];
+  if (!working || !done) return {};
+  const rows = consoleChatRows(entry, { from: Math.max(read.from, read.to - 16), to: read.to });
+  for (let index = rows.length - 1; index >= 0; index -= 1) {
+    const row = rows[index].trimEnd();
+    if (working.test(row)) return { working: row.trim() };
+    if (done.test(row)) return { done: row.trim() };
+  }
+  return {};
+}
+
+
+function consoleRecordEdit(item) {
+  const node = document.createElement('div');
+  node.className = 'console-diff';
+  const lines = Array.isArray(item.lines) ? item.lines : [];
+  const removed = lines.filter(line => line.startsWith('-')).length;
+  const added = lines.filter(line => line.startsWith('+')).length;
+  const head = document.createElement('div');
+  head.className = 'console-diff-head';
+  head.textContent = `${item.path || 'An edit'} — ${removed} removed, ${added} added`;
+  node.appendChild(head);
+  const body = document.createElement('div');
+  body.className = 'console-diff-lines';
+  const shown = lines.slice(0, CONSOLE_DIFF_LINES);
+  for (const line of shown) {
+    const row = document.createElement('div');
+    row.className = line.startsWith('+') ? 'console-diff-line is-added' : line.startsWith('-') ? 'console-diff-line is-removed' : 'console-diff-line';
+    row.textContent = line || ' ';
+    body.appendChild(row);
+  }
+  if (lines.length > shown.length) {
+    const more = document.createElement('div');
+    more.className = 'console-diff-line';
+    more.textContent = `… ${lines.length - shown.length} more lines`;
+    body.appendChild(more);
+  }
+  node.appendChild(body);
+  return node;
+}
+
+
+const CONSOLE_DIFF_LINES = 40;
+
+
+function consoleRecordItem(item) {
+  if (item.k === 'edit') return consoleRecordEdit(item);
+  if (item.k === 'tool') {
+    const node = document.createElement('div');
+    node.className = 'console-chat-text';
+    node.textContent = [item.name, item.text, item.failed ? 'failed' : ''].filter(Boolean).join(' — ');
+    return node;
+  }
+  
+  return consoleChatBlocks(String(item.text || '').replace(/\[([^\]\n]+)\]\(file:\/\/\/[^)\s]+\)/g, '$1').split('\n'));
 }
 
 function consoleChatShown(entry) {
@@ -45823,7 +46059,9 @@ function consoleChatTurn(view, turn) {
   node.appendChild(bubble);
   const reply = document.createElement('div');
   reply.className = 'console-reply';
-  for (const item of turn.reply) reply.appendChild(consoleChatBlocks(consoleChatItemText(item).split('\n')));
+  
+  if (turn.record) for (const item of turn.work) if (item.k === 'edit') reply.appendChild(consoleRecordEdit(item));
+  for (const item of turn.reply) reply.appendChild(turn.record ? consoleRecordItem(item) : consoleChatBlocks(consoleChatItemText(item).split('\n')));
   const line = turn.done || turn.working;
   if (line || turn.work.length || turn.reply.length) {
     const actions = document.createElement('div');
@@ -45831,7 +46069,7 @@ function consoleChatTurn(view, turn) {
     if (line || turn.work.length) {
       const fold = document.createElement('button');
       fold.type = 'button';
-      fold.className = 'console-working';
+      fold.className = 'console-worked';
       fold.dataset.turn = turn.key;
       const open = view.open.has(turn.key);
       fold.setAttribute('aria-expanded', String(open));
@@ -45861,7 +46099,7 @@ function consoleChatTurn(view, turn) {
       const work = document.createElement('div');
       work.className = 'console-work';
       work.hidden = !view.open.has(turn.key);
-      for (const item of turn.work) work.appendChild(consoleChatBlocks(consoleChatItemText(item).split('\n')));
+      for (const item of turn.work) if (!turn.record || item.k !== 'edit') work.appendChild(turn.record ? consoleRecordItem(item) : consoleChatBlocks(consoleChatItemText(item).split('\n')));
       reply.appendChild(work);
     }
   }
@@ -45936,7 +46174,7 @@ function onConsoleChatClick(id, entry, event) {
     openConsoleLink(link.getAttribute('href'));
     return;
   }
-  const fold = event.target.closest?.('.console-working');
+  const fold = event.target.closest?.('.console-worked');
   if (fold && !fold.disabled) {
     const view = entry.chatView;
     const key = fold.dataset.turn;
@@ -45954,7 +46192,7 @@ function onConsoleChatClick(id, entry, event) {
     const node = copy.closest('.console-turn');
     const key = [...entry.chatView.nodes].find(([, kept]) => kept.node === node)?.[0];
     const turn = entry.chat?.turns.find(each => each.key === key);
-    if (turn) send({ command: 'consoleCopy', id, text: turn.reply.map(consoleChatItemText).join('\n\n') });
+    if (turn) send({ command: 'consoleCopy', id, text: turn.reply.map(item => turn.record ? item.text : consoleChatItemText(item)).join('\n\n') });
   }
 }
 
@@ -46167,11 +46405,6 @@ function fitConsoleComposerField(field) {
 function onConsoleComposerInput(id, entry) {
   const state = entry.composer;
   state.back = -1;
-  
-  if (state.field.value.startsWith('/')) {
-    consoleComposerToAgent(id, entry, state.field.value);
-    return;
-  }
   consoleComposerMention(id, entry);
   drawConsoleComposer(id, entry);
 }
@@ -46271,20 +46504,33 @@ function sendConsoleComposer(id, entry) {
   const state = entry.composer;
   const text = state.field.value.replace(/\s+$/, '');
   if (!consoleComposerHasMessage(entry)) return;
-  const paths = consoleComposerPaths(entry);
+  const command = text.startsWith('/');
+  const paths = command ? state.attached.slice() : consoleComposerPaths(entry);
   closeConsoleFileList(entry);
   consoleKeyTyped(id);
   holdConsoleComposer(id, entry);
   
   const marked = Boolean(entry.terminal?.getMode?.(2004));
-  if (paths.length) send({ command: 'consoleTypePaths', id, paths });
+  const enter = () => setTimeout(() => send({ command: 'consoleInput', id, data: '\r' }), CONSOLE_COMPOSER_ENTER_MS);
   const words = () => {
     if (text) send({ command: 'consoleInput', id, data: marked ? `\x1b[200~${text}\x1b[201~` : text });
-    setTimeout(() => send({ command: 'consoleInput', id, data: '\r' }), CONSOLE_COMPOSER_ENTER_MS);
   };
-  
-  if (paths.length) setTimeout(words, 100);
-  else words();
+  if (command) {
+    words();
+    if (!paths.length) enter();
+    else {
+      send({ command: 'consoleInput', id, data: ' ' });
+      send({ command: 'consoleTypePaths', id, paths });
+      
+      setTimeout(enter, 100);
+    }
+  } else {
+    if (paths.length) send({ command: 'consoleTypePaths', id, paths });
+    const rest = () => { words(); enter(); };
+    
+    if (paths.length) setTimeout(rest, 100);
+    else rest();
+  }
   if (text) {
     consolePromptTold(id, true, text);
     if (state.history.at(-1) !== text) state.history.push(text);
@@ -46292,7 +46538,7 @@ function sendConsoleComposer(id, entry) {
   state.back = -1;
   state.field.value = '';
   state.attached = [];
-  if (paths.length && consoleComposerContext(entry)) state.dropped = consoleComposerContext(entry).path;
+  if (!command && paths.length && consoleComposerContext(entry)) state.dropped = consoleComposerContext(entry).path;
   drawConsoleComposer(id, entry);
 }
 
