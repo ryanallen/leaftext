@@ -43216,6 +43216,15 @@ function consoleAntigravityIdle(lines) {
   return upper > lower + 1 && /^\s*[>❯](?:\s|$)/.test(lines[upper - 1]);
 }
 
+
+function consoleAntigravityBoxUnderSpinner(lines) {
+  const rule = line => /^\s*─{3,}\s*$/.test(line);
+  if (!rule(lines[0] || '') || !consoleAntigravityIdle(lines) || lines.some(line => line.includes('esc Go Back') || line.includes('tab Complete'))) return false;
+  let above = lines.findIndex((line, index) => index > 0 && rule(line)) + 1;
+  if (/^\s*└ Tip:/.test(lines[above] || '')) above += 1;
+  return /^\s*[⠁-⣿]\s+\S/.test(lines[above] || '');
+}
+
 function consoleCodexFolderTrust(lines) {
   const footer = lines.findIndex(line => /^\s*enter continue\s*·\s*esc (?:back|cancel|quit)\s*$/.test(line));
   const choice = lines.findIndex(line => /^\s*(?:›\s*)?1\. Trust and continue\s*$/.test(line));
@@ -43294,6 +43303,10 @@ function consoleAgentState(entry, screenLines) {
   if (entry.agent === 'antigravity') {
     if (lines.some(line => /^\s*esc to cancel\b/.test(line)) && !lines.some(line => line.includes('tab Complete'))) {
       if (!lines.some(line => line.includes('esc Go Back')) && lines.some(line => /^\s*[\u2801-\u28ff]\s+\S/.test(line))) entry.antigravityRestingState = 'done';
+      return 'working';
+    }
+    if (consoleAntigravityBoxUnderSpinner(lines)) {
+      entry.antigravityRestingState = 'done';
       return 'working';
     }
     const resting = entry.antigravityRestingState || 'rest';
@@ -43468,10 +43481,16 @@ function consoleTitleSaid(id, title) {
   entry.titleAgent = consoleAgentOf(title);
   entry.agent = entry.titleAgent || entry.screenAgent || null;
   const mark = Array.from(title)[0];
+  const marked = entry.titleMark;
   entry.titleMark = mark === '✳' ? 'done' : '◐◓◑◒'.includes(mark) && mark ? 'working' : null;
   if (entry.titleMark) {
     clearTimeout(entry.quietTimer);
     entry.quietTimer = 0;
+    
+    if (!marked) {
+      entry.worked = entry.titleMark === 'working';
+      if (!entry.worked) setConsoleActivity(id, entry, 'quiet');
+    }
     if (entry.titleMark === 'working' || entry.worked) setConsoleActivity(id, entry, entry.titleMark);
   }
   if (entry.titleAgent === 'codex' && entry.terminal?.buffer?.active.type === 'normal') readConsoleAgent(id, entry);
@@ -43709,6 +43728,7 @@ function consoleClaudeFolderTrust(lines) {
 
 function readConsoleAgent(id, entry) {
   const type = entry.terminal.buffer.active.type;
+  const antigravityOnScreen = entry.screenAgent === 'antigravity';
   
   const screenLines = consoleBottomLines(entry, Math.max(consoleAgentAsks.codex.lines, consoleAgentAsks.antigravity.lines));
   if (type !== 'alternate') {
@@ -43724,7 +43744,7 @@ function readConsoleAgent(id, entry) {
   else if (!entry.titleAgent && !entry.screenAgent) {
     if (screenLines.slice(0, 4).some(line => /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(line)) || consoleCodexSignIn(screenLines) || (/^\s*enter continue · esc skip\s*$/.test(screenLines[0] || '') && screenLines.some(line => /^\s*Update available · \S+ → \S+\s*$/.test(line)))) entry.screenAgent = 'codex';
   }
-  if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) || consoleClaudeSetup(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) ? 'antigravity' : null;
+  if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) || consoleClaudeSetup(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) || (antigravityOnScreen && consoleAntigravityBoxUnderSpinner(screenLines)) ? 'antigravity' : null;
   entry.agent = entry.titleAgent || entry.screenAgent || null;
   reportConsoleAgent(id, entry, screenLines);
   refreshConsoleChat(id, entry);
@@ -46213,6 +46233,450 @@ const CONSOLE_COMPOSER_HOLD_MS = 2000;
 const CONSOLE_COMPOSER_LINES = 8;
 const CONSOLE_COMPOSER_NAMES = { claude: 'Claude', codex: 'Codex' };
 
+
+const CONSOLE_AGENT_BUILT_INS = {
+  "claude": [
+    [
+      "add-dir",
+      "Add a new working directory"
+    ],
+    [
+      "artifacts",
+      "Browse your published and shared artifacts"
+    ],
+    [
+      "autofix-pr",
+      "Monitor and autofix any issues with the current PR"
+    ],
+    [
+      "background",
+      "Send this session to the background and free the terminal"
+    ],
+    [
+      "branch",
+      "Create a branch of the current conversation at this point"
+    ],
+    [
+      "btw",
+      "Ask a quick side question without interrupting the main conversation"
+    ],
+    [
+      "bug",
+      "Report a bug or share your conversation"
+    ],
+    [
+      "cd",
+      "Move this session to a new working directory"
+    ],
+    [
+      "chrome",
+      "Open Claude in Chrome settings"
+    ],
+    [
+      "copy",
+      "Copy Claude's last response to clipboard (or /copy N for the Nth-latest)"
+    ],
+    [
+      "design-login",
+      "Authorize design-system access for /design-sync with your claude.ai account"
+    ],
+    [
+      "desktop",
+      "Continue the current session in Claude Desktop"
+    ],
+    [
+      "diff",
+      "Toggle the diff panel showing uncommitted changes"
+    ],
+    [
+      "exit",
+      "Exit the CLI"
+    ],
+    [
+      "export",
+      "Export the current conversation to a file or clipboard"
+    ],
+    [
+      "feedback",
+      "Send feedback to Anthropic or report a bug"
+    ],
+    [
+      "fork",
+      "Copy this conversation into a new background session and keep working here"
+    ],
+    [
+      "help",
+      "Show help and available commands"
+    ],
+    [
+      "hooks",
+      "View hook configurations for tool events"
+    ],
+    [
+      "ide",
+      "Manage IDE integrations and show status"
+    ],
+    [
+      "install-github-app",
+      "Set up Claude GitHub Actions for a repository"
+    ],
+    [
+      "install-slack-app",
+      "Install the Claude Slack app"
+    ],
+    [
+      "keybindings",
+      "Open your keyboard shortcuts file"
+    ],
+    [
+      "login",
+      "Sign in with your Anthropic account"
+    ],
+    [
+      "logout",
+      "Sign out from your Anthropic account"
+    ],
+    [
+      "memory",
+      "Edit CLAUDE.md files and memory settings"
+    ],
+    [
+      "mobile",
+      "Show QR code to download the Claude mobile app"
+    ],
+    [
+      "permissions",
+      "Manage allow and deny tool permission rules"
+    ],
+    [
+      "plan",
+      "Enable plan mode or view the current session plan"
+    ],
+    [
+      "plugin",
+      "Manage Claude Code plugins"
+    ],
+    [
+      "powerup",
+      "Discover Claude Code features through quick interactive lessons"
+    ],
+    [
+      "radio",
+      "Listen to Claude FM lo-fi radio"
+    ],
+    [
+      "rate-limit-options",
+      "Manage usage limits and upgrade options"
+    ],
+    [
+      "release-notes",
+      "View release notes"
+    ],
+    [
+      "remote-control",
+      "Control this session from your phone or claude.ai/code"
+    ],
+    [
+      "remote-env",
+      "Choose the default environment for cloud agents"
+    ],
+    [
+      "resume",
+      "Resume a previous conversation"
+    ],
+    [
+      "rewind",
+      "Restore the code and/or conversation to a previous point"
+    ],
+    [
+      "skills",
+      "List available skills"
+    ],
+    [
+      "status",
+      "Show Claude Code status including version, model, account, API connectivity, and tool sta…"
+    ],
+    [
+      "stickers",
+      "Order Claude Code stickers"
+    ],
+    [
+      "subtask",
+      "Send a subagent off with your full context; its result comes back here"
+    ],
+    [
+      "tasks",
+      "View and manage everything running in the background"
+    ],
+    [
+      "teleport",
+      "Send this session to the cloud, or resume one from claude.ai"
+    ],
+    [
+      "terminal-setup",
+      "Install Shift+Enter key binding for newlines"
+    ],
+    [
+      "theme",
+      "Change the theme"
+    ],
+    [
+      "tui",
+      "Set the terminal UI renderer (default | fullscreen)"
+    ],
+    [
+      "upgrade",
+      "Upgrade to Max for higher rate limits and more Opus"
+    ],
+    [
+      "voice",
+      "Toggle voice mode"
+    ],
+    [
+      "web-setup",
+      "Set up cloud sessions with your GitHub account"
+    ],
+    [
+      "workflows",
+      "Browse running and completed workflows"
+    ],
+    [
+      "artifact-capabilities",
+      "Runtime capabilities for published Artifacts"
+    ],
+    [
+      "artifact-diagramming",
+      "Diagramming guidance for Artifacts"
+    ]
+  ],
+  "codex": [
+    [
+      "model",
+      "choose what model and reasoning effort to use"
+    ],
+    [
+      "fast",
+      "2x speed, increased usage"
+    ],
+    [
+      "presets",
+      "run or save reusable prompts and slash commands"
+    ],
+    [
+      "daybreak",
+      "Learn about broader access for cybersecurity work"
+    ],
+    [
+      "ide",
+      "include current selection, open files, and other context from your IDE"
+    ],
+    [
+      "permissions",
+      "choose what Codex is allowed to do"
+    ],
+    [
+      "keymap",
+      "remap TUI shortcuts"
+    ],
+    [
+      "vim",
+      "toggle Vim mode for the composer"
+    ],
+    [
+      "experimental",
+      "toggle experimental features"
+    ],
+    [
+      "approve",
+      "approve one retry of a recent auto-review denial"
+    ],
+    [
+      "memories",
+      "configure memory use and generation"
+    ],
+    [
+      "skills",
+      "use skills to improve how Codex performs specific tasks"
+    ],
+    [
+      "import",
+      "import setup, this project, and recent chats from Claude Code"
+    ],
+    [
+      "hooks",
+      "view and manage lifecycle hooks"
+    ],
+    [
+      "review",
+      "review my current changes and find issues"
+    ],
+    [
+      "rename",
+      "rename the current thread"
+    ],
+    [
+      "new",
+      "start a new chat during a conversation"
+    ],
+    [
+      "archive",
+      "archive this session"
+    ],
+    [
+      "delete",
+      "permanently delete this session"
+    ],
+    [
+      "resume",
+      "resume a saved chat"
+    ],
+    [
+      "fork",
+      "fork the current chat"
+    ],
+    [
+      "app",
+      "continue this session in the Desktop app"
+    ],
+    [
+      "init",
+      "create an AGENTS.md file with instructions for Codex"
+    ],
+    [
+      "compact",
+      "summarize conversation to prevent hitting the context limit"
+    ],
+    [
+      "config",
+      "configure Codex preferences"
+    ],
+    [
+      "recap",
+      "summarize the current conversation now"
+    ],
+    [
+      "plan",
+      "switch to Plan mode"
+    ],
+    [
+      "voice",
+      "start or stop voice; use /voice settings to choose a voice"
+    ],
+    [
+      "goal",
+      "set or view the goal for a long-running task"
+    ],
+    [
+      "agents",
+      "open the agent command center"
+    ],
+    [
+      "side",
+      "start a side conversation in an ephemeral fork"
+    ],
+    [
+      "copy",
+      "copy the last response or part of it"
+    ],
+    [
+      "export",
+      "export the conversation as markdown"
+    ],
+    [
+      "raw",
+      "toggle raw scrollback mode for copy-friendly terminal selection"
+    ],
+    [
+      "tui",
+      "choose the TUI mode for the next launch"
+    ],
+    [
+      "diff",
+      "show git diff (including untracked files)"
+    ],
+    [
+      "mention",
+      "mention a file"
+    ],
+    [
+      "status",
+      "show current session configuration and token usage"
+    ],
+    [
+      "daemon",
+      "Manage the local background server"
+    ],
+    [
+      "warnings",
+      "view retained warnings and diagnostic details"
+    ],
+    [
+      "cd",
+      "change the current working directory"
+    ],
+    [
+      "pwd",
+      "show the current working directory"
+    ],
+    [
+      "usage",
+      "view account usage or use a usage limit reset"
+    ],
+    [
+      "title",
+      "configure which items appear in the terminal title"
+    ],
+    [
+      "statusline",
+      "configure which items appear in the status line"
+    ],
+    [
+      "theme",
+      "choose a syntax highlighting theme"
+    ],
+    [
+      "pets",
+      "choose or hide the terminal pet"
+    ],
+    [
+      "mcp",
+      "list MCP tools; use /mcp verbose or /mcp login <name>"
+    ],
+    [
+      "plugins",
+      "browse plugins"
+    ],
+    [
+      "logout",
+      "log out of Codex"
+    ],
+    [
+      "exit",
+      "exit Codex"
+    ],
+    [
+      "feedback",
+      "send logs to maintainers"
+    ],
+    [
+      "ps",
+      "list background terminals"
+    ],
+    [
+      "stop",
+      "stop all background terminals"
+    ],
+    [
+      "clear",
+      "clear the terminal and start a new chat"
+    ],
+    [
+      "subagents",
+      "switch between this session's subagents"
+    ]
+  ]
+};
+
 let consoleComposerRequests = 0;
 
 function makeConsoleComposer(id, entry, frame) {
@@ -46224,6 +46688,13 @@ function makeConsoleComposer(id, entry, frame) {
   field.className = 'console-composer-field';
   field.rows = 1;
   field.spellcheck = true;
+  const words = document.createElement('div');
+  words.className = 'console-composer-words';
+  const mirror = document.createElement('div');
+  mirror.className = 'console-composer-mirror';
+  mirror.setAttribute('aria-hidden', 'true');
+  mirror.hidden = true;
+  words.append(mirror, field);
   const row = document.createElement('div');
   row.className = 'console-composer-row';
   const tools = document.createElement('div');
@@ -46241,10 +46712,13 @@ function makeConsoleComposer(id, entry, frame) {
   list.setAttribute('role', 'listbox');
   list.setAttribute('aria-label', 'Files in the folder');
   list.hidden = true;
-  box.append(list, chips, field, row);
+  box.append(list, chips, words, row);
   frame.appendChild(box);
   const state = { box, chips, field, attach, slash, mode, submit, list, attached: [], history: [], back: -1, kept: '', dropped: null, files: null, request: 0, hold: 0, holdTimer: 0 };
   entry.composer = state;
+  state.mirror = mirror;
+  state.commands = null;
+  send({ command: 'consoleCompose', id, request: ++consoleComposerRequests, ask: 'commands' });
   
   box.addEventListener('mousedown', event => {
     if (event.target === box || event.target === chips || event.target === row || event.target === tools) {
@@ -46255,6 +46729,11 @@ function makeConsoleComposer(id, entry, frame) {
   field.addEventListener('input', () => onConsoleComposerInput(id, entry));
   field.addEventListener('keydown', event => onConsoleComposerKey(id, entry, event));
   field.addEventListener('paste', event => onConsoleComposerPaste(id, entry, event));
+  field.addEventListener('scroll', () => syncConsoleComposerMirror(state));
+  field.addEventListener('click', () => consoleComposerMention(id, entry));
+  field.addEventListener('keyup', event => {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Home' || event.key === 'End') consoleComposerMention(id, entry);
+  });
   attach.addEventListener('click', () => {
     state.request = ++consoleComposerRequests;
     send({ command: 'consoleCompose', id, request: state.request, ask: 'files' });
@@ -46358,6 +46837,7 @@ function drawConsoleComposer(id, entry) {
     state.chips.hidden = !wanted.length;
   }
   fitConsoleComposerField(state.field);
+  markConsoleComposer(entry);
 }
 
 
@@ -46419,6 +46899,10 @@ function onConsoleComposerInput(id, entry) {
 function onConsoleComposerKey(id, entry, event) {
   const state = entry.composer;
   if (!state.list.hidden && consoleFileListKey(id, entry, event)) return;
+  if (event.key === 'Tab' && !event.shiftKey && consoleComposerCommandWord(entry)) {
+    event.preventDefault();
+    return;
+  }
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault();
     sendConsoleComposer(id, entry);
@@ -46512,6 +46996,8 @@ function sendConsoleComposer(id, entry) {
   const text = state.field.value.replace(/\s+$/, '');
   if (!consoleComposerHasMessage(entry)) return;
   const command = text.startsWith('/');
+  const opening = /^\$([^\s]+)(?:\s|$)/.exec(text);
+  const skill = opening && consoleComposerCommandRows(entry).some(row => row.prefix === '$' && row.kind === 'skill' && row.name === opening[1]);
   const paths = command ? state.attached.slice() : consoleComposerPaths(entry);
   closeConsoleFileList(entry);
   consoleKeyTyped(id);
@@ -46522,7 +47008,7 @@ function sendConsoleComposer(id, entry) {
   const words = () => {
     if (text) send({ command: 'consoleInput', id, data: marked ? `\x1b[200~${text}\x1b[201~` : text });
   };
-  if (command) {
+  if (command || skill) {
     words();
     if (!paths.length) enter();
     else {
@@ -46569,6 +47055,14 @@ function consoleComposerHolding(entry) {
 
 function consoleComposerMention(id, entry) {
   const state = entry.composer;
+  const command = consoleComposerCommandWord(entry);
+  if (command) {
+    state.files = null;
+    state.commands = { ...command, at: 0 };
+    drawConsoleCommandList(entry);
+    return;
+  }
+  state.commands = null;
   const field = state.field;
   const before = field.value.slice(0, field.selectionStart);
   const word = /(?:^|\s)@([^\s@]*)$/.exec(before);
@@ -46611,6 +47105,7 @@ function consoleFileListRows(files) {
 function drawConsoleFileList(entry) {
   const state = entry.composer;
   const files = state.files;
+  state.list.setAttribute('aria-label', 'Files in the folder');
   const rows = consoleFileListRows(files);
   if (!files || (!files.listing && !rows.length)) {
     state.list.hidden = false;
@@ -46652,12 +47147,14 @@ function closeConsoleFileList(entry) {
   const state = entry.composer;
   if (!state) return;
   state.files = null;
+  state.commands = null;
   state.list.hidden = true;
   state.list.replaceChildren();
 }
 
 
 function consoleFileListKey(id, entry, event) {
+  if (entry.composer.commands) return consoleCommandListKey(id, entry, event);
   const files = entry.composer.files;
   const rows = consoleFileListRows(files);
   if (event.key === 'Escape') {
@@ -46683,6 +47180,10 @@ function consoleFileListKey(id, entry, event) {
 
 function chooseConsoleFile(id, entry, index) {
   const state = entry.composer;
+  if (state.commands) {
+    chooseConsoleCommand(entry, index);
+    return;
+  }
   const files = state.files;
   const row = consoleFileListRows(files)[index];
   if (!row) return;
@@ -46704,6 +47205,146 @@ function chooseConsoleFile(id, entry, index) {
   field.selectionStart = field.selectionEnd = Math.max(0, start);
   closeConsoleFileList(entry);
   consoleComposerAttach(id, entry, [row.path]);
+}
+
+window.leafConsoleCommands = (id, answer) => {
+  const entry = consoleLayers.get(id);
+  if (!entry || answer?.reading || !Array.isArray(answer?.rows)) return;
+  entry.commands = answer.rows.filter(row => row && (row.prefix === '/' || row.prefix === '$') && typeof row.name === 'string' && typeof row.description === 'string').slice(0, 500);
+  if (entry.composer) {
+    consoleComposerMention(id, entry);
+    markConsoleComposer(entry);
+  }
+};
+
+function consoleComposerCommandRows(entry) {
+  const builtins = (CONSOLE_AGENT_BUILT_INS[entry.chat?.agent] || []).map(([name, description]) => ({ prefix: '/', name, description, kind: 'command' }));
+  const rows = new Map(builtins.map(row => [row.prefix + row.name, row]));
+  for (const row of entry.commands || []) {
+    if (row.prefix === (entry.chat?.agent === 'codex' ? '$' : '/')) rows.set(row.prefix + row.name, row);
+  }
+  return [...rows.values()];
+}
+
+function consoleComposerCommandWord(entry) {
+  if (!['claude', 'codex'].includes(entry.chat?.agent)) return null;
+  const field = entry.composer.field;
+  const caret = field.selectionStart;
+  const before = field.value.slice(0, caret);
+  const slash = /^\/([^\s/]*)$/.exec(before);
+  const dollar = entry.chat.agent === 'codex' ? /(?:^|\s)\$([^\s$]*)$/.exec(before) : null;
+  const match = slash || dollar;
+  if (!match) return null;
+  const start = caret - match[1].length - 1;
+  const tail = /^\S*/.exec(field.value.slice(caret))[0];
+  return { prefix: slash ? '/' : '$', query: match[1].toLowerCase(), start, end: caret + tail.length };
+}
+
+function consoleCommandListRows(entry) {
+  const word = entry.composer.commands;
+  if (!word) return [];
+  return consoleComposerCommandRows(entry).filter(row => row.prefix === word.prefix && row.name.toLowerCase().includes(word.query))
+    .sort((a, b) => Number(b.name.toLowerCase().startsWith(word.query)) - Number(a.name.toLowerCase().startsWith(word.query)) || a.name.localeCompare(b.name)).slice(0, 50);
+}
+
+function drawConsoleCommandList(entry) {
+  const state = entry.composer;
+  const rows = consoleCommandListRows(entry);
+  state.list.setAttribute('aria-label', "The agent's commands");
+  state.list.hidden = !rows.length;
+  state.commands.at = Math.min(state.commands.at, Math.max(0, rows.length - 1));
+  state.list.replaceChildren(...rows.map((row, index) => {
+    const option = document.createElement('div');
+    option.className = index === state.commands.at ? 'console-file-list-row is-active' : 'console-file-list-row';
+    option.setAttribute('role', 'option');
+    option.setAttribute('aria-selected', String(index === state.commands.at));
+    option.dataset.index = String(index);
+    const name = document.createElement('span');
+    name.className = 'console-file-list-name';
+    name.textContent = row.prefix + row.name;
+    const detail = document.createElement('span');
+    detail.className = 'console-file-list-detail';
+    detail.textContent = row.prefix === '$' ? `${row.kind === 'app' ? 'App' : 'Skill'}${row.description ? ' · ' + row.description : ''}` : row.description;
+    option.append(name, detail);
+    return option;
+  }));
+  state.list.querySelector('.is-active')?.scrollIntoView?.({ block: 'nearest' });
+}
+
+function consoleCommandListKey(id, entry, event) {
+  if (event.isComposing || event.shiftKey) return false;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeConsoleFileList(entry);
+    return true;
+  }
+  const state = entry.composer;
+  const rows = consoleCommandListRows(entry);
+  if (!rows.length) return false;
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    state.commands.at = (state.commands.at + (event.key === 'ArrowDown' ? 1 : rows.length - 1)) % rows.length;
+    drawConsoleCommandList(entry);
+    return true;
+  }
+  if (event.key === 'Enter' || event.key === 'Tab') {
+    event.preventDefault();
+    chooseConsoleCommand(entry, state.commands.at);
+    return true;
+  }
+  return false;
+}
+
+function chooseConsoleCommand(entry, index) {
+  const state = entry.composer;
+  const row = consoleCommandListRows(entry)[index];
+  const word = consoleComposerCommandWord(entry);
+  if (!row || !word) return;
+  const replacement = row.prefix + row.name + ' ';
+  const after = state.field.value.slice(word.end).replace(/^ /, '');
+  state.field.value = state.field.value.slice(0, word.start) + replacement + after;
+  state.field.selectionStart = state.field.selectionEnd = word.start + replacement.length;
+  closeConsoleFileList(entry);
+  drawConsoleComposer(0, entry);
+  state.field.focus();
+}
+
+function markConsoleComposer(entry) {
+  const state = entry.composer;
+  if (!state?.mirror) return;
+  const text = state.field.value;
+  const known = new Set(consoleComposerCommandRows(entry).map(row => row.prefix + row.name));
+  const matches = [...text.matchAll(/^\/\S+|(?:^|\s)\$\S+/g)].map(match => ({ word: match[0].trimStart(), start: match.index + match[0].length - match[0].trimStart().length })).filter(match => known.has(match.word));
+  const marked = matches.length > 0;
+  state.field.classList.toggle('is-marked', marked);
+  state.mirror.hidden = !marked;
+  if (!marked) { state.markedText = null; return; }
+  const signature = matches.map(match => match.start + ':' + match.word).join('|');
+  if (state.markedText !== text || state.markedWords !== signature) {
+    const parts = [];
+    let start = 0;
+    for (const match of matches) {
+      parts.push(document.createTextNode(text.slice(start, match.start)));
+      const span = document.createElement('span');
+      span.className = 'console-composer-command';
+      span.textContent = match.word;
+      parts.push(span);
+      start = match.start + match.word.length;
+    }
+    parts.push(document.createTextNode(text.slice(start) + '\u200b'));
+    state.mirror.replaceChildren(...parts);
+    state.markedText = text;
+    state.markedWords = signature;
+  }
+  syncConsoleComposerMirror(state);
+}
+
+function syncConsoleComposerMirror(state) {
+  if (state.mirror.hidden) return;
+  state.mirror.style.width = `${state.field.clientWidth}px`;
+  state.mirror.style.height = `${state.field.clientHeight}px`;
+  state.mirror.scrollTop = state.field.scrollTop;
+  state.mirror.scrollLeft = state.field.scrollLeft;
 }
 
 let consoleFolderRequests = 0;

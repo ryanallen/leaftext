@@ -8547,6 +8547,13 @@ body.library-resizing button {
 .console-composer:focus-within { border-color: var(--lt-focus-ring); }
 .console-composer-field { box-sizing: border-box; width: 100%; min-height: 0; margin: 0; padding: 0; border: none; outline: none; resize: none; overflow-y: auto; background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-45); }
 .console-composer-field::placeholder { color: var(--lt-muted-foreground); }
+.console-composer-words { position: relative; min-width: 0; }
+.console-composer-words .console-composer-field { position: relative; display: block; white-space: pre-wrap; overflow-wrap: break-word; }
+.console-composer-mirror { position: absolute; left: 0; top: 0; box-sizing: border-box; overflow: hidden; pointer-events: none; white-space: pre-wrap; overflow-wrap: break-word; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-45); }
+.console-composer-mirror[hidden] { display: none; }
+.console-composer-command { color: var(--lt-primary-ink); }
+.console-composer-field.is-marked { color: transparent; caret-color: var(--lt-foreground); }
+.console-composer-field.is-marked::selection { background: var(--lt-focus-selection-background); color: transparent; }
 .console-composer-chips { display: flex; flex-wrap: wrap; gap: var(--lt-space-6); }
 .console-composer-chips[hidden] { display: none; }
 .console-composer-chip { display: inline-flex; align-items: center; gap: var(--lt-space-6); max-width: 100%; padding: var(--lt-space-2) var(--lt-space-4) var(--lt-space-2) var(--lt-space-10); border-radius: var(--lt-radius-pill); background: var(--lt-surface-muted); color: var(--lt-foreground); font-size: var(--lt-text-12); line-height: var(--lt-leading-1-35); cursor: default; }
@@ -8577,6 +8584,8 @@ body.library-resizing button {
 .console-file-list-row .lt-icon { width: 14px; height: 14px; flex: none; color: var(--lt-muted-foreground); }
 .console-file-list-row.is-active { background: var(--lt-wash-hover); }
 .console-file-list-note { padding: var(--lt-space-4) var(--lt-space-8); color: var(--lt-muted-foreground); }
+.console-file-list-name { flex: none; }
+.console-file-list-detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--lt-muted-foreground); }
 @media (prefers-reduced-motion: reduce) { .console-composer { transition: none; } }
 
 

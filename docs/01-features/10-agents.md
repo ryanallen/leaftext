@@ -29,7 +29,7 @@ At the foot is a message box in place of the agent's own input line. Type there 
 - **+** to attach a file, and a pasted picture, each riding with the message as its path.
 - The document standing beside the console, or the last document you had open, as a chip; press its × to leave it off. It goes with the next message once.
 - `@` at the start of a word to pick a file from the console's folder, one folder at a time.
-- The **/** button, which hands you the agent's own command list. A command typed into the box, such as `/help`, stays in the box with the chat and is sent like any message when you press Enter; a file you attached rides after it, and the document beside the console stays off it.
+- The **/** button, which hands you the agent's own command list. Type `/` at the start of the message box to list commands, or `$` in Codex to list skills and apps. Keep typing to narrow the list, move with Up and Down, and choose with Tab, Enter or a click. Escape closes the list and keeps your words. A recognized name takes the theme's action color. After choosing, add your words and press Enter to send. Slash commands carry attached files after their words; Codex skills carry the document beside the console and attached files after their words.
 - For Claude Code, its permission mode; press it, or Shift+Tab in the box, to step to the next mode. For Codex, its permissions, which opens Codex's own list.
 
 Whenever the agent shows something of its own — a question before it runs a command, a list, a sign-in, a picker — or you type into the agent's own line, the chat steps aside and the whole terminal comes back with the keys in it. Answer there, and the chat returns when the agent is back at its prompt, with whatever you had typed in the message box still in it. Other agents and ordinary shells always show the terminal, and so does Antigravity while it works with no session record named, as it does where the Leaftext plugin is not installed for it.
@@ -151,7 +151,9 @@ For a company gateway, follow the agent's own instructions: [Claude Code's gatew
 
 ## Install the plugin
 
-The Leaftext plugin connects your agent to Leaftext and teaches it to read, edit, check, tick and save the document open in the window, and to write the alerts, diagrams, math and tables Leaftext draws. It adds one skill and the `leaftext --mcp` tool server, and changes nothing else about your agent. Install it once for each agent you use, then restart that agent:
+The Leaftext plugin connects your agent to Leaftext and teaches it to read, edit, check, tick and save the document open in the window, and to write the alerts, diagrams, math and tables Leaftext draws. It also teaches the agent to browse the web in Leaftext's own tabs, search your vault, name its console, talk to the agents in your other consoles and start helper agents beside it. It adds one skill and the `leaftext --mcp` tool server, and changes nothing else about your agent. Install it once for each agent you use, then restart that agent:
+
+When Claude Code or Codex starts with an older Leaftext plugin installed, Leaftext starts that agent's own plugin update and tells it that the new instructions load after a restart.
 
 For routine project documentation, the agent edits files without opening them in your window. Ask it to work on an open document to use Leaftext's document tools.
 
