@@ -43323,16 +43323,17 @@ function reportConsoleAgent(id, entry, screenLines) {
     entry.antigravityRestingState = 'rest';
     entry.codexRestingState = 'rest';
     entry.codexUpdating = false;
+    if (entry.agent !== 'codex') entry.nativeSession = null;
   }
   const state = consoleAgentState(entry, screenLines);
   const said = `${entry.agent || ''} ${state || ''}`;
   
   markConsoleControls(entry, state);
-  if (said === before) return;
+  if (said === before) return state;
   entry.agentSaid = said;
   if (before.split(' ')[0] !== (entry.agent || '')) {
     closeConsoleModel(entry);
-    if (entry.status) drawConsoleStatus(id, entry);
+    if (entry.status) drawConsoleStatus(id, entry, state);
     const icon = consoleIconClass(entry.agent);
     for (const tab of tabBar.querySelectorAll('.console-tab')) {
       if (tab.dataset.consoleId !== String(id)) continue;
@@ -43343,6 +43344,7 @@ function reportConsoleAgent(id, entry, screenLines) {
     }
   }
   send({ command: 'consoleAgentState', id, agent: entry.agent || null, state });
+  return state;
 }
 
 
@@ -44194,7 +44196,7 @@ function makeConsoleLayer(id) {
   layer.addEventListener('pointerdown', () => {
     if (id === besideConsoleId()) pressIntoColumn(besideColumn());
   }, true);
-  const entry = { layer, host, status, statusRecord: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, markers: new Set(), activity: 'quiet', titleMark: null, worked: false, codexRestingState: 'rest', codexUpdating: false, antigravityRestingState: 'rest', lastKey: Date.now(), lastResize: 0, quietTimer: 0 };
+  const entry = { layer, host, status, statusRecord: null, nativeSession: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, markers: new Set(), activity: 'quiet', titleMark: null, worked: false, codexRestingState: 'rest', codexUpdating: false, antigravityRestingState: 'rest', lastKey: Date.now(), lastResize: 0, quietTimer: 0 };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
@@ -44944,7 +44946,7 @@ function consoleStatusFields(record) {
   return fields;
 }
 
-function drawConsoleStatus(id, entry) {
+function drawConsoleStatus(id, entry, reportedState) {
   if (entry.accountEditing) return;
   if (consoleFolderMenuOpen(entry)) cancelConsoleModel(entry);
   else closeConsoleModel(entry);
@@ -45049,7 +45051,7 @@ function drawConsoleStatus(id, entry) {
     if (entry.terminal && !entry.layer.hidden) refreshConsoleGrid(id, entry);
   }
   fitConsoleStatus(entry);
-  if (record) markConsoleControls(entry, consoleAgentState({ ...entry, agent: record.agent }));
+  if (record) markConsoleControls(entry, reportedState ?? consoleAgentState({ ...entry, agent: record.agent }));
   
   if (entry.statusTimer) clearTimeout(entry.statusTimer);
   entry.statusTimer = 0;
@@ -45102,8 +45104,16 @@ window.leafConsoleStatus = (id, record) => {
   const entry = consoleLayers.get(id) || (record ? makeConsoleLayer(id) : null);
   if (!entry) return;
   entry.statusRecord = record && typeof record === 'object' ? record : null;
+  const session = entry.statusRecord?.agent === 'codex' && typeof entry.statusRecord.nativeSession === 'string' && entry.statusRecord.nativeSession ? entry.statusRecord.nativeSession : null;
+  const fresh = session && session !== entry.nativeSession && entry.statusRecord.nativeFresh === true;
+  entry.nativeSession = session;
+  let reportedState;
+  if (fresh) {
+    entry.codexRestingState = 'rest';
+    if (entry.agent === 'codex') reportedState = reportConsoleAgent(id, entry);
+  }
   consoleFolderReported(entry, entry.statusRecord);
-  drawConsoleStatus(id, entry);
+  drawConsoleStatus(id, entry, reportedState);
 };
 
 
@@ -45475,7 +45485,9 @@ function consoleModelPrompt(entry, agent) {
       let faint = cursor === top && active.cursorX === column && input.length === 1;
       for (let at = column; faint && at < line.length; at += 1) {
         const cell = read(top)?.getCell(at);
-        if (cell?.getChars()?.trim() && !(cell.isFaint?.() || cell.isDim?.())) faint = false;
+        
+        const drawnCursor = at === column && cell?.isInverse?.();
+        if (cell?.getChars()?.trim() && !(cell.isFaint?.() || cell.isDim?.() || drawnCursor)) faint = false;
       }
       if (faint) return { kind: 'empty', top };
       return { kind: 'draft', text: words, top, atEnd: input.length === 1 && cursor === top && active.cursorX === line.length, tailEnd: cursor === end - 1 && active.cursorX === text(end - 1).length };
@@ -45800,13 +45812,13 @@ function refreshConsoleChat(id, entry) {
       return;
     }
   }
-  const { opening, turns } = recorded || consoleChatTurns(read.agent, consoleChatRows(entry, read), entry.terminal.cols);
+  const { opening, turns, waiting = [] } = recorded || consoleChatTurns(read.agent, consoleChatRows(entry, read), entry.terminal.cols);
   askConsoleRecord(id, entry);
   
   clearTimeout(entry.chatRecord.trail);
   entry.chatRecord.trail = setTimeout(() => askConsoleRecord(id, entry), CONSOLE_RECORD_TRAIL_MS);
   const was = entry.chat?.shown;
-  entry.chat = { ...read, opening, turns, shown: true };
+  entry.chat = { ...read, opening, turns, waiting, shown: true };
   entry.layer?.classList.add('console-chatting');
   const moved = drawConsoleChat(id, entry);
   if (entry.chatView) {
@@ -45857,6 +45869,7 @@ window.leafConsoleRecord = (id, request, answer) => {
   record.waiting = false;
   
   if (answer.file !== record.file) {
+    record.carried = consoleRecordWaiting(record);
     record.file = answer.file || '';
     record.events = [];
     record.earlier = false;
@@ -45906,7 +45919,25 @@ function consoleRecordTurns(entry, record, read) {
     const line = index === grouped.length - 1 ? status : {};
     return { key: each.key, record: true, prompt: each.prompt, cut: false, work: each.items.slice(0, last + 1), reply: each.items.slice(last + 1), notices: [], done: line.done || null, working: line.working || null };
   });
-  return { opening: record.earlier ? ['Earlier turns are in the agent’s own history.'] : [], turns };
+  return { opening: record.earlier ? ['Earlier turns are in the agent’s own history.'] : [], turns, waiting: consoleRecordWaiting(record).filter(Boolean) };
+}
+
+
+function consoleRecordWaiting(record) {
+  const lead = record.events.find(event => event.k === 'queued' || event.k === 'dequeued' || event.k === 'prompt');
+  
+  const waiting = lead?.k === 'dequeued' && Array.isArray(record.carried) ? [...record.carried] : [];
+  for (const event of record.events) {
+    if (event.k === 'queued') waiting.push(String(event.text || ''));
+    if (event.k !== 'dequeued') continue;
+    if (event.all) {
+      for (let index = waiting.length - 1; index >= 0; index -= 1) if (waiting[index]) waiting.splice(index, 1);
+    } else if (event.text) {
+      const index = waiting.indexOf(event.text);
+      if (index >= 0) waiting.splice(index, 1);
+    } else waiting.shift();
+  }
+  return waiting;
 }
 
 
@@ -46033,6 +46064,7 @@ function drawConsoleChat(id, entry) {
   const wanted = [];
   if (chat.opening.some(row => row.trim())) wanted.push({ key: 'opening', sig: chat.opening.join('\n'), make: () => consoleChatOpening(chat.opening) });
   for (const turn of chat.turns) wanted.push({ key: turn.key, sig: JSON.stringify(turn), make: () => consoleChatTurn(view, turn) });
+  if (chat.waiting?.length) wanted.push({ key: 'waiting', sig: JSON.stringify(chat.waiting), make: () => consoleChatWaiting(chat.waiting) });
   const nodes = new Map();
   let moved = false;
   let at = view.list.firstChild;
@@ -46069,6 +46101,23 @@ function consoleChatOpening(rows) {
   const node = document.createElement('div');
   node.className = 'console-reply console-chat-opening';
   node.appendChild(consoleChatBlocks(rows));
+  return node;
+}
+
+
+function consoleChatWaiting(waiting) {
+  const node = document.createElement('div');
+  node.className = 'console-waiting';
+  for (const text of waiting) {
+    const bubble = document.createElement('div');
+    bubble.className = 'console-bubble is-waiting';
+    bubble.appendChild(consoleChatText(text));
+    node.appendChild(bubble);
+  }
+  const note = document.createElement('div');
+  note.className = 'console-waiting-note';
+  note.textContent = 'Waiting';
+  node.appendChild(note);
   return node;
 }
 
@@ -46232,6 +46281,8 @@ const CONSOLE_COMPOSER_HOLD_MS = 2000;
 
 const CONSOLE_COMPOSER_LINES = 8;
 const CONSOLE_COMPOSER_NAMES = { claude: 'Claude', codex: 'Codex' };
+
+const CONSOLE_COMPOSER_QUEUED = 'Press up to edit queued messages';
 
 
 const CONSOLE_AGENT_BUILT_INS = {
@@ -46700,8 +46751,8 @@ function makeConsoleComposer(id, entry, frame) {
   const tools = document.createElement('div');
   tools.className = 'console-composer-tools';
   const attach = consoleComposerButton('console-composer-tool', 'Attach a file', 'new');
-  const slash = consoleComposerButton('console-composer-tool', "The agent's commands");
-  slash.textContent = '/';
+  const slash = consoleComposerButton('console-composer-tool', entry.chat?.agent === 'codex' ? 'Skills' : 'Commands and skills');
+  slash.textContent = entry.chat?.agent === 'codex' ? '$' : '/';
   const mode = consoleComposerButton('console-composer-mode', 'Change the permission mode');
   mode.hidden = true;
   tools.append(attach, slash, mode);
@@ -46714,7 +46765,7 @@ function makeConsoleComposer(id, entry, frame) {
   list.hidden = true;
   box.append(list, chips, words, row);
   frame.appendChild(box);
-  const state = { box, chips, field, attach, slash, mode, submit, list, attached: [], history: [], back: -1, kept: '', dropped: null, files: null, request: 0, hold: 0, holdTimer: 0 };
+  const state = { box, chips, field, attach, slash, mode, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
   entry.composer = state;
   state.mirror = mirror;
   state.commands = null;
@@ -46738,7 +46789,7 @@ function makeConsoleComposer(id, entry, frame) {
     state.request = ++consoleComposerRequests;
     send({ command: 'consoleCompose', id, request: state.request, ask: 'files' });
   });
-  slash.addEventListener('click', () => consoleComposerToAgent(id, entry, '/' + field.value.replace(/^\//, '')));
+  slash.addEventListener('click', () => openConsoleComposerCommands(id, entry));
   mode.addEventListener('click', () => consoleComposerMode(id, entry));
   submit.addEventListener('click', () => {
     if (consoleComposerWorking(entry) && !consoleComposerHasMessage(entry)) consoleComposerStop(id, entry);
@@ -46748,8 +46799,7 @@ function makeConsoleComposer(id, entry, frame) {
     const remove = event.target.closest?.('.console-composer-chip-remove');
     if (!remove) return;
     const path = remove.closest('.console-composer-chip')?.dataset.path;
-    if (remove.closest('.console-composer-chip')?.dataset.context) state.dropped = path;
-    else state.attached = state.attached.filter(each => each !== path);
+    state.attached = state.attached.filter(each => each !== path);
     drawConsoleComposer(id, entry);
     field.focus();
   });
@@ -46793,20 +46843,6 @@ function consoleComposerHasMessage(entry) {
 }
 
 
-function consoleComposerContext(entry) {
-  const tabs = currentState?.tabs || [];
-  const beside = currentState?.beside ? tabs[currentState.beside.tab] : null;
-  const tab = beside?.kind === 'document' && beside.path ? beside : [...tabs].reverse().find(each => each.kind === 'document' && each.path);
-  if (!tab || tab.path === entry.composer?.dropped) return null;
-  return { path: tab.path, name: tab.title || tab.path.split(/[\\/]/).pop() };
-}
-
-function consoleComposerPaths(entry) {
-  const context = consoleComposerContext(entry);
-  return [...(context ? [context.path] : []), ...(entry.composer?.attached || []).filter(path => path !== context?.path)];
-}
-
-
 function drawConsoleComposer(id, entry) {
   const state = entry.composer;
   const chat = entry.chat;
@@ -46815,6 +46851,12 @@ function drawConsoleComposer(id, entry) {
   const placeholder = chat.placeholder || `Ask ${name}…`;
   if (state.field.placeholder !== placeholder) state.field.placeholder = placeholder;
   state.field.setAttribute('aria-label', `Message to ${name}`);
+  const codex = chat.agent === 'codex';
+  const mark = codex ? '$' : '/';
+  const commandsLabel = codex ? 'Skills' : 'Commands and skills';
+  if (state.slash.textContent !== mark) state.slash.textContent = mark;
+  if (state.slash.title !== commandsLabel) state.slash.title = commandsLabel;
+  if (state.slash.getAttribute('aria-label') !== commandsLabel) state.slash.setAttribute('aria-label', commandsLabel);
   const mode = chat.agent === 'claude' ? consoleComposerModeName(chat.mode) : chat.agent === 'codex' ? consoleComposerCodexMode(chat) : null;
   state.mode.hidden = !mode;
   if (mode && state.mode.textContent !== mode) state.mode.textContent = mode;
@@ -46828,9 +46870,9 @@ function drawConsoleComposer(id, entry) {
     state.submit.title = label;
     state.submit.setAttribute('aria-label', label);
   }
-  const context = consoleComposerContext(entry);
-  const wanted = [...(context ? [{ ...context, context: true }] : []), ...state.attached.filter(path => path !== context?.path).map(path => ({ path, name: path.split(/[\\/]/).pop() }))];
-  const drawn = wanted.map(chip => `${chip.context ? 'c' : 'a'}:${chip.path}`).join('|');
+  
+  const wanted = state.attached.map(path => ({ path, name: path.split(/[\\/]/).pop() }));
+  const drawn = wanted.map(chip => chip.path).join('|');
   if (state.chips.dataset.drawn !== drawn) {
     state.chips.dataset.drawn = drawn;
     state.chips.replaceChildren(...wanted.map(consoleComposerChip));
@@ -46860,7 +46902,6 @@ function consoleComposerChip(chip) {
   const node = document.createElement('span');
   node.className = 'console-composer-chip';
   node.dataset.path = chip.path;
-  if (chip.context) node.dataset.context = 'true';
   node.title = chip.path;
   const icon = document.createElement('span');
   icon.className = 'lt-icon lt-icon-document';
@@ -46916,6 +46957,13 @@ function onConsoleComposerKey(id, entry, event) {
   if (event.key === 'Escape' && consoleComposerWorking(entry)) {
     event.preventDefault();
     consoleComposerStop(id, entry);
+    return;
+  }
+  
+  if (event.key === 'ArrowUp' && !event.shiftKey && !state.field.value && entry.chat?.agent === 'claude' && entry.chat.placeholder === CONSOLE_COMPOSER_QUEUED) {
+    event.preventDefault();
+    consoleKeyTyped(id);
+    send({ command: 'consoleInput', id, data: (entry.terminal?.getMode?.(1) ? '\x1bO' : '\x1b[') + 'A' });
     return;
   }
   if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !event.shiftKey && consoleComposerRecall(entry, event.key === 'ArrowUp' ? 1 : -1)) {
@@ -46975,6 +47023,17 @@ function consoleComposerToAgent(id, entry, text) {
   drawConsoleComposer(id, entry);
 }
 
+function openConsoleComposerCommands(id, entry) {
+  const state = entry.composer;
+  const field = state.field;
+  const prefix = entry.chat?.agent === 'codex' ? '$' : '/';
+  const word = prefix === '$' ? /^\$[^\s$]*/.exec(field.value) : /^\/[^\s/]*/.exec(field.value);
+  if (!word) field.value = prefix + (field.value ? ' ' + field.value : '');
+  field.focus();
+  field.selectionStart = field.selectionEnd = word ? word[0].length : 1;
+  onConsoleComposerInput(id, entry);
+}
+
 function consoleComposerStop(id, entry) {
   send({ command: 'consoleInput', id, data: '\x1b' });
 }
@@ -46998,7 +47057,7 @@ function sendConsoleComposer(id, entry) {
   const command = text.startsWith('/');
   const opening = /^\$([^\s]+)(?:\s|$)/.exec(text);
   const skill = opening && consoleComposerCommandRows(entry).some(row => row.prefix === '$' && row.kind === 'skill' && row.name === opening[1]);
-  const paths = command ? state.attached.slice() : consoleComposerPaths(entry);
+  const paths = state.attached.slice();
   closeConsoleFileList(entry);
   consoleKeyTyped(id);
   holdConsoleComposer(id, entry);
@@ -47010,8 +47069,11 @@ function sendConsoleComposer(id, entry) {
   };
   if (command || skill) {
     words();
-    if (!paths.length) enter();
-    else {
+    if (!paths.length) {
+      
+      if (entry.chat?.agent === 'codex' && /(?:^|\s)\$[^\s$]+$/.test(text)) send({ command: 'consoleInput', id, data: ' ' });
+      enter();
+    } else {
       send({ command: 'consoleInput', id, data: ' ' });
       send({ command: 'consoleTypePaths', id, paths });
       
@@ -47031,7 +47093,6 @@ function sendConsoleComposer(id, entry) {
   state.back = -1;
   state.field.value = '';
   state.attached = [];
-  if (!command && paths.length && consoleComposerContext(entry)) state.dropped = consoleComposerContext(entry).path;
   drawConsoleComposer(id, entry);
 }
 
@@ -47289,6 +47350,14 @@ function consoleCommandListKey(id, entry, event) {
   }
   if (event.key === 'Enter' || event.key === 'Tab') {
     event.preventDefault();
+    
+    const word = consoleComposerCommandWord(entry);
+    const typed = word && state.field.value.slice(word.start, word.end).toLowerCase();
+    if (event.key === 'Enter' && rows.some(row => (row.prefix + row.name).toLowerCase() === typed)) {
+      closeConsoleFileList(entry);
+      sendConsoleComposer(id, entry);
+      return true;
+    }
     chooseConsoleCommand(entry, state.commands.at);
     return true;
   }

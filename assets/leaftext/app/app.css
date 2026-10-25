@@ -8514,6 +8514,10 @@ body.library-resizing button {
 .console-chat-turns { display: flex; flex-direction: column; gap: var(--lt-space-16); padding: var(--lt-space-16); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-5); color: var(--lt-markdown-foreground); }
 .console-turn { display: flex; flex-direction: column; gap: var(--lt-space-16); min-width: 0; }
 .console-bubble { align-self: flex-end; max-width: 88%; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border-radius: var(--lt-radius-3xl) var(--lt-radius-3xl) 0 var(--lt-radius-3xl); background: var(--lt-surface-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.console-waiting { display: flex; flex-direction: column; gap: var(--lt-space-8); min-width: 0; }
+.console-bubble.is-waiting { border: var(--lt-stroke-1) dashed var(--lt-border-strong); background: transparent; color: var(--lt-muted-foreground); }
+.console-waiting-note { align-self: flex-end; color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .console-reply { display: flex; flex-direction: column; gap: var(--lt-space-8); align-self: stretch; min-width: 0; }
 .console-chat-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 
