@@ -22271,7 +22271,8 @@ function renderTabs(state) {
     if (tab.kind === 'console') {
       const layer = consoleLayers.get(tab.webId);
       const icon = consoleIconClass(layer?.agent);
-      const state = `${layer?.activity === 'done' ? ' console-done' : ''}${layer?.activity === 'working' ? ' console-working' : ''}${layer?.agent ? ' console-has-agent' : ''}`;
+      const tabState = consoleTabState(layer);
+      const state = `${tabState === 'done' ? ' console-done' : ''}${tabState === 'working' ? ' console-working' : ''}${layer?.agent ? ' console-has-agent' : ''}`;
       return `<span class="tab console-tab${index === active ? ' tab-active' : ''}${state}" data-tab-pos="${index}" data-tab-path="" data-console-id="${tab.webId}"><button type="button" class="${consoleLabel}" data-tab-index="${index}" title="${escapeAttr(tab.tip || tab.title)}"><span class="console-tab-icon" aria-hidden="true"><span class="console-tab-glow"><span class="${icon}"></span></span><span class="${icon}"></span></span><span class="console-tab-name">${escapeText(tab.title)}</span></button>${tabCloseMarkup(index)}</span>`;
     }
     
@@ -43152,15 +43153,27 @@ const consoleLayers = new Map();
 let consoleRuntime = null;
 var consoleShell = document.getElementById('libraryShell');
 
+function consoleTabState(entry) {
+  if (!entry) return 'rest';
+  if (!entry.agent) return entry.activity;
+  const [agent, state] = (entry.agentSaid || '').split(' ');
+  return agent === entry.agent ? state : 'rest';
+}
+
+function markConsoleTab(id, entry) {
+  const state = consoleTabState(entry);
+  for (const tab of tabBar.querySelectorAll('.console-tab')) {
+    if (tab.dataset.consoleId !== String(id)) continue;
+    tab.classList.toggle('console-done', state === 'done');
+    tab.classList.toggle('console-working', state === 'working');
+  }
+}
+
 function setConsoleActivity(id, entry, activity) {
   if (entry.activity === activity) return;
   entry.activity = activity;
   if (activity === 'working') entry.worked = true;
-  for (const tab of tabBar.querySelectorAll('.console-tab')) {
-    if (tab.dataset.consoleId !== String(id)) continue;
-    tab.classList.toggle('console-done', activity === 'done');
-    tab.classList.toggle('console-working', activity === 'working');
-  }
+  if (!entry.agent) markConsoleTab(id, entry);
   reportConsoleAgent(id, entry);
 }
 
@@ -43242,6 +43255,11 @@ function consoleCodexSignIn(lines) {
 
 function consoleClaudeSetup(lines) {
   if (/^\s*Syntax (?:theme: .*\(ctrl\+t to disable\)|highlighting disabled \(ctrl\+t to enable\))\s*$/.test(lines[0] || '')) return true;
+  if (/^\s*Press Enter to continue…\s*$/.test(lines[0] || '') && lines.some(line => /^\s*Security notes:\s*$|code\.claude\.com\/docs\/en\/security\s*$/.test(line))) return true;
+  
+  if (/^\s*Enter to confirm · Esc to cancel\s*$/.test(lines[0] || '') && lines.some(line => /^\s*Detected a custom API key in your environment\s*$/.test(line))) return true;
+  
+  if (/^\s*Enter to confirm · Esc to cancel\s*$/.test(lines[0] || '') && ['Yes, I accept', 'No, exit'].every(choice => lines.some(line => line.replace(/^\s*(?:[>❯]\s*)?/, '').trimEnd() === choice))) return true;
   const question = lines.findIndex(line => /^\s*Select login method:\s*$/.test(line));
   
   const choice = lines.findIndex(line => /^\s*(?:[>❯]\s*)?\d+\. \S/.test(line));
@@ -43331,6 +43349,7 @@ function reportConsoleAgent(id, entry, screenLines) {
   markConsoleControls(entry, state);
   if (said === before) return state;
   entry.agentSaid = said;
+  markConsoleTab(id, entry);
   if (before.split(' ')[0] !== (entry.agent || '')) {
     closeConsoleModel(entry);
     if (entry.status) drawConsoleStatus(id, entry, state);
@@ -43789,7 +43808,8 @@ function measureConsoleFont() {
 
 function refreshConsoleGrid(id, entry) {
   const terminal = entry.terminal;
-  if (!terminal) return;
+  
+  if (!terminal || document.body.classList.contains('leaf-paper')) return;
   const renderer = terminal.renderer;
   if (renderer.measureFont !== measureConsoleFont) {
     entry.fit.fit();
@@ -43811,6 +43831,14 @@ function refreshConsoleGrid(id, entry) {
   if (changed && !entry.layer.hidden) renderer.render(terminal.wasmTerm, true, terminal.viewportY, terminal);
   sendConsoleSize(id, entry);
 }
+
+
+const consolePaperHold = window.leafHoldAppearance;
+window.leafHoldAppearance = (held) => {
+  if (typeof consolePaperHold === 'function') consolePaperHold(held);
+  if (held || document.body.classList.contains('leaf-paper')) return;
+  for (const [id, entry] of consoleLayers) if (!entry.layer.hidden) refreshConsoleGrid(id, entry);
+};
 
 function consoleCellUnderLink(renderer, column, row) {
   const range = renderer.hoveredLinkRange;
@@ -44283,10 +44311,8 @@ function makeConsoleLayer(id) {
     entry.observer = new ResizeObserver(() => {
       if (layer.hidden) return;
       fitConsoleStatus(entry);
-      const size = `${terminal.cols}x${terminal.rows}`;
-      refreshConsoleGrid(id, entry);
       
-      if (`${terminal.cols}x${terminal.rows}` !== size) leaveConsoleChat(entry);
+      refreshConsoleGrid(id, entry);
       if (consoleFrontId !== id) return;
       renderConsolePin(entry);
     });
@@ -44924,7 +44950,7 @@ function consoleStatusLimitName(minutes) {
 function consoleStatusFields(record) {
   const fields = [];
   const controls = ['claude', 'codex', 'antigravity'].includes(record.agent);
-  const agent = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', gemini: 'Gemini CLI' }[record.agent];
+  const agent = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity' }[record.agent];
   if (agent) fields.push({ field: 'agent', text: agent, agent: record.agent });
   if (record.account) fields.push({ field: 'account', text: record.account });
   if (record.model || controls) fields.push({ field: 'model', text: record.model || 'Model' });
@@ -44963,7 +44989,7 @@ function drawConsoleStatus(id, entry, reportedState) {
     item.className = field.field === 'agent' ? 'console-status-field console-status-agent' : 'console-status-field';
     item.dataset.field = field.field;
     
-    const logo = field.agent && field.agent !== 'gemini';
+    const logo = Boolean(field.agent);
     if (logo) {
       const icon = document.createElement('span');
       icon.className = `lt-icon lt-icon-agent-${field.agent}`;
@@ -45213,6 +45239,13 @@ function writeConsolePinned(entry, data, write, done) {
   if (pin.output) {
     pin.output = false;
     text = CONSOLE_OUTPUT_MARK + text;
+  } else if (pin.input && !text.includes('\x1b]133;')) {
+    
+    const line = text.indexOf('\n');
+    if (line >= 0) {
+      pin.input = false;
+      text = text.slice(0, line + 1) + CONSOLE_OUTPUT_MARK + text.slice(line + 1);
+    }
   }
   if (!text.includes('\x1b]133;')) return write(text, done);
   let from = 0;
@@ -45446,6 +45479,27 @@ const ANTIGRAVITY_MODE_HINTS = [
 ];
 
 
+const CLAUDE_QUEUED_PLACEHOLDER = 'Press up to edit queued messages';
+
+
+function consoleFooterPrompt(text, under, faintRow, plainRow = () => false) {
+  for (let top = under - 1; top > 0 && under - top <= 12; top -= 1) {
+    const line = text(top);
+    if (CONSOLE_PROMPT_RULE.test(line)) break;
+    const mark = /^(\s*[❯›>])(?:\s|$)/.exec(line);
+    if (!mark) continue;
+    if (!CONSOLE_PROMPT_RULE.test(text(top - 1))) break;
+    const column = mark[1].length + 1;
+    const input = [line.slice(column)];
+    for (let row = top + 1; row < under; row += 1) input.push(text(row));
+    const words = input.join('\n');
+    if (!words.trim() || (input.length === 1 && (faintRow(top, column) || (words.trimEnd() === CLAUDE_QUEUED_PLACEHOLDER && plainRow(top, column))))) return { kind: 'empty', top };
+    return { kind: 'draft', text: words, top, atEnd: false, tailEnd: false };
+  }
+  return { kind: 'unknown' };
+}
+
+
 function consoleModelPrompt(entry, agent) {
   const terminal = entry.terminal;
   const active = terminal?.buffer?.active;
@@ -45459,9 +45513,28 @@ function consoleModelPrompt(entry, agent) {
       return rows.get(row);
     };
     const text = row => consoleLine(read(row))?.translateToString(true) ?? '';
+    const faintRow = (row, column) => {
+      const line = text(row);
+      for (let at = column; at < line.length; at += 1) {
+        const cell = read(row)?.getCell(at);
+        if (cell?.getChars()?.trim() && !(cell.isFaint?.() || cell.isDim?.())) return false;
+      }
+      return true;
+    };
+    const plainRow = (row, column) => {
+      const line = text(row);
+      for (let at = column; at < line.length; at += 1) {
+        const cell = read(row)?.getCell(at);
+        if (cell?.isFaint?.() || cell?.isDim?.()) return false;
+      }
+      return true;
+    };
+    let footer = true;
     for (let top = cursor; top >= 0 && cursor - top < 12; top -= 1) {
       const line = text(top);
-      if (CONSOLE_PROMPT_RULE.test(line)) break;
+      
+      if (CONSOLE_PROMPT_RULE.test(line)) return agent === 'claude' && footer && top < cursor && cursor - top <= 6 ? consoleFooterPrompt(text, top, faintRow, plainRow) : { kind: 'unknown' };
+      if (!line.trim()) footer = false;
       
       const mark = /^(\s*[❯›>])(?:\s|$)/.exec(line);
       if (!mark) continue;
@@ -45482,6 +45555,7 @@ function consoleModelPrompt(entry, agent) {
         const hint = words.trimEnd();
         if (ANTIGRAVITY_MODE_HINTS.some(full => hint === full || hint.endsWith('...') && hint.length - 3 > full.indexOf(':') && full.startsWith(hint.slice(0, -3)))) return { kind: 'empty', top };
       }
+      if (agent === 'claude' && input.length === 1 && cursor === top && active.cursorX === column && words.trimEnd() === CLAUDE_QUEUED_PLACEHOLDER && plainRow(top, column)) return { kind: 'empty', top };
       let faint = cursor === top && active.cursorX === column && input.length === 1;
       for (let at = column; faint && at < line.length; at += 1) {
         const cell = read(top)?.getCell(at);
@@ -45798,7 +45872,7 @@ function consoleChatItemText(item) {
 function refreshConsoleChat(id, entry) {
   const read = readConsoleChat(entry);
   if (!read) {
-    if (!consoleComposerHolding(entry)) leaveConsoleChat(entry);
+    if (!consoleComposerHolding(entry) && !consoleChatMidRedraw(entry)) leaveConsoleChat(entry);
     return;
   }
   
@@ -45831,6 +45905,12 @@ function refreshConsoleChat(id, entry) {
   if (!was || moved) consoleChatRailChanged(id, entry);
   
   if (!was && entry.host?.contains(document.activeElement)) focusConsoleComposer(entry);
+}
+
+
+function consoleChatMidRedraw(entry) {
+  if (!entry.chat?.shown || entry.agent !== 'claude' || entry.activity !== 'working') return false;
+  return readConsoleScreenOnce(entry.terminal.wasmTerm, () => consoleModelPrompt(entry, entry.agent).kind === 'unknown');
 }
 
 
