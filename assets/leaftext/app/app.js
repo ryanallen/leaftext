@@ -43275,6 +43275,14 @@ function consoleCodexTurnEnded(lines, input) {
   return (echo < 0 ? above : above.slice(0, echo)).some(line => CONSOLE_CODEX_WORKED.test(line) || /^\s*■ /.test(line));
 }
 
+function consoleCodexPluginHooksRefused(lines, input) {
+  if (input < 0) return false;
+  const above = lines.slice(input + 1);
+  const echo = above.findIndex(line => /^\s*›(?:\s|$)/.test(line));
+  const turn = echo < 0 ? above : above.slice(0, echo);
+  return turn.some((line, index) => /^\s*└ plugin contents changed; hook approval required\s*$/.test(line) && /^\s*[•◦] Hook failed\s*$/.test(turn[index + 1] || ''));
+}
+
 const CONSOLE_CODEX_UPDATE = /^\s*Updating Codex via `npm install -g @openai\/codex`\.\.\.\s*$/;
 
 function consoleCodexUpdateEnd(line, index, lines) {
@@ -43295,6 +43303,7 @@ function consoleAgentState(entry, screenLines) {
   if (entry.agent === 'claude' && consoleClaudeSetup(lines)) return 'needs';
   if (entry.agent === 'codex') {
     const input = lines.findIndex(line => /^\s*\u203a(?:\s|$)/.test(line));
+    if (consoleCodexPluginHooksRefused(lines, input)) return 'needs';
     if (entry.terminal?.buffer?.active.type !== 'normal' || input >= 0) entry.codexUpdating = false;
     else {
       const start = lines.findIndex(line => CONSOLE_CODEX_UPDATE.test(line));
@@ -45482,7 +45491,7 @@ const ANTIGRAVITY_MODE_HINTS = [
 const CLAUDE_QUEUED_PLACEHOLDER = 'Press up to edit queued messages';
 
 
-function consoleFooterPrompt(text, under, faintRow, plainRow = () => false) {
+function consoleFooterPrompt(text, under, placeholderRow, plainRow = () => false) {
   for (let top = under - 1; top > 0 && under - top <= 12; top -= 1) {
     const line = text(top);
     if (CONSOLE_PROMPT_RULE.test(line)) break;
@@ -45493,7 +45502,7 @@ function consoleFooterPrompt(text, under, faintRow, plainRow = () => false) {
     const input = [line.slice(column)];
     for (let row = top + 1; row < under; row += 1) input.push(text(row));
     const words = input.join('\n');
-    if (!words.trim() || (input.length === 1 && (faintRow(top, column) || (words.trimEnd() === CLAUDE_QUEUED_PLACEHOLDER && plainRow(top, column))))) return { kind: 'empty', top };
+    if (!words.trim() || (input.length === 1 && (placeholderRow(top, column) || (words.trimEnd() === CLAUDE_QUEUED_PLACEHOLDER && plainRow(top, column))))) return { kind: 'empty', top };
     return { kind: 'draft', text: words, top, atEnd: false, tailEnd: false };
   }
   return { kind: 'unknown' };
@@ -45513,11 +45522,12 @@ function consoleModelPrompt(entry, agent) {
       return rows.get(row);
     };
     const text = row => consoleLine(read(row))?.translateToString(true) ?? '';
-    const faintRow = (row, column) => {
+    
+    const placeholderRow = (row, column) => {
       const line = text(row);
       for (let at = column; at < line.length; at += 1) {
         const cell = read(row)?.getCell(at);
-        if (cell?.getChars()?.trim() && !(cell.isFaint?.() || cell.isDim?.())) return false;
+        if (cell?.getChars()?.trim() && !(cell.isFaint?.() || cell.isDim?.() || (at === column && cell.isInverse?.()))) return false;
       }
       return true;
     };
@@ -45533,7 +45543,7 @@ function consoleModelPrompt(entry, agent) {
     for (let top = cursor; top >= 0 && cursor - top < 12; top -= 1) {
       const line = text(top);
       
-      if (CONSOLE_PROMPT_RULE.test(line)) return agent === 'claude' && footer && top < cursor && cursor - top <= 6 ? consoleFooterPrompt(text, top, faintRow, plainRow) : { kind: 'unknown' };
+      if (CONSOLE_PROMPT_RULE.test(line)) return agent === 'claude' && footer && top < cursor && cursor - top <= 6 ? consoleFooterPrompt(text, top, placeholderRow, plainRow) : { kind: 'unknown' };
       if (!line.trim()) footer = false;
       
       const mark = /^(\s*[❯›>])(?:\s|$)/.exec(line);
@@ -45556,14 +45566,7 @@ function consoleModelPrompt(entry, agent) {
         if (ANTIGRAVITY_MODE_HINTS.some(full => hint === full || hint.endsWith('...') && hint.length - 3 > full.indexOf(':') && full.startsWith(hint.slice(0, -3)))) return { kind: 'empty', top };
       }
       if (agent === 'claude' && input.length === 1 && cursor === top && active.cursorX === column && words.trimEnd() === CLAUDE_QUEUED_PLACEHOLDER && plainRow(top, column)) return { kind: 'empty', top };
-      let faint = cursor === top && active.cursorX === column && input.length === 1;
-      for (let at = column; faint && at < line.length; at += 1) {
-        const cell = read(top)?.getCell(at);
-        
-        const drawnCursor = at === column && cell?.isInverse?.();
-        if (cell?.getChars()?.trim() && !(cell.isFaint?.() || cell.isDim?.() || drawnCursor)) faint = false;
-      }
-      if (faint) return { kind: 'empty', top };
+      if (cursor === top && active.cursorX === column && input.length === 1 && placeholderRow(top, column)) return { kind: 'empty', top };
       return { kind: 'draft', text: words, top, atEnd: input.length === 1 && cursor === top && active.cursorX === line.length, tailEnd: cursor === end - 1 && active.cursorX === text(end - 1).length };
     }
     return { kind: 'unknown' };
