@@ -85,6 +85,8 @@ let librarySearchQuery = '';
 
 let findScope = 'file';
 
+let librarySearchFresh = false;
+
 let pendingSearchJump = null;
 
 let readingUnlocked;
@@ -16031,7 +16033,7 @@ if (document.fonts) {
 }
 
 function renderLibrarySearchability() {
-  if (!vaultSearchAvailable() && librarySearchQuery) clearLibrarySearch();
+  if (!allFilesSearchAvailable() && librarySearchQuery) clearLibrarySearch();
   updateFindScopeChrome();
 }
 
@@ -20029,7 +20031,9 @@ function runLibrarySearch(value) {
   librarySearchError = null;
   renderLibrarySearch();
   onlineSearchSent = onlineSearchIdentity(query);
-  send({ command: 'search', query, today: localDateStamp() });
+  const fresh = librarySearchFresh;
+  librarySearchFresh = false;
+  send({ command: 'search', query, today: localDateStamp(), fresh });
 }
 
 function clearLibrarySearch({ keepQuery = false } = {}) {
@@ -35910,13 +35914,23 @@ function vaultSearchAvailable() {
   return Boolean(activeVaultId) || (window.__leafSite && hostAnswers('search'));
 }
 
+function allFilesSearchAvailable() {
+  return vaultSearchAvailable() || Boolean(libraryProjectPath);
+}
+function allFilesPlaceholder() {
+  if (!allFilesSearchAvailable()) return 'Open a folder to search all files';
+  if (vaultSearchAvailable()) return 'Search all files';
+  const name = libraryProjectPath.replace(/[\\/]+$/, '').split(/[\\/]/).pop();
+  return name ? `Search all files in ${name}` : 'Search all files';
+}
+
 function updateFindScopeChrome() {
   const vault = findingAllFiles();
   findScopeLabel.textContent = vault ? FIND_SCOPE_LABELS.vault : FIND_SCOPE_LABELS.file;
   findBar.setAttribute('aria-label', vault ? 'Find in all files' : 'Find in this document');
-  const stranded = vault && !vaultSearchAvailable();
+  const stranded = vault && !allFilesSearchAvailable();
   findInput.disabled = stranded;
-  findInput.placeholder = !vault ? 'Find' : stranded ? 'Add a notes folder to search all files' : 'Search all files';
+  findInput.placeholder = vault ? allFilesPlaceholder() : 'Find';
   for (const name of Object.keys(findFlagButtons)) {
     const button = findFlagButtons[name];
     if (button) button.disabled = vault;
@@ -35953,7 +35967,7 @@ function setFindScope(next) {
     
     setFindReplaceRow(false);
     updateFindScopeChrome();
-    runLibrarySearch(vaultSearchAvailable() ? findInput.value : '');
+    runLibrarySearch(allFilesSearchAvailable() ? findInput.value : '');
     return;
   }
   clearLibrarySearch({ keepQuery: true });
@@ -36307,7 +36321,8 @@ function findSettling(scope, query, hits) {
   findSettledTimer = window.setTimeout(() => {
     findSettledTimer = 0;
     
-    send({ command: 'searchLanded', scope, query: settled, vault: activeVaultId || 0 });
+    const folder = scope === 'vault' && !activeVaultId && libraryProjectPath ? libraryProjectPath : undefined;
+    send({ command: 'searchLanded', scope, query: settled, vault: activeVaultId || 0, folder });
   }, FIND_SETTLED_MS);
 }
 
@@ -36366,6 +36381,8 @@ function openFindBar({ replacing = false } = {}) {
   renderReadAloudBar();
   if (opening) {
     findScope = activeDocumentPath() ? 'file' : 'vault';
+    
+    librarySearchFresh = true;
     findSeedFromSelection();
     watchFindRender();
   }
@@ -42678,7 +42695,7 @@ registerPaneFootAction({
   has: () => true,
   press: () => {
     openFindBar();
-    if (vaultSearchAvailable()) setFindScope('vault');
+    if (allFilesSearchAvailable()) setFindScope('vault');
   },
 });
 
@@ -43294,6 +43311,8 @@ function consoleCodexUpdateEnd(line, index, lines) {
 function consoleAgentState(entry, screenLines) {
   const rule = consoleAgentAsks[entry.agent];
   if (!rule) return null;
+  if (entry.agent === 'codex' && entry.codexReconnect === 'start') return 'working';
+  if (entry.agent === 'codex' && entry.codexReconnect === 'failed') return 'needs';
   const lines = screenLines || consoleBottomLines(entry, rule.lines);
   
   if (lines.slice(0, rule.lines).some(rule.asks) || (entry.agent === 'codex' && (consoleCodexFolderTrust(lines) || (entry.terminal?.buffer?.active.type === 'alternate' && consoleCodexSignIn(lines))))) {
@@ -43304,6 +43323,14 @@ function consoleAgentState(entry, screenLines) {
   if (entry.agent === 'codex') {
     const input = lines.findIndex(line => /^\s*\u203a(?:\s|$)/.test(line));
     if (consoleCodexPluginHooksRefused(lines, input)) return 'needs';
+    if (entry.codexPendingPrompt) {
+      const previous = lines.slice(input + 1);
+      const echo = previous.findIndex(line => line.trim() === `› ${entry.codexPendingPrompt}`);
+      if (echo < 0 || !previous.slice(0, echo).some(line => CONSOLE_CODEX_WORKED.test(line) || /^\s*■ /.test(line))) return 'working';
+      entry.codexPendingPrompt = null;
+      entry.codexRestingState = 'done';
+      return 'done';
+    }
     if (entry.terminal?.buffer?.active.type !== 'normal' || input >= 0) entry.codexUpdating = false;
     else {
       const start = lines.findIndex(line => CONSOLE_CODEX_UPDATE.test(line));
@@ -43342,6 +43369,18 @@ function consoleAgentState(entry, screenLines) {
   }
   return entry.activity === 'working' || entry.activity === 'done' ? entry.activity : 'rest';
 }
+
+window.leafConsoleReconnect = (id, phase) => {
+  const entry = consoleLayers.get(id);
+  if (!entry || entry.agent !== 'codex') return;
+  entry.codexReconnect = phase === 'ready' ? null : phase;
+  if (phase === 'start') entry.codexRestingState = 'rest';
+  reportConsoleAgent(id, entry);
+  if (phase === 'ready' && entry.composer?.queuedForReconnect) {
+    entry.composer.queuedForReconnect = false;
+    sendConsoleComposer(id, entry);
+  }
+};
 
 
 function reportConsoleAgent(id, entry, screenLines) {
@@ -43815,13 +43854,20 @@ function measureConsoleFont() {
   return { width, height, baseline };
 }
 
+
+function fitConsoleTerminal(entry) {
+  const size = entry.fit.proposeDimensions();
+  const terminal = entry.terminal;
+  if (size && (size.cols !== terminal.cols || size.rows !== terminal.rows)) terminal.resize(size.cols, size.rows);
+}
+
 function refreshConsoleGrid(id, entry) {
   const terminal = entry.terminal;
   
   if (!terminal || document.body.classList.contains('leaf-paper')) return;
   const renderer = terminal.renderer;
   if (renderer.measureFont !== measureConsoleFont) {
-    entry.fit.fit();
+    fitConsoleTerminal(entry);
     sendConsoleSize(id, entry);
     return;
   }
@@ -43836,7 +43882,7 @@ function refreshConsoleGrid(id, entry) {
     renderer.consoleLetterGaps = null;
     renderer.resize(terminal.cols, terminal.rows);
   }
-  entry.fit.fit();
+  fitConsoleTerminal(entry);
   if (changed && !entry.layer.hidden) renderer.render(terminal.wasmTerm, true, terminal.viewportY, terminal);
   sendConsoleSize(id, entry);
 }
@@ -45540,11 +45586,16 @@ function consoleModelPrompt(entry, agent) {
       return true;
     };
     let footer = true;
+    let lastFooter = -1;
+    let erased = 0;
     for (let top = cursor; top >= 0 && cursor - top < 12; top -= 1) {
       const line = text(top);
       
-      if (CONSOLE_PROMPT_RULE.test(line)) return agent === 'claude' && footer && top < cursor && cursor - top <= 6 ? consoleFooterPrompt(text, top, placeholderRow, plainRow) : { kind: 'unknown' };
-      if (!line.trim()) footer = false;
+      if (CONSOLE_PROMPT_RULE.test(line)) return agent === 'claude' && footer && lastFooter > top && lastFooter - top <= 6 ? consoleFooterPrompt(text, top, placeholderRow, plainRow) : { kind: 'unknown' };
+      if (!line.trim()) {
+        if (lastFooter < 0 && erased < 5) erased += 1;
+        else footer = false;
+      } else if (lastFooter < 0) lastFooter = top;
       
       const mark = /^(\s*[❯›>])(?:\s|$)/.exec(line);
       if (!mark) continue;
@@ -45835,14 +45886,13 @@ function consoleChatTurns(agent, rows, cols) {
     opening,
     turns: turns.map(turn => {
       for (const each of [...turn.items, ...turn.notices]) while (each.rows.length > 1 && !each.rows.at(-1).trim()) each.rows.pop();
-      const lastTool = turn.items.map(each => each.kind).lastIndexOf('tool');
       
       const cut = /…$/.test(turn.echo[0]);
       const joined = consoleChatPrompt(turn.echo, cols);
       const prompt = cut ? joined.replace(/…$/, '').trimEnd() : joined;
       const seen = counts.get(prompt) || 0;
       counts.set(prompt, seen + 1);
-      return { key: `${seen}:${prompt}`, prompt, cut, work: turn.items.slice(0, lastTool + 1), reply: turn.items.slice(lastTool + 1), notices: turn.notices, done: turn.done, working: turn.working };
+      return { key: `${seen}:${prompt}`, prompt, cut, work: turn.items.filter(each => each.kind === 'tool'), reply: turn.items.filter(each => each.kind !== 'tool'), notices: turn.notices, done: turn.done, working: turn.working };
     }),
   };
 }
@@ -45913,7 +45963,14 @@ function refreshConsoleChat(id, entry) {
 
 function consoleChatMidRedraw(entry) {
   if (!entry.chat?.shown || entry.agent !== 'claude' || entry.activity !== 'working') return false;
-  return readConsoleScreenOnce(entry.terminal.wasmTerm, () => consoleModelPrompt(entry, entry.agent).kind === 'unknown');
+  return readConsoleScreenOnce(entry.terminal.wasmTerm, () => consoleModelPrompt(entry, entry.agent).kind === 'unknown' && !consoleClaudeSidePanel(entry));
+}
+
+
+function consoleClaudeSidePanel(entry) {
+  const rows = consolePromptRows(entry);
+  const rule = rows.findIndex(row => /^▔{8,}$/.test(row.trim()));
+  return rule >= 0 && rows.slice(rule + 1).some(row => row.replace(/\s+/g, '').endsWith('Esctoclose'));
 }
 
 
@@ -45978,6 +46035,9 @@ const CONSOLE_RECORD_TRAIL_MS = 500;
 const CONSOLE_RECORD_EVENTS = 20000;
 
 
+const CONSOLE_CHAT_SAID = /[^\s​﻿]/;
+
+
 function consoleRecordTurns(entry, record, read) {
   const failed = new Set(record.events.filter(event => event.k === 'result' && event.error).map(event => event.id));
   const grouped = [];
@@ -45998,9 +46058,8 @@ function consoleRecordTurns(entry, record, read) {
   }
   const status = consoleChatStatusRow(entry, read);
   const turns = grouped.map((each, index) => {
-    const last = each.items.findLastIndex(item => item.k !== 'reply');
     const line = index === grouped.length - 1 ? status : {};
-    return { key: each.key, record: true, prompt: each.prompt, cut: false, work: each.items.slice(0, last + 1), reply: each.items.slice(last + 1), notices: [], done: line.done || null, working: line.working || null };
+    return { key: each.key, record: true, prompt: each.prompt, cut: false, work: each.items.filter(item => item.k !== 'reply'), reply: each.items.filter(item => item.k === 'reply' && CONSOLE_CHAT_SAID.test(item.text || '')), notices: [], done: line.done || null, working: line.working || null };
   });
   return { opening: record.earlier ? ['Earlier turns are in the agent’s own history.'] : [], turns, waiting: consoleRecordWaiting(record).filter(Boolean) };
 }
@@ -46171,7 +46230,8 @@ function drawConsoleChat(id, entry) {
   for (const [key, kept] of view.nodes) {
     if (nodes.get(key) === kept) continue;
     kept.node.remove();
-    view.open.delete(key);
+    
+    if (!nodes.has(key)) view.open.delete(key);
     moved = true;
   }
   view.nodes = nodes;
@@ -46215,7 +46275,13 @@ function consoleChatTurn(view, turn) {
   reply.className = 'console-reply';
   
   if (turn.record) for (const item of turn.work) if (item.k === 'edit') reply.appendChild(consoleRecordEdit(item));
-  for (const item of turn.reply) reply.appendChild(turn.record ? consoleRecordItem(item) : consoleChatBlocks(consoleChatItemText(item).split('\n')));
+  
+  if (turn.reply.length) {
+    const answer = document.createElement('div');
+    answer.className = 'console-answer';
+    for (const item of turn.reply) answer.appendChild(turn.record ? consoleRecordItem(item) : consoleChatBlocks(consoleChatItemText(item).split('\n')));
+    reply.appendChild(answer);
+  }
   const line = turn.done || turn.working;
   if (line || turn.work.length || turn.reply.length) {
     const actions = document.createElement('div');
@@ -46821,7 +46887,8 @@ function makeConsoleComposer(id, entry, frame) {
   const field = document.createElement('textarea');
   field.className = 'console-composer-field';
   field.rows = 1;
-  field.spellcheck = true;
+  
+  field.spellcheck = false;
   const words = document.createElement('div');
   words.className = 'console-composer-words';
   const mirror = document.createElement('div');
@@ -47016,6 +47083,7 @@ function fitConsoleComposerField(field) {
 function onConsoleComposerInput(id, entry) {
   const state = entry.composer;
   state.back = -1;
+  state.discarded = null;
   consoleComposerMention(id, entry);
   drawConsoleComposer(id, entry);
 }
@@ -47035,6 +47103,30 @@ function onConsoleComposerKey(id, entry, event) {
   if (event.key === 'Tab' && event.shiftKey) {
     event.preventDefault();
     send({ command: 'consoleInput', id, data: '\x1b[Z' });
+    return;
+  }
+  
+  if (state.discarded && !state.field.value && (event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
+    event.preventDefault();
+    const kept = state.discarded;
+    state.field.focus();
+    document.execCommand('insertText', false, kept.text);
+    state.discarded = null;
+    state.attached = kept.attached;
+    drawConsoleComposer(id, entry);
+    return;
+  }
+  
+  if (event.key === 'Escape' && consoleComposerHasMessage(entry)) {
+    event.preventDefault();
+    const kept = { text: state.field.value, attached: state.attached };
+    state.field.focus();
+    state.field.setSelectionRange(0, state.field.value.length);
+    if (state.field.value) document.execCommand('delete');
+    state.discarded = kept;
+    state.attached = [];
+    state.back = -1;
+    drawConsoleComposer(id, entry);
     return;
   }
   if (event.key === 'Escape' && consoleComposerWorking(entry)) {
@@ -47135,8 +47227,13 @@ function consoleComposerMode(id, entry) {
 
 function sendConsoleComposer(id, entry) {
   const state = entry.composer;
+  if (entry.chat?.agent === 'codex' && entry.codexReconnect) {
+    if (entry.codexReconnect === 'start') state.queuedForReconnect = true;
+    return;
+  }
   const text = state.field.value.replace(/\s+$/, '');
   if (!consoleComposerHasMessage(entry)) return;
+  state.discarded = null;
   const command = text.startsWith('/');
   const opening = /^\$([^\s]+)(?:\s|$)/.exec(text);
   const skill = opening && consoleComposerCommandRows(entry).some(row => row.prefix === '$' && row.kind === 'skill' && row.name === opening[1]);
@@ -47144,6 +47241,11 @@ function sendConsoleComposer(id, entry) {
   closeConsoleFileList(entry);
   consoleKeyTyped(id);
   holdConsoleComposer(id, entry);
+  if (entry.chat?.agent === 'codex' && text && !command && !skill) {
+    entry.codexPendingPrompt = text;
+    entry.codexRestingState = 'answering';
+    reportConsoleAgent(id, entry);
+  }
   
   const marked = Boolean(entry.terminal?.getMode?.(2004));
   const enter = () => setTimeout(() => send({ command: 'consoleInput', id, data: '\r' }), CONSOLE_COMPOSER_ENTER_MS);

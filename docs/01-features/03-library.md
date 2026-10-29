@@ -322,7 +322,7 @@ Copying a whole folder is not supported; a folder can be pasted only as a move (
 
 ![All-files search results hanging under the find bar: a filename match ranked at the top, then content matches showing the document name and highlighted terms, with the pane's outline still behind them](../../imgs/search.png)
 
-Search covers the active vault, and it is one of the two things the [find bar](02-navigation.md#find-in-this-document) searches. Press `Ctrl+F` anywhere and pick **All files** from the menu at the left end of the field; on the start screen, where there is no document, the bar comes up on All files already. The results hang under the bar, so the pane goes on showing your files or your [outline](02-navigation.md#the-documents-outline) while you read them. With no vault, the field says a notes folder is needed rather than looking like a box that works and does not.
+Search covers the active vault, and it is one of the two things the [find bar](02-navigation.md#find-in-this-document) searches. Press `Ctrl+F` anywhere and pick **All files** from the menu at the left end of the field; on the start screen, where there is no document, the bar comes up on All files already. The results hang under the bar, so the pane goes on showing your files or your [outline](02-navigation.md#the-documents-outline) while you read them. With no vault, All files searches the folder the pane is showing, and the field says which — **Search all files in scholar** — with the cursor already in it. That folder is read again each time the bar opens, so a note changed since is found by its new words. Your home folder, a folder holding it and the top of a drive are too wide to read, so there the bar asks for a folder inside your home folder; at the very top of the library, where the pane lists drives, the field says to open a folder.
 
 On a published site, **All files** searches every page the site serves. The first search holds up to 32 MB of pages; each search reads the remaining pages when it needs them, without keeping their text. Adding letters to a completed plain search reads only the pages that matched it and retries pages that could not be read; deleting letters or changing the search another way reads all remaining pages again. A page the browser could not read or search is named with the results. Open a result to go to that page.
 
@@ -612,7 +612,7 @@ A row of buttons sits at the bottom of the pane, so the lists on the home screen
 | Tasks | The [Scheduled tasks](#scheduled-tasks) list, over the document. Shown only while a dated checkbox is still open |
 | Favorites | The home screen's Favorites list, over the document. Shown only while something is a favorite |
 | Recent | The home screen's Recent list, over the document. Shown only while something has been opened |
-| Search | The [find bar](02-navigation.md#find-in-this-document), set to **All files** when a vault is open, and to the document when none is |
+| Search | The [find bar](02-navigation.md#find-in-this-document)'s **All files**, over the vault when one is open and over the folder the pane shows when none is |
 | Calendar | The [Calendar](#calendar) month, over the document. Shown only inside a vault |
 
 A button with nothing to open is left out and the row closes up around it. Opening a list never leaves the document: close the list and you are where you were. Every button wears the drawing of the icon set your [theme](06-themes.md) uses.
