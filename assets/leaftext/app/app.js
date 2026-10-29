@@ -43300,6 +43300,24 @@ function consoleCodexPluginHooksRefused(lines, input) {
   return turn.some((line, index) => /^\s*└ plugin contents changed; hook approval required\s*$/.test(line) && /^\s*[•◦] Hook failed\s*$/.test(turn[index + 1] || ''));
 }
 
+function consoleCodexPendingEcho(lines, prompt) {
+  const head = lines.findIndex(line => /^\s*›(?:\s|$)/.test(line));
+  if (head < 0) return -1;
+  const first = lines[head].trimStart().slice(2).trimEnd();
+  if (!prompt.startsWith(first)) return -1;
+  let offset = first.length;
+  if (offset === prompt.length) return head;
+  for (let row = head - 1; row >= 0; row -= 1) {
+    if (!lines[row].startsWith('  ')) break;
+    const part = lines[row].slice(2).trimEnd();
+    if (prompt.startsWith(part, offset)) offset += part.length;
+    else if (prompt[offset] === ' ' && prompt.startsWith(part, offset + 1)) offset += part.length + 1;
+    else break;
+    if (offset === prompt.length) return head;
+  }
+  return -1;
+}
+
 const CONSOLE_CODEX_UPDATE = /^\s*Updating Codex via `npm install -g @openai\/codex`\.\.\.\s*$/;
 
 function consoleCodexUpdateEnd(line, index, lines) {
@@ -43325,7 +43343,7 @@ function consoleAgentState(entry, screenLines) {
     if (consoleCodexPluginHooksRefused(lines, input)) return 'needs';
     if (entry.codexPendingPrompt) {
       const previous = lines.slice(input + 1);
-      const echo = previous.findIndex(line => line.trim() === `› ${entry.codexPendingPrompt}`);
+      const echo = consoleCodexPendingEcho(previous, entry.codexPendingPrompt);
       if (echo < 0 || !previous.slice(0, echo).some(line => CONSOLE_CODEX_WORKED.test(line) || /^\s*■ /.test(line))) return 'working';
       entry.codexPendingPrompt = null;
       entry.codexRestingState = 'done';
