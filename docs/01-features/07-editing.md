@@ -68,6 +68,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Pinned headings](#pinned-headings) | In Markdown source, the headings you are reading under stay at the top edge as you scroll; click one to jump to it |
 | [Editing the source](#editing-the-source) | Type directly; undo/redo, selection, clipboard, and IME all work, and `Tab` indents instead of moving focus. A multi-megabyte file stays responsive |
 | [Typing help](#typing-help) | Monaco's IntelliSense, answered from your own notes: type `[[` to see them, `#` for headings, hover a wikilink for a preview — and broken links get a wavy underline |
+| [A YAML file held to its schema](#yaml-schemas) | A YAML file the folder's `.vscode/settings.json` maps to a JSON Schema has a field the schema refuses underlined, in the code view and on the page, and the field names it allows offered as a key is typed |
 | [Save](#save) | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears from the first keystroke, and writes the words on screen without clicking out of them |
 | [Unsaved marker](#save) | A tab with unsaved edits shows a dot beside its name, from the first keystroke |
 
@@ -565,6 +566,16 @@ This is **IntelliSense** — the completion popup, hover card and squiggly under
 
 It never interrupts prose: suggestions appear only on those triggers, never as you type ordinary words. The **wand** on the [floating toolbar](02-navigation.md#the-floating-toolbar) — in the recess above the code view's own button, the code view's counterpart to the reading view's [padlock](#the-padlock) — turns the whole thing on and off. On by default, remembered across restarts ([settings](05-settings.md#typing-help)).
 
+### YAML schemas
+
+A YAML file can be held to a JSON Schema the way Visual Studio Code's YAML extension holds it, from the same mapping, so one setting serves both editors. Leaftext looks up from the file for the nearest `.vscode/settings.json`, stopping there or at a repository root, and reads its `yaml.schemas` table: each schema path is paired with the globs of the files it describes, both read from the folder holding `.vscode`. A schema path that climbs out of that folder is refused, and a settings file or schema over 4 MB is not read.
+
+- **A field the schema refuses is underlined** with a wavy line in the danger color, and hovering it says why — a misspelled key names the field it most likely meant. A required field that is missing, a value of the wrong type, a list too short and a value that breaks its `pattern` are marked the same way. The code view checks a moment after you stop typing and again on save.
+- **The reading view marks the same fields** on the [data page](01-rendering.md#data-files-json-and-yaml), so a misspelling shows without opening the source.
+- **Typing a key offers the field names** the schema allows at that place — at the top of the file, inside a nested mapping, or after a list dash — each with its description or type.
+
+The schema keywords read are the ones a file's structure needs: `type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minProperties`, `maxProperties`, `propertyNames` and `pattern`, with `title`, `description` and the `$` keywords read as words. A schema using any other keyword is still applied, and the keyword it cannot check is named once rather than passed over in silence. A file no mapping covers is drawn and edited as before. A published page has no settings file to read, so it marks nothing.
+
 ## Saving
 
 ### Save
@@ -639,7 +650,7 @@ What the *reading view* offers differs by format, because a block can only be ed
 
 ### Editing data files
 
-A data file is edited as *source*, never as rendered text. Click a JSON value in the reading view and you get the real thing — `"0.1.380"` with its quotes — which is what keeps an edit from turning a string into something the file no longer parses as.
+A data file is edited as *source*, never as rendered text, and a YAML file can be [held to its schema](#yaml-schemas). Click a JSON value in the reading view and you get the real thing — `"0.1.380"` with its quotes — which is what keeps an edit from turning a string into something the file no longer parses as.
 
 The big heading is one of those values wherever the file names its own title with a root `title` or `name` key. That key is left out of the body, so the heading is the only place its value appears, and pressing it opens that value's source exactly as pressing a field does. A YAML title written in quotes opens the same way, quotes and all; one written as a block scalar stays read-only, like the value itself. A heading standing in for a file that names no title of its own is the file's name instead — pressing that one [renames the file](#renaming-from-the-heading).
 

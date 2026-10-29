@@ -22615,6 +22615,8 @@ function saveActiveDocument() {
       if (openSaveFormatMenu(saveButton, (ext) => send({ command: 'saveDocument', format: ext }))) return;
     }
     send({ command: 'saveDocument' });
+    
+    scheduleSchemaCheck(0);
   });
 }
 
@@ -23795,6 +23797,10 @@ let codeLintTimer = 0;
 
 let codeLintSerial = 0;
 
+let codeSchemaHeld = false;
+let codeSchemaTimer = 0;
+let codeSchemaSerial = 0;
+
 
 
 let codeIntelToken = 0;
@@ -23833,7 +23839,7 @@ function codeIntelTooltip() {
 
 function renderCodeTools(onCodeView) {
   if (!codeIntelButton) return;
-  codeIntelButton.hidden = !onCodeView || !['codeCompleteNotes', 'codeCompleteHeadings', 'codeHoverNote', 'codeLint'].some(hostAnswers);
+  codeIntelButton.hidden = !onCodeView || !['codeCompleteNotes', 'codeCompleteHeadings', 'codeHoverNote', 'codeLint', 'schemaCheck'].some(hostAnswers);
   if (!onCodeView) return;
   setSubtoolState(codeIntelButton, codeIntelEnabled, codeIntelTooltip());
 }
@@ -23844,7 +23850,10 @@ if (codeIntelButton) {
     send({ command: 'setCodeIntelEnabled', enabled: codeIntelEnabled });
     renderCodeTools(true);
     
-    if (codeIntelEnabled) scheduleCodeLint(0);
+    if (codeIntelEnabled) {
+      scheduleCodeLint(0);
+      scheduleSchemaCheck(0);
+    }
     else clearCodeLintMarkers();
   });
 }
@@ -23859,6 +23868,14 @@ function setupCodeIntel(monaco) {
   const language = model ? model.getLanguageId() : '';
   
   codeIntelLintable = language === 'markdown' || language === 'xml';
+  codeSchemaHeld = language === 'yaml' && hostAnswers('schemaCheck');
+  if (codeSchemaHeld) {
+    
+    monacoEditor.updateOptions({ quickSuggestions: { other: true, comments: false, strings: true } });
+    codeIntelChangeSub = monacoEditor.onDidChangeModelContent(() => scheduleSchemaCheck());
+    scheduleSchemaCheck(0);
+    return;
+  }
   if (!codeIntelLintable) return;
   codeIntelChangeSub = monacoEditor.onDidChangeModelContent(() => scheduleCodeLint());
   scheduleCodeLint(0);
@@ -23873,9 +23890,15 @@ function teardownCodeIntel() {
     clearTimeout(codeLintTimer);
     codeLintTimer = 0;
   }
+  if (codeSchemaTimer) {
+    clearTimeout(codeSchemaTimer);
+    codeSchemaTimer = 0;
+  }
   
   codeLintSerial += 1;
+  codeSchemaSerial += 1;
   codeIntelLintable = false;
+  codeSchemaHeld = false;
 }
 
 
@@ -23901,6 +23924,30 @@ function registerCodeIntelProviders(monaco) {
       const wiki = before.match(/\[\[([^[\]#|]*)$/);
       if (wiki) return noteSuggestions(monaco, model, position, wiki[1]);
       return { suggestions: [] };
+    },
+  });
+
+  
+  monaco.languages.registerCompletionItemProvider('yaml', {
+    provideCompletionItems(model, position) {
+      if (!codeIntelEnabled || !codeViewActive || !codeSchemaHeld) return { suggestions: [] };
+      const before = model.getLineContent(position.lineNumber).slice(0, position.column - 1);
+      const key = before.match(/^\s*(?:-\s+)?([A-Za-z0-9_-]*)$/);
+      if (!key) return { suggestions: [] };
+      flushSourceUpdate();
+      return requestCodeIntel({ command: 'schemaCheck', line: position.lineNumber }).then((answer) => {
+        if (!answer || !Array.isArray(answer.fields)) return { suggestions: [] };
+        const range = suggestReplaceRange(monaco, position, key[1].length);
+        return {
+          suggestions: answer.fields.map((field) => ({
+            label: { label: field.name, description: field.detail },
+            kind: monaco.languages.CompletionItemKind.Field,
+            insertText: field.name + ': ',
+            filterText: field.name,
+            range,
+          })),
+        };
+      });
     },
   });
 
@@ -24054,6 +24101,65 @@ function clearCodeLintMarkers() {
   if (!monacoEditor || !codeIntelMonaco) return;
   codeLintSerial += 1; 
   codeIntelMonaco.editor.setModelMarkers(monacoEditor.getModel(), 'leaf-links', []);
+  codeIntelMonaco.editor.setModelMarkers(monacoEditor.getModel(), 'leaf-schema', []);
+}
+
+
+
+
+const CODE_SCHEMA_DEBOUNCE_MS = 700;
+
+function scheduleSchemaCheck(delay) {
+  if (!codeSchemaHeld || !codeIntelEnabled) return;
+  if (codeSchemaTimer) clearTimeout(codeSchemaTimer);
+  codeSchemaTimer = setTimeout(
+    () => {
+      codeSchemaTimer = 0;
+      runSchemaCheck();
+    },
+    delay == null ? CODE_SCHEMA_DEBOUNCE_MS : delay
+  );
+}
+
+
+function schemaPatternFails(pattern, text) {
+  try {
+    return !new RegExp(pattern, 'u').test(text);
+  } catch {
+    return false;
+  }
+}
+
+function runSchemaCheck() {
+  if (!monacoEditor || !codeIntelMonaco || !codeIntelEnabled || !codeViewActive) return;
+  flushSourceUpdate();
+  codeSchemaSerial += 1;
+  const serial = codeSchemaSerial;
+  const model = monacoEditor.getModel();
+  requestCodeIntel({ command: 'schemaCheck' }).then((answer) => {
+    if (!answer || serial !== codeSchemaSerial) return;
+    if (!monacoEditor || monacoEditor.getModel() !== model) return;
+    const failed = (answer.patterns || []).filter((check) => schemaPatternFails(check.pattern, check.text));
+    const markers = [...(answer.markers || []), ...failed].map((marker) => ({
+      severity: codeIntelMonaco.MarkerSeverity.Warning,
+      message: marker.message,
+      startLineNumber: marker.startLine,
+      startColumn: marker.startCol,
+      endLineNumber: marker.endLine,
+      endColumn: marker.endCol,
+    }));
+    codeIntelMonaco.editor.setModelMarkers(model, 'leaf-schema', markers);
+  });
+}
+
+
+function settleSchemaPatterns(root) {
+  if (!root) return;
+  for (const node of root.querySelectorAll('[data-schema-pattern]')) {
+    if (!schemaPatternFails(node.getAttribute('data-schema-pattern'), node.getAttribute('data-schema-text') || '')) continue;
+    node.classList.add('data-key-refused');
+    node.title = node.getAttribute('data-schema-message') || '';
+  }
 }
 
 
@@ -42221,6 +42327,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     decorateBlockquoteLines();
     decorateNoteCards();
     paintCssSpecimens();
+    settleSchemaPatterns(readerLayout);
     markLinksThatGoNowhere();
     publishDocumentOutline();
     decorateCodeBlocks();
@@ -44693,10 +44800,9 @@ function placeConsoleLayers(state = currentState) {
     entry.layer.hidden = !shown;
     entry.layer.classList.toggle('is-right-card', shown && card === rightColumn);
     entry.layer.classList.toggle('is-split', shown && split);
-    if (shown && wasHidden && entry.fit) {
-      refreshConsoleGrid(id, entry);
-      refreshConsoleChat(id, entry);
-    }
+    if (shown && wasHidden && entry.fit) refreshConsoleGrid(id, entry);
+    
+    if (shown && ((wasHidden && entry.fit) || entry.chatOwed)) refreshConsoleChat(id, entry);
   }
   const besideTab = besideCard && state && state.beside && state.tabs ? state.tabs[state.beside.tab] : null;
   const besideCovered = !!besideTab && (besideTab.kind === 'console' || besideTab.kind === 'web');
@@ -45799,6 +45905,7 @@ function readConsoleChat(entry) {
     if (agent === 'codex') {
       
       if (footer.filter(line => line.trim()).length > 2) return null;
+      if (consoleCodexAnsweredCommand(entry, base + cover)) return null;
       chat.from = 0;
       return chat;
     }
@@ -45810,6 +45917,16 @@ function readConsoleChat(entry) {
     chat.mode = footer.map(line => line.trim()).find(line => /^(?:⏵⏵|⏸)\s/.test(line)) || null;
     return chat;
   });
+}
+
+
+function consoleCodexAnsweredCommand(entry, below) {
+  for (let line = below - 1; line >= Math.max(0, below - CONSOLE_CHAT_BANNER_REACH); line -= 1) {
+    const text = consoleLineText(entry, line) ?? '';
+    if (/^› \S/.test(text)) return false;
+    if (/^\/[a-z][\w-]*(?: .*)?$/.test(text)) return true;
+  }
+  return false;
 }
 
 
@@ -45941,6 +46058,12 @@ function consoleChatItemText(item) {
 
 
 function refreshConsoleChat(id, entry) {
+  
+  if (entry.layer?.hidden) {
+    entry.chatOwed = true;
+    return;
+  }
+  entry.chatOwed = false;
   const read = readConsoleChat(entry);
   if (!read) {
     if (!consoleComposerHolding(entry) && !consoleChatMidRedraw(entry)) leaveConsoleChat(entry);
@@ -46010,7 +46133,7 @@ function leaveConsoleChat(entry) {
 let consoleRecordRequests = 0;
 
 function askConsoleRecord(id, entry) {
-  const record = entry.chatRecord || (entry.chatRecord = { file: '', offset: 0, events: [], earlier: false, request: 0, waiting: false, again: false });
+  const record = entry.chatRecord || (entry.chatRecord = { file: '', offset: 0, events: [], earlier: false, request: 0, waiting: false, again: false, revision: 0 });
   if (record.waiting) {
     record.again = true;
     return;
@@ -46031,6 +46154,7 @@ window.leafConsoleRecord = (id, request, answer) => {
     record.file = answer.file || '';
     record.events = [];
     record.earlier = false;
+    record.revision += 1;
   }
   record.offset = answer.offset || 0;
   record.earlier ||= Boolean(answer.earlier);
@@ -46038,6 +46162,8 @@ window.leafConsoleRecord = (id, request, answer) => {
   const first = !record.events.length;
   record.events.push(...added);
   if (record.events.length > CONSOLE_RECORD_EVENTS) record.events.splice(0, record.events.length - CONSOLE_RECORD_EVENTS);
+  
+  if (added.length) record.revision += 1;
   if (record.again) {
     record.again = false;
     askConsoleRecord(id, entry);
@@ -46057,6 +46183,18 @@ const CONSOLE_CHAT_SAID = /[^\s​﻿]/;
 
 
 function consoleRecordTurns(entry, record, read) {
+  
+  const folder = entry.statusRecord?.folderPath || '';
+  const kept = record.grouped;
+  const turns = kept && kept.revision === record.revision && kept.folder === folder ? kept.turns.slice() : consoleRecordGroup(entry, record, folder);
+  if (turns.length) {
+    const line = consoleChatStatusRow(entry, read);
+    turns[turns.length - 1] = { ...turns.at(-1), done: line.done || null, working: line.working || null };
+  }
+  return { opening: record.earlier ? ['Earlier turns are in the agent’s own history.'] : [], turns, waiting: consoleRecordWaiting(record).filter(Boolean) };
+}
+
+function consoleRecordGroup(entry, record, folder) {
   const failed = new Set(record.events.filter(event => event.k === 'result' && event.error).map(event => event.id));
   const grouped = [];
   let turn = null;
@@ -46074,12 +46212,9 @@ function consoleRecordTurns(entry, record, read) {
     const item = event.k === 'tool' && failed.has(event.id) ? { ...event, failed: true } : event;
     turn.items.push(event.k === 'edit' ? { ...item, path: consoleRecordPath(entry, event.path) } : event.k === 'tool' ? { ...item, text: consoleRecordPath(entry, event.text) } : item);
   }
-  const status = consoleChatStatusRow(entry, read);
-  const turns = grouped.map((each, index) => {
-    const line = index === grouped.length - 1 ? status : {};
-    return { key: each.key, record: true, prompt: each.prompt, cut: false, work: each.items.filter(item => item.k !== 'reply'), reply: each.items.filter(item => item.k === 'reply' && CONSOLE_CHAT_SAID.test(item.text || '')), notices: [], done: line.done || null, working: line.working || null };
-  });
-  return { opening: record.earlier ? ['Earlier turns are in the agent’s own history.'] : [], turns, waiting: consoleRecordWaiting(record).filter(Boolean) };
+  const turns = grouped.map(each => ({ key: each.key, record: true, prompt: each.prompt, cut: false, work: each.items.filter(item => item.k !== 'reply'), reply: each.items.filter(item => item.k === 'reply' && CONSOLE_CHAT_SAID.test(item.text || '')), notices: [], done: null, working: null }));
+  record.grouped = { revision: record.revision, folder, turns };
+  return turns.slice();
 }
 
 
@@ -46223,20 +46358,31 @@ function drawConsoleChat(id, entry) {
   const held = !view.box.hidden && box.scrollHeight - box.scrollTop - box.clientHeight <= 2;
   const wanted = [];
   if (chat.opening.some(row => row.trim())) wanted.push({ key: 'opening', sig: chat.opening.join('\n'), make: () => consoleChatOpening(chat.opening) });
-  for (const turn of chat.turns) wanted.push({ key: turn.key, sig: JSON.stringify(turn), make: () => consoleChatTurn(view, turn) });
+  for (const turn of chat.turns) wanted.push({ key: turn.key, sig: consoleChatTurnSig(turn), line: turn.done || turn.working || null, make: () => consoleChatTurn(view, turn) });
   if (chat.waiting?.length) wanted.push({ key: 'waiting', sig: JSON.stringify(chat.waiting), make: () => consoleChatWaiting(chat.waiting) });
   const nodes = new Map();
   let moved = false;
   let at = view.list.firstChild;
   for (const want of wanted) {
     let kept = view.nodes.get(want.key);
+    
+    if (kept && kept.sig === want.sig && kept.line !== want.line) {
+      const words = kept.node.querySelector('.console-worked')?.lastChild;
+      if (words?.nodeType === 3) {
+        words.textContent = want.line || 'Worked';
+        kept.line = want.line;
+        moved = true;
+      } else kept = null;
+    }
     if (!kept || kept.sig !== want.sig) {
       const node = want.make();
       if (kept) {
+        const selected = consoleChatHeldSelection(kept.node);
         if (at === kept.node) at = node;
         kept.node.replaceWith(node);
+        if (selected) restoreConsoleChatSelection(node, selected);
       }
-      kept = { node, sig: want.sig };
+      kept = { node, sig: want.sig, line: want.line };
       moved = true;
     }
     if (kept.node !== at) {
@@ -46256,6 +46402,66 @@ function drawConsoleChat(id, entry) {
   
   if (held || view.box.hidden) box.scrollTop = box.scrollHeight;
   return moved;
+}
+
+
+function consoleChatTurnSig(turn) {
+  const drawn = (item) => turn.record ? item : { kind: item.kind, text: consoleChatItemText(item) };
+  return JSON.stringify({ prompt: turn.prompt, cut: turn.cut, record: !!turn.record, line: !!(turn.done || turn.working), work: turn.work.map(drawn), reply: turn.reply.map(drawn), notices: turn.notices.map(drawn) });
+}
+
+
+function consoleChatHeldSelection(node) {
+  const selection = getSelection();
+  if (!selection || selection.isCollapsed || !selection.rangeCount) return null;
+  const range = selection.getRangeAt(0);
+  if (!node.contains(range.startContainer) || !node.contains(range.endContainer)) return null;
+  const start = consoleChatTextOffset(node, range.startContainer, range.startOffset);
+  const end = consoleChatTextOffset(node, range.endContainer, range.endOffset);
+  const words = node.textContent.slice(start, end);
+  return words ? { start, words } : null;
+}
+
+
+function consoleChatTextOffset(node, container, offset) {
+  const before = container.nodeType === 3 ? null : container.childNodes[offset];
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+  let seen = 0;
+  for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+    if (text === container) return seen + offset;
+    if (before && (before === text || before.contains(text))) return seen;
+    seen += text.nodeValue.length;
+  }
+  return seen;
+}
+
+function restoreConsoleChatSelection(node, held) {
+  const text = node.textContent;
+  let start = -1;
+  for (let found = text.indexOf(held.words); found >= 0; found = text.indexOf(held.words, found + 1)) {
+    if (start < 0 || Math.abs(found - held.start) < Math.abs(start - held.start)) start = found;
+  }
+  if (start < 0) return;
+  const end = start + held.words.length;
+  const range = document.createRange();
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+  let seen = 0;
+  let begun = false;
+  for (let each = walker.nextNode(); each; each = walker.nextNode()) {
+    const length = each.nodeValue.length;
+    if (!begun && start < seen + length) {
+      range.setStart(each, start - seen);
+      begun = true;
+    }
+    if (begun && end <= seen + length) {
+      range.setEnd(each, end - seen);
+      const selection = getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return;
+    }
+    seen += length;
+  }
 }
 
 function consoleChatOpening(rows) {
@@ -46935,6 +47141,18 @@ function makeConsoleComposer(id, entry, frame) {
   frame.appendChild(box);
   const state = { box, chips, field, attach, slash, mode, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
   entry.composer = state;
+  
+  state.width = 0;
+  new ResizeObserver(([seen]) => {
+    const width = seen?.contentRect?.width;
+    if (width === state.seenWidth) return;
+    state.seenWidth = width;
+    state.width += 1;
+    
+    fitConsoleComposerField(field);
+    state.fitted = field.value;
+    state.fittedWidth = state.width;
+  }).observe(field);
   state.mirror = mirror;
   state.commands = null;
   send({ command: 'consoleCompose', id, request: ++consoleComposerRequests, ask: 'commands' });
@@ -47046,7 +47264,12 @@ function drawConsoleComposer(id, entry) {
     state.chips.replaceChildren(...wanted.map(consoleComposerChip));
     state.chips.hidden = !wanted.length;
   }
-  fitConsoleComposerField(state.field);
+  
+  if (state.fitted !== state.field.value || state.fittedWidth !== state.width) {
+    fitConsoleComposerField(state.field);
+    state.fitted = state.field.value;
+    state.fittedWidth = state.width;
+  }
   markConsoleComposer(entry);
 }
 
@@ -47619,18 +47842,48 @@ function syncConsoleComposerMirror(state) {
   state.mirror.scrollLeft = state.field.scrollLeft;
 }
 
-let consoleFolderRequests = 0;
 const CONSOLE_FOLDER_AGENTS = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity' };
+let consoleFolderRuntime = null;
+let consoleFolderLoading = null;
 
-function consoleFolderSame(a, b) {
-  const plain = path => String(path || '').replace(/[\\/]+$/, '').replace(/\\/g, '/');
-  return isMacPlatform ? plain(a) === plain(b) : plain(a).toLowerCase() === plain(b).toLowerCase();
+
+function loadConsoleFolderMenu() {
+  if (consoleFolderRuntime) return Promise.resolve(consoleFolderRuntime);
+  if (!consoleFolderLoading) {
+    let timer;
+    const timeout = new Promise((resolve, reject) => {
+      timer = setTimeout(() => reject(new Error('timed out')), durationTokenMilliseconds('--lt-duration-2000') * 5);
+    });
+    const arrived = typeof window.LeafConsoleFolderMenu === 'function' ? Promise.resolve() : loadScriptOnce(window.__lt.assets.consoleFolderMenu);
+    const attempt = Promise.race([arrived, timeout]).then(() => {
+      if (typeof window.LeafConsoleFolderMenu !== 'function') throw new Error('no factory');
+      consoleFolderRuntime ||= window.LeafConsoleFolderMenu({ consoleLayers, consoleControlRecord, durationTokenMilliseconds, send, consoleModelRefusal, leafToast, consoleKeyTyped, cancelConsoleModel, CONSOLE_FOLDER_AGENTS, consoleFolderMenuOpen, drawConsoleFolderMenu, consoleBuffer, consoleLineText, card: () => keyedColumn, isMac: () => isMacPlatform });
+      return consoleFolderRuntime;
+    }).finally(() => clearTimeout(timer)).catch(error => {
+      if (consoleFolderLoading === attempt) consoleFolderLoading = null;
+      throw error;
+    });
+    consoleFolderLoading = attempt;
+  }
+  return consoleFolderLoading;
 }
 
-function consoleFolderName(path) {
-  return String(path || '').split(/[\\/]/).filter(Boolean).pop() || String(path || '');
-}
 
+function openConsoleFolder(id, entry, anchor, path = '', above = true) {
+  if (consoleLayers.get(id) !== entry || !CONSOLE_FOLDER_AGENTS[consoleControlRecord(entry)?.agent]) return;
+  if (consoleFolderRuntime) return consoleFolderRuntime.open(id, entry, anchor, path, above);
+  const pending = { anchor, above, card: keyedColumn };
+  entry.folderMenu = pending;
+  entry.modelMenuCard = keyedColumn;
+  drawConsoleFolderMenu(id, entry, [{ note: 'Reading the folder…' }]);
+  loadConsoleFolderMenu().then(runtime => {
+    if (consoleLayers.get(id) === entry && entry.folderMenu === pending && consoleFolderMenuOpen(entry) && pending.anchor.isConnected && pending.card === keyedColumn && !document.hidden) runtime.open(id, entry, pending.anchor, path, above);
+  }, () => {
+    if (entry.folderMenu !== pending || !consoleFolderMenuOpen(entry)) return;
+    hideCrumbMenu();
+    leafToast('The folder menu could not load. Press Folder to try again.');
+  });
+}
 
 function consoleFolderButton(id, entry, field) {
   const item = document.createElement('button');
@@ -47659,22 +47912,6 @@ function consoleFolderMenuOpen(entry) {
   return !!entry?.folderMenu && crumbMenuOwner === entry.folderMenu.anchor && !crumbMenu.hidden;
 }
 
-
-function openConsoleFolder(id, entry, anchor, path = '', above = true) {
-  if (consoleLayers.get(id) !== entry || !CONSOLE_FOLDER_AGENTS[consoleControlRecord(entry)?.agent]) return;
-  const request = ++consoleFolderRequests;
-  entry.modelMenuCard = keyedColumn;
-  const menu = entry.folderMenu?.anchor === anchor && consoleFolderMenuOpen(entry) ? entry.folderMenu : { anchor, above };
-  menu.request = request;
-  entry.folderMenu = menu;
-  clearTimeout(menu.timer);
-  menu.timer = setTimeout(() => {
-    if (entry.folderMenu === menu && menu.request === request) drawConsoleFolderMenu(id, entry, [{ note: 'The folder did not answer.' }, consoleFolderChooser(id, entry)]);
-  }, durationTokenMilliseconds('--lt-duration-2000') * 5);
-  drawConsoleFolderMenu(id, entry, [{ note: 'Reading the folder…' }]);
-  send({ command: 'consoleFolderList', id, request, path });
-}
-
 function drawConsoleFolderMenu(id, entry, items) {
   const menu = entry.folderMenu;
   if (!menu || consoleLayers.get(id) !== entry || !menu.anchor.isConnected) return;
@@ -47686,104 +47923,6 @@ function drawConsoleFolderMenu(id, entry, items) {
   leafPlaceFloating(crumbMenu, rect.left, menu.above ? rect.top - crumbMenu.offsetHeight - CRUMB_MENU_DROP : rect.bottom + CRUMB_MENU_DROP);
 }
 
-function consoleFolderChooser(id, entry) {
-  return { label: 'Choose another folder…', keepOpen: true, run: () => {
-    entry.folderMenu.request = ++consoleFolderRequests;
-    send({ command: 'consoleChooseFolder', id, request: entry.folderMenu.request });
-  } };
-}
-
-function consoleFolderRows(id, entry, listing) {
-  const agent = consoleControlRecord(entry)?.agent;
-  const go = path => ({ keepOpen: true, title: path, run: () => openConsoleFolder(id, entry, entry.folderMenu.anchor, path) });
-  const use = label => ({ label, title: listing.path, run: () => useConsoleFolder(id, entry, listing.path) });
-  const rows = [{ heading: listing.name || listing.path }];
-  if (listing.current === 'launch') rows.push({ note: `Where this console opened. ${CONSOLE_FOLDER_AGENTS[agent]} has not said which folder it works in.` });
-  if (listing.parent) rows.push({ ...go(listing.parent), label: `↑ ${consoleFolderName(listing.parent)}` });
-  for (const folder of listing.folders) rows.push({ ...go(folder.path), label: folder.name });
-  if (!listing.folders.length) rows.push({ note: 'No folders inside this one.' });
-  if (listing.truncated) rows.push({ note: 'This folder holds more than the menu lists. Choose another folder to reach the rest.' });
-  rows.push('separator', agent === 'claude' ? use('Move this conversation here') : use('New conversation in this folder'));
-  if (agent !== 'claude') rows.push({ note: `${CONSOLE_FOLDER_AGENTS[agent]} starts a new conversation in a new console with its usual settings. This conversation stays open.` });
-  return [...rows, consoleFolderChooser(id, entry)];
-}
-
-function consoleFolderAnswer(id, request) {
-  const entry = consoleLayers.get(id);
-  return entry?.folderMenu?.request === request && consoleFolderMenuOpen(entry) ? entry : null;
-}
-
-window.leafConsoleFolderListed = (id, request, listing) => {
-  const entry = consoleFolderAnswer(id, request);
-  if (!entry) return;
-  clearTimeout(entry.folderMenu.timer);
-  drawConsoleFolderMenu(id, entry, listing?.error ? [{ note: listing.error }, consoleFolderChooser(id, entry)] : consoleFolderRows(id, entry, listing));
-};
-
-
-window.leafConsoleFolderChosen = (id, request, path) => {
-  const entry = consoleLayers.get(id);
-  if (path && entry?.folderMenu?.request === request) openConsoleFolder(id, entry, entry.folderMenu.anchor, path, entry.folderMenu.above);
-};
-
-
-function useConsoleFolder(id, entry, path) {
-  const record = consoleControlRecord(entry);
-  const refusal = record?.agent === 'claude' && consoleModelRefusal(id, entry, record);
-  if (refusal) { leafToast(refusal); return; }
-  entry.folderUse = { request: ++consoleFolderRequests, record, agent: record.agent, card: keyedColumn };
-  send({ command: 'consoleUseFolder', id, request: entry.folderUse.request, agent: record.agent, path });
-}
-
-window.leafConsoleFolderUsed = (id, request, answer) => {
-  const entry = consoleLayers.get(id);
-  const use = entry?.folderUse;
-  if (use?.request !== request) return;
-  entry.folderUse = null;
-  if (answer?.error) leafToast(answer.error);
-  else if (answer?.opened) leafToast(`A new ${CONSOLE_FOLDER_AGENTS[use.agent]} conversation started in ${consoleFolderName(answer.path)}. This one stays open.`);
-  if (!answer?.typed) return;
-  
-  consoleKeyTyped(id);
-  const wait = durationTokenMilliseconds('--lt-duration-2000');
-  const pending = { command: answer.typed, record: use.record, agent: use.agent, card: use.card, until: Date.now() + wait, timer: 0, folder: answer.path };
-  entry.modelPending = pending;
-  pending.timer = setTimeout(() => {
-    if (entry.modelPending !== pending) return;
-    cancelConsoleModel(entry);
-    leafToast('The command is in the console. Press Enter to finish.');
-  }, wait);
-  entry.terminal?.focus();
-};
-
-
-function consoleFolderDraft(pending, prompt) {
-  if (prompt.kind !== 'draft') return 'typing';
-  const plain = text => String(text).replace(/\s+/g, '');
-  const draft = plain(prompt.text);
-  if (draft === plain(pending.command)) return prompt.tailEnd ? 'echoed' : 'typing';
-  return plain(pending.command).startsWith(draft) ? 'typing' : 'other';
-}
-
-
-function watchConsoleFolderMove(id, entry, path) {
-  clearTimeout(entry.folderMove?.timer);
-  const move = { path };
-  entry.folderMove = move;
-  move.timer = setTimeout(() => {
-    if (entry.folderMove !== move) return;
-    entry.folderMove = null;
-    leafToast(`Claude has not reported working in ${consoleFolderName(path)}, so the folder stays as it was.`);
-  }, durationTokenMilliseconds('--lt-duration-2000') * 8);
-}
-
-function consoleFolderReported(entry, record) {
-  if (!entry.folderMove || !consoleFolderSame(record?.folderPath, entry.folderMove.path)) return;
-  clearTimeout(entry.folderMove.timer);
-  entry.folderMove = null;
-  leafToast(`Claude moved this conversation to ${consoleFolderName(record.folderPath)}.`);
-}
-
 
 function adoptConsoleFolderAnchor(id, entry) {
   const menu = entry.folderMenu;
@@ -47793,6 +47932,10 @@ function adoptConsoleFolderAnchor(id, entry) {
   menu.anchor = anchor;
   drawConsoleFolderMenu(id, entry, menu.items || []);
 }
+
+function consoleFolderDraft(...args) { return consoleFolderRuntime?.draft(...args) || 'other'; }
+function watchConsoleFolderMove(...args) { consoleFolderRuntime?.watch(...args); }
+function consoleFolderReported(...args) { consoleFolderRuntime?.reported(...args); }
 
 
 function consoleTabMenuRows(tab) {

@@ -179,6 +179,7 @@
 | Deep nesting refused | [✅][l-data] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Edit JSON values | [✅][l-data] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Edit YAML values | [✅][l-data] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| YAML schema checks | [✅][l-yaml-schemas] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## HTML pages
 
@@ -320,6 +321,7 @@
 [l-anyxml]: ../01-features/01-rendering.md#any-xml
 [l-tei]: ../01-features/01-rendering.md#tei-xml
 [l-data]: ../01-features/01-rendering.md#data-files-json-and-yaml
+[l-yaml-schemas]: ../01-features/07-editing.md#yaml-schemas
 [l-ini]: ../01-features/01-rendering.md#ini-files
 [l-csv]: ../01-features/01-rendering.md#csv-files
 [l-plain]: ../01-features/01-rendering.md#plain-text-files

@@ -175,6 +175,8 @@ For an existing Antigravity clone, update it with `git -C ~/.gemini/config/plugi
 
 Installing the plugin and connecting its tools are two separate steps: the skill can be listed while the document tools are not yet there. After installing, or after any change to the agent's tool servers, restart the agent and check that a document tool such as `leaftext_doc` appears in its list of tools. If the skill is there and the tools are not, the agent's own server list says why: `claude mcp list` in Claude Code, `codex mcp list` in Codex, `agy mcp list` in Antigravity.
 
+Claude Code started in a Leaftext console has Leaftext's tools in any folder even before the plugin is installed: where no settings switch the plugin on and the folder lists no `leaftext` server of its own, Leaftext hands that one launch its own tool server, and it goes when the session ends. Once the plugin is on, the plugin supplies them instead.
+
 For an agent the plugin does not cover, connect it by hand as below.
 
 ## Connect on Windows

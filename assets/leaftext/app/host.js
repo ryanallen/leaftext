@@ -196,6 +196,7 @@ export const COMMANDS = {
   codeCompleteHeadings: [ANSWERED],
   codeHoverNote: [ANSWERED],
   codeLint: [ANSWERED],
+  schemaCheck: [REFUSED, 'a schema is found through the settings file of the folder a YAML file sits in, and a published page has no folder to read one from'],
   tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
   tableRows: [REFUSED, 'listing every row would fetch every page this site serves on the first keystroke'],
   toggleTask: [ANSWERED],

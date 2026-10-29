@@ -4015,6 +4015,7 @@
   --lt-ease: ease;
   --lt-ease-linear: linear;
   --lt-ease-in-out: ease-in-out;
+  --lt-ease-steps-pulse: steps(12, jump-none);
   --lt-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
   --lt-ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
   --lt-ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
@@ -8481,7 +8482,7 @@ body.library-resizing button {
 .console-has-agent:not(.console-working) .console-tab-icon, .console-done .console-tab-icon { color: var(--lt-primary-ink); }
 /* A filter on the icon itself is cut away by its own mask, so the halo is a second icon inside a box that carries the filter, and only its opacity moves. */
 .console-tab-glow, .console-agent-glow { position: absolute; inset: 0; display: none; filter: var(--lt-glow-icon); }
-.console-working .console-tab-glow, .console-agent-working .console-agent-glow { display: block; animation: console-working-glow var(--lt-duration-1250) var(--lt-ease-in-out) infinite alternate; }
+.console-working .console-tab-glow, .console-agent-working .console-agent-glow { display: block; animation: console-working-glow var(--lt-duration-1250) var(--lt-ease-steps-pulse) infinite alternate; }
 @keyframes console-working-glow { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .console-working .console-tab-glow, .console-agent-working .console-agent-glow { animation: none; opacity: var(--lt-opacity-55); } }
 /* Console scanlines, a Grove ornament: a red, a green and a blue row and a clear one, repeating. The tab's free ::after lies over its face; the screen's lies over the terminal and under the pinned command (5). */
@@ -10501,6 +10502,14 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body .data-fields dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+/* A key or a value the file's schema refuses: the code view's wavy rule, in the danger color, with the reason on hover. The renderer writes the class, or the page does for a value that fails its pattern. */
+.document-body .data-key-refused {
+  text-decoration: underline wavy;
+  text-decoration-color: var(--lt-danger);
+  text-decoration-thickness: var(--lt-stroke-1);
+  text-underline-offset: 0.2em;
+  cursor: help;
 }
 /* A stylesheet's specimen board: sample elements the file's own rules paint, in a bordered box so where the file stops painting is plain. The rules come in under `@scope (.css-specimen)` from css-specimen.js, and anything they do not set keeps the page's own style. */
 .document-body .css-specimen {
@@ -19891,7 +19900,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 202 values that do not change with the theme, all 114 icons, and all 189 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 203 values that do not change with the theme, all 114 icons, and all 189 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19921,7 +19930,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>202</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>114</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>189</b></button>
 </div>
@@ -20028,7 +20037,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">202 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">203 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -20180,6 +20189,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="value"><code>lt-ease</code><code>ease</code></div>
 <div class="value"><code>lt-ease-linear</code><code>linear</code></div>
 <div class="value"><code>lt-ease-in-out</code><code>ease-in-out</code></div>
+<div class="value"><code>lt-ease-steps-pulse</code><code>steps(12, jump-none)</code></div>
 <div class="value"><code>lt-ease-emphasized</code><code>cubic-bezier(0.2, 0, 0, 1)</code></div>
 <div class="value"><code>lt-ease-decelerate</code><code>cubic-bezier(0.05, 0.7, 0.1, 1)</code></div>
 <div class="value"><code>lt-ease-accelerate</code><code>cubic-bezier(0.3, 0, 0.8, 0.15)</code></div>

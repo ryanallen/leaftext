@@ -4007,6 +4007,7 @@
   --lt-ease: ease;
   --lt-ease-linear: linear;
   --lt-ease-in-out: ease-in-out;
+  --lt-ease-steps-pulse: steps(12, jump-none);
   --lt-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
   --lt-ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
   --lt-ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
@@ -8463,7 +8464,7 @@ body.library-resizing button {
 .console-has-agent:not(.console-working) .console-tab-icon, .console-done .console-tab-icon { color: var(--lt-primary-ink); }
 
 .console-tab-glow, .console-agent-glow { position: absolute; inset: 0; display: none; filter: var(--lt-glow-icon); }
-.console-working .console-tab-glow, .console-agent-working .console-agent-glow { display: block; animation: console-working-glow var(--lt-duration-1250) var(--lt-ease-in-out) infinite alternate; }
+.console-working .console-tab-glow, .console-agent-working .console-agent-glow { display: block; animation: console-working-glow var(--lt-duration-1250) var(--lt-ease-steps-pulse) infinite alternate; }
 @keyframes console-working-glow { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .console-working .console-tab-glow, .console-agent-working .console-agent-glow { animation: none; opacity: var(--lt-opacity-55); } }
 
@@ -10467,6 +10468,14 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body .data-fields dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.document-body .data-key-refused {
+  text-decoration: underline wavy;
+  text-decoration-color: var(--lt-danger);
+  text-decoration-thickness: var(--lt-stroke-1);
+  text-underline-offset: 0.2em;
+  cursor: help;
 }
 
 .document-body .css-specimen {
