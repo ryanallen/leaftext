@@ -5814,16 +5814,6 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
   margin-left: calc(-1 * var(--lt-space-4));
   margin-right: var(--lt-space-16);
 }
-.tab-bar > .new-console-button {
-  flex: 0 0 auto;
-  order: 2;
-  align-self: center;
-  transform: translateY(calc(-1 * var(--lt-space-2)));
-  /* Give back the plus's outside inset between the two buttons. */
-  margin-left: calc(-1 * var(--lt-space-16));
-  margin-right: var(--lt-space-16);
-}
-.tab-bar > .new-console-button[hidden] { display: none; }
 .tab-bar > .library-crumb-trail {
   align-self: center;
   /* The bar's 16px at both ends. A site's strip holds no group, so the inset the groups carry has to be spent here or the trail runs flush into the zones either side. */
@@ -6807,7 +6797,6 @@ button {
 /* Open, New, Export and the library foot's launchers — the theme palette among them — are the same button over and over: muted at rest, greening on hover like the other secondary toolbar icons. Said once, so they cannot drift apart — and none of them is ever the filled primary button, which is how the bar says which view you are in. A button added to this run without its name here rests filled, which reads as the one action already pressed. */
 .open-button,
 .new-button,
-.new-console-button,
 .export-button,
 .library-foot-button {
   /* The app's own furniture, not something the document offers, so the pointer stays an arrow across the run. Beats the shared hand by being one class. */
@@ -6820,7 +6809,6 @@ button {
 @media (hover: hover) {
   .open-button:hover,
   .new-button:hover,
-  .new-console-button:hover,
   .export-button:hover,
   .library-foot-button:hover {
     background: var(--lt-navigation-button-hover-background);
@@ -7922,6 +7910,10 @@ body.library-resizing button {
 .crumb-menu-edit .lt-icon {
   width: 14px;
   height: 14px;
+}
+/* An agent account's settings press is part of the row it belongs to, so it is drawn whether or not the pointer is on it. */
+.crumb-menu-edit-shown {
+  opacity: 1;
 }
 .crumb-menu-row:focus-within .crumb-menu-edit {
   opacity: 1;
@@ -19907,7 +19899,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 203 values that do not change with the theme, all 114 icons, and all 190 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 203 values that do not change with the theme, all 114 icons, and all 189 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19939,7 +19931,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>114</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>190</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>189</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -20410,7 +20402,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">190 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">189 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -20488,12 +20480,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><button type="button" class="icon-button open-button"><span class="lt-icon lt-icon-open"></span></button></div>
 </section>
 <section class="part">
-<header><h3>New-document button</h3><code class="built">.new-button</code><span class="built">app-shell.html, standing at the end of the tab strip rather than in the bar's trailing group — it rests against the last tab and never folds</span></header>
+<header><h3>New-document button</h3><code class="built">.new-button</code><span class="built">app-shell.html and new-menu.js, the plus that opens the new menu — New page, Console, Claude, Codex and Antigravity — standing at the end of the tab strip rather than in the bar's trailing group — it rests against the last tab and never folds</span></header>
 <div class="stage"><div class="tab-bar" style="height:44px"><div class="strip-part"><span class="tab tab-active"><button type="button" class="tab-label">one.md</button></span></div><button type="button" class="icon-button new-button"><span class="lt-icon lt-icon-new"></span></button></div></div>
-</section>
-<section class="part">
-<header><h3>New-console button</h3><code class="built">.new-console-button</code><span class="built">app-shell.html and console.js, beside New document in the tab strip, named for the library folder it will start in, using home when no folder is chosen</span></header>
-<div class="stage"><div class="tab-bar" style="height:44px"><button type="button" class="icon-button new-button" aria-label="New document"><span class="lt-icon lt-icon-new"></span></button><button type="button" class="icon-button new-console-button" aria-label="New console in C:\Notes" title="New console in C:\Notes"><span class="lt-icon lt-icon-terminal"></span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Export button</h3><code class="built">.export-button</code><span class="built">app-shell.html</span></header>
@@ -20608,8 +20596,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="resolved-comment"><div class="comment-quote">vanished words</div><div class="comment-message"><div class="comment-message-time">26 September 2026, 8:00am</div><div class="comment-message-text">Gone one.</div></div><div class="comment-message-time">The words this was about are no longer in the note</div></div></div>
 </section>
 <section class="part">
-<header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js</span></header>
-<div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit" style="opacity:1"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button></div></div>
+<header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js; the new menu draws its launch list (new-menu.js) and every agent view in the same popup (console-launch.js) out of these rows: one row per account, the agent's logo then the name the reader gave it, with its settings press always drawn (crumb-menu-edit-shown), Add account and the agent it is for, an account's settings with its name, sign-in state and the permission switch with its consequence, the add, link, rename and remove forms with their errors and busy primary action, the sign-in handoff, an account's launch settings, preparing and a failed start with Open Console</span></header>
+<div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit crumb-menu-edit-shown"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js, library-keys.js (the keyboard ring on a row, inside its edge), library-picks.js (a picked row, a lighter tint of the accent with a hairline inside its edge, worn beside the open row's own tint), library-carry.js (the chip naming what a pointer carries, and the ring on the folder row, the crumb or the pane's own list it would land in), library-rows.js (the view button at the trail's end, lit out of name order and wearing the sort mark, the date heading between a grouped folder's files and the Favorites and Files headings over a folder holding a favorite, all one quiet heading, the fuller file row, a softly filled card with no edge that takes the hover wash under the pointer — the file name and the time it changed, the title on a quieter library-file-title line where it says more than the name, and two lines of its prose — and a folder row's count; a Kindle book row is the fuller row with the book's title, its container in the type badge and its author on a quieter library-file-author line, under a heading counting the folder's books, the ones that open and the ones that are shut; a compact folder, and a row past the folder's cap, draw the single line; a row kept out and drawn by Show hidden wears is-hidden, dimmed; a file Leaftext cannot open is listed where it sits wearing is-unreadable, its words dimmed over a whole row wash and its tooltip saying why), library-axes.js (the Tags and Fields lists: a row per tag or field with its branch mark, turned when open, its count, and one inset a level deep), library-services.js (**Books online…** under New vault…, its own group above Back wearing the Define book mark); in the Books online vault a library, its categories, All books and the Next row are folder rows, a catalog's book is the Kindle book row pressed by its number, its author line ending on this computer once its EPUB is saved and the row dimmed with aria-busy while it is fetched, in the Books online vault the top-level rows are its libraries, each a folder row counting its books where its library can count, and the host's own sentence stands where a catalog is still arriving</span></header>
@@ -20648,7 +20636,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="console-layer is-drop-target"><div class="console-terminal"></div></div></div>
 </section>
 <section class="part">
-<header><h3>Console status</h3><code class="built">.console-status</code><span class="built">console-status.js, from the record the host hands it for the agent session in that console: one row at the foot of the console layer, the terminal (is-above-status) one row shorter above it; the agent's logo alone, its name as the hover title and spoken label (console-status-agent), or its name where it has no logo, the account name immediately after the logo (console-status-account), a button titled Rename this account that becomes a selected text box (console-status-account-input): Enter or blur saves, Escape cancels, empty or unchanged names save nothing, remaining pressable while the agent works; its reported model (console-status-model, a button for Claude Code, Codex and Antigravity that opens the agent's own model picker in one press), the reported effort on its button (console-status-effort), with Effort when unknown, for those same agents, opening their own effort choice in one press, the context capacity before usage is reported, then context used with a small meter (console-status-meter, console-status-fill), a menu button for Claude Code, Codex and Antigravity offering Compact the conversation and Start a new conversation, all three controls disabled with a title saying to wait while the agent works, each limit with its meter and reset, the cost and the folder, a field the session did not report left out; for Claude Code, Codex and Antigravity the folder is a button (console-status-folder, its name in console-status-folder-name cut short with an ellipsis, Folder before any report, the whole path as its title and spoken label) opening a menu above itself of one directory's folders, the folder above, Move this conversation here for Claude Code or New conversation in this folder for Codex and Antigravity, and Choose another folder; where the row would run past its width a plain folder goes first, then the cost, then the limits then the effort control, then the account and last the folder button, whose console's tab menu reaches the same menu; shown for recognized Claude Code, Codex and Antigravity even without a report, with neutral Model, Effort and Context controls, the three standing 4 pixels apart in one group (console-status-controls); reported figures enrich the row and unknown figures stay absent</span></header>
+<header><h3>Console status</h3><code class="built">.console-status</code><span class="built">console-status.js, from the record the host hands it for the agent session in that console and from how the new menu started it — the agent, the account chosen and Prompts skipped, said before any hook reports and gone when that program ends: one row at the foot of the console layer, the terminal (is-above-status) one row shorter above it; the agent's logo alone, its name as the hover title and spoken label (console-status-agent), or its name where it has no logo, the account name immediately after the logo (console-status-account), a button titled Rename this account that becomes a selected text box (console-status-account-input): Enter or blur saves, Escape cancels, empty or unchanged names save nothing, remaining pressable while the agent works; its reported model (console-status-model, a button for Claude Code, Codex and Antigravity that opens the agent's own model picker in one press), the reported effort on its button (console-status-effort), with Effort when unknown, for those same agents, opening their own effort choice in one press, the context capacity before usage is reported, then context used with a small meter (console-status-meter, console-status-fill), a menu button for Claude Code, Codex and Antigravity offering Compact the conversation and Start a new conversation, all three controls disabled with a title saying to wait while the agent works, each limit with its meter and reset, the cost and the folder, a field the session did not report left out; for Claude Code, Codex and Antigravity the folder is a button (console-status-folder, its name in console-status-folder-name cut short with an ellipsis, Folder before any report, the whole path as its title and spoken label) opening a menu above itself of one directory's folders, the folder above, Move this conversation here for Claude Code or New conversation in this folder for Codex and Antigravity, and Choose another folder; where the row would run past its width a plain folder goes first, then the cost, then the limits then the effort control, then the account and last the folder button, whose console's tab menu reaches the same menu; shown for recognized Claude Code, Codex and Antigravity even without a report, with neutral Model, Effort and Context controls, the three standing 4 pixels apart in one group (console-status-controls); reported figures enrich the row and unknown figures stay absent</span></header>
 <div class="stage"><div class="console-status"><span class="console-status-field console-status-agent" data-field="agent" title="Codex" role="img" aria-label="Codex"><span class="lt-icon lt-icon-agent-codex" aria-hidden="true"></span></span><span class="console-status-controls"><button type="button" class="console-status-field console-status-account" data-field="account" title="Rename this account">Default account</button><button type="button" class="console-status-field console-status-model" data-field="model" aria-label="Change model: gpt-6-sol">gpt-6-sol</button><button type="button" class="console-status-field console-status-model console-status-effort" data-field="effort" aria-label="Change reasoning effort">Effort</button><button type="button" class="console-status-field console-status-model" data-field="context" aria-label="Free up context: Context 36k of 258k" aria-haspopup="menu" aria-expanded="false"><span class="console-status-meter"><span class="console-status-fill" style="width:14%"></span></span>Context 36k of 258k<span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></button></span><span class="console-status-field" data-field="limits"><span class="console-status-meter"><span class="console-status-fill" style="width:21%"></span></span>Weekly 21% used · resets in 4d 2h</span><button type="button" class="console-status-field console-status-folder" data-field="folder" title="C:/work/app" aria-label="New conversation in another folder: C:/work/app" aria-haspopup="menu" aria-expanded="false"><span class="lt-icon lt-icon-folder" aria-hidden="true"></span><span class="console-status-folder-name">app</span></button></div></div>
 </section>
 <section class="part">

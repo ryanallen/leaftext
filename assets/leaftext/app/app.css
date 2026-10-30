@@ -5806,16 +5806,6 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
   margin-left: calc(-1 * var(--lt-space-4));
   margin-right: var(--lt-space-16);
 }
-.tab-bar > .new-console-button {
-  flex: 0 0 auto;
-  order: 2;
-  align-self: center;
-  transform: translateY(calc(-1 * var(--lt-space-2)));
-  
-  margin-left: calc(-1 * var(--lt-space-16));
-  margin-right: var(--lt-space-16);
-}
-.tab-bar > .new-console-button[hidden] { display: none; }
 .tab-bar > .library-crumb-trail {
   align-self: center;
   
@@ -6799,7 +6789,6 @@ button {
 
 .open-button,
 .new-button,
-.new-console-button,
 .export-button,
 .library-foot-button {
   
@@ -6812,7 +6801,6 @@ button {
 @media (hover: hover) {
   .open-button:hover,
   .new-button:hover,
-  .new-console-button:hover,
   .export-button:hover,
   .library-foot-button:hover {
     background: var(--lt-navigation-button-hover-background);
@@ -7906,6 +7894,10 @@ body.library-resizing button {
 .crumb-menu-edit .lt-icon {
   width: 14px;
   height: 14px;
+}
+
+.crumb-menu-edit-shown {
+  opacity: 1;
 }
 .crumb-menu-row:focus-within .crumb-menu-edit {
   opacity: 1;

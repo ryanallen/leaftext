@@ -9954,7 +9954,7 @@ if (window.__leafSite) {
     if (button) button.remove();
   }
   
-  for (const id of ['openButton', 'newButton', 'newConsoleButton']) {
+  for (const id of ['openButton', 'newButton']) {
     const button = document.getElementById(id);
     if (button) button.remove();
   }
@@ -11674,9 +11674,7 @@ const {
 } = window.__lt.assets;
 
 const openButton = document.getElementById('openButton');
-const newButton = document.getElementById('newButton');
 if (openButton) openButton.addEventListener('click', () => send({ command: 'open' }));
-if (newButton) newButton.addEventListener('click', () => send({ command: 'newDocument' }));
 
 const PAGE_EXPORT_HINTS = {
   pdf: 'The whole document as one continuous page, in the theme on screen',
@@ -15956,7 +15954,8 @@ function showCrumbMenu(button, items, focusLabel) {
     if (entry.edit) {
       const edit = document.createElement('button');
       edit.type = 'button';
-      edit.className = 'crumb-menu-edit';
+      
+      edit.className = entry.editShown ? 'crumb-menu-edit crumb-menu-edit-shown' : 'crumb-menu-edit';
       edit.innerHTML = MENU_SETTINGS_SVG;
       const label = `Edit ${entry.label}`;
       edit.title = label;
@@ -16125,7 +16124,6 @@ window.leafSetLibraryFolder = (payload) => {
   if (folder !== libraryProjectPath) clearLibraryPicks();
   else if (next.partial) keepDrawnRowHeads(next.entries);
   libraryProjectPath = folder;
-  refreshConsoleLauncher();
   
   libraryChain = Array.isArray(next.chain) ? next.chain : [];
   libraryEntries = Array.isArray(next.entries) ? next.entries : [];
@@ -16165,7 +16163,6 @@ window.leafSetVaults = (payload) => {
     resetOnlineSearch();
     
     libraryProjectPath = '';
-    refreshConsoleLauncher();
     libraryEntries = [];
     libraryChain = [];
     libraryError = null;
@@ -21264,7 +21261,8 @@ window.addEventListener('keydown', (event) => {
   if (event.isComposing || composing) {
     return;
   }
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'o') {
+  
+  if ((isMacPlatform ? event.metaKey : event.ctrlKey) && event.key.toLowerCase() === 'o') {
     event.preventDefault();
     send({ command: 'open' });
     return;
@@ -43256,23 +43254,6 @@ if (calendarSheet) {
   }
 }
 
-var newConsoleButton = document.getElementById('newConsoleButton');
-function refreshConsoleLauncher() {
-  if (!newConsoleButton) return;
-  const folder = libraryFolderHere();
-  newConsoleButton.hidden = typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers('newConsole');
-  const label = folder ? `New console in ${folder}` : 'New console';
-  newConsoleButton.title = label;
-  newConsoleButton.setAttribute('aria-label', label);
-}
-if (newConsoleButton) {
-  newConsoleButton.addEventListener('click', () => {
-    const folder = libraryFolderHere();
-    if (!newConsoleButton.hidden) send({ command: 'newConsole', path: folder });
-  });
-  refreshConsoleLauncher();
-}
-
 const consoleLayers = new Map();
 let consoleRuntime = null;
 var consoleShell = document.getElementById('libraryShell');
@@ -45158,13 +45139,22 @@ function drawConsoleStatus(id, entry, reportedState) {
   const strip = entry.status;
   const record = consoleControlRecord(entry);
   const fields = record ? consoleStatusFields(record) : [];
+  
+  const launched = entry.launched;
+  if (launched) {
+    if (!record) fields.push({ field: 'launchAgent', text: AGENT_LAUNCH_NAMES[launched.agent] || launched.agent });
+    if (!fields.some((field) => field.field === 'account') && launched.account) fields.push({ field: 'launchAccount', text: launched.account });
+    if (launched.skipPermissions) fields.push({ field: 'launchMode', text: 'Prompts skipped' });
+  }
   const items = fields.map(field => {
     const model = field.field === 'model' && ['claude', 'codex', 'antigravity'].includes(record.agent);
     const account = field.field === 'account';
+    
+    const launchedAccount = field.field === 'launchAccount';
     const effort = field.field === 'effort';
     const context = field.field === 'context' && ['claude', 'codex', 'antigravity'].includes(record.agent);
     if (field.field === 'folder' && ['claude', 'codex', 'antigravity'].includes(record.agent)) return consoleFolderButton(id, entry, field);
-    const item = document.createElement(model || effort || context || account ? 'button' : 'span');
+    const item = document.createElement(model || effort || context || account || launchedAccount ? 'button' : 'span');
     item.className = field.field === 'agent' ? 'console-status-field console-status-agent' : 'console-status-field';
     item.dataset.field = field.field;
     
@@ -45195,14 +45185,15 @@ function drawConsoleStatus(id, entry, reportedState) {
       wait.textContent = field.wait;
       item.appendChild(wait);
     }
-    if (account) {
+    if (account || launchedAccount) {
       item.type = 'button';
       item.classList.add('console-status-account');
       item.title = 'Rename this account';
       item.setAttribute('aria-label', `Rename this account: ${field.text}`);
       item.addEventListener('click', event => {
         event.stopPropagation();
-        renameConsoleAccount(id, entry, item);
+        if (launchedAccount) agentLaunchRenameLaunched(id, entry, item);
+        else renameConsoleAccount(id, entry, item);
       });
     }
     if (model || effort || context) {
@@ -45869,6 +45860,487 @@ function consoleInlineEcho(entry) {
   if (marker) pin.sent = { text: inline.text, mark: rows[found].match(CONSOLE_PROMPT_MARK)[0].trimStart() };
   
   if (marker) pin.cut = consolePromptEcho(rows[found]) !== inline.text ? marker : null;
+}
+
+var newMenuButton = document.getElementById('newButton');
+
+function newMenuHostAnswers(command) {
+  return typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers(command);
+}
+function newMenuMainRows() {
+  const rows = [{
+    label: 'New page',
+    icon: '<span class="lt-icon lt-icon-new" aria-hidden="true"></span>',
+    run: () => send({ command: 'newDocument' }),
+  }];
+  if (newMenuHostAnswers('newConsole')) {
+    const folder = libraryFolderHere();
+    rows.push({
+      label: 'Console',
+      title: folder ? `New console in ${folder}` : 'New console',
+      icon: '<span class="lt-icon lt-icon-terminal" aria-hidden="true"></span>',
+      run: () => send({ command: 'newConsole', path: folder }),
+    });
+  }
+  if (newMenuHostAnswers('agentLaunch')) rows.push('separator', ...agentLaunchRows());
+  return rows;
+}
+
+function toggleNewMenu() {
+  if (crumbMenuOwner === newMenuButton && !crumbMenu.hidden) {
+    hideCrumbMenu();
+    return;
+  }
+  agentLaunchReset();
+  showCrumbMenu(newMenuButton, newMenuMainRows());
+}
+if (newMenuButton) {
+  newMenuButton.setAttribute('aria-haspopup', 'menu');
+  newMenuButton.setAttribute('aria-expanded', 'false');
+  newMenuButton.title = 'New';
+  newMenuButton.setAttribute('aria-label', 'New');
+  
+  newMenuButton.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    event.preventDefault();
+    toggleNewMenu();
+  });
+  
+  newMenuButton.addEventListener('click', (event) => {
+    if (event.detail === 0) toggleNewMenu();
+  });
+}
+
+const AGENT_LAUNCH_NAMES = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity' };
+const AGENT_LAUNCH_AGENTS = ['claude', 'codex', 'antigravity'];
+const AGENT_LAUNCH_SKIP = {
+  claude: 'New Claude consoles start without asking before each tool use.',
+  codex: 'New Codex consoles run without approvals and without the sandbox.',
+  antigravity: 'New Antigravity consoles start without asking before each action.',
+};
+const AGENT_LAUNCH_ASKS = 'asks before each action it takes.';
+const AGENT_LAUNCH_CONNECTIONS = [
+  ['agent', 'This account’s own sign-in', 'The agent signs in on its own, in its own browser window.'],
+  ['automatic', 'Your terminal’s setup', 'The agent reaches its model the way your terminal sets it up.'],
+];
+const agentLaunch = { state: null, view: null, agent: null, id: '', draft: null, error: '', step: '', request: 0, waiting: new Map() };
+
+function agentLaunchReset() {
+  agentLaunch.view = null;
+  agentLaunch.error = '';
+  agentLaunch.draft = null;
+}
+
+function agentLaunchChain() {
+  const chain = { done: false, value: undefined, next: [] };
+  chain.resolve = (value) => {
+    chain.done = true;
+    chain.value = value;
+    for (const run of chain.next.splice(0)) run(value);
+  };
+  chain.then = (work) => {
+    const after = agentLaunchChain();
+    const run = (value) => after.resolve(work(value));
+    if (chain.done) run(chain.value);
+    else chain.next.push(run);
+    return after;
+  };
+  return chain;
+}
+function agentLaunchAsk(action, fields = {}) {
+  const request = ++agentLaunch.request;
+  const chain = agentLaunchChain();
+  agentLaunch.waiting.set(request, chain.resolve);
+  send({ command: 'agentLaunch', action, agent: agentLaunch.agent || 'claude', request, ...fields });
+  return chain;
+}
+window.leafAgentLaunchAnswer = (request, answer) => {
+  if (!answer || typeof answer !== 'object') return;
+  if (answer.state) agentLaunch.state = answer.state;
+  const waiting = agentLaunch.waiting.get(request);
+  agentLaunch.waiting.delete(request);
+  if (waiting) waiting(answer);
+  
+  if (answer.state && agentLaunchOpen() && !agentLaunch.view) agentLaunchShow('main');
+  
+  if (answer.refresh) agentLaunchAsk('state').then(() => agentLaunchRedraw());
+};
+function agentLaunchOpen() {
+  return crumbMenuOwner === newMenuButton && !crumbMenu.hidden;
+}
+function agentLaunchRedraw() {
+  if (agentLaunchOpen() && agentLaunch.view) agentLaunchShow(agentLaunch.view);
+}
+function agentLaunchOf(agent) {
+  return agentLaunch.state?.agents?.[agent] || { accounts: [], label: '', defaultShown: true };
+}
+function agentLaunchAccount(agent, id) {
+  return agentLaunchOf(agent).accounts.find((row) => row.id === id) || null;
+}
+
+function agentLaunchLabel(agent, id) {
+  if (id) return agentLaunchAccount(agent, id)?.label || AGENT_LAUNCH_NAMES[agent];
+  return agentLaunchOf(agent).label || AGENT_LAUNCH_NAMES[agent];
+}
+function agentLaunchIcon(agent) {
+  return `<span class="lt-icon lt-icon-agent-${agent}" aria-hidden="true"></span>`;
+}
+
+function agentLaunchRows() {
+  if (!agentLaunch.state) agentLaunchAsk('state');
+  const rows = [];
+  for (const agent of AGENT_LAUNCH_AGENTS) {
+    const held = agentLaunchOf(agent);
+    const ids = [...(held.defaultShown === false ? [] : ['']), ...held.accounts.map((row) => row.id)];
+    for (const id of ids) {
+      const label = agentLaunchLabel(agent, id);
+      rows.push({
+        label,
+        icon: agentLaunchIcon(agent),
+        title: `Start ${AGENT_LAUNCH_NAMES[agent]} as ${label}`,
+        keepOpen: true,
+        editShown: true,
+        run: () => agentLaunchStart(agent, id),
+        edit: () => agentLaunchOpenAccount(agent, id),
+      });
+    }
+  }
+  rows.push('separator', { label: '+ Add account', keepOpen: true, run: () => { agentLaunch.draft = null; agentLaunchShow('pick'); } });
+  return rows;
+}
+function agentLaunchOpenAccount(agent, id) {
+  agentLaunch.agent = agent;
+  agentLaunch.id = id;
+  agentLaunchAsk('state').then(() => agentLaunchRedraw());
+  agentLaunchShow('account');
+}
+
+function agentLaunchSharedSignIn() {
+  return agentLaunch.state?.platform !== 'macos';
+}
+function agentLaunchStatusNote(agent, row) {
+  if (agent === 'antigravity') return { note: agentLaunchSharedSignIn() || !row ? 'Google sign-in · shared by every Antigravity profile on this computer' : 'Google sign-in · this profile’s own' };
+  if (!row) return { note: 'Starts the way your terminal does, with its own sign-in.' };
+  if (row.missing) return { note: `The folder for ${row.label} is missing.`, danger: true };
+  if (row.signingIn) return { note: `Waiting for ${AGENT_LAUNCH_NAMES[agent]} sign-in` };
+  const status = row.status || {};
+  if (status.state === 'signedIn') return { note: `Signed in · ${status.identity || 'identity unavailable'}` };
+  if (status.state === 'signedOut') return { note: 'Not signed in' };
+  if (status.state === 'unknown') return { note: 'Couldn’t check sign-in', danger: true };
+  return { note: 'Sign-in not checked' };
+}
+
+function agentLaunchAccountActions(agent, row, status) {
+  if (agent === 'antigravity') return [{ label: 'Open Antigravity sign-in', keepOpen: true, run: () => agentLaunchSignIn(agent, agentLaunchSharedSignIn() ? '' : row?.id || '') }];
+  if (!row) return [];
+  if (row.missing) return [{ label: 'Choose another folder', keepOpen: true, run: () => { agentLaunch.draft = { name: row.label, folder: '' }; agentLaunchShow('link'); } }];
+  const check = { label: 'Check sign-in', keepOpen: true, run: () => agentLaunchCheck(agent, row.id) };
+  if (status.note === 'Not signed in') return [{ label: `Sign in to ${row.label}`, keepOpen: true, run: () => agentLaunchSignIn(agent, row.id) }, check];
+  return [{ label: 'Sign in again', keepOpen: true, run: () => agentLaunchSignIn(agent, row.id) }, check];
+}
+function agentLaunchBack(view) {
+  return { label: 'Back', icon: '<span class="lt-icon lt-icon-back" aria-hidden="true"></span>', keepOpen: true, run: () => agentLaunchShow(view) };
+}
+function agentLaunchErrorNote() {
+  return agentLaunch.error ? [{ note: agentLaunch.error, danger: true }] : [];
+}
+function agentLaunchStartRow(agent, id) {
+  const row = id ? agentLaunchAccount(agent, id) : null;
+  const signedOut = row && (row.missing || row.status?.state === 'signedOut');
+  return { label: `Start ${agentLaunchLabel(agent, id)}`, icon: agentLaunchIcon(agent), disabled: Boolean(signedOut), keepOpen: true, run: () => agentLaunchStart(agent, id) };
+}
+function agentLaunchSkipRows(agent) {
+  const on = Boolean(agentLaunchOf(agent).skipPermissions);
+  return [
+    
+    { label: 'Skip permission prompts', switch: true, checked: on, keepOpen: true, run: () => {
+      if (agentLaunch.skipSaving) return;
+      agentLaunch.skipSaving = true;
+      agentLaunchSet('setSkip', { on: !on }).then(() => { agentLaunch.skipSaving = false; });
+    } },
+    { note: `${on ? AGENT_LAUNCH_SKIP[agent] : `${AGENT_LAUNCH_NAMES[agent]} ${AGENT_LAUNCH_ASKS}`} Every ${AGENT_LAUNCH_NAMES[agent]} account, new consoles only.` },
+  ];
+}
+function agentLaunchSet(action, fields) {
+  agentLaunch.error = '';
+  return agentLaunchAsk(action, fields).then((answer) => {
+    agentLaunch.error = answer.error || '';
+    agentLaunchRedraw();
+    return answer;
+  });
+}
+
+function agentLaunchNameOk(name) {
+  
+  return Boolean(name) && !/[\u0000-\u001f\u007f]/.test(name);
+}
+
+const AGENT_LAUNCH_VIEWS = {
+  account(agent) {
+    const id = agentLaunch.id;
+    const row = id ? agentLaunchAccount(agent, id) : null;
+    if (id && !row) return AGENT_LAUNCH_VIEWS.pick();
+    const status = agentLaunchStatusNote(agent, row);
+    return [agentLaunchBack('main'), { heading: agentLaunchLabel(agent, id) },
+      ...(row ? [{ note: row.folder }] : []),
+      { label: 'Rename', keepOpen: true, run: () => { agentLaunch.draft = { name: agentLaunchLabel(agent, id) }; agentLaunchShow('rename'); } },
+      status, ...agentLaunchAccountActions(agent, row, status), ...agentLaunchSkipRows(agent), ...agentLaunchErrorNote(),
+      { label: 'Launch settings', keepOpen: true, run: () => agentLaunchSettings(agent, id) },
+      agentLaunchStartRow(agent, id),
+      ...(row ? [{ label: 'Remove from list', danger: true, keepOpen: true, run: () => agentLaunchShow('remove') }] : [])];
+  },
+  pick() {
+    return [agentLaunchBack('main'), { heading: 'Add account' },
+      ...AGENT_LAUNCH_AGENTS.map((agent) => ({ label: AGENT_LAUNCH_NAMES[agent], icon: agentLaunchIcon(agent), keepOpen: true, run: () => { agentLaunch.agent = agent; agentLaunch.draft = { name: '' }; agentLaunchShow('add'); } }))];
+  },
+  add(agent) {
+    const draft = agentLaunch.draft || (agentLaunch.draft = { name: '' });
+    const profile = agent === 'antigravity';
+    return [agentLaunchBack('pick'), { heading: `${AGENT_LAUNCH_NAMES[agent]} · Add account`, form: true },
+      { input: draft.name, placeholder: 'Account name', form: true, onInput: (value) => { draft.name = value; }, onEnter: () => agentLaunchCreate(agent), onEscape: () => agentLaunchShow('pick') },
+      ...agentLaunchErrorNote(),
+      { note: profile ? `Leaftext makes a folder of its own for this profile: its own history, settings and tool servers. ${agentLaunchSharedSignIn() ? 'Every Antigravity profile shares this computer’s Google sign-in.' : 'The profile signs in to Google on its own the first time it starts.'}` : `Leaftext makes a new, empty folder for this account; ${AGENT_LAUNCH_NAMES[agent]} opens its own sign-in in a new console.` },
+      { buttons: [{ label: agentLaunch.creating ? 'Creating…' : (profile ? 'Create' : 'Create and sign in'), primary: true, keepOpen: true, run: () => agentLaunchCreate(agent) }] },
+      ...(profile ? [] : [{ label: 'Use existing account folder…', keepOpen: true, run: () => { agentLaunch.draft = { name: draft.name, folder: '' }; agentLaunchShow('link'); } }])];
+  },
+  link(agent) {
+    const draft = agentLaunch.draft || (agentLaunch.draft = { name: '', folder: '' });
+    return [agentLaunchBack('add'), { heading: `${AGENT_LAUNCH_NAMES[agent]} · Existing account folder`, form: true },
+      { input: draft.name, placeholder: 'Account name', form: true, onInput: (value) => { draft.name = value; }, onEnter: () => agentLaunchLink(agent), onEscape: () => agentLaunchShow('add') },
+      { note: draft.folder || 'No folder chosen' },
+      { note: `The folder ${AGENT_LAUNCH_NAMES[agent]} keeps its sign-in in, not a project folder. Nothing in it is copied.` },
+      { label: 'Choose folder…', keepOpen: true, run: () => agentLaunchAsk('chooseFolder').then((answer) => { if (answer.folder) draft.folder = answer.folder; agentLaunchRedraw(); }) },
+      ...agentLaunchErrorNote(),
+      { buttons: [{ label: 'Cancel', keepOpen: true, run: () => agentLaunchShow('main') }, { label: 'Add account folder', primary: true, keepOpen: true, run: () => agentLaunchLink(agent) }] }];
+  },
+  rename(agent) {
+    const draft = agentLaunch.draft || (agentLaunch.draft = { name: agentLaunchLabel(agent, agentLaunch.id) });
+    const save = () => agentLaunchRename(agent, agentLaunch.id, draft.name.trim()).then((answer) => { if (!answer.error) agentLaunchShow('account'); });
+    return [agentLaunchBack('account'), { heading: 'Rename account', form: true },
+      { input: draft.name, placeholder: 'Account name', form: true, onInput: (value) => { draft.name = value; }, onEnter: save, onEscape: () => agentLaunchShow('account') },
+      ...agentLaunchErrorNote(),
+      { buttons: [{ label: 'Cancel', keepOpen: true, run: () => agentLaunchShow('account') }, { label: 'Save name', primary: true, keepOpen: true, run: save }] }];
+  },
+  remove(agent) {
+    const row = agentLaunchAccount(agent, agentLaunch.id);
+    if (!row) return AGENT_LAUNCH_VIEWS.pick();
+    return [{ heading: `Remove ${row.label} from the list?` },
+      { note: 'Its folder, its sign-in and any console open under it stay as they are.' },
+      ...agentLaunchErrorNote(),
+      { buttons: [{ label: 'Keep account', keepOpen: true, run: () => agentLaunchShow('account') }, { label: 'Remove from list', primary: true, keepOpen: true, run: () => agentLaunchSet('remove', { id: row.id }).then((answer) => { if (!answer.error) agentLaunchShow('main'); }) }] }];
+  },
+  waiting(agent) {
+    const row = agentLaunchAccount(agent, agentLaunch.id);
+    const name = AGENT_LAUNCH_NAMES[agent];
+    if (row && !row.signingIn && row.status?.state === 'signedIn') return AGENT_LAUNCH_VIEWS.account(agent);
+    return [agentLaunchBack('account'), { heading: `Waiting for ${name} sign-in` },
+      { note: row ? `Finish signing in to ${row.label} in its console tab. Your browser may open.` : `${name} signs in from its own console tab.` },
+      ...(row && !row.signingIn && row.status?.state === 'signedOut' ? [{ note: 'The sign-in ended without signing in.', danger: true }] : []),
+      ...agentLaunchErrorNote(),
+      { label: 'Go to sign-in tab', keepOpen: true, run: () => agentLaunchSet('goToSignIn', { id: agentLaunch.id }) },
+      { label: 'Check sign-in', keepOpen: true, run: () => agentLaunchCheck(agent, agentLaunch.id) },
+      ...(row?.signingIn ? [{ label: 'Cancel sign-in', keepOpen: true, run: () => agentLaunchSet('cancelSignIn', { id: agentLaunch.id }) }] : [{ label: 'Sign in again', keepOpen: true, run: () => agentLaunchSignIn(agent, agentLaunch.id) }])];
+  },
+  launch(agent) {
+    const draft = agentLaunch.draft;
+    const terminals = (agentLaunch.state?.terminals || [{ id: 'system', label: 'System default' }]).map((terminal) => ({
+      label: terminal.id === 'system' ? `System default · ${terminal.label}` : terminal.label,
+      selected: draft.terminal === terminal.id,
+      keepOpen: true,
+      run: () => { draft.terminal = terminal.id; agentLaunchRedraw(); },
+    }));
+    const signs = agent !== 'antigravity';
+    const connections = signs ? [{ heading: 'How it signs in' }, ...AGENT_LAUNCH_CONNECTIONS.map(([id, label]) => ({
+      label, selected: draft.connection === id, keepOpen: true, run: () => { draft.connection = id; agentLaunchRedraw(); },
+    })), { note: AGENT_LAUNCH_CONNECTIONS.find(([id]) => id === draft.connection)?.[2] || '' }] : [];
+    const save = () => agentLaunchSet('setLaunch', { id: draft.id, terminal: draft.terminal, connection: draft.connection, launchCommand: draft.command.trim(), keyCommand: draft.key.trim() }).then((answer) => { if (!answer.error) agentLaunchShow('account'); });
+    return [agentLaunchBack('account'), { heading: `${agentLaunchLabel(agent, draft.id)} · Launch settings`, form: true },
+      { note: `For ${agentLaunchLabel(agent, draft.id)} only.` },
+      ...connections, { heading: 'Terminal' }, ...terminals,
+      { heading: 'Custom launch command (optional)' },
+      { input: draft.command, placeholder: `Leave empty to run the installed ${agent === 'antigravity' ? 'agy' : agent}`, form: true, onInput: (value) => { draft.command = value; }, onEnter: save, onEscape: () => agentLaunchShow('account') },
+      ...(signs ? [{ heading: 'Key command (optional)' },
+        { input: draft.key, placeholder: 'A command that prints this account’s settings as JSON', form: true, onInput: (value) => { draft.key = value; }, onEnter: save, onEscape: () => agentLaunchShow('account') },
+        { note: 'Run before each start. Its answer’s connection settings, such as a key and an HTTPS address, are handed to this start only and never shown.' }] : []),
+      ...agentLaunchErrorNote(),
+      { buttons: [{ label: 'Cancel', keepOpen: true, run: () => agentLaunchShow('account') }, { label: 'Save launch settings', primary: true, keepOpen: true, run: save }] }];
+  },
+  preparing(agent) {
+    return [{ heading: `Starting ${agentLaunchLabel(agent, agentLaunch.id)}` }, { note: agentLaunch.step || 'Reading your terminal setup' },
+      { label: 'Cancel', keepOpen: true, run: () => { agentLaunchAsk('cancel'); agentLaunchShow('main'); } }];
+  },
+  failed(agent) {
+    return [{ heading: `${agentLaunchLabel(agent, agentLaunch.id)} couldn’t start` }, { note: agentLaunch.failure || 'Something stopped the start.', danger: true },
+      { label: 'Open Console', run: () => send({ command: 'newConsole', path: libraryFolderHere() }) },
+      { label: 'Try again', keepOpen: true, run: () => agentLaunchStart(agent, agentLaunch.id) },
+      { label: 'Launch settings', keepOpen: true, run: () => agentLaunchSettings(agent, agentLaunch.id) },
+      agentLaunchBack('main')];
+  },
+};
+
+const AGENT_LAUNCH_PARENT = { account: 'main', pick: 'main', add: 'pick', link: 'add', rename: 'account', remove: 'account', waiting: 'account', launch: 'account', preparing: 'main', failed: 'main' };
+function agentLaunchShow(view) {
+  if (view !== agentLaunch.view) agentLaunch.error = '';
+  agentLaunch.view = view === 'main' ? null : view;
+  if (view === 'main') {
+    agentLaunch.draft = null;
+    showCrumbMenu(newMenuButton, newMenuMainRows(), 'New page');
+    return;
+  }
+  const items = AGENT_LAUNCH_VIEWS[view](agentLaunch.agent);
+  const field = items.find((item) => item && item.input !== undefined);
+  showCrumbMenu(newMenuButton, items, field ? field.placeholder : 'Back');
+}
+function agentLaunchSettings(agent, id) {
+  const held = agentLaunchOf(agent);
+  const row = id ? agentLaunchAccount(agent, id) : null;
+  const own = row || held;
+  agentLaunch.draft = { id, terminal: held.terminal || 'system', connection: own.connection || 'automatic', command: own.command || '', key: own.keyCommand || '' };
+  agentLaunchShow('launch');
+}
+
+function agentLaunchRename(agent, id, name) {
+  if (!agentLaunchNameOk(name)) {
+    agentLaunch.error = 'Enter a name for this account';
+    agentLaunchRedraw();
+    return agentLaunchChain().then(() => ({ error: agentLaunch.error }));
+  }
+  const previous = agentLaunch.agent;
+  agentLaunch.agent = agent;
+  const asked = agentLaunchSet('rename', { id, name });
+  agentLaunch.agent = previous || agent;
+  return asked;
+}
+function agentLaunchStart(agent, id) {
+  agentLaunch.agent = agent;
+  agentLaunch.id = id;
+  agentLaunch.step = 'Reading your terminal setup';
+  agentLaunchShow('preparing');
+  const request = ++agentLaunch.request;
+  
+  const skip = agentLaunch.state ? { skip: Boolean(agentLaunchOf(agent).skipPermissions) } : {};
+  send({ command: 'agentLaunch', action: 'start', agent, id, request, path: libraryFolderHere(), ...skip });
+  
+  agentLaunch.waiting.set(request, (first) => {
+    if (first.error) return agentLaunchFailed(first);
+    agentLaunch.waiting.set(request, (done) => {
+      if (done.error) return agentLaunchFailed(done);
+      if (agentLaunchOpen() && agentLaunch.view === 'preparing') hideCrumbMenu();
+    });
+  });
+}
+function agentLaunchFailed(answer) {
+  if (answer.failure === 'canceled') return;
+  agentLaunch.failure = answer.error;
+  if (agentLaunchOpen()) agentLaunchShow('failed');
+  else leafToast(answer.error);
+}
+function agentLaunchSignIn(agent, id) {
+  agentLaunch.agent = agent;
+  agentLaunch.id = id;
+  const request = ++agentLaunch.request;
+  send({ command: 'agentLaunch', action: 'signIn', agent, request, id, path: libraryFolderHere() });
+  agentLaunch.waiting.set(request, (first) => {
+    if (first.error) { agentLaunch.error = first.error; return agentLaunchRedraw(); }
+    agentLaunch.waiting.set(request, (done) => {
+      agentLaunch.error = done.error || '';
+      if (agent === 'antigravity' && !done.error) return hideCrumbMenu();
+      agentLaunchRedraw();
+    });
+  });
+  if (agent === 'antigravity') agentLaunchShow('preparing');
+  else agentLaunchShow('waiting');
+}
+function agentLaunchCheck(agent, id) {
+  agentLaunch.error = '';
+  agentLaunchAsk('checkSignIn', { id }).then((answer) => {
+    agentLaunch.error = answer.error || '';
+    agentLaunchRedraw();
+  });
+}
+function agentLaunchCreate(agent) {
+  if (agentLaunch.creating) return;
+  const name = (agentLaunch.draft?.name || '').trim();
+  if (!agentLaunchNameOk(name)) {
+    agentLaunch.error = 'Enter a name for this account';
+    return agentLaunchShow('add');
+  }
+  agentLaunch.creating = true;
+  agentLaunchShow('add');
+  const request = ++agentLaunch.request;
+  send({ command: 'agentLaunch', action: 'create', agent, request, name, path: libraryFolderHere() });
+  agentLaunch.waiting.set(request, (first) => {
+    agentLaunch.creating = false;
+    if (first.error) { agentLaunch.error = first.error; return agentLaunchShow('add'); }
+    agentLaunch.id = first.id || '';
+    agentLaunchAsk('state').then(() => agentLaunchShow(agent === 'antigravity' ? 'account' : 'waiting'));
+    agentLaunch.waiting.set(request, (done) => { agentLaunch.error = done.error || ''; agentLaunchRedraw(); });
+  });
+}
+function agentLaunchLink(agent) {
+  const draft = agentLaunch.draft || {};
+  if (!agentLaunchNameOk((draft.name || '').trim())) {
+    agentLaunch.error = 'Enter a name for this account';
+    return agentLaunchShow('link');
+  }
+  agentLaunchSet('link', { name: draft.name.trim() }).then((answer) => {
+    if (answer.error) return;
+    agentLaunch.id = answer.id || '';
+    agentLaunchShow(agentLaunch.id ? 'account' : 'main');
+  });
+}
+
+function agentLaunchRenameLaunched(id, entry, button) {
+  const launched = entry.launched;
+  if (!launched) return;
+  entry.accountEditing = true;
+  const input = document.createElement('input');
+  input.className = 'console-status-field console-status-account-input';
+  input.dataset.field = 'launchAccount';
+  input.setAttribute('aria-label', 'Account name');
+  input.maxLength = 160;
+  input.value = button.textContent;
+  button.replaceWith(input);
+  let finished = false;
+  const finish = (save) => {
+    if (finished) return;
+    finished = true;
+    input.replaceWith(button);
+    entry.accountEditing = false;
+    const name = input.value.trim();
+    if (save && agentLaunchNameOk(name) && name !== button.textContent) {
+      agentLaunchRename(launched.agent, launched.accountId || '', name).then((answer) => {
+        if (answer.error) return leafToast(answer.error);
+        launched.account = name;
+        drawConsoleStatus(id, entry);
+      });
+    }
+    drawConsoleStatus(id, entry);
+  };
+  input.addEventListener('keydown', (event) => {
+    event.stopPropagation();
+    if (event.key === 'Enter') { event.preventDefault(); finish(true); }
+    else if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', () => finish(true));
+  input.focus();
+}
+
+window.leafConsoleLaunched = (id, launched) => {
+  const entry = consoleLayers.get(id) || (launched ? makeConsoleLayer(id) : null);
+  if (!entry) return;
+  entry.launched = launched && typeof launched === 'object' ? launched : null;
+  drawConsoleStatus(id, entry);
+};
+
+if (typeof crumbMenu !== 'undefined' && crumbMenu) {
+  crumbMenu.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !agentLaunchOpen() || !agentLaunch.view) return;
+    event.preventDefault();
+    event.stopPropagation();
+    agentLaunchShow(AGENT_LAUNCH_PARENT[agentLaunch.view] || 'main');
+  }, true);
 }
 
 
