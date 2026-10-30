@@ -8593,6 +8593,13 @@ body.library-resizing button {
 .console-composer-tool .lt-icon { width: 16px; height: 16px; }
 .console-composer-mode { height: 24px; padding: 0 var(--lt-space-10); border-radius: var(--lt-radius-pill); font-size: var(--lt-text-12); white-space: nowrap; }
 .console-composer-mode[hidden] { display: none; }
+/* Claude Code's footer notes beside the mode chip, a hook error in the warning color and pressable. */
+.console-composer-notes { display: inline-flex; align-items: center; gap: var(--lt-space-4); min-width: 0; overflow: hidden; }
+.console-composer-notes[hidden] { display: none; }
+.console-composer-note { appearance: none; display: inline-flex; align-items: center; flex: none; height: 24px; padding: 0 var(--lt-space-8); border: none; border-radius: var(--lt-radius-pill); background: transparent; color: var(--lt-muted-foreground); font: inherit; font-size: var(--lt-text-12); white-space: nowrap; }
+.console-composer-note.is-warning { color: var(--lt-warning); cursor: pointer; }
+@media (hover: hover) { .console-composer-note.is-warning:hover { background: var(--lt-wash-hover); } }
+.console-composer-note.is-warning:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: var(--lt-stroke-1); }
 /* The round send in the theme's action color, gray with nothing to send, and the stop press while the agent works. */
 .console-composer-send { appearance: none; display: grid; place-items: center; flex: none; width: 32px; height: 32px; border: none; border-radius: var(--lt-radius-full); padding: 0; background: var(--lt-primary); color: var(--lt-primary-foreground); cursor: pointer; }
 .console-composer-send .lt-icon { width: 16px; height: 16px; transform: rotate(-90deg); }
@@ -19900,7 +19907,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 203 values that do not change with the theme, all 114 icons, and all 189 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 203 values that do not change with the theme, all 114 icons, and all 190 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19932,7 +19939,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>114</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>189</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>190</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -20403,7 +20410,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">189 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">190 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -20867,6 +20874,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Console composer chip</h3><code class="built">.console-composer-chip</code><span class="built">console-composer.js: a file the reader put on the message — a file attached, a picture pasted or a file chosen from the @ list — named on a pill with its path as the hover title and a press to take it off (console-composer-chip-remove); the chips sit over the words (console-composer-chips)</span></header>
 <div class="stage"><div class="console-composer-chips"><span class="console-composer-chip" title="C:\notes\README.md"><span class="lt-icon lt-icon-document" aria-hidden="true"></span><span class="console-composer-chip-name">README.md</span><button type="button" class="console-composer-chip-remove" aria-label="Take README.md off the message"><span class="lt-icon lt-icon-close" aria-hidden="true"></span></button></span></div></div>
+</section>
+<section class="part">
+<header><h3>Console composer note</h3><code class="built">.console-composer-note</code><span class="built">console-composer.js: a note Claude Code writes in the footer the composer stands over — a background shell still running, a hook that refused the turn — in the mode chip's size and muted color beside it (console-composer-notes), gone when the footer drops it; a note naming an error takes the warning color (is-warning) and is a press that hands the console to the terminal, where the agent's own key opens it</span></header>
+<div class="stage"><div class="console-composer-notes"><span class="console-composer-note" title="1 shell">1 shell</span><button type="button" class="console-composer-note is-warning" title="Stop hook error occurred · ctrl+o to see">Stop hook error occurred</button></div></div>
 </section>
 <section class="part">
 <header><h3>Console file list</h3><code class="built">.console-file-list</code><span class="built">console-composer.js, over the composer while a word opens with @: one folder's entries of the console's folder, narrowed as the word is typed, the one Enter takes lit (is-active), a folder opening the next listing and a file becoming a chip; also the agent’s commands for a leading slash or Codex dollar word, labeled “The agent’s commands”, with name and muted description (console-file-list-name, console-file-list-detail); a line in place of rows while it reads, finds nothing or cannot read (console-file-list-note)</span></header>

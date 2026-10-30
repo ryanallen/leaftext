@@ -8576,6 +8576,13 @@ body.library-resizing button {
 .console-composer-mode { height: 24px; padding: 0 var(--lt-space-10); border-radius: var(--lt-radius-pill); font-size: var(--lt-text-12); white-space: nowrap; }
 .console-composer-mode[hidden] { display: none; }
 
+.console-composer-notes { display: inline-flex; align-items: center; gap: var(--lt-space-4); min-width: 0; overflow: hidden; }
+.console-composer-notes[hidden] { display: none; }
+.console-composer-note { appearance: none; display: inline-flex; align-items: center; flex: none; height: 24px; padding: 0 var(--lt-space-8); border: none; border-radius: var(--lt-radius-pill); background: transparent; color: var(--lt-muted-foreground); font: inherit; font-size: var(--lt-text-12); white-space: nowrap; }
+.console-composer-note.is-warning { color: var(--lt-warning); cursor: pointer; }
+@media (hover: hover) { .console-composer-note.is-warning:hover { background: var(--lt-wash-hover); } }
+.console-composer-note.is-warning:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: var(--lt-stroke-1); }
+
 .console-composer-send { appearance: none; display: grid; place-items: center; flex: none; width: 32px; height: 32px; border: none; border-radius: var(--lt-radius-full); padding: 0; background: var(--lt-primary); color: var(--lt-primary-foreground); cursor: pointer; }
 .console-composer-send .lt-icon { width: 16px; height: 16px; transform: rotate(-90deg); }
 .console-composer-send.is-off { background: var(--lt-surface-sunken); color: var(--lt-muted-foreground); cursor: default; }

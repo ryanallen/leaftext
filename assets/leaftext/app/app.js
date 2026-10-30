@@ -45915,8 +45915,36 @@ function readConsoleChat(entry) {
     }
     chat.from = consoleChatClaudeStart(entry, base + cover);
     chat.mode = footer.map(line => line.trim()).find(line => /^(?:⏵⏵|⏸)\s/.test(line)) || null;
+    chat.notes = consoleChatClaudeNotes(chat.mode, rows.slice(0, top));
     return chat;
   });
+}
+
+
+function consoleChatClaudeNotes(mode, above) {
+  const notes = [];
+  const [left, ...right] = String(mode || '').split(/ {3,}/);
+  for (const part of left.split(' · ').slice(1)) {
+    const kept = part.split(', ').filter(each => !/^\d+ monitors?$/.test(each.trim())).join(', ').trim();
+    
+    if (kept && !/^\S+ (?:to|for) \w+$/.test(kept)) notes.push(kept);
+  }
+  const notices = right.map(each => each.trim());
+  
+  const after = [];
+  for (let at = above.length - 1; at >= 0; at -= 1) {
+    const row = above[at];
+    if (!row.trim() || /^─+$/.test(row.trim())) continue;
+    if (CONSOLE_CHAT_DONE.test(row)) {
+      notices.push(...after);
+      break;
+    }
+    if (!/^\s{2,}\S/.test(row) || CONSOLE_CHAT_FOLDED.test(row)) break;
+    
+    if (/^\s+[A-Za-z0-9]/.test(row)) after.unshift(row.trim());
+  }
+  for (const notice of notices) if (notice) notes.push(notice);
+  return notes.map(full => ({ text: full.replace(/ · \S+ to \w+$/, ''), full, warning: /\berror\b|\bfailed\b/i.test(full) }));
 }
 
 
@@ -46065,6 +46093,11 @@ function refreshConsoleChat(id, entry) {
   }
   entry.chatOwed = false;
   const read = readConsoleChat(entry);
+  
+  if (entry.chatTerminal) {
+    if (entry.activity !== 'working' && (!read || read.notes?.some(note => note.warning))) return;
+    entry.chatTerminal = false;
+  }
   if (!read) {
     if (!consoleComposerHolding(entry) && !consoleChatMidRedraw(entry)) leaveConsoleChat(entry);
     return;
@@ -47129,7 +47162,10 @@ function makeConsoleComposer(id, entry, frame) {
   slash.textContent = entry.chat?.agent === 'codex' ? '$' : '/';
   const mode = consoleComposerButton('console-composer-mode', 'Change the permission mode');
   mode.hidden = true;
-  tools.append(attach, slash, mode);
+  const notes = document.createElement('div');
+  notes.className = 'console-composer-notes';
+  notes.hidden = true;
+  tools.append(attach, slash, mode, notes);
   const submit = consoleComposerButton('console-composer-send', 'Send', 'forward-long');
   row.append(tools, submit);
   const list = document.createElement('div');
@@ -47139,7 +47175,7 @@ function makeConsoleComposer(id, entry, frame) {
   list.hidden = true;
   box.append(list, chips, words, row);
   frame.appendChild(box);
-  const state = { box, chips, field, attach, slash, mode, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
+  const state = { box, chips, field, attach, slash, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
   entry.composer = state;
   
   state.width = 0;
@@ -47177,6 +47213,9 @@ function makeConsoleComposer(id, entry, frame) {
   });
   slash.addEventListener('click', () => openConsoleComposerCommands(id, entry));
   mode.addEventListener('click', () => consoleComposerMode(id, entry));
+  notes.addEventListener('click', event => {
+    if (event.target.closest?.('.console-composer-note.is-warning')) consoleComposerToTerminal(entry);
+  });
   submit.addEventListener('click', () => {
     if (consoleComposerWorking(entry) && !consoleComposerHasMessage(entry)) consoleComposerStop(id, entry);
     else sendConsoleComposer(id, entry);
@@ -47246,6 +47285,7 @@ function drawConsoleComposer(id, entry) {
   const mode = chat.agent === 'claude' ? consoleComposerModeName(chat.mode) : chat.agent === 'codex' ? consoleComposerCodexMode(chat) : null;
   state.mode.hidden = !mode;
   if (mode && state.mode.textContent !== mode) state.mode.textContent = mode;
+  drawConsoleComposerNotes(state, chat.agent === 'claude' ? chat.notes || [] : []);
   const working = consoleComposerWorking(entry);
   const ready = consoleComposerHasMessage(entry);
   const stop = working && !ready;
@@ -47271,6 +47311,29 @@ function drawConsoleComposer(id, entry) {
     state.fittedWidth = state.width;
   }
   markConsoleComposer(entry);
+}
+
+
+function drawConsoleComposerNotes(state, notes) {
+  const drawn = notes.map(note => `${note.warning ? '!' : ''}${note.full}`).join('\n');
+  if (state.notes.dataset.drawn === drawn) return;
+  state.notes.dataset.drawn = drawn;
+  state.notes.replaceChildren(...notes.map(note => {
+    const node = document.createElement(note.warning ? 'button' : 'span');
+    node.className = note.warning ? 'console-composer-note is-warning' : 'console-composer-note';
+    if (note.warning) node.type = 'button';
+    node.title = note.warning ? `${note.full} — press to open the terminal` : note.full;
+    node.textContent = note.text;
+    return node;
+  }));
+  state.notes.hidden = !notes.length;
+}
+
+
+function consoleComposerToTerminal(entry) {
+  entry.chatTerminal = true;
+  leaveConsoleChat(entry);
+  entry.terminal?.focus();
 }
 
 
