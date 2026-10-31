@@ -43489,6 +43489,21 @@ window.leafConsoleReconnect = (id, phase) => {
 };
 
 
+window.leafConsoleProgramEnded = id => {
+  const entry = consoleLayers.get(id);
+  if (!entry) return;
+  entry.programEnded = true;
+  entry.titleAgent = null;
+  entry.screenAgent = null;
+  entry.agent = null;
+  reportConsoleAgent(id, entry);
+};
+
+function heldConsoleAgent(entry) {
+  return entry.programEnded ? null : entry.titleAgent || entry.screenAgent || null;
+}
+
+
 function reportConsoleAgent(id, entry, screenLines) {
   const before = entry.agentSaid ?? ' ';
   if (before.split(' ')[0] !== (entry.agent || '')) {
@@ -43656,7 +43671,7 @@ function consoleTitleSaid(id, title) {
   const entry = consoleLayers.get(id);
   if (!entry) return;
   entry.titleAgent = consoleAgentOf(title);
-  entry.agent = entry.titleAgent || entry.screenAgent || null;
+  entry.agent = heldConsoleAgent(entry);
   const mark = Array.from(title)[0];
   const marked = entry.titleMark;
   entry.titleMark = mark === '✳' ? 'done' : '◐◓◑◒'.includes(mark) && mark ? 'working' : null;
@@ -43924,7 +43939,7 @@ function readConsoleAgent(id, entry) {
     if (screenLines.slice(0, 4).some(line => /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(line)) || consoleCodexSignIn(screenLines) || (/^\s*enter continue · esc skip\s*$/.test(screenLines[0] || '') && screenLines.some(line => /^\s*Update available · \S+ → \S+\s*$/.test(line)))) entry.screenAgent = 'codex';
   }
   if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) || consoleClaudeSetup(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) || (antigravityOnScreen && consoleAntigravityBoxUnderSpinner(screenLines)) ? 'antigravity' : null;
-  entry.agent = entry.titleAgent || entry.screenAgent || null;
+  entry.agent = heldConsoleAgent(entry);
   reportConsoleAgent(id, entry, screenLines);
   refreshConsoleChat(id, entry);
 }
@@ -44144,233 +44159,6 @@ function drawConsoleRow(line, row, cols) {
   fillText();
   fillPieces();
   if (spacing) ctx.letterSpacing = '0px';
-}
-
-
-const CONSOLE_BOX_ARMS = ('0101 0202 1010 2020 0101:3 0202:3 1010:3 2020:3 0101:4 0202:4 1010:4 2020:4 0110 0210 0120 0220 0011 0012 0021 0022 1100 1200 2100 2200 1001 1002 2001 2002 '
-  + '1110 1210 2110 1120 2120 2210 1220 2220 1011 1012 2011 1021 2021 2012 1022 2022 0111 0112 0211 0212 0121 0122 0221 0222 1101 1102 1201 1202 2101 2102 2201 2202 '
-  + '1111 1112 1211 1212 2111 1121 2121 2112 2211 1122 1221 2212 1222 2122 2221 2222 0101:2 0202:2 1010:2 2020:2 0303 3030 0310 0130 0330 0013 0031 0033 1300 3100 3300 1003 3001 3003 '
-  + '1310 3130 3330 1013 3031 3033 0313 0131 0333 1303 3101 3303 1313 3131 3333 0110:arc 0011:arc 1001:arc 1100:arc / \\ x 0001 1000 0100 0010 0002 2000 0200 0020 0201 1020 0102 2010').split(' ');
-
-
-const CONSOLE_QUADRANTS = '218B9ED467';
-
-
-function consolePieceKind(code) {
-  if (code >= 0x2800 && code <= 0x28ff) return 'braille';
-  if (code >= 0x2580 && code <= 0x259f) return 'block';
-  if (code >= 0x2500 && code <= 0x257f) return 'box';
-  return null;
-}
-
-function consoleSnap(value, scale) {
-  return Math.round(value * scale) / scale;
-}
-
-
-function addConsoleRect(out, left, top, right, bottom, scale) {
-  const x = consoleSnap(left, scale);
-  const y = consoleSnap(top, scale);
-  out.push(x, y, consoleSnap(right, scale) - x, consoleSnap(bottom, scale) - y);
-}
-
-function consoleBlockRects(code, w, h, scale, out) {
-  if (code === 0x2580) return addConsoleRect(out, 0, 0, w, h / 2, scale);
-  if (code <= 0x2588) return addConsoleRect(out, 0, h - h * (code - 0x2580) / 8, w, h, scale);
-  if (code <= 0x258f) return addConsoleRect(out, 0, 0, w * (0x2590 - code) / 8, h, scale);
-  if (code === 0x2590) return addConsoleRect(out, w / 2, 0, w, h, scale);
-  if (code === 0x2594) return addConsoleRect(out, 0, 0, w, h / 8, scale);
-  if (code === 0x2595) return addConsoleRect(out, w - w / 8, 0, w, h, scale);
-  const quadrants = parseInt(CONSOLE_QUADRANTS[code - 0x2596], 16);
-  if (quadrants & 8) addConsoleRect(out, 0, 0, w / 2, h / 2, scale);
-  if (quadrants & 4) addConsoleRect(out, w / 2, 0, w, h / 2, scale);
-  if (quadrants & 2) addConsoleRect(out, 0, h / 2, w / 2, h, scale);
-  if (quadrants & 1) addConsoleRect(out, w / 2, h / 2, w, h, scale);
-}
-
-
-function consoleBrailleRects(code, w, h, scale, out) {
-  const size = Math.max(1 / scale, consoleSnap(Math.min(w / 2, h / 4) * 0.6, scale));
-  for (let dot = 0; dot < 8; dot += 1) {
-    if (!((code - 0x2800) & (1 << dot))) continue;
-    
-    const column = dot < 6 ? Math.floor(dot / 3) : dot - 6;
-    const row = dot < 6 ? dot % 3 : 3;
-    const x = consoleSnap(w / 4 + column * w / 2 - size / 2, scale);
-    const y = consoleSnap(h / 8 + row * h / 4 - size / 2, scale);
-    out.push(x, y, size, size);
-  }
-}
-
-function consoleBoxRects(code, w, h, scale, out) {
-  const spec = CONSOLE_BOX_ARMS[code - 0x2500];
-  const up = spec.charCodeAt(0) - 48;
-  const right = spec.charCodeAt(1) - 48;
-  const down = spec.charCodeAt(2) - 48;
-  const left = spec.charCodeAt(3) - 48;
-  const light = Math.max(1 / scale, consoleSnap(w / 8, scale));
-  const gap = light;
-  const thickness = weight => weight === 2 ? light * 2 : weight === 0 ? 0 : light;
-  
-  const reach = weight => weight === 3 ? gap + light / 2 : thickness(weight) / 2;
-  const cx = w / 2;
-  const cy = h / 2;
-  
-  if (spec.length > 4) {
-    const dashes = Number(spec.slice(5));
-    const size = thickness(right || up);
-    const along = right ? w : h;
-    const middle = consoleSnap((right ? cy : cx) - size / 2, scale);
-    const step = along / dashes;
-    const space = Math.max(1 / scale, consoleSnap(step / 3, scale));
-    for (let dash = 0; dash < dashes; dash += 1) {
-      const start = consoleSnap(dash * step + space / 2, scale);
-      const length = consoleSnap((dash + 1) * step - space / 2, scale) - start;
-      if (right) out.push(start, middle, length, size);
-      else out.push(middle, start, size, length);
-    }
-    return;
-  }
-  const horizontal = (from, to, middle, size) => { const top = consoleSnap(middle - size / 2, scale); addConsoleRect(out, from, top, to, top + size, scale); };
-  const vertical = (from, to, middle, size) => { const edge = consoleSnap(middle - size / 2, scale); addConsoleRect(out, edge, from, edge + size, to, scale); };
-  
-  const singleStart = (weight, opposite, sideA, sideB, middle) => {
-    if (!opposite && (sideA === 3 || sideB === 3)) return middle + gap - light / 2;
-    return middle - Math.max(reach(sideA), reach(sideB), thickness(weight) / 2);
-  };
-  const doubleStart = (opposite, same, other, middle) => {
-    if (same === 3) return middle + gap - light / 2;
-    if (other === 3) return middle - gap - light / 2;
-    if (same || other) return middle - Math.max(thickness(same), thickness(other)) / 2;
-    return opposite ? middle - light / 2 : middle - gap - light / 2;
-  };
-  if (right === 3) {
-    horizontal(doubleStart(left, up, down, cx), w, cy - gap, light);
-    horizontal(doubleStart(left, down, up, cx), w, cy + gap, light);
-  } else if (right) horizontal(singleStart(right, left, up, down, cx), w, cy, thickness(right));
-  if (left === 3) {
-    horizontal(0, w - doubleStart(right, up, down, w - cx), cy - gap, light);
-    horizontal(0, w - doubleStart(right, down, up, w - cx), cy + gap, light);
-  } else if (left) horizontal(0, w - singleStart(left, right, up, down, w - cx), cy, thickness(left));
-  if (down === 3) {
-    vertical(doubleStart(up, left, right, cy), h, cx - gap, light);
-    vertical(doubleStart(up, right, left, cy), h, cx + gap, light);
-  } else if (down) vertical(singleStart(down, up, left, right, cy), h, cx, thickness(down));
-  if (up === 3) {
-    vertical(0, h - doubleStart(down, left, right, h - cy), cx - gap, light);
-    vertical(0, h - doubleStart(down, right, left, h - cy), cx + gap, light);
-  } else if (up) vertical(0, h - singleStart(up, down, left, right, h - cy), cx, thickness(up));
-}
-
-
-function consolePieceRects(renderer, code) {
-  const { width, height } = renderer.metrics;
-  const scale = renderer.devicePixelRatio || 1;
-  let held = renderer.consolePieces;
-  if (!held || held.width !== width || held.height !== height || held.scale !== scale) held = renderer.consolePieces = { width, height, scale, shapes: new Map() };
-  let shape = held.shapes.get(code);
-  if (shape !== undefined) return shape;
-  const kind = consolePieceKind(code);
-  const spec = kind === 'box' ? CONSOLE_BOX_ARMS[code - 0x2500] : '';
-  const light = Math.max(1 / scale, consoleSnap(width / 8, scale));
-  if (kind === 'block' && code >= 0x2591 && code <= 0x2593) shape = { kind: 'rect', rects: [0, 0, width, height], alpha: (code - 0x2590) / 4 };
-  else if (spec.endsWith('arc')) {
-    const lineX = consoleSnap(width / 2 - light / 2, scale) + light / 2;
-    const lineY = consoleSnap(height / 2 - light / 2, scale) + light / 2;
-    const toX = spec[1] !== '0' ? width : 0;
-    const toY = spec[2] !== '0' ? height : 0;
-    shape = { kind: 'arc', width: light, arc: [toX, lineY, lineX, lineY, lineX, toY, Math.min(Math.abs(toX - lineX), Math.abs(toY - lineY))] };
-  } else if (spec.length === 1) {
-    shape = { kind: 'polygon', polygons: [] };
-    if (spec !== '\\') shape.polygons.push(consoleDiagonalPolygon(width, height, light, false));
-    if (spec !== '/') shape.polygons.push(consoleDiagonalPolygon(width, height, light, true));
-  } else {
-    const rects = [];
-    if (kind === 'braille') consoleBrailleRects(code, width, height, scale, rects);
-    else if (kind === 'block') consoleBlockRects(code, width, height, scale, rects);
-    else consoleBoxRects(code, width, height, scale, rects);
-    shape = { kind: 'rect', rects };
-  }
-  held.shapes.set(code, shape);
-  return shape;
-}
-
-function consoleDiagonalPolygon(w, h, light, rising) {
-  const dx = w + 2 * light;
-  const dy = h + 2 * light * h / w;
-  const nx = dy * light / (2 * Math.hypot(dx, dy));
-  const ny = dx * light / (2 * Math.hypot(dx, dy));
-  const first = rising ? [-light, -light * h / w] : [w + light, -light * h / w];
-  const last = rising ? [w + light, h + light * h / w] : [-light, h + light * h / w];
-  let polygon = [[first[0] + nx, first[1] - ny], [last[0] + nx, last[1] - ny], [last[0] - nx, last[1] + ny], [first[0] - nx, first[1] + ny]];
-  for (const [axis, edge, side] of [[0, 0, 1], [0, w, -1], [1, 0, 1], [1, h, -1]]) {
-    const clipped = [];
-    for (let i = 0; i < polygon.length; i += 1) {
-      const a = polygon[i];
-      const b = polygon[(i + 1) % polygon.length];
-      const insideA = side * (a[axis] - edge) >= 0;
-      const insideB = side * (b[axis] - edge) >= 0;
-      if (insideA !== insideB) {
-        const t = (edge - a[axis]) / (b[axis] - a[axis]);
-        clipped.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
-      }
-      if (insideB) clipped.push(b);
-    }
-    polygon = clipped;
-  }
-  return polygon;
-}
-
-function drawConsoleGeometry(ctx, shape, x, y) {
-  if (shape.kind === 'rect') {
-    for (let at = 0; at < shape.rects.length; at += 4) ctx.rect(x + shape.rects[at], y + shape.rects[at + 1], shape.rects[at + 2], shape.rects[at + 3]);
-  } else if (shape.kind === 'polygon') {
-    for (const polygon of shape.polygons) {
-      ctx.moveTo(x + polygon[0][0], y + polygon[0][1]);
-      for (let at = 1; at < polygon.length; at += 1) ctx.lineTo(x + polygon[at][0], y + polygon[at][1]);
-      ctx.closePath();
-    }
-  } else {
-    const [toX, lineY, lineX, , , toY, radius] = shape.arc;
-    ctx.moveTo(x + toX, y + lineY);
-    ctx.arcTo(x + lineX, y + lineY, x + lineX, y + toY, radius);
-    ctx.lineTo(x + lineX, y + toY);
-  }
-}
-
-
-function drawConsoleCell(cell, column, row, color) {
-  const engineCell = Object.getPrototypeOf(this).renderCellText;
-  if (cell.width !== 1 || cell.grapheme_len || !consolePieceKind(cell.codepoint)) return engineCell.call(this, cell, column, row, color);
-  const flags = window.GhosttyWeb.CellFlags;
-  if (cell.flags & flags.INVISIBLE) return;
-  const ctx = this.ctx;
-  const { width, height } = this.metrics;
-  if (color) ctx.fillStyle = color;
-  else if (this.isInSelection(column, row)) ctx.fillStyle = this.theme.selectionForeground;
-  else {
-    const inverse = cell.flags & flags.INVERSE;
-    ctx.fillStyle = inverse ? this.rgbToCSS(cell.bg_r, cell.bg_g, cell.bg_b) : this.rgbToCSS(cell.fg_r, cell.fg_g, cell.fg_b);
-  }
-  ctx.strokeStyle = ctx.fillStyle;
-  const alpha = ctx.globalAlpha;
-  if (cell.flags & flags.FAINT) ctx.globalAlpha = alpha * 0.5;
-  const x = column * width;
-  const y = row * height;
-  const shape = consolePieceRects(this, cell.codepoint);
-  
-  ctx.beginPath();
-  drawConsoleGeometry(ctx, shape, x, y);
-  if (shape.kind === 'arc') {
-    ctx.lineWidth = shape.width;
-    ctx.stroke();
-  } else {
-    ctx.globalAlpha *= shape.alpha || 1;
-    ctx.fill();
-  }
-  ctx.globalAlpha = alpha;
-  
-  if (cell.flags & (flags.UNDERLINE | flags.STRIKETHROUGH) || cell.hyperlink_id > 0 || this.hoveredLinkRange) engineCell.call(this, { ...cell, codepoint: 32 }, column, row, color);
 }
 
 function makeConsoleLayer(id) {
@@ -45101,6 +44889,232 @@ window.leafConsolePrune = tabs => {
     consoleLayers.delete(id);
   }
 };
+
+const CONSOLE_BOX_ARMS = ('0101 0202 1010 2020 0101:3 0202:3 1010:3 2020:3 0101:4 0202:4 1010:4 2020:4 0110 0210 0120 0220 0011 0012 0021 0022 1100 1200 2100 2200 1001 1002 2001 2002 '
+  + '1110 1210 2110 1120 2120 2210 1220 2220 1011 1012 2011 1021 2021 2012 1022 2022 0111 0112 0211 0212 0121 0122 0221 0222 1101 1102 1201 1202 2101 2102 2201 2202 '
+  + '1111 1112 1211 1212 2111 1121 2121 2112 2211 1122 1221 2212 1222 2122 2221 2222 0101:2 0202:2 1010:2 2020:2 0303 3030 0310 0130 0330 0013 0031 0033 1300 3100 3300 1003 3001 3003 '
+  + '1310 3130 3330 1013 3031 3033 0313 0131 0333 1303 3101 3303 1313 3131 3333 0110:arc 0011:arc 1001:arc 1100:arc / \\ x 0001 1000 0100 0010 0002 2000 0200 0020 0201 1020 0102 2010').split(' ');
+
+
+const CONSOLE_QUADRANTS = '218B9ED467';
+
+
+function consolePieceKind(code) {
+  if (code >= 0x2800 && code <= 0x28ff) return 'braille';
+  if (code >= 0x2580 && code <= 0x259f) return 'block';
+  if (code >= 0x2500 && code <= 0x257f) return 'box';
+  return null;
+}
+
+function consoleSnap(value, scale) {
+  return Math.round(value * scale) / scale;
+}
+
+
+function addConsoleRect(out, left, top, right, bottom, scale) {
+  const x = consoleSnap(left, scale);
+  const y = consoleSnap(top, scale);
+  out.push(x, y, consoleSnap(right, scale) - x, consoleSnap(bottom, scale) - y);
+}
+
+function consoleBlockRects(code, w, h, scale, out) {
+  if (code === 0x2580) return addConsoleRect(out, 0, 0, w, h / 2, scale);
+  if (code <= 0x2588) return addConsoleRect(out, 0, h - h * (code - 0x2580) / 8, w, h, scale);
+  if (code <= 0x258f) return addConsoleRect(out, 0, 0, w * (0x2590 - code) / 8, h, scale);
+  if (code === 0x2590) return addConsoleRect(out, w / 2, 0, w, h, scale);
+  if (code === 0x2594) return addConsoleRect(out, 0, 0, w, h / 8, scale);
+  if (code === 0x2595) return addConsoleRect(out, w - w / 8, 0, w, h, scale);
+  const quadrants = parseInt(CONSOLE_QUADRANTS[code - 0x2596], 16);
+  if (quadrants & 8) addConsoleRect(out, 0, 0, w / 2, h / 2, scale);
+  if (quadrants & 4) addConsoleRect(out, w / 2, 0, w, h / 2, scale);
+  if (quadrants & 2) addConsoleRect(out, 0, h / 2, w / 2, h, scale);
+  if (quadrants & 1) addConsoleRect(out, w / 2, h / 2, w, h, scale);
+}
+
+
+function consoleBrailleRects(code, w, h, scale, out) {
+  const size = Math.max(1 / scale, consoleSnap(Math.min(w / 2, h / 4) * 0.6, scale));
+  for (let dot = 0; dot < 8; dot += 1) {
+    if (!((code - 0x2800) & (1 << dot))) continue;
+    
+    const column = dot < 6 ? Math.floor(dot / 3) : dot - 6;
+    const row = dot < 6 ? dot % 3 : 3;
+    const x = consoleSnap(w / 4 + column * w / 2 - size / 2, scale);
+    const y = consoleSnap(h / 8 + row * h / 4 - size / 2, scale);
+    out.push(x, y, size, size);
+  }
+}
+
+function consoleBoxRects(code, w, h, scale, out) {
+  const spec = CONSOLE_BOX_ARMS[code - 0x2500];
+  const up = spec.charCodeAt(0) - 48;
+  const right = spec.charCodeAt(1) - 48;
+  const down = spec.charCodeAt(2) - 48;
+  const left = spec.charCodeAt(3) - 48;
+  const light = Math.max(1 / scale, consoleSnap(w / 8, scale));
+  const gap = light;
+  const thickness = weight => weight === 2 ? light * 2 : weight === 0 ? 0 : light;
+  
+  const reach = weight => weight === 3 ? gap + light / 2 : thickness(weight) / 2;
+  const cx = w / 2;
+  const cy = h / 2;
+  
+  if (spec.length > 4) {
+    const dashes = Number(spec.slice(5));
+    const size = thickness(right || up);
+    const along = right ? w : h;
+    const middle = consoleSnap((right ? cy : cx) - size / 2, scale);
+    const step = along / dashes;
+    const space = Math.max(1 / scale, consoleSnap(step / 3, scale));
+    for (let dash = 0; dash < dashes; dash += 1) {
+      const start = consoleSnap(dash * step + space / 2, scale);
+      const length = consoleSnap((dash + 1) * step - space / 2, scale) - start;
+      if (right) out.push(start, middle, length, size);
+      else out.push(middle, start, size, length);
+    }
+    return;
+  }
+  const horizontal = (from, to, middle, size) => { const top = consoleSnap(middle - size / 2, scale); addConsoleRect(out, from, top, to, top + size, scale); };
+  const vertical = (from, to, middle, size) => { const edge = consoleSnap(middle - size / 2, scale); addConsoleRect(out, edge, from, edge + size, to, scale); };
+  
+  const singleStart = (weight, opposite, sideA, sideB, middle) => {
+    if (!opposite && (sideA === 3 || sideB === 3)) return middle + gap - light / 2;
+    return middle - Math.max(reach(sideA), reach(sideB), thickness(weight) / 2);
+  };
+  const doubleStart = (opposite, same, other, middle) => {
+    if (same === 3) return middle + gap - light / 2;
+    if (other === 3) return middle - gap - light / 2;
+    if (same || other) return middle - Math.max(thickness(same), thickness(other)) / 2;
+    return opposite ? middle - light / 2 : middle - gap - light / 2;
+  };
+  if (right === 3) {
+    horizontal(doubleStart(left, up, down, cx), w, cy - gap, light);
+    horizontal(doubleStart(left, down, up, cx), w, cy + gap, light);
+  } else if (right) horizontal(singleStart(right, left, up, down, cx), w, cy, thickness(right));
+  if (left === 3) {
+    horizontal(0, w - doubleStart(right, up, down, w - cx), cy - gap, light);
+    horizontal(0, w - doubleStart(right, down, up, w - cx), cy + gap, light);
+  } else if (left) horizontal(0, w - singleStart(left, right, up, down, w - cx), cy, thickness(left));
+  if (down === 3) {
+    vertical(doubleStart(up, left, right, cy), h, cx - gap, light);
+    vertical(doubleStart(up, right, left, cy), h, cx + gap, light);
+  } else if (down) vertical(singleStart(down, up, left, right, cy), h, cx, thickness(down));
+  if (up === 3) {
+    vertical(0, h - doubleStart(down, left, right, h - cy), cx - gap, light);
+    vertical(0, h - doubleStart(down, right, left, h - cy), cx + gap, light);
+  } else if (up) vertical(0, h - singleStart(up, down, left, right, h - cy), cx, thickness(up));
+}
+
+
+function consolePieceRects(renderer, code) {
+  const { width, height } = renderer.metrics;
+  const scale = renderer.devicePixelRatio || 1;
+  let held = renderer.consolePieces;
+  if (!held || held.width !== width || held.height !== height || held.scale !== scale) held = renderer.consolePieces = { width, height, scale, shapes: new Map() };
+  let shape = held.shapes.get(code);
+  if (shape !== undefined) return shape;
+  const kind = consolePieceKind(code);
+  const spec = kind === 'box' ? CONSOLE_BOX_ARMS[code - 0x2500] : '';
+  const light = Math.max(1 / scale, consoleSnap(width / 8, scale));
+  if (kind === 'block' && code >= 0x2591 && code <= 0x2593) shape = { kind: 'rect', rects: [0, 0, width, height], alpha: (code - 0x2590) / 4 };
+  else if (spec.endsWith('arc')) {
+    const lineX = consoleSnap(width / 2 - light / 2, scale) + light / 2;
+    const lineY = consoleSnap(height / 2 - light / 2, scale) + light / 2;
+    const toX = spec[1] !== '0' ? width : 0;
+    const toY = spec[2] !== '0' ? height : 0;
+    shape = { kind: 'arc', width: light, arc: [toX, lineY, lineX, lineY, lineX, toY, Math.min(Math.abs(toX - lineX), Math.abs(toY - lineY))] };
+  } else if (spec.length === 1) {
+    shape = { kind: 'polygon', polygons: [] };
+    if (spec !== '\\') shape.polygons.push(consoleDiagonalPolygon(width, height, light, false));
+    if (spec !== '/') shape.polygons.push(consoleDiagonalPolygon(width, height, light, true));
+  } else {
+    const rects = [];
+    if (kind === 'braille') consoleBrailleRects(code, width, height, scale, rects);
+    else if (kind === 'block') consoleBlockRects(code, width, height, scale, rects);
+    else consoleBoxRects(code, width, height, scale, rects);
+    shape = { kind: 'rect', rects };
+  }
+  held.shapes.set(code, shape);
+  return shape;
+}
+
+function consoleDiagonalPolygon(w, h, light, rising) {
+  const dx = w + 2 * light;
+  const dy = h + 2 * light * h / w;
+  const nx = dy * light / (2 * Math.hypot(dx, dy));
+  const ny = dx * light / (2 * Math.hypot(dx, dy));
+  const first = rising ? [-light, -light * h / w] : [w + light, -light * h / w];
+  const last = rising ? [w + light, h + light * h / w] : [-light, h + light * h / w];
+  let polygon = [[first[0] + nx, first[1] - ny], [last[0] + nx, last[1] - ny], [last[0] - nx, last[1] + ny], [first[0] - nx, first[1] + ny]];
+  for (const [axis, edge, side] of [[0, 0, 1], [0, w, -1], [1, 0, 1], [1, h, -1]]) {
+    const clipped = [];
+    for (let i = 0; i < polygon.length; i += 1) {
+      const a = polygon[i];
+      const b = polygon[(i + 1) % polygon.length];
+      const insideA = side * (a[axis] - edge) >= 0;
+      const insideB = side * (b[axis] - edge) >= 0;
+      if (insideA !== insideB) {
+        const t = (edge - a[axis]) / (b[axis] - a[axis]);
+        clipped.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
+      }
+      if (insideB) clipped.push(b);
+    }
+    polygon = clipped;
+  }
+  return polygon;
+}
+
+function drawConsoleGeometry(ctx, shape, x, y) {
+  if (shape.kind === 'rect') {
+    for (let at = 0; at < shape.rects.length; at += 4) ctx.rect(x + shape.rects[at], y + shape.rects[at + 1], shape.rects[at + 2], shape.rects[at + 3]);
+  } else if (shape.kind === 'polygon') {
+    for (const polygon of shape.polygons) {
+      ctx.moveTo(x + polygon[0][0], y + polygon[0][1]);
+      for (let at = 1; at < polygon.length; at += 1) ctx.lineTo(x + polygon[at][0], y + polygon[at][1]);
+      ctx.closePath();
+    }
+  } else {
+    const [toX, lineY, lineX, , , toY, radius] = shape.arc;
+    ctx.moveTo(x + toX, y + lineY);
+    ctx.arcTo(x + lineX, y + lineY, x + lineX, y + toY, radius);
+    ctx.lineTo(x + lineX, y + toY);
+  }
+}
+
+
+function drawConsoleCell(cell, column, row, color) {
+  const engineCell = Object.getPrototypeOf(this).renderCellText;
+  if (cell.width !== 1 || cell.grapheme_len || !consolePieceKind(cell.codepoint)) return engineCell.call(this, cell, column, row, color);
+  const flags = window.GhosttyWeb.CellFlags;
+  if (cell.flags & flags.INVISIBLE) return;
+  const ctx = this.ctx;
+  const { width, height } = this.metrics;
+  if (color) ctx.fillStyle = color;
+  else if (this.isInSelection(column, row)) ctx.fillStyle = this.theme.selectionForeground;
+  else {
+    const inverse = cell.flags & flags.INVERSE;
+    ctx.fillStyle = inverse ? this.rgbToCSS(cell.bg_r, cell.bg_g, cell.bg_b) : this.rgbToCSS(cell.fg_r, cell.fg_g, cell.fg_b);
+  }
+  ctx.strokeStyle = ctx.fillStyle;
+  const alpha = ctx.globalAlpha;
+  if (cell.flags & flags.FAINT) ctx.globalAlpha = alpha * 0.5;
+  const x = column * width;
+  const y = row * height;
+  const shape = consolePieceRects(this, cell.codepoint);
+  
+  ctx.beginPath();
+  drawConsoleGeometry(ctx, shape, x, y);
+  if (shape.kind === 'arc') {
+    ctx.lineWidth = shape.width;
+    ctx.stroke();
+  } else {
+    ctx.globalAlpha *= shape.alpha || 1;
+    ctx.fill();
+  }
+  ctx.globalAlpha = alpha;
+  
+  if (cell.flags & (flags.UNDERLINE | flags.STRIKETHROUGH) || cell.hyperlink_id > 0 || this.hoveredLinkRange) engineCell.call(this, { ...cell, codepoint: 32 }, column, row, color);
+}
 function consoleStatusCount(count) {
   return count >= 1000 ? `${Math.round(count / 1000)}k` : String(Math.round(count));
 }
@@ -46719,8 +46733,22 @@ function refreshConsoleChat(id, entry) {
 
 
 function consoleChatMidRedraw(entry) {
-  if (!entry.chat?.shown || entry.agent !== 'claude' || entry.activity !== 'working') return false;
-  return readConsoleScreenOnce(entry.terminal.wasmTerm, () => consoleModelPrompt(entry, entry.agent).kind === 'unknown' && consoleClaudeBoxStands(entry));
+  if (!entry.chat?.shown || entry.chat.agent !== entry.agent || entry.activity !== 'working') return false;
+  return readConsoleScreenOnce(entry.terminal.wasmTerm, () => {
+    if (consoleModelPrompt(entry, entry.agent).kind !== 'unknown') return false;
+    if (entry.agent === 'claude') return consoleClaudeBoxStands(entry);
+    return entry.agent === 'codex' && entry.terminal.buffer.active.type === 'alternate' && consoleCodexBoxStands(entry);
+  });
+}
+
+function consoleCodexBoxStands(entry) {
+  const rows = consolePromptRows(entry);
+  if (consolePromptQuestion(entry, rows)) return false;
+  for (let top = rows.length - 2; top >= Math.max(1, rows.length - 8); top -= 1) {
+    if (rows[top] !== '› Ask Codex to do anything' || rows[top - 1].trim() || rows[top + 1].trim()) continue;
+    if (rows.slice(top + 1).filter(row => row.trim()).length <= 2) return true;
+  }
+  return false;
 }
 
 
