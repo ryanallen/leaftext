@@ -8544,6 +8544,7 @@ body.library-resizing button {
 .console-composer { position: relative; flex: none; display: flex; flex-direction: column; gap: var(--lt-space-8); margin: 0 var(--lt-space-12) var(--lt-space-12); padding: var(--lt-space-10) var(--lt-space-10) var(--lt-space-8) var(--lt-space-14); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-4xl); background: var(--lt-surface-elevated); cursor: text; transition: border-color var(--lt-duration-150) var(--lt-ease); }
 @media (hover: hover) { .console-composer:hover { border-color: var(--lt-border-strong); } }
 .console-composer:focus-within { border-color: var(--lt-focus-ring); }
+.console-composer[hidden] { display: none; }
 .console-composer-field { box-sizing: border-box; width: 100%; min-height: 0; margin: 0; padding: 0; border: none; outline: none; resize: none; overflow-y: auto; background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-45); }
 .console-composer-field::placeholder { color: var(--lt-muted-foreground); }
 .console-composer-words { position: relative; min-width: 0; }

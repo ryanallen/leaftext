@@ -43505,7 +43505,9 @@ function reportConsoleAgent(id, entry, screenLines) {
   entry.agentSaid = said;
   markConsoleTab(id, entry);
   if (before.split(' ')[0] !== (entry.agent || '')) {
-    closeConsoleModel(entry);
+    closeConsoleModel(entry, true);
+    
+    if (entry.agent !== 'antigravity') cancelConsoleHistory(entry, true);
     if (entry.status) drawConsoleStatus(id, entry, state);
     const icon = consoleIconClass(entry.agent);
     for (const tab of tabBar.querySelectorAll('.console-tab')) {
@@ -43885,7 +43887,9 @@ function consoleWritten(id, entry) {
   clearTimeout(entry.agentTimer);
   entry.agentTimer = setTimeout(() => {
     entry.agentTimer = 0;
-    if (consoleLayers.get(id) === entry) readConsoleAgent(id, entry);
+    if (consoleLayers.get(id) !== entry) return;
+    readConsoleAgent(id, entry);
+    if (entry.historyIntent) consoleHistoryReady(id, entry);
   }, CONSOLE_AGENT_QUIET_MS);
 }
 
@@ -44452,7 +44456,7 @@ function makeConsoleLayer(id) {
     };
     holdConsoleLinks(terminal);
     terminal.attachCustomWheelEventHandler(event => consoleWheel(id, entry, event));
-    terminal.onData(data => { if (!/^\x1b\[[IO]$/.test(data)) consoleKeyTyped(id); consolePinInput(entry, data, id); consoleTypedInput(id, entry, data); });
+    terminal.onData(data => consoleTerminalInput(id, entry, data));
     terminal.onTitleChange(title => consoleTitleSaid(id, title));
     terminal.onScroll(() => consoleScrolled(id, entry));
     entry.terminal = terminal;
@@ -44777,7 +44781,7 @@ function placeConsoleLayers(state = currentState) {
     const card = id === consoleFrontId ? keyedColumn : id === besideId ? besideCard : null;
     const shown = !!card;
     const wasHidden = entry.layer.hidden;
-    if (!shown || (entry.modelPending && entry.modelPending.card !== card) || (crumbMenuOwner && entry.status?.contains(crumbMenuOwner) && entry.modelMenuCard !== card)) closeConsoleModel(entry);
+    if (!shown || (entry.modelPending && entry.modelPending.card !== card) || (entry.historyIntent && entry.historyIntent.card !== card) || (crumbMenuOwner && entry.status?.contains(crumbMenuOwner) && entry.modelMenuCard !== card)) closeConsoleModel(entry);
     entry.layer.hidden = !shown;
     entry.layer.classList.toggle('is-right-card', shown && card === rightColumn);
     entry.layer.classList.toggle('is-split', shown && split);
@@ -44887,11 +44891,17 @@ window.leafConsoleOutput = (id, encoded) => {
 
 function writeConsoleOutput(id, entry, text) {
   if (consoleBellsIn(entry, text)) consoleBellRang(id);
-  entry.terminal.write(text, () => {
-    entry.mapOutputPending = true;
-    consoleWritten(id, entry);
-    if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
-  });
+  
+  entry.answering = true;
+  try {
+    entry.terminal.write(text, () => {
+      entry.mapOutputPending = true;
+      consoleWritten(id, entry);
+      if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
+    });
+  } finally {
+    entry.answering = false;
+  }
 }
 
 
@@ -44931,14 +44941,17 @@ window.leafConsoleReplay = (id, encoded, columns, rows) => {
   if (entry.fit && !entry.layer.hidden) refreshConsoleGrid(id, entry);
 };
 
+
 function cancelConsoleModel(entry) {
+  cancelConsoleHistory(entry, true);
   if (!entry?.modelPending) return;
   clearTimeout(entry.modelPending.timer);
   entry.modelPending = null;
 }
 
-function closeConsoleModel(entry) {
-  cancelConsoleModel(entry);
+
+function closeConsoleModel(entry, keepHistory = false) {
+  keepingConsoleHistory(entry, keepHistory, () => cancelConsoleModel(entry));
   if (crumbMenuOwner && entry.status?.contains(crumbMenuOwner)) hideCrumbMenu();
 }
 
@@ -44968,7 +44981,7 @@ function showConsoleModelMenu(button, items) {
 }
 
 function startConsoleCommand(id, entry, button, record, command) {
-  const allowed = command === '/model' || (['claude', 'antigravity'].includes(record?.agent) && ['/effort', '/compact', '/clear'].includes(command)) || (record?.agent === 'codex' && ['/compact', '/new'].includes(command)) || (['claude', 'codex'].includes(record?.agent) && command === '/resume');
+  const allowed = command === '/model' || (['claude', 'antigravity'].includes(record?.agent) && ['/effort', '/compact', '/clear'].includes(command)) || (record?.agent === 'codex' && ['/compact', '/new'].includes(command)) || (['claude', 'codex', 'antigravity'].includes(record?.agent) && command === '/resume');
   if (!allowed) return;
   const note = consoleModelRefusal(id, entry, record);
   if (note) { showConsoleModelMenu(button, [{ note }]); return; }
@@ -45135,7 +45148,7 @@ function consoleStatusFields(record) {
 function drawConsoleStatus(id, entry, reportedState) {
   if (entry.accountEditing) return;
   if (consoleFolderMenuOpen(entry)) cancelConsoleModel(entry);
-  else closeConsoleModel(entry);
+  else closeConsoleModel(entry, true);
   const strip = entry.status;
   const record = consoleControlRecord(entry);
   const fields = record ? consoleStatusFields(record) : [];
@@ -45862,6 +45875,60 @@ function consoleInlineEcho(entry) {
   if (marker) pin.cut = consolePromptEcho(rows[found]) !== inline.text ? marker : null;
 }
 
+const CONSOLE_HISTORY_WAIT_MS = 20000;
+const CONSOLE_HISTORY_MISSED = 'Antigravity’s past conversations did not open. Type /resume in its console.';
+
+function consoleHistoryWait(id) {
+  const entry = consoleLayers.get(id) || makeConsoleLayer(id);
+  cancelConsoleHistory(entry, false);
+  const intent = { card: keyedColumn, timer: 0 };
+  entry.historyIntent = intent;
+  intent.timer = setTimeout(() => {
+    if (entry.historyIntent === intent) cancelConsoleHistory(entry, true);
+  }, CONSOLE_HISTORY_WAIT_MS);
+  consoleHistoryReady(id, entry);
+}
+
+function cancelConsoleHistory(entry, say) {
+  const intent = entry?.historyIntent;
+  if (!intent) return;
+  clearTimeout(intent.timer);
+  entry.historyIntent = null;
+  if (say) leafToast(CONSOLE_HISTORY_MISSED);
+}
+
+
+function keepingConsoleHistory(entry, keep, work) {
+  const intent = keep ? entry?.historyIntent : null;
+  if (intent) entry.historyIntent = null;
+  try {
+    work();
+  } finally {
+    if (intent) entry.historyIntent = intent;
+  }
+}
+
+
+function consoleTerminalInput(id, entry, data) {
+  if (!/^\x1b\[[IO]$/.test(data)) keepingConsoleHistory(entry, entry.answering, () => consoleKeyTyped(id));
+  consolePinInput(entry, data, id);
+  consoleTypedInput(id, entry, data);
+}
+
+
+function consoleHistoryReady(id, entry) {
+  const intent = entry.historyIntent;
+  if (!intent) return;
+  if (consoleLayers.get(id) !== entry || entry.modelPending) { cancelConsoleHistory(entry, true); return; }
+  if (consoleFrontId !== id || entry.layer.hidden || document.hidden || keyedColumn !== intent.card || !entry.terminal) return;
+  const record = consoleControlRecord(entry);
+  if (record?.agent !== 'antigravity') return;
+  if (consoleModelRefusal(id, entry, record)) return;
+  clearTimeout(intent.timer);
+  entry.historyIntent = null;
+  startConsoleCommand(id, entry, null, record, '/resume');
+}
+
 var newMenuButton = document.getElementById('newButton');
 
 function newMenuHostAnswers(command) {
@@ -45989,25 +46056,36 @@ function agentLaunchIcon(agent) {
 
 function agentLaunchRows() {
   if (!agentLaunch.state) agentLaunchAsk('state');
-  const rows = [];
-  for (const agent of AGENT_LAUNCH_AGENTS) {
-    const held = agentLaunchOf(agent);
-    const ids = [...(held.defaultShown === false ? [] : ['']), ...held.accounts.map((row) => row.id)];
-    for (const id of ids) {
-      const label = agentLaunchLabel(agent, id);
-      rows.push({
-        label,
-        icon: agentLaunchIcon(agent),
-        title: `Start ${AGENT_LAUNCH_NAMES[agent]} as ${label}`,
-        keepOpen: true,
-        editShown: true,
-        run: () => agentLaunchStart(agent, id),
-        edit: () => agentLaunchOpenAccount(agent, id),
-      });
-    }
-  }
-  rows.push('separator', { label: '+ Add account', keepOpen: true, run: () => { agentLaunch.draft = null; agentLaunchShow('pick'); } });
+  const rows = agentLaunchAccounts().map(([agent, id]) => {
+    const label = agentLaunchLabel(agent, id);
+    return {
+      label,
+      icon: agentLaunchIcon(agent),
+      title: `Start ${AGENT_LAUNCH_NAMES[agent]} as ${label}`,
+      keepOpen: true,
+      editShown: true,
+      run: () => agentLaunchStart(agent, id),
+      edit: () => agentLaunchOpenAccount(agent, id),
+    };
+  });
+  rows.push('separator',
+    { label: 'Past conversations', icon: '<span class="lt-icon lt-icon-recent" aria-hidden="true"></span>', keepOpen: true, run: () => agentLaunchShow('history') },
+    { label: '+ Add account', keepOpen: true, run: () => { agentLaunch.draft = null; agentLaunchShow('pick'); } });
   return rows;
+}
+
+function agentLaunchAccounts() {
+  return AGENT_LAUNCH_AGENTS.flatMap((agent) => {
+    const held = agentLaunchOf(agent);
+    return [...(held.defaultShown === false ? [] : ['']), ...held.accounts.map((row) => row.id)].map((id) => [agent, id]);
+  });
+}
+
+function agentLaunchHistoryRows() {
+  return agentLaunchAccounts().map(([agent, id]) => {
+    const label = agentLaunchLabel(agent, id);
+    return { label, icon: agentLaunchIcon(agent), title: `Open ${label}’s past conversations in a new console`, keepOpen: true, run: () => agentLaunchStart(agent, id, true) };
+  });
 }
 function agentLaunchOpenAccount(agent, id) {
   agentLaunch.agent = agent;
@@ -46090,6 +46168,9 @@ const AGENT_LAUNCH_VIEWS = {
       agentLaunchStartRow(agent, id),
       ...(row ? [{ label: 'Remove from list', danger: true, keepOpen: true, run: () => agentLaunchShow('remove') }] : [])];
   },
+  history() {
+    return [agentLaunchBack('main'), { heading: 'Past conversations' }, ...agentLaunchHistoryRows()];
+  },
   pick() {
     return [agentLaunchBack('main'), { heading: 'Add account' },
       ...AGENT_LAUNCH_AGENTS.map((agent) => ({ label: AGENT_LAUNCH_NAMES[agent], icon: agentLaunchIcon(agent), keepOpen: true, run: () => { agentLaunch.agent = agent; agentLaunch.draft = { name: '' }; agentLaunchShow('add'); } }))];
@@ -46167,19 +46248,19 @@ const AGENT_LAUNCH_VIEWS = {
       { buttons: [{ label: 'Cancel', keepOpen: true, run: () => agentLaunchShow('account') }, { label: 'Save launch settings', primary: true, keepOpen: true, run: save }] }];
   },
   preparing(agent) {
-    return [{ heading: `Starting ${agentLaunchLabel(agent, agentLaunch.id)}` }, { note: agentLaunch.step || 'Reading your terminal setup' },
+    return [{ heading: agentLaunch.resume ? `Opening ${agentLaunchLabel(agent, agentLaunch.id)}’s past conversations` : `Starting ${agentLaunchLabel(agent, agentLaunch.id)}` }, { note: agentLaunch.step || 'Reading your terminal setup' },
       { label: 'Cancel', keepOpen: true, run: () => { agentLaunchAsk('cancel'); agentLaunchShow('main'); } }];
   },
   failed(agent) {
     return [{ heading: `${agentLaunchLabel(agent, agentLaunch.id)} couldn’t start` }, { note: agentLaunch.failure || 'Something stopped the start.', danger: true },
       { label: 'Open Console', run: () => send({ command: 'newConsole', path: libraryFolderHere() }) },
-      { label: 'Try again', keepOpen: true, run: () => agentLaunchStart(agent, agentLaunch.id) },
+      { label: 'Try again', keepOpen: true, run: () => agentLaunchStart(agent, agentLaunch.id, agentLaunch.resume) },
       { label: 'Launch settings', keepOpen: true, run: () => agentLaunchSettings(agent, agentLaunch.id) },
       agentLaunchBack('main')];
   },
 };
 
-const AGENT_LAUNCH_PARENT = { account: 'main', pick: 'main', add: 'pick', link: 'add', rename: 'account', remove: 'account', waiting: 'account', launch: 'account', preparing: 'main', failed: 'main' };
+const AGENT_LAUNCH_PARENT = { history: 'main', account: 'main', pick: 'main', add: 'pick', link: 'add', rename: 'account', remove: 'account', waiting: 'account', launch: 'account', preparing: 'main', failed: 'main' };
 function agentLaunchShow(view) {
   if (view !== agentLaunch.view) agentLaunch.error = '';
   agentLaunch.view = view === 'main' ? null : view;
@@ -46212,20 +46293,23 @@ function agentLaunchRename(agent, id, name) {
   agentLaunch.agent = previous || agent;
   return asked;
 }
-function agentLaunchStart(agent, id) {
+
+function agentLaunchStart(agent, id, resume = false) {
   agentLaunch.agent = agent;
   agentLaunch.id = id;
+  agentLaunch.resume = resume;
   agentLaunch.step = 'Reading your terminal setup';
   agentLaunchShow('preparing');
   const request = ++agentLaunch.request;
   
   const skip = agentLaunch.state ? { skip: Boolean(agentLaunchOf(agent).skipPermissions) } : {};
-  send({ command: 'agentLaunch', action: 'start', agent, id, request, path: libraryFolderHere(), ...skip });
+  send({ command: 'agentLaunch', action: 'start', agent, id, request, path: libraryFolderHere(), ...skip, ...(resume ? { resume: true } : {}) });
   
   agentLaunch.waiting.set(request, (first) => {
     if (first.error) return agentLaunchFailed(first);
     agentLaunch.waiting.set(request, (done) => {
       if (done.error) return agentLaunchFailed(done);
+      if (resume && agent === 'antigravity' && Number.isInteger(done.console)) consoleHistoryWait(done.console);
       if (agentLaunchOpen() && agentLaunch.view === 'preparing') hideCrumbMenu();
     });
   });
@@ -46239,6 +46323,7 @@ function agentLaunchFailed(answer) {
 function agentLaunchSignIn(agent, id) {
   agentLaunch.agent = agent;
   agentLaunch.id = id;
+  agentLaunch.resume = false;
   const request = ++agentLaunch.request;
   send({ command: 'agentLaunch', action: 'signIn', agent, request, id, path: libraryFolderHere() });
   agentLaunch.waiting.set(request, (first) => {
@@ -46331,6 +46416,7 @@ window.leafConsoleLaunched = (id, launched) => {
   const entry = consoleLayers.get(id) || (launched ? makeConsoleLayer(id) : null);
   if (!entry) return;
   entry.launched = launched && typeof launched === 'object' ? launched : null;
+  if (!entry.launched) cancelConsoleHistory(entry, true);
   drawConsoleStatus(id, entry);
 };
 
@@ -46377,7 +46463,7 @@ function readConsoleChat(entry) {
     if (agent === 'codex') {
       
       if (footer.filter(line => line.trim()).length > 2) return null;
-      if (consoleCodexAnsweredCommand(entry, base + cover)) return null;
+      keepConsoleCodexAnswers(entry, base + cover);
       chat.from = 0;
       return chat;
     }
@@ -46420,13 +46506,34 @@ function consoleChatClaudeNotes(mode, above) {
 }
 
 
-function consoleCodexAnsweredCommand(entry, below) {
+function keepConsoleCodexAnswers(entry, below) {
   for (let line = below - 1; line >= Math.max(0, below - CONSOLE_CHAT_BANNER_REACH); line -= 1) {
     const text = consoleLineText(entry, line) ?? '';
-    if (/^› \S/.test(text)) return false;
-    if (/^\/[a-z][\w-]*(?: .*)?$/.test(text)) return true;
+    if (/^› \S/.test(text)) return;
+    if (/^\/[a-z][\w-]*(?: .*)?$/.test(text)) {
+      keepConsoleCodexAnswer(entry, line, below);
+      return;
+    }
   }
-  return false;
+}
+
+
+const CONSOLE_CHAT_ANSWER_ROWS = 60;
+
+
+function keepConsoleCodexAnswer(entry, echo, below) {
+  const rows = [];
+  for (let line = echo + 1; line < below && rows.length < CONSOLE_CHAT_ANSWER_ROWS; line += 1) {
+    const text = consoleLineText(entry, line) ?? '';
+    if (rows.some(row => row.trim()) && CONSOLE_CHAT_ITEM.test(text)) break;
+    rows.push(text);
+  }
+  if (!rows.some(row => row.trim())) return;
+  const kept = entry.codexAnswers || (entry.codexAnswers = []);
+  const answer = { command: consoleLineText(entry, echo).trim(), rows, after: entry.chat?.turns?.at(-1)?.prompt ?? null };
+  const last = kept.at(-1);
+  if (last && last.command === answer.command && last.after === answer.after) kept[kept.length - 1] = answer;
+  else kept.push(answer);
 }
 
 
@@ -46571,7 +46678,10 @@ function refreshConsoleChat(id, entry) {
     entry.chatTerminal = false;
   }
   if (!read) {
-    if (!consoleComposerHolding(entry) && !consoleChatMidRedraw(entry)) leaveConsoleChat(entry);
+    if (!consoleComposerHolding(entry) && !consoleChatMidRedraw(entry)) {
+      leaveConsoleChat(entry);
+      placeConsoleChatOverPanel(entry);
+    }
     return;
   }
   
@@ -46594,6 +46704,7 @@ function refreshConsoleChat(id, entry) {
   entry.chat = { ...read, opening, turns, waiting, shown: true };
   entry.layer?.classList.add('console-chatting');
   const moved = drawConsoleChat(id, entry);
+  liftConsoleChatOffPanel(entry);
   if (entry.chatView) {
     entry.chatView.box.hidden = false;
     
@@ -46609,14 +46720,48 @@ function refreshConsoleChat(id, entry) {
 
 function consoleChatMidRedraw(entry) {
   if (!entry.chat?.shown || entry.agent !== 'claude' || entry.activity !== 'working') return false;
-  return readConsoleScreenOnce(entry.terminal.wasmTerm, () => consoleModelPrompt(entry, entry.agent).kind === 'unknown' && !consoleClaudeSidePanel(entry));
+  return readConsoleScreenOnce(entry.terminal.wasmTerm, () => consoleModelPrompt(entry, entry.agent).kind === 'unknown' && consoleClaudeBoxStands(entry));
 }
 
 
-function consoleClaudeSidePanel(entry) {
+function consoleClaudeBoxStands(entry) {
   const rows = consolePromptRows(entry);
-  const rule = rows.findIndex(row => /^▔{8,}$/.test(row.trim()));
-  return rule >= 0 && rows.slice(rule + 1).some(row => row.replace(/\s+/g, '').endsWith('Esctoclose'));
+  return rows.some((row, at) => /^\s*[❯›>](?:\s|$)/.test(row) && at > 0 && CONSOLE_PROMPT_RULE.test(rows[at - 1]) && CONSOLE_PROMPT_RULE.test(rows[at + 1] ?? ''));
+}
+
+
+function placeConsoleChatOverPanel(entry) {
+  const view = entry.chatView;
+  if (!view || !entry.chat) return;
+  const rule = entry.agent === 'claude' ? consoleClaudePanelRule(entry) : -1;
+  if (rule < 2) {
+    if (entry.chatOverPanel != null) view.box.hidden = true;
+    liftConsoleChatOffPanel(entry);
+    return;
+  }
+  const held = view.log.scrollHeight - view.log.scrollTop - view.log.clientHeight <= 2;
+  entry.chatOverPanel = rule;
+  const screen = consoleScreen(entry.terminal);
+  const frame = view.box.offsetParent;
+  if (screen && frame) view.box.style.bottom = `${Math.max(0, frame.getBoundingClientRect().bottom - screen.getBoundingClientRect().top - rule * consoleRowHeight(entry.terminal))}px`;
+  if (entry.composer) entry.composer.box.hidden = true;
+  view.box.hidden = false;
+  if (held) view.log.scrollTop = view.log.scrollHeight;
+}
+
+function liftConsoleChatOffPanel(entry) {
+  if (entry.chatOverPanel == null) return;
+  entry.chatOverPanel = null;
+  if (entry.chatView) entry.chatView.box.style.bottom = '';
+  if (entry.composer) entry.composer.box.hidden = false;
+}
+
+
+function consoleClaudePanelRule(entry) {
+  if (consoleClaudeBoxStands(entry)) return -1;
+  const rows = consolePromptRows(entry);
+  for (let at = rows.length - 1; at >= 0; at -= 1) if (/^\s*▔{8,}/.test(rows[at])) return at;
+  return -1;
 }
 
 
@@ -46863,7 +47008,16 @@ function drawConsoleChat(id, entry) {
   const held = !view.box.hidden && box.scrollHeight - box.scrollTop - box.clientHeight <= 2;
   const wanted = [];
   if (chat.opening.some(row => row.trim())) wanted.push({ key: 'opening', sig: chat.opening.join('\n'), make: () => consoleChatOpening(chat.opening) });
-  for (const turn of chat.turns) wanted.push({ key: turn.key, sig: consoleChatTurnSig(turn), line: turn.done || turn.working || null, make: () => consoleChatTurn(view, turn) });
+  
+  const answers = (entry.codexAnswers || []).map((answer, index) => ({ answer, index, at: chat.turns.findLastIndex(turn => turn.prompt === answer.after) }));
+  const answered = at => {
+    for (const { answer, index } of answers.filter(each => each.at === at)) wanted.push({ key: `answer:${index}`, sig: answer.rows.join('\n'), make: () => consoleChatOpening(answer.rows) });
+  };
+  chat.turns.forEach((turn, at) => {
+    wanted.push({ key: turn.key, sig: consoleChatTurnSig(turn), line: turn.done || turn.working || null, make: () => consoleChatTurn(view, turn) });
+    answered(at);
+  });
+  answered(-1);
   if (chat.waiting?.length) wanted.push({ key: 'waiting', sig: JSON.stringify(chat.waiting), make: () => consoleChatWaiting(chat.waiting) });
   const nodes = new Map();
   let moved = false;
