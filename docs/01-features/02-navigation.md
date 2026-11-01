@@ -469,7 +469,7 @@ A document draws its terms from a shared glossary file. You do not have to link 
 
 ### Author a glossary
 
-Write one `GLOSSARY.md` at or above your documents, with a `##` heading per term. Capitals in the file name do not matter — `GLOSSARY.md`, `Glossary.md` and `glossary.md` are all found, on every kind of disk:
+Write one `GLOSSARY.md` at or above your documents, with a heading per term. Capitals in the file name do not matter — `GLOSSARY.md`, `Glossary.md` and `glossary.md` are all found, on every kind of disk:
 
 ```md
 # Glossary
@@ -485,7 +485,7 @@ Also: Tabs
 One open document, with its own Back/Forward history and scroll position.
 ```
 
-Every mention of *Minimap*, *Tab* or *Tabs* across your documents opens its entry. To link other spellings to one entry, put `Also:` on the first nonblank line below its heading and separate the spellings with commas. Only the spellings you name link, as whole words without regard to capitals; later `Also:` lines are ordinary entry text. If a spelling is also another entry's heading, that heading keeps it; if two entries name the same spelling, the first keeps it.
+Every mention of *Minimap*, *Tab* or *Tabs* across your documents opens its entry. Entries can be written at any heading size from `##` to `######`: the glossary is read at the size most of its headings use, so `###` entries under `##` section titles link the entries and not the titles, and a smaller heading inside an entry stays part of that entry. To link other spellings to one entry, put `Also:` on the first nonblank line below its heading and separate the spellings with commas. Only the spellings you name link, as whole words without regard to capitals; later `Also:` lines are ordinary entry text. If a spelling is also another entry's heading, that heading keeps it; if two entries name the same spelling, the first keeps it.
 
 The desktop finds the glossary by walking up from the open document, reading each folder and taking the first file whose name is `GLOSSARY.md` however it is capitalized, so it can sit right beside a page or many folders above at the root of a project. A published site makes the same choice from its file list for each page; where no glossary sits above a page, it uses the first glossary listed. Each project's pages bind to that project's own glossary, while one glossary can still serve the whole set.
 
