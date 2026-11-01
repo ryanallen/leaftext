@@ -10010,6 +10010,9 @@ const readerToolbar = document.getElementById('readerToolbar');
 const viewReadingButton = document.getElementById('viewReadingButton');
 const viewCodeButton = document.getElementById('viewCodeButton');
 const viewGraphButton = document.getElementById('viewGraphButton');
+const consoleViewsGroup = document.getElementById('consoleViewsGroup');
+const consoleChatButton = document.getElementById('consoleChatButton');
+const consoleTerminalButton = document.getElementById('consoleTerminalButton');
 const readerViewTools = document.getElementById('readerViewTools');
 const readerToolTray = document.getElementById('readerToolTray');
 const readerLockButton = document.getElementById('readerLockButton');
@@ -18429,7 +18432,65 @@ function applyGraphView() {
 }
 
 function readerViewsStand() {
-  return Boolean(activeDocumentPath() || activeWebTab());
+  return Boolean(activeDocumentPath() || activeWebTab() || consoleViewsEntry());
+}
+
+function consoleViewsEntry() {
+  if (!activeConsoleTab(currentState)) return null;
+  const entry = frontConsoleEntry();
+  return entry && consoleAgentIcons[entry.agent] ? entry : null;
+}
+let consoleViewsDrawn = '';
+
+let consoleViewsHolder = null;
+function consoleIdOf(entry) {
+  for (const [id, each] of consoleLayers) if (each === entry) return id;
+  return null;
+}
+function consoleViewsKey(entry) {
+  return entry ? `${consoleFrontId}|${entry.agent}|${Boolean(entry.chatHeldOff)}` : '';
+}
+
+function syncConsoleViewsBar() {
+  if (consoleViewsKey(consoleViewsEntry()) !== consoleViewsDrawn) renderReaderToolbar(readerViewsStand());
+}
+
+function renderConsoleViews(entry) {
+  consoleViewsDrawn = consoleViewsKey(entry);
+  const documentGroup = viewReadingButton?.parentElement;
+  if (documentGroup) documentGroup.hidden = Boolean(entry);
+  if (consoleViewsGroup) consoleViewsGroup.hidden = !entry;
+  readerToolbar.classList.toggle('is-console-views', Boolean(entry));
+  
+  if (consoleViewsHolder !== entry) {
+    for (const each of [consoleViewsHolder, entry]) {
+      if (!each?.layer) continue;
+      each.layer.classList.toggle('has-console-views', each === entry);
+      if (each.terminal && each.fit && !each.layer.hidden) refreshConsoleGrid(each === entry ? consoleFrontId : consoleIdOf(each), each);
+    }
+    consoleViewsHolder = entry?.layer ? entry : null;
+  }
+  if (!entry) return;
+  readerToolbar.classList.remove('has-open-tray');
+  readerToolTrayTouchOpen = '';
+  if (readerViewTools) readerViewTools.hidden = true;
+  if (readerToolTray) readerToolTray.hidden = true;
+  const current = entry.chatHeldOff ? consoleTerminalButton : consoleChatButton;
+  for (const button of [consoleChatButton, consoleTerminalButton]) {
+    if (!button) continue;
+    const on = button === current;
+    button.setAttribute('aria-pressed', String(on));
+    button.classList.toggle('is-active', on);
+    if (on) consoleViewsGroup.style.setProperty('--reader-tool-chip-x', `${Math.round(button.offsetLeft)}px`);
+  }
+  syncReaderToolDividerState();
+  coverLivePageWithReaderToolbar();
+}
+for (const button of [consoleChatButton, consoleTerminalButton]) {
+  button?.addEventListener('click', () => {
+    const entry = consoleViewsEntry();
+    if (entry) setConsoleChatHeldOff(consoleFrontId, entry, button === consoleTerminalButton);
+  });
 }
 function webGraphAddress() {
   const tab = activeWebTab();
@@ -18451,12 +18512,15 @@ function renderExportPdfAction(hasDocument) {
 }
 
 function renderReaderToolbar(viewsStand) {
+  const consoleEntry = viewsStand ? consoleViewsEntry() : null;
   
-  renderExportPdfAction(viewsStand && !activeWebTab());
+  renderExportPdfAction(viewsStand && !activeWebTab() && !consoleEntry);
   if (!readerToolbar) return;
   readerToolbar.hidden = !viewsStand;
   document.body.classList.toggle('has-reader-toolbar', Boolean(viewsStand));
   if (viewGraphButton) viewGraphButton.hidden = false;
+  renderConsoleViews(consoleEntry);
+  if (consoleEntry) return;
   if (!viewsStand) {
     readerToolbar.classList.remove('has-open-tray');
     readerToolTrayTouchOpen = '';
@@ -22445,7 +22509,7 @@ function setDirtyState(path, dirty) {
 
 function holdViewButtonsStill() {
   if (!readerToolbar) return;
-  const viewGroup = readerToolbar.querySelector('.reader-tool-group');
+  const viewGroup = readerToolbar.querySelector('.reader-tool-group:not([hidden])');
   if (!viewGroup) return;
   const toolbarRect = readerToolbar.getBoundingClientRect();
   const viewRect = viewGroup.getBoundingClientRect();
@@ -43541,6 +43605,7 @@ function reportConsoleAgent(id, entry, screenLines) {
     entry.codexRestingState = 'rest';
     entry.codexUpdating = false;
     if (entry.agent !== 'codex') entry.nativeSession = null;
+    if (id === consoleFrontId) syncConsoleViewsBar();
   }
   const state = consoleAgentState(entry, screenLines, id);
   const said = `${entry.agent || ''} ${state || ''}`;
@@ -44643,6 +44708,7 @@ window.leafConsoleFront = id => {
   if (changed && consoleAgentRows.length) drawConsoleAgents();
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
   placeConsoleLayers();
+  syncConsoleViewsBar();
   if (id === null) return;
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   entry.layer.hidden = false;
@@ -44823,6 +44889,8 @@ function markConsoleControls(entry, state) {
     if (button.disabled === busy) continue;
     button.disabled = busy;
     if (busy) button.title = 'Wait until the agent finishes.';
+    
+    else if (button.dataset.full) button.title = button.dataset.full;
     else button.removeAttribute('title');
   }
 }
@@ -45166,28 +45234,46 @@ function consoleStatusLimitName(minutes) {
 }
 
 
+function consoleStatusShortModel(model) {
+  const unbranded = /^(?:gpt|gemini|claude)[- ](.+)$/i.exec(model);
+  if (!unbranded) return model;
+  const joint = unbranded[1].includes(' ') ? ' ' : '-';
+  const parts = unbranded[1].split(joint);
+  const lead = parts.findIndex(part => !/^\d/.test(part));
+  return lead > 0 ? [...parts.slice(lead), ...parts.slice(0, lead)].join(joint) : unbranded[1];
+}
+
+
+const CONSOLE_EFFORT_LETTERS = { minimal: 'Mn', low: 'L', medium: 'M', high: 'H', xhigh: 'X', max: 'Mx' };
+
+
 function consoleStatusFields(record) {
   const fields = [];
   const controls = ['claude', 'codex', 'antigravity'].includes(record.agent);
   const agent = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity' }[record.agent];
-  if (agent) fields.push({ field: 'agent', text: agent, agent: record.agent });
+  if (agent) fields.push({ field: 'agent', text: agent, agent: record.agent, notes: record.cost != null ? [`$${record.cost.toFixed(2)}`] : [] });
+  else if (record.cost != null) fields.push({ field: 'cost', text: `$${record.cost.toFixed(2)}` });
+  if (record.folder || controls) fields.push({ field: 'folder', text: record.folder || 'Folder', path: record.folderPath });
   if (record.account) fields.push({ field: 'account', text: record.account });
-  if (record.model || controls) fields.push({ field: 'model', text: record.model || 'Model' });
-  if (controls) fields.push({ field: 'effort', text: record.effort ? record.effort[0].toUpperCase() + record.effort.slice(1) : 'Effort' });
+  if (record.model || controls) fields.push({ field: 'model', text: record.model ? consoleStatusShortModel(record.model) : 'Model', full: record.model || 'Model' });
+  if (controls) {
+    const effort = record.effort ? record.effort[0].toUpperCase() + record.effort.slice(1) : 'Effort';
+    fields.push({ field: 'effort', text: record.effort ? CONSOLE_EFFORT_LETTERS[record.effort] || effort[0] : 'Effort', full: effort });
+  }
   const size = record.contextWindow;
   const used = record.tokens ?? (record.contextPercent != null && size ? record.contextPercent / 100 * size : null);
-  if (used != null && size) fields.push({ field: 'context', text: `Context ${consoleStatusCount(used)} of ${consoleStatusCount(size)}`, meter: used / size * 100 });
-  else if (record.contextPercent != null) fields.push({ field: 'context', text: `Context ${Math.round(record.contextPercent)}% used`, meter: record.contextPercent });
-  else if (used != null) fields.push({ field: 'context', text: `${consoleStatusCount(used)} tokens` });
-  else if (size > 0) fields.push({ field: 'context', text: `Context ${consoleStatusCount(size)}` });
-  else if (controls) fields.push({ field: 'context', text: 'Context' });
-  for (const limit of record.limits || []) {
-    if (limit.resetsAt && limit.resetsAt * 1000 <= Date.now()) continue;
-    const wait = limit.resetsAt ? ` · resets in ${consoleStatusWait(limit.resetsAt)}` : '';
-    fields.push({ field: 'limits', text: `${consoleStatusLimitName(limit.windowMinutes)} ${Math.round(limit.usedPercent)}% used`, wait, meter: limit.usedPercent });
+  if (used != null && size) fields.push({ field: 'context', ring: true, text: `Context: ${consoleStatusCount(used)} of ${consoleStatusCount(size)} used (${Math.round(used / size * 100)}%)`, meter: used / size * 100 });
+  else if (record.contextPercent != null) fields.push({ field: 'context', ring: true, text: `Context: ${Math.round(record.contextPercent)}% used`, meter: record.contextPercent });
+  else if (used != null) fields.push({ field: 'context', ring: true, text: `Context: ${consoleStatusCount(used)} tokens used` });
+  else if (size > 0) fields.push({ field: 'context', ring: true, text: `Context: ${consoleStatusCount(size)}` });
+  else if (controls) fields.push({ field: 'context', ring: true, text: 'Context' });
+  const limits = (record.limits || []).filter(limit => !(limit.resetsAt && limit.resetsAt * 1000 <= Date.now()));
+  limits.sort((a, b) => (a.windowMinutes || 0) - (b.windowMinutes || 0));
+  for (const limit of limits) {
+    const name = consoleStatusLimitName(limit.windowMinutes);
+    const wait = limit.resetsAt ? `, resets in ${consoleStatusWait(limit.resetsAt)}` : '';
+    fields.push({ field: 'limits', ring: true, limit: limit.windowMinutes === 10080 ? 'weekly' : 'short', text: `${name === 'Limit' ? name : `${name} limit`}: ${Math.round(limit.usedPercent)}% used${wait}`, meter: limit.usedPercent });
   }
-  if (record.cost != null) fields.push({ field: 'cost', text: `$${record.cost.toFixed(2)}` });
-  if (record.folder || controls) fields.push({ field: 'folder', text: record.folder || 'Folder', path: record.folderPath });
   return fields;
 }
 
@@ -45203,7 +45289,12 @@ function drawConsoleStatus(id, entry, reportedState) {
   if (launched) {
     if (!record) fields.push({ field: 'launchAgent', text: AGENT_LAUNCH_NAMES[launched.agent] || launched.agent });
     if (!fields.some((field) => field.field === 'account') && launched.account) fields.push({ field: 'launchAccount', text: launched.account });
-    if (launched.skipPermissions) fields.push({ field: 'launchMode', text: 'Prompts skipped' });
+    if (launched.skipPermissions) {
+      
+      const logo = fields.find(field => field.field === 'agent');
+      if (logo) logo.notes.push('Prompts skipped');
+      else fields.push({ field: 'launchMode', text: 'Prompts skipped' });
+    }
   }
   const items = fields.map(field => {
     const model = field.field === 'model' && ['claude', 'codex', 'antigravity'].includes(record.agent);
@@ -45223,26 +45314,29 @@ function drawConsoleStatus(id, entry, reportedState) {
       icon.className = `lt-icon lt-icon-agent-${field.agent}`;
       icon.setAttribute('aria-hidden', 'true');
       item.appendChild(icon);
-      item.title = field.text;
+      const said = [field.text, ...field.notes].join(' · ');
+      item.title = said;
       item.setAttribute('role', 'img');
-      item.setAttribute('aria-label', field.text);
+      item.setAttribute('aria-label', said);
     }
-    if (field.meter != null) {
-      const meter = document.createElement('span');
-      meter.className = 'console-status-meter';
-      const fill = document.createElement('span');
-      fill.className = 'console-status-fill';
-      fill.style.width = `${Math.max(0, Math.min(100, field.meter))}%`;
-      meter.appendChild(fill);
-      item.appendChild(meter);
-    }
-    if (!logo) item.appendChild(document.createTextNode(field.text));
     
-    if (field.wait) {
-      const wait = document.createElement('span');
-      wait.dataset.wait = '';
-      wait.textContent = field.wait;
-      item.appendChild(wait);
+    if (field.ring) {
+      item.classList.add('console-status-ring');
+      if (field.limit) item.dataset.limit = field.limit;
+      const fill = field.meter != null ? Math.round(Math.max(0, Math.min(100, field.meter))) : 0;
+      if (field.meter != null) item.style.setProperty('--fill', `${fill}%`);
+      
+      item.innerHTML = `<svg class="console-status-ring-drawing" viewBox="0 0 16 16" aria-hidden="true"><circle class="console-status-ring-track" cx="8" cy="8" r="6.5"></circle><circle class="console-status-ring-fill" cx="8" cy="8" r="6.5" pathLength="100" stroke-dasharray="${fill} 100" transform="rotate(-90 8 8)"></circle></svg>`;
+      item.title = field.text;
+      if (!context) {
+        item.setAttribute('role', 'img');
+        item.setAttribute('aria-label', field.text);
+      }
+    }
+    else if (!logo) item.appendChild(document.createTextNode(field.text));
+    if (field.full) {
+      item.title = field.full;
+      item.dataset.full = field.full;
     }
     if (account || launchedAccount) {
       item.type = 'button';
@@ -45259,15 +45353,11 @@ function drawConsoleStatus(id, entry, reportedState) {
       item.type = 'button';
       item.classList.add('console-status-model');
       if (effort) item.classList.add('console-status-effort');
-      item.setAttribute('aria-label', context ? `Conversation actions: ${field.text}` : effort ? `Change reasoning effort${record.effort ? ': ' + field.text : ''}` : `Change model: ${field.text}`);
+      item.setAttribute('aria-label', context ? `Conversation actions: ${field.text}` : effort ? `Change reasoning effort${record.effort ? ': ' + field.full : ''}` : `Change model: ${field.full}`);
       
       if (context) {
         item.setAttribute('aria-haspopup', 'menu');
         item.setAttribute('aria-expanded', 'false');
-        const chevron = document.createElement('span');
-        chevron.className = 'lt-icon lt-icon-chevron-down';
-        chevron.setAttribute('aria-hidden', 'true');
-        item.appendChild(chevron);
       }
       item.addEventListener('pointerdown', event => {
         if (event.button !== 0 || item.disabled) return;
@@ -45286,7 +45376,17 @@ function drawConsoleStatus(id, entry, reportedState) {
   });
   
   const row = [];
+  let rings = null;
   for (const item of items) {
+    if (item.classList.contains('console-status-ring')) {
+      if (!rings) {
+        rings = document.createElement('span');
+        rings.className = 'console-status-rings';
+        row.push(rings);
+      }
+      rings.appendChild(item);
+      continue;
+    }
     if (item.tagName !== 'BUTTON' && item.getAttribute('role') !== 'img') { row.push(item); continue; }
     let group = row[row.length - 1];
     if (!group?.classList.contains('console-status-controls')) {
@@ -45347,8 +45447,8 @@ function renameConsoleAccount(id, entry, button) {
 function fitConsoleStatus(entry) {
   const strip = entry.status;
   if (!strip || strip.hidden) return;
-  for (const item of strip.querySelectorAll('[data-field], [data-wait]')) item.hidden = false;
-  for (const selector of ['span[data-field="folder"]', '[data-field="cost"]', '[data-wait]', '[data-field="limits"]', '[data-field="effort"]', '[data-field="account"]', 'button[data-field="folder"]']) {
+  for (const item of strip.querySelectorAll('[data-field]')) item.hidden = false;
+  for (const selector of ['span[data-field="folder"]', '[data-field="cost"]', '[data-limit="weekly"]', '[data-field="limits"]', '[data-field="account"]', '[data-field="effort"]', 'button[data-field="folder"]']) {
     if (!(strip.clientWidth > 0) || strip.scrollWidth <= strip.clientWidth) return;
     for (const item of strip.querySelectorAll(selector)) item.hidden = true;
   }
@@ -46729,6 +46829,12 @@ function refreshConsoleChat(id, entry) {
     if (entry.activity !== 'working' && (!read || read.notes?.some(note => note.warning))) return;
     entry.chatTerminal = false;
   }
+  
+  if (entry.chatHeldOff) {
+    if (read && !CONSOLE_CHAT_TOOL[read.agent] && / working$/.test(entry.agentSaid || '')) entry.chatUnrecorded = true;
+    leaveConsoleChat(entry);
+    return;
+  }
   if (!read) {
     if (!consoleComposerHolding(entry) && !consoleChatMidRedraw(entry)) {
       leaveConsoleChat(entry);
@@ -46841,6 +46947,19 @@ function leaveConsoleChat(entry) {
   renderConsolePin(entry);
   if (composing) entry.terminal?.focus();
   for (const [id, each] of consoleLayers) if (each === entry) consoleChatRailChanged(id, entry);
+}
+
+
+function setConsoleChatHeldOff(id, entry, held) {
+  entry.chatHeldOff = Boolean(held);
+  if (held) {
+    leaveConsoleChat(entry);
+    entry.terminal?.focus();
+  } else {
+    refreshConsoleChat(id, entry);
+    if (!focusConsoleComposer(entry)) entry.terminal?.focus();
+  }
+  renderReaderToolbar(readerViewsStand());
 }
 
 
@@ -48778,8 +48897,8 @@ function consoleFolderButton(id, entry, field) {
   item.type = 'button';
   item.className = 'console-status-field console-status-folder';
   item.dataset.field = 'folder';
-  item.innerHTML = '<span class="lt-icon lt-icon-folder" aria-hidden="true"></span><span class="console-status-folder-name"></span>';
-  item.lastChild.textContent = field.text;
+  
+  item.innerHTML = '<span class="lt-icon lt-icon-folder" aria-hidden="true"></span>';
   const claude = consoleControlRecord(entry)?.agent === 'claude';
   item.title = field.path || field.text;
   item.setAttribute('aria-label', `${claude ? 'Change folder' : 'New conversation in another folder'}: ${field.path || (field.text === 'Folder' ? 'the folder this console opened in' : field.text)}`);

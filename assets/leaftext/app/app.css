@@ -8444,12 +8444,17 @@ body.library-resizing button {
 @media (hover: hover) { .console-status-folder:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
 .console-status-folder[aria-expanded="true"] { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); }
 .console-status-folder .lt-icon-folder { width: 12px; height: 12px; flex: none; }
-.console-status-folder-name { overflow: hidden; text-overflow: ellipsis; max-width: calc(var(--lt-space-48) * 4); }
 .console-status-folder:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .console-status-model:focus-visible, .console-status-account:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
-.console-status-meter { display: inline-block; width: var(--lt-space-48); height: var(--lt-space-4); border-radius: var(--lt-radius-full); background: var(--lt-border); overflow: hidden; }
-.console-status-fill { display: block; height: 100%; background: var(--lt-primary-ink); }
-.reader-column.is-under-console, .console-front .reader-toolbar { visibility: hidden; }
+
+.console-status-rings { display: inline-flex; align-items: center; gap: var(--lt-space-8); flex: none; margin-left: auto; }
+.console-status-rings .console-status-ring { display: inline-flex; width: 16px; height: 16px; flex: none; padding: 0; background: transparent; }
+.console-status-ring-drawing { width: 16px; height: 16px; }
+.console-status-ring-track, .console-status-ring-fill { fill: none; stroke-width: var(--lt-stroke-2); }
+.console-status-ring-track { stroke: var(--lt-border); }
+.console-status-ring-fill { stroke: var(--lt-primary-ink); }
+
+.reader-column.is-under-console, .console-front .reader-toolbar:not(.is-console-views) { visibility: hidden; }
 .console-tab .tab-label { display: flex; align-items: center; gap: var(--lt-space-4); position: relative; }
 
 .console-tab-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -8503,6 +8508,10 @@ body.library-resizing button {
 .console-chat-log { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; user-select: text; }
 .console-chat[hidden] { display: none; }
 .console-chat.is-above-status { bottom: calc(var(--lt-space-8) + var(--lt-space-24)); }
+
+.console-layer.has-console-views .console-status { height: calc(var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
+.console-layer.has-console-views .console-terminal.is-above-status { height: calc(100% - var(--reader-toolbar-room) + var(--lt-shadow-spread)); }
+.console-layer.has-console-views .console-chat.is-above-status { bottom: calc(var(--lt-space-8) + var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
 
 .console-chat-log.has-rail { scrollbar-width: none; }
 .console-chat-log.has-rail::-webkit-scrollbar { width: 0; }
@@ -8659,6 +8668,10 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   display: flex;
   align-items: center;
   gap: var(--lt-space-4);
+}
+
+.reader-tool-group[hidden] {
+  display: none;
 }
 .reader-tool-chip {
   position: absolute;

@@ -661,6 +661,7 @@
 | Agents held to checks | [✅][l-agent-harness] | ? | [❌][t-seen] | [❌][c-seen] |
 | Drop paths into console | [✅][l-agent-drop] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agent conversation as chat | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Chat or terminal switch | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Choose agent's folder | [✅][l-agent-folder] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 [l-new]: ../01-features/07-editing.md#new-document
