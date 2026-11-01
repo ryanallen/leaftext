@@ -397,6 +397,7 @@
 | Agent limits and resets | [✅][l-agent-status] | ? | ? | ? |
 | Agent reasoning effort picker | [✅][l-agent-status] | ? | ? | ? |
 | Pickers name the selection | [✅][l-agent-status] | ? | ? | ? |
+| Side question mid-task | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents name their consoles | [✅][l-agent-name] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Console links open | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Command pinned at top | [✅][l-console-pin] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -516,4 +517,5 @@
 [o-seen]: ../05-compare.md#obsidian
 [t-seen]: ../05-compare.md#typora
 
+[l-agent-chat]: ../01-features/10-agents.md#the-conversation-as-a-chat
 [l-agent-status]: ../01-features/10-agents.md#the-agents-status-under-its-console

@@ -43388,6 +43388,11 @@ function consoleCodexPluginHooksRefused(lines, input) {
   return turn.some((line, index) => /^\s*└ plugin contents changed; hook approval required\s*$/.test(line) && /^\s*[•◦] Hook failed\s*$/.test(turn[index + 1] || ''));
 }
 
+
+function consoleCodexLastWorked(lines) {
+  return lines.filter(line => CONSOLE_CODEX_WORKED.test(line)).pop() || null;
+}
+
 function consoleCodexPendingEcho(lines, prompt) {
   const head = lines.findIndex(line => /^\s*›(?:\s|$)/.test(line));
   if (head < 0) return -1;
@@ -43432,7 +43437,9 @@ function consoleAgentState(entry, screenLines) {
     if (entry.codexPendingPrompt) {
       const previous = lines.slice(input + 1);
       const echo = consoleCodexPendingEcho(previous, entry.codexPendingPrompt);
-      if (echo < 0 || !previous.slice(0, echo).some(line => CONSOLE_CODEX_WORKED.test(line) || /^\s*■ /.test(line))) return 'working';
+      
+      const ended = echo < 0 && input >= 0 && !lines.some(line => /Side from main thread/.test(line)) && entry.codexPendingWorked !== undefined && consoleCodexLastWorked(lines.slice().reverse()) && consoleCodexLastWorked(lines.slice().reverse()) !== entry.codexPendingWorked;
+      if (!ended && (echo < 0 || !previous.slice(0, echo).some(line => CONSOLE_CODEX_WORKED.test(line) || /^\s*■ /.test(line)))) return 'working';
       entry.codexPendingPrompt = null;
       entry.codexRestingState = 'done';
       return 'done';
@@ -44789,7 +44796,7 @@ function startConsoleCommand(id, entry, button, record, command) {
 
 function markConsoleControls(entry, state) {
   const busy = state != null && state !== 'rest' && state !== 'done';
-  for (const button of entry.status?.querySelectorAll('.console-status-model') || []) {
+  for (const button of entry.status?.querySelectorAll('.console-status-model:not([data-field="context"])') || []) {
     if (button.disabled === busy) continue;
     button.disabled = busy;
     if (busy) button.title = 'Wait until the agent finishes.';
@@ -44808,12 +44815,14 @@ function openConsoleModel(id, entry, button, effort = false, context = false) {
     else choose(effort && record.agent !== 'codex' ? '/effort' : '/model');
     return;
   }
-  const items = refusal ? [{ note: refusal }] : [
+  if (!record) { showConsoleModelMenu(button, [{ note: refusal }]); return; }
+  const commands = [
     { label: 'Compact the conversation', run: () => choose('/compact') },
     { label: 'Start a new conversation', run: () => choose(record.agent === 'codex' ? '/new' : '/clear') },
     
     ...(['claude', 'codex'].includes(record.agent) ? [{ label: 'Resume a conversation', run: () => choose('/resume') }] : []),
-  ];
+  ].map(row => refusal ? { ...row, disabled: true, title: refusal } : row);
+  const items = [...commands, ...(refusal ? [{ note: refusal }] : []), 'separator', { label: 'Ask a side question', run: () => askConsoleSideQuestion(id, entry, record) }];
   showConsoleModelMenu(button, items);
 }
 
@@ -45227,7 +45236,7 @@ function drawConsoleStatus(id, entry, reportedState) {
       item.type = 'button';
       item.classList.add('console-status-model');
       if (effort) item.classList.add('console-status-effort');
-      item.setAttribute('aria-label', context ? `Free up context: ${field.text}` : effort ? `Change reasoning effort${record.effort ? ': ' + field.text : ''}` : `Change model: ${field.text}`);
+      item.setAttribute('aria-label', context ? `Conversation actions: ${field.text}` : effort ? `Change reasoning effort${record.effort ? ': ' + field.text : ''}` : `Change model: ${field.text}`);
       
       if (context) {
         item.setAttribute('aria-haspopup', 'menu');
@@ -46482,6 +46491,8 @@ function readConsoleChat(entry) {
       return chat;
     }
     if (agent === 'antigravity') {
+      
+      if (rows.slice(0, top).some(row => /^\s*┃.*Enter\/Esc to dismiss/.test(row))) return null;
       chat.from = 0;
       return chat;
     }
@@ -47814,12 +47825,15 @@ function makeConsoleComposer(id, entry, frame) {
   const attach = consoleComposerButton('console-composer-tool', 'Attach a file', 'new');
   const slash = consoleComposerButton('console-composer-tool', entry.chat?.agent === 'codex' ? 'Skills' : 'Commands and skills');
   slash.textContent = entry.chat?.agent === 'codex' ? '$' : '/';
+  const side = consoleComposerButton('console-composer-tool console-composer-side', 'Ask a side question');
+  side.textContent = 'btw';
+  side.setAttribute('aria-pressed', 'false');
   const mode = consoleComposerButton('console-composer-mode', 'Change the permission mode');
   mode.hidden = true;
   const notes = document.createElement('div');
   notes.className = 'console-composer-notes';
   notes.hidden = true;
-  tools.append(attach, slash, mode, notes);
+  tools.append(attach, slash, side, mode, notes);
   const submit = consoleComposerButton('console-composer-send', 'Send', 'forward-long');
   row.append(tools, submit);
   const list = document.createElement('div');
@@ -47829,7 +47843,7 @@ function makeConsoleComposer(id, entry, frame) {
   list.hidden = true;
   box.append(list, chips, words, row);
   frame.appendChild(box);
-  const state = { box, chips, field, attach, slash, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
+  const state = { box, chips, field, attach, slash, side, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
   entry.composer = state;
   
   state.width = 0;
@@ -47866,6 +47880,7 @@ function makeConsoleComposer(id, entry, frame) {
     send({ command: 'consoleCompose', id, request: state.request, ask: 'files' });
   });
   slash.addEventListener('click', () => openConsoleComposerCommands(id, entry));
+  side.addEventListener('click', () => pressConsoleSideButton(id, entry));
   mode.addEventListener('click', () => consoleComposerMode(id, entry));
   notes.addEventListener('click', event => {
     if (event.target.closest?.('.console-composer-note.is-warning')) consoleComposerToTerminal(entry);
@@ -47940,6 +47955,10 @@ function drawConsoleComposer(id, entry) {
   state.mode.hidden = !mode;
   if (mode && state.mode.textContent !== mode) state.mode.textContent = mode;
   drawConsoleComposerNotes(state, chat.agent === 'claude' ? chat.notes || [] : []);
+  
+  const side = consoleSidePrefixed(entry);
+  state.side.classList.toggle('is-active', side);
+  if (state.side.getAttribute('aria-pressed') !== String(side)) state.side.setAttribute('aria-pressed', String(side));
   const working = consoleComposerWorking(entry);
   const ready = consoleComposerHasMessage(entry);
   const stop = working && !ready;
@@ -48201,6 +48220,7 @@ function sendConsoleComposer(id, entry) {
   holdConsoleComposer(id, entry);
   if (entry.chat?.agent === 'codex' && text && !command && !skill) {
     entry.codexPendingPrompt = text;
+    entry.codexPendingWorked = consoleCodexLastWorked(consolePromptRows(entry));
     entry.codexRestingState = 'answering';
     reportConsoleAgent(id, entry);
   }
@@ -48557,6 +48577,71 @@ function syncConsoleComposerMirror(state) {
   state.mirror.style.height = `${state.field.clientHeight}px`;
   state.mirror.scrollTop = state.field.scrollTop;
   state.mirror.scrollLeft = state.field.scrollLeft;
+}
+
+
+
+const CONSOLE_SIDE_PREFIX = '/btw ';
+
+
+function consoleSideBoxInView(entry) {
+  return Boolean(entry.composer && entry.chatView && !entry.chatView.box.hidden && !entry.composer.box.hidden);
+}
+
+
+function consoleCodexSideOpen(entry) {
+  return consolePromptRows(entry).slice(-6).some(row => /Side from main thread/.test(row));
+}
+
+function consoleSideQuestionRefusal(id, entry, record) {
+  if (!['claude', 'codex', 'antigravity'].includes(record?.agent)) return "Return to the agent's empty prompt first.";
+  if (consoleLayers.get(id) !== entry || consoleFrontId !== id || entry.layer.hidden || document.hidden || consoleControlRecord(entry) !== record || !entry.terminal || entry.modelPending || (entry.agent && entry.agent !== record.agent)) return "Return to the agent's empty prompt first.";
+  
+  if (consoleAgentState({ ...entry, agent: record.agent }) === 'needs') return 'Answer the agent first.';
+  if (record.agent === 'codex' && consoleCodexSideOpen(entry)) return 'Close the side question first.';
+  const prompt = consoleModelPrompt(entry, record.agent);
+  const box = consoleSideBoxInView(entry);
+  
+  if (prompt.kind === 'draft') return box ? 'Wait for your last message to go in.' : 'Send or clear what you are typing first.';
+  if (box) return null;
+  return prompt.kind === 'empty' ? null : "Return to the agent's empty prompt first.";
+}
+
+
+function putConsoleSidePrefix(id, entry) {
+  const field = entry.composer.field;
+  if (!field.value.startsWith(CONSOLE_SIDE_PREFIX)) field.value = CONSOLE_SIDE_PREFIX + field.value.replace(/^\s+/, '');
+  field.focus();
+  field.selectionStart = field.selectionEnd = CONSOLE_SIDE_PREFIX.length;
+  onConsoleComposerInput(id, entry);
+}
+
+function takeConsoleSidePrefix(id, entry) {
+  const field = entry.composer.field;
+  if (field.value.startsWith(CONSOLE_SIDE_PREFIX)) field.value = field.value.slice(CONSOLE_SIDE_PREFIX.length);
+  field.focus();
+  field.selectionStart = field.selectionEnd = 0;
+  onConsoleComposerInput(id, entry);
+}
+
+function consoleSidePrefixed(entry) {
+  return Boolean(entry.composer?.field.value.startsWith(CONSOLE_SIDE_PREFIX));
+}
+
+
+function pressConsoleSideButton(id, entry) {
+  if (consoleSidePrefixed(entry)) { takeConsoleSidePrefix(id, entry); return; }
+  askConsoleSideQuestion(id, entry, consoleControlRecord(entry));
+}
+
+
+function askConsoleSideQuestion(id, entry, record) {
+  const refusal = consoleSideQuestionRefusal(id, entry, record);
+  if (refusal) { leafToast(refusal); return; }
+  if (consoleSideBoxInView(entry)) { putConsoleSidePrefix(id, entry); return; }
+  consoleKeyTyped(id);
+  send({ command: 'consoleInput', id, data: CONSOLE_SIDE_PREFIX });
+  entry.terminal.focus();
 }
 
 const CONSOLE_FOLDER_AGENTS = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity' };
