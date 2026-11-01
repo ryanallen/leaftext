@@ -8440,6 +8440,8 @@ body.library-resizing button {
 .console-layer.is-right-card { grid-column: 5; }
 /* Two cards are two whole cards, the same as a page's. */
 .console-layer.is-split { border-top: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
+.console-side-close { position: absolute; top: var(--console-inset-top); right: var(--lt-space-8); z-index: 4; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); background: var(--lt-surface-elevated); color: var(--lt-foreground); }
+.console-side-close[hidden] { display: none; }
 .console-terminal { width: 100%; height: 100%; }
 /* The agent's own status, one row at the foot of the layer; the terminal gives up that row's height. */
 .console-terminal.is-above-status { height: calc(100% - var(--lt-space-24)); }
@@ -19902,7 +19904,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 203 values that do not change with the theme, all 114 icons, and all 189 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 203 values that do not change with the theme, all 114 icons, and all 190 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19934,7 +19936,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>114</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>189</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>190</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -20405,7 +20407,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">189 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">190 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -21161,6 +21163,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Syntax colors</h3><code class="built">.syn</code><span class="built">markdown/code.rs, whose SYNTAX_STYLE_RULES is the one table of these</span></header>
 <div class="stage"><div class="document-body"><pre class="doc-code-block"><code><span class="syn-keyword">fn</span> <span class="syn-function">main</span>() { <span class="syn-comment">// a comment</span> <span class="syn-string">"text"</span> }</code></pre></div></div>
+</section>
+<section class="part">
+<header><h3>Side question close</h3><code class="built">.console-side-close</code><span class="built">console-side-question.js shows this over the agent's own side answer and sends that agent's close key when pressed</span></header>
+<div class="stage"><div class="console-layer" style="position:relative;height:180px"><button type="button" class="console-side-close console-status-model">Close side question</button></div></div>
 </section>
 </section>
 <script>

@@ -8422,6 +8422,8 @@ body.library-resizing button {
 .console-layer.is-right-card { grid-column: 5; }
 
 .console-layer.is-split { border-top: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
+.console-side-close { position: absolute; top: var(--console-inset-top); right: var(--lt-space-8); z-index: 4; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); background: var(--lt-surface-elevated); color: var(--lt-foreground); }
+.console-side-close[hidden] { display: none; }
 .console-terminal { width: 100%; height: 100%; }
 
 .console-terminal.is-above-status { height: calc(100% - var(--lt-space-24)); }

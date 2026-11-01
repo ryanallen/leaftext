@@ -43411,6 +43411,27 @@ function consoleCodexPendingEcho(lines, prompt) {
   return -1;
 }
 
+function consoleCodexPendingInput(id, entry, lines) {
+  const hooks = lines.some(line => /Running hooks\s*$/.test(line));
+  const ended = entry.codexHooksRunning && !hooks;
+  entry.codexHooksRunning = hooks;
+  if (!entry.codexPendingPrompt) return;
+  const prompt = consoleModelPrompt(entry, 'codex');
+  if (prompt.kind === 'empty') {
+    if (entry.codexPendingDraftSeen) entry.codexPendingRetryUsed = true;
+    return;
+  }
+  if (prompt.kind !== 'draft' || prompt.text.replace(/\s+/g, ' ').trim() !== entry.codexPendingPrompt.replace(/\s+/g, ' ').trim()) {
+    entry.codexPendingRetryUsed = true;
+    return;
+  }
+  entry.codexPendingDraftSeen = true;
+  if (ended && entry.codexPendingEnterSent && !entry.codexPendingRetryUsed) {
+    entry.codexPendingRetryUsed = true;
+    send({ command: 'consoleInput', id, data: '\r' });
+  }
+}
+
 const CONSOLE_CODEX_UPDATE = /^\s*Updating Codex via `npm install -g @openai\/codex`\.\.\.\s*$/;
 
 function consoleCodexUpdateEnd(line, index, lines) {
@@ -43419,7 +43440,7 @@ function consoleCodexUpdateEnd(line, index, lines) {
     || (index + 1 < lines.length && failed.test(lines[index + 1] + line.trimStart()));
 }
 
-function consoleAgentState(entry, screenLines) {
+function consoleAgentState(entry, screenLines, id) {
   const rule = consoleAgentAsks[entry.agent];
   if (!rule) return null;
   if (entry.agent === 'codex' && entry.codexReconnect === 'start') return 'working';
@@ -43432,15 +43453,17 @@ function consoleAgentState(entry, screenLines) {
   }
   if (entry.agent === 'claude' && consoleClaudeSetup(lines)) return 'needs';
   if (entry.agent === 'codex') {
+    if (id !== undefined) consoleCodexPendingInput(id, entry, lines);
     const input = lines.findIndex(line => /^\s*\u203a(?:\s|$)/.test(line));
     if (consoleCodexPluginHooksRefused(lines, input)) return 'needs';
     if (entry.codexPendingPrompt) {
       const previous = lines.slice(input + 1);
       const echo = consoleCodexPendingEcho(previous, entry.codexPendingPrompt);
       
-      const ended = echo < 0 && input >= 0 && !lines.some(line => /Side from main thread/.test(line)) && entry.codexPendingWorked !== undefined && consoleCodexLastWorked(lines.slice().reverse()) && consoleCodexLastWorked(lines.slice().reverse()) !== entry.codexPendingWorked;
+      const ended = echo < 0 && input >= 0 && consoleModelPrompt(entry, 'codex').kind === 'empty' && !lines.some(line => /Side from main thread/.test(line)) && entry.codexPendingWorked !== undefined && consoleCodexLastWorked(lines.slice().reverse()) && consoleCodexLastWorked(lines.slice().reverse()) !== entry.codexPendingWorked;
       if (!ended && (echo < 0 || !previous.slice(0, echo).some(line => CONSOLE_CODEX_WORKED.test(line) || /^\s*■ /.test(line)))) return 'working';
       entry.codexPendingPrompt = null;
+      entry.codexPendingRetryUsed = true;
       entry.codexRestingState = 'done';
       return 'done';
     }
@@ -43519,7 +43542,7 @@ function reportConsoleAgent(id, entry, screenLines) {
     entry.codexUpdating = false;
     if (entry.agent !== 'codex') entry.nativeSession = null;
   }
-  const state = consoleAgentState(entry, screenLines);
+  const state = consoleAgentState(entry, screenLines, id);
   const said = `${entry.agent || ''} ${state || ''}`;
   
   markConsoleControls(entry, state);
@@ -46696,6 +46719,10 @@ function refreshConsoleChat(id, entry) {
     return;
   }
   entry.chatOwed = false;
+  if (drawConsoleSideClose(id, entry)) {
+    leaveConsoleChat(entry);
+    return;
+  }
   const read = readConsoleChat(entry);
   
   if (entry.chatTerminal) {
@@ -46880,7 +46907,7 @@ function consoleRecordTurns(entry, record, read) {
     const line = consoleChatStatusRow(entry, read);
     turns[turns.length - 1] = { ...turns.at(-1), done: line.done || null, working: line.working || null };
   }
-  return { opening: record.earlier ? ['Earlier turns are in the agent’s own history.'] : [], turns, waiting: consoleRecordWaiting(record).filter(Boolean) };
+  return { opening: record.earlier ? ['Earlier turns are in the agent’s own history.'] : [], turns, waiting: consoleRecordWaiting(record).filter(waiting => waiting && !/^\/btw(?:\s|$)/.test(waiting)) };
 }
 
 function consoleRecordGroup(entry, record, folder) {
@@ -46901,7 +46928,7 @@ function consoleRecordGroup(entry, record, folder) {
     const item = event.k === 'tool' && failed.has(event.id) ? { ...event, failed: true } : event;
     turn.items.push(event.k === 'edit' ? { ...item, path: consoleRecordPath(entry, event.path) } : event.k === 'tool' ? { ...item, text: consoleRecordPath(entry, event.text) } : item);
   }
-  const turns = grouped.map(each => ({ key: each.key, record: true, prompt: each.prompt, cut: false, work: each.items.filter(item => item.k !== 'reply'), reply: each.items.filter(item => item.k === 'reply' && CONSOLE_CHAT_SAID.test(item.text || '')), notices: [], done: null, working: null }));
+  const turns = grouped.filter(each => !/^\/btw(?:\s|$)/.test(each.prompt)).map(each => ({ key: each.key, record: true, prompt: each.prompt, cut: false, work: each.items.filter(item => item.k !== 'reply'), reply: each.items.filter(item => item.k === 'reply' && CONSOLE_CHAT_SAID.test(item.text || '')), notices: [], done: null, working: null }));
   record.grouped = { revision: record.revision, folder, turns };
   return turns.slice();
 }
@@ -47573,6 +47600,10 @@ const CONSOLE_AGENT_BUILT_INS = {
   ],
   "codex": [
     [
+      "btw",
+      "start a side conversation in an ephemeral fork"
+    ],
+    [
       "model",
       "choose what model and reasoning effort to use"
     ],
@@ -47826,7 +47857,7 @@ function makeConsoleComposer(id, entry, frame) {
   const slash = consoleComposerButton('console-composer-tool', entry.chat?.agent === 'codex' ? 'Skills' : 'Commands and skills');
   slash.textContent = entry.chat?.agent === 'codex' ? '$' : '/';
   const side = consoleComposerButton('console-composer-tool console-composer-side', 'Ask a side question');
-  side.textContent = 'btw';
+  side.textContent = 'Side question';
   side.setAttribute('aria-pressed', 'false');
   const mode = consoleComposerButton('console-composer-mode', 'Change the permission mode');
   mode.hidden = true;
@@ -48210,6 +48241,17 @@ function sendConsoleComposer(id, entry) {
   }
   const text = state.field.value.replace(/\s+$/, '');
   if (!consoleComposerHasMessage(entry)) return;
+  if (entry.chat?.agent === 'codex') {
+    if (text.startsWith(CONSOLE_SIDE_PREFIX.trim()) && consoleCodexUnstarted(entry)) {
+      leafToast('Send a message first.');
+      return;
+    }
+    const prompt = consoleModelPrompt(entry, 'codex');
+    if (prompt.kind !== 'empty') {
+      leafToast(prompt.kind === 'draft' ? 'Wait for your last message to go in.' : "Return to the agent's empty prompt first.");
+      return;
+    }
+  }
   state.discarded = null;
   const command = text.startsWith('/');
   const opening = /^\$([^\s]+)(?:\s|$)/.exec(text);
@@ -48221,12 +48263,18 @@ function sendConsoleComposer(id, entry) {
   if (entry.chat?.agent === 'codex' && text && !command && !skill) {
     entry.codexPendingPrompt = text;
     entry.codexPendingWorked = consoleCodexLastWorked(consolePromptRows(entry));
+    entry.codexPendingEnterSent = false;
+    entry.codexPendingRetryUsed = false;
+    entry.codexPendingDraftSeen = false;
     entry.codexRestingState = 'answering';
     reportConsoleAgent(id, entry);
   }
   
   const marked = Boolean(entry.terminal?.getMode?.(2004));
-  const enter = () => setTimeout(() => send({ command: 'consoleInput', id, data: '\r' }), CONSOLE_COMPOSER_ENTER_MS);
+  const enter = () => setTimeout(() => {
+    send({ command: 'consoleInput', id, data: '\r' });
+    if (entry.chat?.agent === 'codex' && entry.codexPendingPrompt === text) entry.codexPendingEnterSent = true;
+  }, CONSOLE_COMPOSER_ENTER_MS);
   const words = () => {
     if (text) send({ command: 'consoleInput', id, data: marked ? `\x1b[200~${text}\x1b[201~` : text });
   };
@@ -48593,12 +48641,50 @@ function consoleCodexSideOpen(entry) {
   return consolePromptRows(entry).slice(-6).some(row => /Side from main thread/.test(row));
 }
 
+
+function consoleCodexUnstarted(entry) {
+  if (entry.chatRecord?.events?.some(event => event.k === 'prompt')) return false;
+  const rows = consolePromptRows(entry);
+  return rows.some(row => /To get started, describe a task/.test(row)) && rows.filter(row => /^\s*›\s/.test(row)).length <= 1 && !rows.some(row => CONSOLE_CODEX_WORKED.test(row));
+}
+
+function consoleSideScreen(entry) {
+  const rows = consolePromptRows(entry);
+  if (entry.agent === 'codex') return consoleCodexSideOpen(entry);
+  if (entry.agent === 'claude') return rows.some(row => /\/btw\s/.test(row)) && rows.some(row => /Esc to close/.test(row));
+  
+  if (entry.agent === 'antigravity') return rows.some(row => /^\s*┃\s*\/btw\s/.test(row)) || (rows.some(row => /\/btw\s/.test(row)) && rows.some(row => /Enter\/Esc to dismiss/.test(row)));
+  return false;
+}
+
+function drawConsoleSideClose(id, entry) {
+  const shown = consoleSideScreen(entry);
+  if (!entry.layer) return shown;
+  let button = entry.sideClose;
+  if (!button && shown) {
+    button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'console-side-close console-status-model';
+    button.textContent = 'Close side question';
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      if (!consoleSideScreen(entry)) return;
+      send({ command: 'consoleInput', id, data: entry.agent === 'codex' ? '\x03' : '\x1b' });
+    });
+    entry.layer.appendChild(button);
+    entry.sideClose = button;
+  }
+  if (button) button.hidden = !shown;
+  return shown;
+}
+
 function consoleSideQuestionRefusal(id, entry, record) {
   if (!['claude', 'codex', 'antigravity'].includes(record?.agent)) return "Return to the agent's empty prompt first.";
   if (consoleLayers.get(id) !== entry || consoleFrontId !== id || entry.layer.hidden || document.hidden || consoleControlRecord(entry) !== record || !entry.terminal || entry.modelPending || (entry.agent && entry.agent !== record.agent)) return "Return to the agent's empty prompt first.";
   
   if (consoleAgentState({ ...entry, agent: record.agent }) === 'needs') return 'Answer the agent first.';
   if (record.agent === 'codex' && consoleCodexSideOpen(entry)) return 'Close the side question first.';
+  if (record.agent === 'codex' && consoleCodexUnstarted(entry)) return 'Send a message first.';
   const prompt = consoleModelPrompt(entry, record.agent);
   const box = consoleSideBoxInView(entry);
   
