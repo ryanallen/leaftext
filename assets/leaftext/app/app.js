@@ -16469,7 +16469,10 @@ function syncOutcomeText(state) {
     const committed = Number(parts[1] || 0);
     
     const cameDown = Number(parts[2] || 0);
-    const arrival = cameDown ? `; ${cameDown} came down.` : '.';
+    
+    const merged = Number(parts[3] || 0);
+    const settled = merged ? `; merged ${merged} ${merged === 1 ? 'note' : 'notes'}` : '';
+    const arrival = cameDown ? `; ${cameDown} came down${settled}.` : `${settled}.`;
     if (!committed) {
       const remote = state.repo && state.repo.remote;
       return remote ? `Synced to ${remote}${arrival}` : `Synced${arrival}`;
@@ -18468,7 +18471,9 @@ function renderConsoleViews(entry) {
     for (const each of [consoleViewsHolder, entry]) {
       if (!each?.layer) continue;
       each.layer.classList.toggle('has-console-views', each === entry);
-      if (each.terminal && each.fit && !each.layer.hidden) refreshConsoleGrid(each === entry ? consoleFrontId : consoleIdOf(each), each);
+      
+      const id = each === entry ? consoleFrontId : consoleIdOf(each);
+      if (id !== null && each.terminal && each.fit && !each.layer.hidden) refreshConsoleGrid(id, each);
     }
     consoleViewsHolder = entry?.layer ? entry : null;
   }
@@ -47297,31 +47302,98 @@ function consoleRecordEdit(item) {
 
 function consoleMarkMoves(drawn) {
   const files = new Map();
-  for (const { card, path } of drawn) {
-    if (!files.has(path)) files.set(path, []);
-    files.get(path).push(card);
+  for (const each of drawn) {
+    consoleLinkMoves(each.card);
+    if (!files.has(each.path)) files.set(each.path, []);
+    files.get(each.path).push(each);
   }
   for (const cards of files.values()) {
-    const runs = cards.flatMap(card => [...consoleDiffRuns(card, 'removed'), ...consoleDiffRuns(card, 'added')]);
-    for (const gone of runs.filter(run => run.kind === 'removed')) {
-      const came = runs.find(run => run.kind === 'added' && !run.paired && run.key === gone.key);
+    if (cards.length < 2) continue;
+    const counts = new Map(cards.map(({ card, item }) => [card, { ...(item.counts || {}), tally: { logic: 1, comments: 0, blank: 0, ...(item.tally || {}) } }]));
+    const runs = cards.flatMap(({ card, item }) => (Array.isArray(item.runs) ? item.runs : []).map(run => ({ ...run, card })));
+    for (const gone of runs.filter(run => !run.added)) {
+      const came = runs.find(run => run.added && !run.paired && run.card !== gone.card && run.key === gone.key);
       if (!came) continue;
+      const goneLines = consoleRunLines(gone.card, 'removed', 0, gone.number, gone.lines);
+      const cameLines = consoleRunLines(came.card, 'added', 1, came.number, came.lines);
+      if (!goneLines || !cameLines) continue;
       came.paired = true;
       const from = consoleMoveNote(`↕ moved from line ${gone.number}`);
       const to = consoleMoveNote(`↕ moved to line ${came.number}`);
       consoleMoveEnds.set(from, to);
       consoleMoveEnds.set(to, from);
-      came.lines[0].parentNode.insertBefore(from, came.lines[0]);
-      for (const line of came.lines) {
+      cameLines[0].parentNode.insertBefore(from, cameLines[0]);
+      for (const line of cameLines) {
         line.classList.remove('is-added');
         line.classList.add('is-moved');
         line.querySelector('.diff-card-marker').textContent = '↕';
       }
-      gone.lines[0].parentNode.insertBefore(to, gone.lines[0]);
-      for (const line of gone.lines) line.hidden = true;
-      for (const note of [from, to]) consoleMovesSwitch(note.closest('.diff-card'));
+      goneLines[0].parentNode.insertBefore(to, goneLines[0]);
+      for (const line of goneLines) line.hidden = true;
+      const left = counts.get(gone.card);
+      const arrived = counts.get(came.card);
+      left.removed = Math.max(0, (left.removed || 0) - goneLines.length);
+      arrived.added = Math.max(0, (arrived.added || 0) - cameLines.length);
+      for (const [held, run] of [[left, gone], [arrived, came]]) for (const kind of ['logic', 'comments', 'blank']) held.tally[kind] = Math.max(0, held.tally[kind] - (run[kind] || 0));
+      left.moves = (left.moves || 0) + 1;
+      arrived.moves = (arrived.moves || 0) + 1;
+      for (const card of [gone.card, came.card]) {
+        consoleMovesSwitch(card);
+        const words = card.querySelector('.diff-card-counts');
+        if (words) words.textContent = consoleDiffCounts(counts.get(card));
+        const verdict = card.querySelector('.diff-card-verdict');
+        if (verdict) {
+          verdict.textContent = consoleDiffVerdict(counts.get(card));
+          verdict.classList.toggle('is-logic', verdict.textContent === 'logic');
+        }
+      }
     }
   }
+}
+
+
+function consoleDiffCounts(counts) {
+  const parts = [['changed', 'changed'], ['added', 'added'], ['removed', 'removed'], ['formats', 'format'], ['moves', 'move']]
+    .filter(([name]) => counts[name] > 0)
+    .map(([name, word]) => (name === 'formats' || name === 'moves') && counts[name] !== 1 ? `${counts[name]} ${word}s` : `${counts[name]} ${word}`);
+  return parts.length ? parts.join(', ') : 'no lines changed';
+}
+
+
+function consoleDiffVerdict(counts) {
+  const tally = counts.tally || {};
+  if (tally.logic > 0) return 'logic';
+  if (counts.moves > 0) return 'moved';
+  if (tally.comments > 0) return 'comments';
+  return counts.formats > 0 || tally.blank > 0 ? 'formatting' : 'identical';
+}
+
+
+function consoleRunLines(card, kind, side, number, count) {
+  const rows = [...(card.querySelector('.diff-card-rows')?.children || [])];
+  for (let at = 0; at < rows.length; at += 1) {
+    const row = rows[at];
+    if (!row.classList.contains(`is-${kind}`) || row.hidden) continue;
+    if (Number(row.querySelectorAll('.diff-card-number')[side]?.textContent || 0) !== number) continue;
+    const lines = rows.slice(at, at + count);
+    if (lines.length === count && lines.every(line => line.classList.contains(`is-${kind}`) && !line.hidden)) return lines;
+  }
+  return null;
+}
+
+
+function consoleLinkMoves(card) {
+  const ends = new Map();
+  for (const note of card.querySelectorAll('.diff-card-move[data-move]')) {
+    const other = ends.get(note.dataset.move);
+    if (!other) {
+      ends.set(note.dataset.move, note);
+      continue;
+    }
+    consoleMoveEnds.set(note, other);
+    consoleMoveEnds.set(other, note);
+  }
+  if (ends.size) consoleMovesSwitch(card);
 }
 
 
@@ -47343,28 +47415,6 @@ function toggleConsoleMoves(press) {
   for (const row of card.querySelectorAll('.diff-card-move, .diff-card-line.is-moved')) row.hidden = hide;
   press.setAttribute('aria-pressed', String(hide));
   press.textContent = hide ? 'Show moves' : 'Hide moves';
-}
-
-
-function consoleDiffRuns(card, kind) {
-  const runs = [];
-  let run = [];
-  const close = () => {
-    const text = line => line.querySelector('.diff-card-text')?.textContent ?? '';
-    while (run.length && !text(run[0]).trim()) run.shift();
-    while (run.length && !text(run.at(-1)).trim()) run.pop();
-    if (run.length >= 3 && run.some(line => /[\p{L}\p{N}]/u.test(text(line)))) {
-      const number = Number(run[0].querySelectorAll('.diff-card-number')[kind === 'removed' ? 0 : 1]?.textContent || 0);
-      runs.push({ kind, lines: run, number, key: run.map(line => text(line).replace(/\s+/g, ' ').trim()).join('\n') });
-    }
-    run = [];
-  };
-  for (const row of card.querySelector('.diff-card-rows')?.children || []) {
-    if (row.classList.contains(`is-${kind}`) && !row.hidden) run.push(row);
-    else close();
-  }
-  close();
-  return runs;
 }
 
 
@@ -47697,7 +47747,7 @@ function consoleChatTurn(view, turn) {
     const card = consoleRecordEdit(item);
     consoleEditFile.set(card, item.whole);
     reply.appendChild(card);
-    drawn.push({ card, path: item.path });
+    drawn.push({ card, path: item.path, item });
   }
   consoleMarkMoves(drawn);
   const changed = consoleChangedFiles(turn);
@@ -48566,6 +48616,14 @@ function makeConsoleComposer(id, entry, frame) {
   const attach = consoleComposerButton('console-composer-tool', 'Attach a file', 'new');
   const slash = consoleComposerButton('console-composer-tool', entry.chat?.agent === 'codex' ? 'Skills' : 'Commands and skills');
   slash.textContent = entry.chat?.agent === 'codex' ? '$' : '/';
+  const rules = consoleComposerButton('console-composer-tool console-composer-rules', 'Rules this agent reads');
+  rules.textContent = 'Rules';
+  const servers = consoleComposerButton('console-composer-tool console-composer-servers', 'Tool servers');
+  servers.textContent = 'Tools';
+  const past = consoleComposerButton('console-composer-tool console-composer-past', 'Prompts sent before');
+  past.textContent = 'History';
+  const saved = consoleComposerButton('console-composer-tool console-composer-saved', 'Saved prompts');
+  saved.textContent = 'Saved';
   const fork = consoleComposerButton('console-composer-tool console-composer-fork', 'Fork this conversation into a new console');
   fork.textContent = 'Fork';
   fork.hidden = !CONSOLE_COMPOSER_FORKS.has(entry.chat?.agent);
@@ -48580,7 +48638,7 @@ function makeConsoleComposer(id, entry, frame) {
   const notes = document.createElement('div');
   notes.className = 'console-composer-notes';
   notes.hidden = true;
-  tools.append(attach, slash, fork, rewind, side, mode, notes);
+  tools.append(attach, slash, rules, servers, past, saved, fork, rewind, side, mode, notes);
   const submit = consoleComposerButton('console-composer-send', 'Send', 'forward-long');
   row.append(tools, submit);
   const list = document.createElement('div');
@@ -48590,7 +48648,7 @@ function makeConsoleComposer(id, entry, frame) {
   list.hidden = true;
   box.append(list, chips, words, row);
   frame.appendChild(box);
-  const state = { box, chips, field, attach, slash, fork, rewind, side, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
+  const state = { box, chips, field, attach, slash, rules, servers, past, saved, fork, rewind, side, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
   entry.composer = state;
   
   state.width = 0;
@@ -48627,6 +48685,10 @@ function makeConsoleComposer(id, entry, frame) {
     send({ command: 'consoleCompose', id, request: state.request, ask: 'files' });
   });
   slash.addEventListener('click', () => openConsoleComposerCommands(id, entry));
+  saved.addEventListener('click', () => openConsoleSavedPrompts(id, entry));
+  past.addEventListener('click', () => openConsolePastPrompts(id, entry));
+  servers.addEventListener('click', () => openConsoleToolServers(id, entry));
+  rules.addEventListener('click', () => openConsoleRules(id, entry));
   fork.addEventListener('click', () => consoleComposerFork(id, entry));
   rewind.addEventListener('click', () => consoleComposerRewind(id, entry));
   side.addEventListener('click', () => pressConsoleSideButton(id, entry));
@@ -49082,6 +49144,8 @@ function consoleComposerHolding(entry) {
 
 function consoleComposerMention(id, entry) {
   const state = entry.composer;
+  
+  if (state.savedList || state.pastList || state.serverList || state.rulesList) return;
   const command = consoleComposerCommandWord(entry);
   if (command) {
     state.files = null;
@@ -49173,6 +49237,10 @@ function consoleFileListNote(text) {
 function closeConsoleFileList(entry) {
   const state = entry.composer;
   if (!state) return;
+  state.savedList = null;
+  state.pastList = null;
+  state.serverList = null;
+  state.rulesList = null;
   state.files = null;
   state.commands = null;
   state.list.hidden = true;
@@ -49181,6 +49249,15 @@ function closeConsoleFileList(entry) {
 
 
 function consoleFileListKey(id, entry, event) {
+  if (entry.composer.savedList) return consoleSavedListKey(id, entry, event);
+  if (entry.composer.pastList) return consolePastListKey(id, entry, event);
+  if (entry.composer.rulesList) return consoleRulesListKey(id, entry, event);
+  if (entry.composer.serverList) {
+    if (event.key !== 'Escape') return false;
+    event.preventDefault();
+    closeConsoleFileList(entry);
+    return true;
+  }
   if (entry.composer.commands) return consoleCommandListKey(id, entry, event);
   const files = entry.composer.files;
   const rows = consoleFileListRows(files);
@@ -49207,6 +49284,18 @@ function consoleFileListKey(id, entry, event) {
 
 function chooseConsoleFile(id, entry, index) {
   const state = entry.composer;
+  if (state.savedList) {
+    chooseConsoleSavedPrompt(id, entry, index);
+    return;
+  }
+  if (state.pastList) {
+    chooseConsolePastPrompt(id, entry, index);
+    return;
+  }
+  if (state.rulesList) {
+    chooseConsoleRules(id, entry, index);
+    return;
+  }
   if (state.commands) {
     chooseConsoleCommand(entry, index);
     return;
@@ -49380,6 +49469,354 @@ function syncConsoleComposerMirror(state) {
   state.mirror.style.height = `${state.field.clientHeight}px`;
   state.mirror.scrollTop = state.field.scrollTop;
   state.mirror.scrollLeft = state.field.scrollLeft;
+}
+
+
+function openConsoleSavedPrompts(id, entry) {
+  const state = entry.composer;
+  if (state.savedList) {
+    closeConsoleFileList(entry);
+    return;
+  }
+  closeConsoleFileList(entry);
+  state.savedList = { at: 0, prompts: null, path: '', error: '' };
+  state.request = ++consoleComposerRequests;
+  send({ command: 'consoleCompose', id, request: state.request, ask: 'prompts' });
+  drawConsoleSavedList(entry);
+}
+
+window.leafConsolePrompts = (id, request, answer) => {
+  const entry = consoleLayers.get(id);
+  const saved = entry?.composer?.savedList;
+  if (!saved || entry.composer.request !== request) return;
+  if (answer?.made && typeof answer.path === 'string') {
+    closeConsoleFileList(entry);
+    send({ command: 'openRecent', path: answer.path });
+    return;
+  }
+  saved.error = typeof answer?.error === 'string' ? answer.error : '';
+  saved.path = typeof answer?.path === 'string' ? answer.path : '';
+  saved.prompts = (Array.isArray(answer?.prompts) ? answer.prompts : []).filter(row => row && typeof row.name === 'string' && typeof row.text === 'string');
+  drawConsoleSavedList(entry);
+};
+
+
+function consoleSavedRows(saved) {
+  return [...(saved?.prompts || []).map(prompt => ({ name: prompt.name, text: prompt.text })), { edit: true, name: 'Edit the list…' }];
+}
+
+function drawConsoleSavedList(entry) {
+  const state = entry.composer;
+  const saved = state.savedList;
+  state.list.hidden = false;
+  state.list.setAttribute('aria-label', 'Saved prompts');
+  if (!saved.prompts) {
+    state.list.replaceChildren(consoleFileListNote('Reading your saved prompts…'));
+    return;
+  }
+  const rows = consoleSavedRows(saved);
+  saved.at = Math.min(saved.at, rows.length - 1);
+  const drawn = rows.map((row, index) => {
+    const option = consoleListOption(index, saved.at, row.name);
+    if (row.text) option.title = row.text;
+    return option;
+  });
+  const lead = saved.error || (saved.prompts.length ? '' : 'No saved prompts yet. Each heading in the list is one.');
+  state.list.replaceChildren(...(lead ? [consoleFileListNote(lead)] : []), ...drawn);
+}
+
+
+function consoleListKey(entry, list, count, draw, choose, event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeConsoleFileList(entry);
+    return true;
+  }
+  if (!count) return false;
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    list.at = (list.at + (event.key === 'ArrowDown' ? 1 : count - 1)) % count;
+    draw(entry);
+    return true;
+  }
+  if (event.key !== 'Enter' || event.shiftKey) return false;
+  event.preventDefault();
+  choose(list.at);
+  return true;
+}
+
+
+function consoleListOption(index, at, ...parts) {
+  const option = document.createElement('div');
+  option.className = index === at ? 'console-file-list-row is-active' : 'console-file-list-row';
+  option.setAttribute('role', 'option');
+  option.setAttribute('aria-selected', String(index === at));
+  option.dataset.index = String(index);
+  option.append(...parts);
+  return option;
+}
+
+function consoleSavedListKey(id, entry, event) {
+  const saved = entry.composer.savedList;
+  return consoleListKey(entry, saved, saved.prompts ? consoleSavedRows(saved).length : 0, drawConsoleSavedList, index => chooseConsoleSavedPrompt(id, entry, index), event);
+}
+
+
+function chooseConsoleSavedPrompt(id, entry, index) {
+  const state = entry.composer;
+  const row = consoleSavedRows(state.savedList)[index];
+  if (!row) return;
+  if (row.edit) {
+    state.request = ++consoleComposerRequests;
+    send({ command: 'consoleCompose', id, request: state.request, ask: 'promptsNote' });
+    return;
+  }
+  closeConsoleFileList(entry);
+  state.field.value = row.text;
+  state.field.selectionStart = state.field.selectionEnd = row.text.length;
+  drawConsoleComposer(id, entry);
+  fitConsoleComposerField(state.field);
+  state.field.focus();
+}
+
+
+const CONSOLE_PAST_SHOWN = 50;
+
+function consolePastAgentName(agent) {
+  return agent === 'claude' ? 'Claude' : agent === 'codex' ? 'Codex' : agent === 'antigravity' ? 'Antigravity' : agent;
+}
+
+function openConsolePastPrompts(id, entry) {
+  const state = entry.composer;
+  if (state.pastList) {
+    closeConsoleFileList(entry);
+    return;
+  }
+  closeConsoleFileList(entry);
+  const search = document.createElement('input');
+  search.type = 'search';
+  search.className = 'console-past-search';
+  search.placeholder = 'Search prompts sent before';
+  search.setAttribute('aria-label', 'Search prompts sent before');
+  search.spellcheck = false;
+  state.pastList = { at: 0, prompts: null, query: '', search };
+  search.addEventListener('input', () => {
+    if (!state.pastList) return;
+    state.pastList.query = search.value.toLowerCase();
+    state.pastList.at = 0;
+    drawConsolePastList(entry);
+  });
+  search.addEventListener('keydown', event => consolePastListKey(id, entry, event));
+  state.request = ++consoleComposerRequests;
+  send({ command: 'consoleCompose', id, request: state.request, ask: 'history' });
+  drawConsolePastList(entry);
+  search.focus();
+}
+
+window.leafConsoleHistory = (id, request, answer) => {
+  const entry = consoleLayers.get(id);
+  const past = entry?.composer?.pastList;
+  if (!past || entry.composer.request !== request) return;
+  
+  const folder = String(entry.statusRecord?.folderPath || '').replace(/[\\/]+$/, '').replaceAll('\\', '/').toLowerCase();
+  const rows = (Array.isArray(answer?.prompts) ? answer.prompts : []).filter(row => row && typeof row.text === 'string');
+  const here = row => Boolean(folder) && String(row.folder || '').replace(/[\\/]+$/, '').replaceAll('\\', '/').toLowerCase() === folder;
+  past.prompts = [...rows.filter(here), ...rows.filter(row => !here(row))];
+  drawConsolePastList(entry);
+};
+
+function consolePastRows(past) {
+  const query = past?.query || '';
+  return (past?.prompts || []).filter(row => !query || row.text.toLowerCase().includes(query)).slice(0, CONSOLE_PAST_SHOWN);
+}
+
+function drawConsolePastList(entry) {
+  const state = entry.composer;
+  const past = state.pastList;
+  state.list.hidden = false;
+  state.list.setAttribute('aria-label', 'Prompts sent before');
+  if (!past.prompts) {
+    consolePastFill(state.list, past.search, consoleFileListNote('Reading the prompts you sent before…'));
+    return;
+  }
+  const rows = consolePastRows(past);
+  if (!rows.length) {
+    consolePastFill(state.list, past.search, consoleFileListNote(past.prompts.length ? 'Nothing sent before matches.' : 'No agent has a prompt on record yet.'));
+    return;
+  }
+  past.at = Math.min(past.at, rows.length - 1);
+  consolePastFill(state.list, past.search, ...rows.map((row, index) => {
+    const agent = document.createElement('span');
+    agent.className = 'console-past-agent';
+    agent.textContent = consolePastAgentName(row.agent);
+    const option = consoleListOption(index, past.at, agent, row.text.split('\n')[0].slice(0, 160));
+    option.title = row.text;
+    return option;
+  }));
+}
+
+
+function consolePastFill(list, search, ...rows) {
+  if (list.firstChild !== search) list.replaceChildren(search);
+  while (search.nextSibling) search.nextSibling.remove();
+  list.append(...rows);
+}
+
+function consolePastListKey(id, entry, event) {
+  const past = entry.composer.pastList;
+  if (!past) return false;
+  const handled = consoleListKey(entry, past, consolePastRows(past).length, drawConsolePastList, index => chooseConsolePastPrompt(id, entry, index), event);
+  if (handled && event.key === 'Escape') entry.composer.field.focus();
+  if (handled && event.key !== 'Escape' && entry.composer.pastList) past.search.focus();
+  return handled;
+}
+
+
+function chooseConsolePastPrompt(id, entry, index) {
+  const state = entry.composer;
+  const row = consolePastRows(state.pastList)[index];
+  if (!row) return;
+  closeConsoleFileList(entry);
+  state.field.value = row.text;
+  state.field.selectionStart = state.field.selectionEnd = row.text.length;
+  drawConsoleComposer(id, entry);
+  fitConsoleComposerField(state.field);
+  state.field.focus();
+}
+
+
+function openConsoleToolServers(id, entry) {
+  const state = entry.composer;
+  if (state.serverList) {
+    closeConsoleFileList(entry);
+    return;
+  }
+  closeConsoleFileList(entry);
+  state.serverList = { rows: null, error: '', read: 0 };
+  state.request = ++consoleComposerRequests;
+  send({ command: 'consoleCompose', id, request: state.request, ask: 'tools' });
+  drawConsoleToolServers(entry);
+}
+
+window.leafConsoleTools = (id, request, answer) => {
+  const entry = consoleLayers.get(id);
+  const list = entry?.composer?.serverList;
+  if (!list || entry.composer.request !== request) return;
+  list.error = typeof answer?.error === 'string' ? answer.error : '';
+  list.read = Number(answer?.read) || 0;
+  list.rows = (Array.isArray(answer?.rows) ? answer.rows : []).filter(row => row && typeof row.name === 'string');
+  drawConsoleToolServers(entry);
+};
+
+function drawConsoleToolServers(entry) {
+  const state = entry.composer;
+  const list = state.serverList;
+  state.list.hidden = false;
+  state.list.setAttribute('aria-label', 'Tool servers');
+  if (!list.rows && !list.error) {
+    state.list.replaceChildren(consoleFileListNote('Asking the agent for its tool servers…'));
+    return;
+  }
+  if (list.error) {
+    state.list.replaceChildren(consoleFileListNote(list.error));
+    return;
+  }
+  const rows = list.rows.map(row => {
+    const line = document.createElement('div');
+    line.className = row.connected ? 'console-server-row' : 'console-server-row is-failed';
+    const name = document.createElement('span');
+    name.className = 'console-server-name';
+    name.textContent = row.name;
+    const said = document.createElement('span');
+    said.className = 'console-server-state';
+    const tools = Number.isFinite(row.tools) && row.tools !== null ? `, ${row.tools} ${row.tools === 1 ? 'tool' : 'tools'}` : '';
+    said.textContent = row.connected ? `connected${tools}` : (row.words || 'not connected');
+    line.append(name, said);
+    return line;
+  });
+  const when = list.read ? new Date(list.read).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+  const foot = consoleFileListNote(list.rows.length ? `Read at ${when}` : 'The agent has no tool servers.');
+  state.list.replaceChildren(...rows, foot);
+}
+
+
+function openConsoleRules(id, entry) {
+  const state = entry.composer;
+  if (state.rulesList) {
+    closeConsoleFileList(entry);
+    return;
+  }
+  closeConsoleFileList(entry);
+  state.rulesList = { at: 0, files: null, name: '', error: '' };
+  state.request = ++consoleComposerRequests;
+  send({ command: 'consoleCompose', id, request: state.request, ask: 'rules' });
+  drawConsoleRulesList(entry);
+}
+
+window.leafConsoleRules = (id, request, answer) => {
+  const entry = consoleLayers.get(id);
+  const list = entry?.composer?.rulesList;
+  if (!list || entry.composer.request !== request) return;
+  if (typeof answer?.made === 'string') {
+    closeConsoleFileList(entry);
+    send({ command: 'openRecent', path: answer.made });
+    return;
+  }
+  list.error = typeof answer?.error === 'string' ? answer.error : '';
+  list.name = typeof answer?.name === 'string' ? answer.name : '';
+  list.files = (Array.isArray(answer?.files) ? answer.files : []).filter(path => typeof path === 'string');
+  drawConsoleRulesList(entry);
+};
+
+
+function consoleRulesRows(list) {
+  if (list.files?.length) return list.files.map(path => ({ path }));
+  return list.name ? [{ make: true }] : [];
+}
+
+function drawConsoleRulesList(entry) {
+  const state = entry.composer;
+  const list = state.rulesList;
+  state.list.hidden = false;
+  state.list.setAttribute('aria-label', 'Rules this agent reads');
+  if (!list.files && !list.error) {
+    state.list.replaceChildren(consoleFileListNote('Looking for the rules this agent reads…'));
+    return;
+  }
+  if (list.error) {
+    state.list.replaceChildren(consoleFileListNote(list.error));
+    return;
+  }
+  const rows = consoleRulesRows(list);
+  list.at = Math.min(list.at, Math.max(0, rows.length - 1));
+  const drawn = rows.map((row, index) => {
+    const icon = document.createElement('span');
+    icon.className = `lt-icon lt-icon-${row.make ? 'new' : 'document'}`;
+    icon.setAttribute('aria-hidden', 'true');
+    const option = consoleListOption(index, list.at, icon, row.make ? `Make ${list.name} here` : row.path);
+    option.title = row.make ? `Write an empty ${list.name} in this console's folder and open it` : row.path;
+    return option;
+  });
+  const note = consoleFileListNote(list.files.length ? `The ${list.name} files this agent reads, this folder's first` : `No ${list.name} in this folder or any above it`);
+  state.list.replaceChildren(...drawn, note);
+}
+
+function consoleRulesListKey(id, entry, event) {
+  const list = entry.composer.rulesList;
+  return consoleListKey(entry, list, consoleRulesRows(list).length, drawConsoleRulesList, index => chooseConsoleRules(id, entry, index), event);
+}
+
+function chooseConsoleRules(id, entry, index) {
+  const state = entry.composer;
+  const row = consoleRulesRows(state.rulesList)[index];
+  if (!row) return;
+  if (row.make) {
+    state.request = ++consoleComposerRequests;
+    send({ command: 'consoleCompose', id, request: state.request, ask: 'rulesMake' });
+    return;
+  }
+  closeConsoleFileList(entry);
+  send({ command: 'openRecent', path: row.path });
 }
 
 
@@ -52978,6 +53415,20 @@ if (app) {
       const block = codeButton.closest('pre');
       const code = block && block.querySelector('code');
       if (code) copyCodeBlock(codeButton, code.textContent || '');
+      return;
+    }
+    
+    const diffCopy = event.target.closest('.diff-card.is-document .diff-card-copy');
+    if (diffCopy) {
+      event.preventDefault();
+      copyCodeBlock(diffCopy, diffCopy.closest('.diff-card').dataset.plain || '');
+      return;
+    }
+    const diffFold = event.target.closest('.diff-card.is-document button.diff-card-fold');
+    if (diffFold) {
+      event.preventDefault();
+      for (let next = diffFold.nextElementSibling; next?.classList.contains('diff-card-line') && next.hidden; next = next.nextElementSibling) next.hidden = false;
+      diffFold.remove();
       return;
     }
     const zoomButton = event.target.closest('.mermaid-zoom button');

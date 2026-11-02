@@ -87,6 +87,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #7d58ef;
   --lt-navigation-button-disabled-background: #eeeeee;
   --lt-navigation-button-disabled-foreground: #999999;
@@ -184,6 +186,8 @@
   --lt-diff-removed-background: #3a1d20;
   --lt-diff-removed-word: #ff8f92;
   --lt-diff-removed-word-foreground: #3a1d20;
+  --lt-diff-moved: #e0de71;
+  --lt-diff-moved-background: #33301a;
   --lt-navigation-button-hover-background: #b89bff;
   --lt-navigation-button-disabled-background: #2a2a2a;
   --lt-navigation-button-disabled-foreground: #6a6a6a;
@@ -281,6 +285,8 @@
   --lt-diff-removed-background: #f4ddd6;
   --lt-diff-removed-word: #a83226;
   --lt-diff-removed-word-foreground: #f4ddd6;
+  --lt-diff-moved: #7d5a12;
+  --lt-diff-moved-background: #f1e6c8;
   --lt-navigation-button-hover-background: #9d5cf0;
   --lt-navigation-button-disabled-background: #ece0d0;
   --lt-navigation-button-disabled-foreground: #a8927b;
@@ -378,6 +384,8 @@
   --lt-diff-removed-background: #3a211b;
   --lt-diff-removed-word: #e8917f;
   --lt-diff-removed-word-foreground: #3a211b;
+  --lt-diff-moved: #e8c07a;
+  --lt-diff-moved-background: #3a3018;
   --lt-navigation-button-hover-background: #b4befe;
   --lt-navigation-button-disabled-background: #33271f;
   --lt-navigation-button-disabled-foreground: #6b5949;
@@ -475,6 +483,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #8c8c8c;
   --lt-navigation-button-disabled-background: #eeeeee;
   --lt-navigation-button-disabled-foreground: #999999;
@@ -572,6 +582,8 @@
   --lt-diff-removed-background: #3a1d20;
   --lt-diff-removed-word: #ff8f92;
   --lt-diff-removed-word-foreground: #3a1d20;
+  --lt-diff-moved: #e0de71;
+  --lt-diff-moved-background: #33301a;
   --lt-navigation-button-hover-background: #bbbbbb;
   --lt-navigation-button-disabled-background: #2a2a2a;
   --lt-navigation-button-disabled-foreground: #6a6a6a;
@@ -669,6 +681,8 @@
   --lt-diff-removed-background: #fbdcde;
   --lt-diff-removed-word: #a3121c;
   --lt-diff-removed-word-foreground: #fbdcde;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #e94b52;
   --lt-navigation-button-disabled-background: #eef2f6;
   --lt-navigation-button-disabled-foreground: #98a2ab;
@@ -766,6 +780,8 @@
   --lt-diff-removed-background: #3f1a1e;
   --lt-diff-removed-word: #ff9296;
   --lt-diff-removed-word-foreground: #3f1a1e;
+  --lt-diff-moved: #ffc043;
+  --lt-diff-moved-background: #3a2c0d;
   --lt-navigation-button-hover-background: #ff6b70;
   --lt-navigation-button-disabled-background: #1c242e;
   --lt-navigation-button-disabled-foreground: #5d6975;
@@ -863,6 +879,8 @@
   --lt-diff-removed-background: #f8cfcf;
   --lt-diff-removed-word: #8a1414;
   --lt-diff-removed-word-foreground: #f8cfcf;
+  --lt-diff-moved: #6e4a00;
+  --lt-diff-moved-background: #f3dfb0;
   --lt-navigation-button-hover-background: #9a1f78;
   --lt-navigation-button-disabled-background: #f8e8ef;
   --lt-navigation-button-disabled-foreground: #9a6a80;
@@ -960,6 +978,8 @@
   --lt-diff-removed-background: #4a1616;
   --lt-diff-removed-word: #ffb3ad;
   --lt-diff-removed-word-foreground: #4a1616;
+  --lt-diff-moved: #e8c872;
+  --lt-diff-moved-background: #3a3212;
   --lt-navigation-button-hover-background: #f9b0de;
   --lt-navigation-button-disabled-background: #2e1d28;
   --lt-navigation-button-disabled-foreground: #8a6078;
@@ -1057,6 +1077,8 @@
   --lt-diff-removed-background: #f6cccc;
   --lt-diff-removed-word: #8a1414;
   --lt-diff-removed-word-foreground: #f6cccc;
+  --lt-diff-moved: #6e4a00;
+  --lt-diff-moved-background: #f0dcae;
   --lt-navigation-button-hover-background: #00696c;
   --lt-navigation-button-disabled-background: #e4f2f0;
   --lt-navigation-button-disabled-foreground: #5f8a86;
@@ -1154,6 +1176,8 @@
   --lt-diff-removed-background: #4a1616;
   --lt-diff-removed-word: #ffb3ad;
   --lt-diff-removed-word-foreground: #4a1616;
+  --lt-diff-moved: #e8c872;
+  --lt-diff-moved-background: #3a3212;
   --lt-navigation-button-hover-background: #82e2de;
   --lt-navigation-button-disabled-background: #1b3033;
   --lt-navigation-button-disabled-foreground: #4f7c79;
@@ -1251,6 +1275,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #24a148;
   --lt-navigation-button-disabled-background: #eeeeee;
   --lt-navigation-button-disabled-foreground: #999999;
@@ -1348,6 +1374,8 @@
   --lt-diff-removed-background: #3a1d20;
   --lt-diff-removed-word: #ff8f92;
   --lt-diff-removed-word-foreground: #3a1d20;
+  --lt-diff-moved: #e0de71;
+  --lt-diff-moved-background: #33301a;
   --lt-navigation-button-hover-background: #56d364;
   --lt-navigation-button-disabled-background: #2a2a2a;
   --lt-navigation-button-disabled-foreground: #6a6a6a;
@@ -1445,6 +1473,8 @@
   --lt-diff-removed-background: #f7dde0;
   --lt-diff-removed-word: #a31d2f;
   --lt-diff-removed-word-foreground: #f7dde0;
+  --lt-diff-moved: #6f5200;
+  --lt-diff-moved-background: #f3ead0;
   --lt-navigation-button-hover-background: #7a2cf0;
   --lt-navigation-button-disabled-background: #e8eae5;
   --lt-navigation-button-disabled-foreground: #9a9e97;
@@ -1542,6 +1572,8 @@
   --lt-diff-removed-background: #3a1820;
   --lt-diff-removed-word: #ff8f9a;
   --lt-diff-removed-word-foreground: #3a1820;
+  --lt-diff-moved: #e6c35c;
+  --lt-diff-moved-background: #332c14;
   --lt-navigation-button-hover-background: #bb9dff;
   --lt-navigation-button-disabled-background: #1b1c26;
   --lt-navigation-button-disabled-foreground: #5e5d6c;
@@ -1639,6 +1671,8 @@
   --lt-diff-removed-background: #f4ddd6;
   --lt-diff-removed-word: #a83226;
   --lt-diff-removed-word-foreground: #f4ddd6;
+  --lt-diff-moved: #7d5a12;
+  --lt-diff-moved-background: #f1e6c8;
   --lt-navigation-button-hover-background: #ff7d47;
   --lt-navigation-button-disabled-background: #f2e9db;
   --lt-navigation-button-disabled-foreground: #a8967a;
@@ -1736,6 +1770,8 @@
   --lt-diff-removed-background: #3a2024;
   --lt-diff-removed-word: #ff626b;
   --lt-diff-removed-word-foreground: #3a2024;
+  --lt-diff-moved: #f9c96f;
+  --lt-diff-moved-background: #3a3320;
   --lt-navigation-button-hover-background: #f7ad72;
   --lt-navigation-button-disabled-background: #33374a;
   --lt-navigation-button-disabled-foreground: #6c7086;
@@ -1833,6 +1869,8 @@
   --lt-diff-removed-background: #ffebe9;
   --lt-diff-removed-word: #82071e;
   --lt-diff-removed-word-foreground: #ffebe9;
+  --lt-diff-moved: #953800;
+  --lt-diff-moved-background: #ffd8b5;
   --lt-navigation-button-hover-background: #1c8139;
   --lt-navigation-button-disabled-background: #eff2f5;
   --lt-navigation-button-disabled-foreground: #818b98;
@@ -1930,6 +1968,8 @@
   --lt-diff-removed-background: #67060c;
   --lt-diff-removed-word: #ffdcd7;
   --lt-diff-removed-word-foreground: #67060c;
+  --lt-diff-moved: #ffdfb6;
+  --lt-diff-moved-background: #5a1e02;
   --lt-navigation-button-hover-background: #29903b;
   --lt-navigation-button-disabled-background: #212830;
   --lt-navigation-button-disabled-foreground: #656c76;
@@ -2027,6 +2067,8 @@
   --lt-diff-removed-background: #f4ddd6;
   --lt-diff-removed-word: #a83226;
   --lt-diff-removed-word-foreground: #f4ddd6;
+  --lt-diff-moved: #7d5a12;
+  --lt-diff-moved-background: #f1e6c8;
   --lt-navigation-button-hover-background: #ffca28;
   --lt-navigation-button-disabled-background: #f2ead8;
   --lt-navigation-button-disabled-foreground: #a89a78;
@@ -2124,6 +2166,8 @@
   --lt-diff-removed-background: #3a211b;
   --lt-diff-removed-word: #f0857a;
   --lt-diff-removed-word-foreground: #3a211b;
+  --lt-diff-moved: #ffce5a;
+  --lt-diff-moved-background: #3a3018;
   --lt-navigation-button-hover-background: #ffd451;
   --lt-navigation-button-disabled-background: #201e18;
   --lt-navigation-button-disabled-foreground: #6a6350;
@@ -2221,6 +2265,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #2680e8;
   --lt-navigation-button-disabled-background: #eef1f4;
   --lt-navigation-button-disabled-foreground: #999999;
@@ -2318,6 +2364,8 @@
   --lt-diff-removed-background: #3a1d20;
   --lt-diff-removed-word: #ff8f92;
   --lt-diff-removed-word-foreground: #3a1d20;
+  --lt-diff-moved: #e0de71;
+  --lt-diff-moved-background: #33301a;
   --lt-navigation-button-hover-background: #6fb1ff;
   --lt-navigation-button-disabled-background: #2a2f37;
   --lt-navigation-button-disabled-foreground: #656c77;
@@ -2415,6 +2463,8 @@
   --lt-diff-removed-background: #f2c4c0;
   --lt-diff-removed-word: #7a0f14;
   --lt-diff-removed-word-foreground: #f2c4c0;
+  --lt-diff-moved: #6e4a00;
+  --lt-diff-moved-background: #eed9a8;
   --lt-navigation-button-hover-background: #1a6e28;
   --lt-navigation-button-disabled-background: #c3dfbd;
   --lt-navigation-button-disabled-foreground: #557555;
@@ -2512,6 +2562,8 @@
   --lt-diff-removed-background: #4a1010;
   --lt-diff-removed-word: #ffb3b3;
   --lt-diff-removed-word-foreground: #4a1010;
+  --lt-diff-moved: #e8d07a;
+  --lt-diff-moved-background: #3a3010;
   --lt-navigation-button-hover-background: #5ae86c;
   --lt-navigation-button-disabled-background: #152215;
   --lt-navigation-button-disabled-foreground: #4a824a;
@@ -2609,6 +2661,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #14a23f;
   --lt-navigation-button-disabled-background: #e6f1e9;
   --lt-navigation-button-disabled-foreground: #63a878;
@@ -2706,6 +2760,8 @@
   --lt-diff-removed-background: #3a1d20;
   --lt-diff-removed-word: #ff8f92;
   --lt-diff-removed-word-foreground: #3a1d20;
+  --lt-diff-moved: #e0de71;
+  --lt-diff-moved-background: #33301a;
   --lt-navigation-button-hover-background: #1bd753;
   --lt-navigation-button-disabled-background: #212d24;
   --lt-navigation-button-disabled-foreground: #52715b;
@@ -2803,6 +2859,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #ab70ed;
   --lt-navigation-button-disabled-background: #f0edf5;
   --lt-navigation-button-disabled-foreground: #a690c0;
@@ -2900,6 +2958,8 @@
   --lt-diff-removed-background: #3a1d20;
   --lt-diff-removed-word: #ff8f92;
   --lt-diff-removed-word-foreground: #3a1d20;
+  --lt-diff-moved: #e0de71;
+  --lt-diff-moved-background: #33301a;
   --lt-navigation-button-hover-background: #ceadf5;
   --lt-navigation-button-disabled-background: #341f47;
   --lt-navigation-button-disabled-foreground: #746388;
@@ -2997,6 +3057,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a3182a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #8f57ef;
   --lt-navigation-button-disabled-background: #e7e0f5;
   --lt-navigation-button-disabled-foreground: #9a90b3;
@@ -3094,6 +3156,8 @@
   --lt-diff-removed-background: #4a252f;
   --lt-diff-removed-word: #ff8f8f;
   --lt-diff-removed-word-foreground: #4a252f;
+  --lt-diff-moved: #f1fa8c;
+  --lt-diff-moved-background: #3e3f27;
   --lt-navigation-button-hover-background: #d7baff;
   --lt-navigation-button-disabled-background: #343746;
   --lt-navigation-button-disabled-foreground: #a8adcf;
@@ -3191,6 +3255,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #2a86f5;
   --lt-navigation-button-disabled-background: #ececef;
   --lt-navigation-button-disabled-foreground: #a0a0a6;
@@ -3288,6 +3354,8 @@
   --lt-diff-removed-background: #3a1c1e;
   --lt-diff-removed-word: #ff6b64;
   --lt-diff-removed-word-foreground: #3a1c1e;
+  --lt-diff-moved: #ffb340;
+  --lt-diff-moved-background: #33280c;
   --lt-navigation-button-hover-background: #6fb2ff;
   --lt-navigation-button-disabled-background: #2c2c2e;
   --lt-navigation-button-disabled-foreground: #6a6a6e;
@@ -3385,6 +3453,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #c27e18;
   --lt-navigation-button-disabled-background: #f2eee7;
   --lt-navigation-button-disabled-foreground: #ae9570;
@@ -3482,6 +3552,8 @@
   --lt-diff-removed-background: #3a1d20;
   --lt-diff-removed-word: #ff8f92;
   --lt-diff-removed-word-foreground: #3a1d20;
+  --lt-diff-moved: #e0de71;
+  --lt-diff-moved-background: #33301a;
   --lt-navigation-button-hover-background: #eab059;
   --lt-navigation-button-disabled-background: #2e2922;
   --lt-navigation-button-disabled-foreground: #756855;
@@ -3579,6 +3651,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #4a8ab8;
   --lt-navigation-button-disabled-background: #eeeeee;
   --lt-navigation-button-disabled-foreground: #999999;
@@ -3676,6 +3750,8 @@
   --lt-diff-removed-background: #3a1d20;
   --lt-diff-removed-word: #ff8f92;
   --lt-diff-removed-word-foreground: #3a1d20;
+  --lt-diff-moved: #e0de71;
+  --lt-diff-moved-background: #33301a;
   --lt-navigation-button-hover-background: #97b8d4;
   --lt-navigation-button-disabled-background: #2a2a2a;
   --lt-navigation-button-disabled-foreground: #6a6a6a;
@@ -3773,6 +3849,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #e9614c;
   --lt-navigation-button-disabled-background: #f4eceb;
   --lt-navigation-button-disabled-foreground: #bc8e87;
@@ -3870,6 +3948,8 @@
   --lt-diff-removed-background: #3a1d20;
   --lt-diff-removed-word: #ff8f92;
   --lt-diff-removed-word-foreground: #3a1d20;
+  --lt-diff-moved: #e0de71;
+  --lt-diff-moved-background: #33301a;
   --lt-navigation-button-hover-background: #f3a89d;
   --lt-navigation-button-disabled-background: #332725;
   --lt-navigation-button-disabled-foreground: #82635e;
@@ -3967,6 +4047,8 @@
   --lt-diff-removed-background: #fbdde1;
   --lt-diff-removed-word: #a01a2a;
   --lt-diff-removed-word-foreground: #fbdde1;
+  --lt-diff-moved: #7a5200;
+  --lt-diff-moved-background: #f7ecc9;
   --lt-navigation-button-hover-background: #548bea;
   --lt-navigation-button-disabled-background: #ebeef4;
   --lt-navigation-button-disabled-foreground: #879abb;
@@ -4064,6 +4146,8 @@
   --lt-diff-removed-background: #3a1d20;
   --lt-diff-removed-word: #ff8f92;
   --lt-diff-removed-word-foreground: #3a1d20;
+  --lt-diff-moved: #e0de71;
+  --lt-diff-moved-background: #33301a;
   --lt-navigation-button-hover-background: #9cbcf3;
   --lt-navigation-button-disabled-background: #252a33;
   --lt-navigation-button-disabled-foreground: #5e6b81;
@@ -8901,6 +8985,11 @@ body.library-resizing button {
 .diff-card-head { display: flex; align-items: center; gap: var(--lt-space-8); padding: var(--lt-space-6) var(--lt-space-10); background: var(--lt-surface-elevated); color: var(--lt-muted-foreground); }
 .diff-card-path { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; color: var(--lt-foreground); }
 .diff-card-counts { flex: none; }
+
+.diff-card.is-document { max-width: none; margin: var(--lt-space-12) 0; }
+
+.diff-card-verdict { flex: none; }
+.diff-card-verdict.is-logic { color: var(--lt-foreground); }
 .diff-card-copy { appearance: none; flex: none; display: inline-flex; align-items: center; border: none; border-radius: var(--lt-radius-md); padding: var(--lt-space-2); background: transparent; color: var(--lt-muted-foreground); cursor: pointer; }
 .diff-card-copy .lt-icon { width: 14px; height: 14px; }
 @media (hover: hover) { .diff-card-copy:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
@@ -8924,7 +9013,7 @@ button.diff-card-fold { appearance: none; display: block; width: 100%; border: n
 button.diff-card-fold:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: calc(-1 * var(--lt-stroke-2)); }
 button.diff-card-fold:disabled { cursor: default; }
 
-.diff-card-line.is-moved { background: var(--lt-surface-muted); color: var(--lt-foreground); }
+.diff-card-line.is-moved { background: var(--lt-diff-moved-background); color: var(--lt-diff-moved); }
 .diff-card-move { appearance: none; display: block; width: 100%; border: none; padding: var(--lt-space-2) var(--lt-space-10); background: var(--lt-surface-muted); color: var(--lt-muted-foreground); font: inherit; text-align: left; cursor: pointer; }
 @media (hover: hover) { .diff-card-move:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
 
@@ -8960,7 +9049,7 @@ button.diff-card-fold:disabled { cursor: default; }
 .console-composer-tool, .console-composer-mode { appearance: none; display: inline-flex; align-items: center; justify-content: center; flex: none; border: none; background: transparent; color: var(--lt-muted-foreground); font: inherit; cursor: pointer; }
 .console-composer-tool { width: 32px; height: 32px; border-radius: var(--lt-radius-md); font-family: monospace; font-size: var(--lt-text-15); }
 .console-composer-tool .lt-icon { width: 16px; height: 16px; }
-.console-composer-side, .console-composer-rewind, .console-composer-fork { width: auto; padding: 0 var(--lt-space-6); }
+.console-composer-rules, .console-composer-servers, .console-composer-past, .console-composer-saved, .console-composer-side, .console-composer-rewind, .console-composer-fork { width: auto; padding: 0 var(--lt-space-6); }
 .console-composer-side.is-active { background: var(--lt-wash-hover); color: var(--lt-accent-ink); }
 .console-composer-mode { height: 24px; padding: 0 var(--lt-space-10); border-radius: var(--lt-radius-pill); font-size: var(--lt-text-12); white-space: nowrap; }
 .console-composer-mode[hidden] { display: none; }
@@ -8986,6 +9075,15 @@ button.diff-card-fold:disabled { cursor: default; }
 .console-file-list-row { display: flex; align-items: center; gap: var(--lt-space-6); padding: var(--lt-space-4) var(--lt-space-8); border-radius: var(--lt-radius-md); color: var(--lt-foreground); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .console-file-list-row .lt-icon { width: 14px; height: 14px; flex: none; color: var(--lt-muted-foreground); }
 .console-file-list-row.is-active { background: var(--lt-wash-hover); }
+
+.console-past-search { display: block; width: 100%; box-sizing: border-box; margin-bottom: var(--lt-space-4); padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-md); background: var(--lt-background); color: var(--lt-foreground); font: inherit; }
+
+.console-server-row { display: flex; align-items: baseline; gap: var(--lt-space-8); padding: var(--lt-space-4) var(--lt-space-8); color: var(--lt-foreground); }
+.console-server-name { flex: none; }
+.console-server-state { min-width: 0; color: var(--lt-muted-foreground); overflow-wrap: anywhere; }
+.console-server-row.is-failed { color: var(--lt-warning); }
+.console-server-row.is-failed .console-server-state { color: var(--lt-warning); }
+.console-past-agent { flex: none; color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .console-file-list-note { padding: var(--lt-space-4) var(--lt-space-8); color: var(--lt-muted-foreground); }
 .console-file-list-name { flex: none; }
 .console-file-list-detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--lt-muted-foreground); }

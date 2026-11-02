@@ -42,7 +42,7 @@ export const COMMANDS = {
   consoleInput: [REFUSED, 'a published page has no console process to receive input'],
   consoleHandOver: [REFUSED, 'a published page has no agent session to read or hand on'],
   consolePaste: [REFUSED, 'a published page has no console process to receive pasted text'],
-  consoleCompose: [REFUSED, 'a published page has no console whose message could carry a file, a picture or a folder listing, and no agent whose commands or session record the chat could read'],
+  consoleCompose: [REFUSED, 'a published page has no console whose message could carry a file, a picture or a folder listing, no agent whose commands or session record the chat could read, no settings folder holding saved prompts, no agent history to read, no agent whose tool servers could be listed, and no console folder whose rules files could be found'],
   consoleTypePaths: [REFUSED, 'a published page has no console process to receive paths'],
   consoleCopy: [REFUSED, 'a published page has no console to copy from'],
   diffLines: [REFUSED, 'a published page has no agent whose edited files a diff could read back'],

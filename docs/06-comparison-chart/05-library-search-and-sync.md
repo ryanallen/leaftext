@@ -349,6 +349,7 @@
 | Nested .gitignore written | [✅][l-nested] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Ignore in one press | [✅][l-nested] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rebase conflicts undone | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Rewrap conflicts merged | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Inside-repo warning | [✅][l-nested] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Failure note shown | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | One-line progress label | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

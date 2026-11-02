@@ -34,6 +34,7 @@
 | Python source files | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | SQL scripts | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | Diff files | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
+| Patches as diff cards | [✅][l-source] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Dotenv files | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | GraphQL schemas | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | Docker build files | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |

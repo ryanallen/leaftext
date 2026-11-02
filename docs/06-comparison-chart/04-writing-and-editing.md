@@ -670,6 +670,12 @@
 | Hand turn to agent | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Fork a conversation | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Ask two agents | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Code formatting hidden | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Diff change kind | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Saved prompts | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Search prompts sent before | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agent's tool servers | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Open agent rules | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 [l-new]: ../01-features/07-editing.md#new-document
 [l-inline]: ../01-features/07-editing.md#inline-editing-the-reading-view

@@ -574,7 +574,7 @@ The button counts changed files, including individual files in new folders. If n
 A tracked repository inside the vault is left to itself: work still uncommitted inside it is not counted as waiting and is never committed from the outer vault. When that inner repository moves to a new commit, the changed recorded commit belongs to the outer vault and is counted and synced.
 
 > [!IMPORTANT]
-> A rebase that hits a conflict is undone before the sync returns. There is no merge view in a reader, so the panel says what happened and leaves the folder as it found it, for you to resolve in git.
+> A conflict that is only a note rewrapped or re-spelled on one machine and edited on the other is settled by what each paragraph says: the note keeps the edit, laid out on the rewrapped lines, and the sync's growl ends **merged 1 note**, because the note changed under you. Any other conflict — a paragraph both machines edited, or a file that is not Markdown — undoes the sync before it returns. There is no merge view in a reader, so the panel says what happened and leaves the folder as it found it, for you to resolve in git.
 
 ### Repositories inside repositories
 
