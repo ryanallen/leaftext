@@ -663,6 +663,13 @@
 | Agent conversation as chat | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Chat or terminal switch | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Choose agent's folder | [✅][l-agent-folder] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Formatting hidden in diffs | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Folded diff lines open | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Moved lines drawn once | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Files changed this turn | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Hand turn to agent | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Fork a conversation | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Ask two agents | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 [l-new]: ../01-features/07-editing.md#new-document
 [l-inline]: ../01-features/07-editing.md#inline-editing-the-reading-view
@@ -743,5 +750,6 @@
 [l-agent-harness]: ../01-features/10-agents.md#hold-an-agent-to-your-checks
 [l-agent-drop]: ../01-features/10-agents.md#run-the-agent-in-a-console
 [l-agent-chat]: ../01-features/10-agents.md#the-conversation-as-a-chat
+[l-agent-fork]: ../01-features/10-agents.md#fork-hand-over-and-compare
 [l-agent-folder]: ../01-features/10-agents.md#the-agents-status-under-its-console
 [o-cli]: https://obsidian.md/help/cli

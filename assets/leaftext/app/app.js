@@ -15848,8 +15848,10 @@ function showCrumbMenu(button, items, focusLabel) {
       continue;
     }
     if (entry.input !== undefined) {
-      const field = document.createElement('input');
-      field.type = entry.secret ? 'password' : 'text';
+      
+      const field = document.createElement(entry.multiline ? 'textarea' : 'input');
+      if (entry.multiline) field.rows = 3;
+      else field.type = entry.secret ? 'password' : 'text';
       field.className = 'crumb-menu-input';
       if (entry.fieldClass) field.classList.add(entry.fieldClass);
       field.value = entry.input;
@@ -15866,7 +15868,7 @@ function showCrumbMenu(button, items, focusLabel) {
       };
       field.addEventListener('keydown', (event) => {
         event.stopPropagation();
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter' && !(entry.multiline && event.shiftKey)) {
           event.preventDefault();
           
           if (entry.onEnter) entry.onEnter();
@@ -46174,6 +46176,7 @@ function newMenuMainRows() {
     });
   }
   if (newMenuHostAnswers('agentLaunch')) rows.push('separator', ...agentLaunchRows());
+  if (newMenuHostAnswers('consoleCompare')) rows.push({ label: 'Compare agents', title: 'Send one prompt to two agents side by side', icon: '<span class="lt-icon lt-icon-split" aria-hidden="true"></span>', keepOpen: true, run: () => agentLaunchShow('compare') });
   return rows;
 }
 
@@ -46215,7 +46218,7 @@ const AGENT_LAUNCH_CONNECTIONS = [
   ['agent', 'This account’s own sign-in', 'The agent signs in on its own, in its own browser window.'],
   ['automatic', 'Your terminal’s setup', 'The agent reaches its model the way your terminal sets it up.'],
 ];
-const agentLaunch = { state: null, view: null, agent: null, id: '', draft: null, error: '', step: '', request: 0, waiting: new Map() };
+const agentLaunch = { state: null, view: null, agent: null, id: '', draft: null, error: '', step: '', request: 0, waiting: new Map(), compare: { prompt: '', agents: ['claude', 'codex'], sending: false, waiting: new Map(), timer: 0 } };
 
 function agentLaunchReset() {
   agentLaunch.view = null;
@@ -46471,6 +46474,19 @@ const AGENT_LAUNCH_VIEWS = {
       ...agentLaunchErrorNote(),
       { buttons: [{ label: 'Cancel', keepOpen: true, run: () => agentLaunchShow('account') }, { label: 'Save launch settings', primary: true, keepOpen: true, run: save }] }];
   },
+  
+  compare() {
+    const held = agentLaunch.compare;
+    const pick = (slot) => ['claude', 'codex'].map((agent) => ({
+      label: AGENT_LAUNCH_NAMES[agent], icon: agentLaunchIcon(agent), selected: held.agents[slot] === agent, keepOpen: true,
+      run: () => { held.agents[slot] = agent; agentLaunchRedraw(); },
+    }));
+    return [agentLaunchBack('main'), { heading: 'Compare agents', form: true },
+      { input: held.prompt, multiline: true, fieldClass: 'crumb-menu-prompt', placeholder: 'Prompt for both agents', form: true, onInput: (value) => { held.prompt = value; }, onEnter: agentLaunchCompare, onEscape: () => agentLaunchShow('main') },
+      { heading: 'Left' }, ...pick(0), { heading: 'Right' }, ...pick(1),
+      ...agentLaunchErrorNote(),
+      { buttons: [{ label: 'Cancel', keepOpen: true, run: () => agentLaunchShow('main') }, { label: held.sending ? 'Opening…' : 'Send to both', primary: true, keepOpen: true, run: agentLaunchCompare }] }];
+  },
   preparing(agent) {
     return [{ heading: agentLaunch.resume ? `Opening ${agentLaunchLabel(agent, agentLaunch.id)}’s past conversations` : `Starting ${agentLaunchLabel(agent, agentLaunch.id)}` }, { note: agentLaunch.step || 'Reading your terminal setup' },
       { label: 'Cancel', keepOpen: true, run: () => { agentLaunchAsk('cancel'); agentLaunchShow('main'); } }];
@@ -46484,7 +46500,7 @@ const AGENT_LAUNCH_VIEWS = {
   },
 };
 
-const AGENT_LAUNCH_PARENT = { history: 'main', account: 'main', pick: 'main', add: 'pick', link: 'add', rename: 'account', remove: 'account', waiting: 'account', launch: 'account', preparing: 'main', failed: 'main' };
+const AGENT_LAUNCH_PARENT = { compare: 'main', history: 'main', account: 'main', pick: 'main', add: 'pick', link: 'add', rename: 'account', remove: 'account', waiting: 'account', launch: 'account', preparing: 'main', failed: 'main' };
 function agentLaunchShow(view) {
   if (view !== agentLaunch.view) agentLaunch.error = '';
   agentLaunch.view = view === 'main' ? null : view;
@@ -46536,6 +46552,18 @@ function agentLaunchStart(agent, id, resume = false) {
       if (resume && agent === 'antigravity' && Number.isInteger(done.console)) consoleHistoryWait(done.console);
       if (agentLaunchOpen() && agentLaunch.view === 'preparing') hideCrumbMenu();
     });
+  });
+}
+
+function agentLaunchFork(id, agent) {
+  const request = ++agentLaunch.request;
+  send({ command: 'agentLaunch', action: 'fork', agent, console: id, request });
+  const failed = (answer) => {
+    if (answer.error && answer.failure !== 'canceled') leafToast(answer.error);
+  };
+  agentLaunch.waiting.set(request, (first) => {
+    if (first.error) return failed(first);
+    agentLaunch.waiting.set(request, failed);
   });
 }
 function agentLaunchFailed(answer) {
@@ -46651,6 +46679,62 @@ if (typeof crumbMenu !== 'undefined' && crumbMenu) {
     event.stopPropagation();
     agentLaunchShow(AGENT_LAUNCH_PARENT[agentLaunch.view] || 'main');
   }, true);
+}
+
+function agentLaunchCompare() {
+  const held = agentLaunch.compare;
+  if (held.sending) return;
+  const prompt = held.prompt.replace(/\s+$/, '');
+  if (!prompt.trim()) {
+    agentLaunch.error = 'Write a prompt for both agents';
+    return agentLaunchShow('compare');
+  }
+  held.sending = true;
+  agentLaunch.error = '';
+  agentLaunchShow('compare');
+  const request = ++agentLaunch.request;
+  const agents = held.agents.slice();
+  agentLaunch.waiting.set(request, (answer) => {
+    held.sending = false;
+    if (answer.error || !Array.isArray(answer.consoles)) {
+      agentLaunch.error = answer.error || 'The agents did not open.';
+      return agentLaunchRedraw();
+    }
+    answer.consoles.forEach((console, at) => held.waiting.set(console, { agent: agents[at], prompt }));
+    held.prompt = '';
+    if (agentLaunchOpen()) hideCrumbMenu();
+    agentLaunchCompareDeliver();
+  });
+  send({ command: 'consoleCompare', request, agents, path: libraryFolderHere() });
+}
+window.leafConsoleCompared = (request, answer) => {
+  const waiting = agentLaunch.waiting.get(request);
+  agentLaunch.waiting.delete(request);
+  if (waiting && answer && typeof answer === 'object') waiting(answer);
+};
+
+function agentLaunchCompareDeliver() {
+  const held = agentLaunch.compare;
+  clearTimeout(held.timer);
+  for (const [id, waiting] of held.waiting) {
+    const entry = consoleLayers.get(id);
+    if (!entry) {
+      if (consoleCompareGone(id)) held.waiting.delete(id);
+      continue;
+    }
+    const state = entry.composer;
+    if (!state || entry.chat?.agent !== waiting.agent || entry.agentSaid !== `${waiting.agent} rest`) continue;
+    if (consoleComposerHolding(entry) || consoleComposerHasMessage(entry)) continue;
+    if (waiting.agent === 'codex' && (entry.codexReconnect || consoleModelPrompt(entry, 'codex').kind !== 'empty')) continue;
+    held.waiting.delete(id);
+    state.field.value = waiting.prompt;
+    sendConsoleComposer(id, entry);
+  }
+  if (held.waiting.size) held.timer = setTimeout(agentLaunchCompareDeliver, 500);
+}
+
+function consoleCompareGone(id) {
+  return Array.isArray(currentState?.tabs) && !currentState.tabs.some((tab) => tab.kind === 'console' && tab.webId === id);
 }
 
 
@@ -46948,6 +47032,7 @@ function refreshConsoleChat(id, entry) {
     drawConsoleComposer(id, entry);
   }
   renderConsolePin(entry);
+  deliverConsoleHandOver(id, entry);
   if (!was || moved) consoleChatRailChanged(id, entry);
   
   if (!was && entry.host?.contains(document.activeElement)) focusConsoleComposer(entry);
@@ -47124,7 +47209,7 @@ function consoleRecordGroup(entry, record, folder) {
       grouped.push(turn);
     }
     const item = event.k === 'tool' && failed.has(event.id) ? { ...event, failed: true } : event;
-    turn.items.push(event.k === 'edit' ? { ...item, path: consoleRecordPath(entry, event.path) } : event.k === 'tool' ? { ...item, text: consoleRecordPath(entry, event.text) } : item);
+    turn.items.push(event.k === 'edit' ? { ...item, path: consoleRecordPath(entry, event.path), whole: consoleRecordWholePath(folder, event.path) } : event.k === 'tool' ? { ...item, text: consoleRecordPath(entry, event.text) } : item);
   }
   const turns = grouped.filter(each => !/^\/btw(?:\s|$)/.test(each.prompt)).map(each => ({ key: each.key, record: true, prompt: each.prompt, cut: false, work: each.items.filter(item => item.k !== 'reply'), reply: each.items.filter(item => item.k === 'reply' && CONSOLE_CHAT_SAID.test(item.text || '')), notices: [], done: null, working: null }));
   record.grouped = { revision: record.revision, folder, turns };
@@ -47161,6 +47246,21 @@ function consoleRecordPath(entry, path) {
 }
 
 
+function consoleRecordWholePath(folder, path) {
+  const spelled = String(path || '');
+  if (!folder || /^(?:[A-Za-z]:[\\/]|[\\/])/.test(spelled)) return spelled;
+  return `${String(folder).replace(/[\\/]+$/, '')}/${spelled}`;
+}
+
+
+function consoleChangedFiles(turn) {
+  if (!turn.record || turn.working) return [];
+  const seen = new Map();
+  for (const item of turn.work) if (item.k === 'edit' && item.whole && !seen.has(item.whole)) seen.set(item.whole, item.path || item.whole);
+  return [...seen].map(([whole, path]) => ({ whole, path }));
+}
+
+
 function consoleChatStatusRow(entry, read) {
   const working = CONSOLE_CHAT_WORKING[read.agent];
   const done = CONSOLE_CHAT_DONE_ROW[read.agent];
@@ -47190,11 +47290,186 @@ function consoleRecordEdit(item) {
   const path = node.querySelector('.diff-card-path');
   if (path && item.path) path.textContent = item.path;
   consoleDiffPlain.set(node, String(item.plain || ''));
+  consoleDiffFile.set(node, String(item.path || ''));
   return node;
 }
 
 
+function consoleMarkMoves(drawn) {
+  const files = new Map();
+  for (const { card, path } of drawn) {
+    if (!files.has(path)) files.set(path, []);
+    files.get(path).push(card);
+  }
+  for (const cards of files.values()) {
+    const runs = cards.flatMap(card => [...consoleDiffRuns(card, 'removed'), ...consoleDiffRuns(card, 'added')]);
+    for (const gone of runs.filter(run => run.kind === 'removed')) {
+      const came = runs.find(run => run.kind === 'added' && !run.paired && run.key === gone.key);
+      if (!came) continue;
+      came.paired = true;
+      const from = consoleMoveNote(`↕ moved from line ${gone.number}`);
+      const to = consoleMoveNote(`↕ moved to line ${came.number}`);
+      consoleMoveEnds.set(from, to);
+      consoleMoveEnds.set(to, from);
+      came.lines[0].parentNode.insertBefore(from, came.lines[0]);
+      for (const line of came.lines) {
+        line.classList.remove('is-added');
+        line.classList.add('is-moved');
+        line.querySelector('.diff-card-marker').textContent = '↕';
+      }
+      gone.lines[0].parentNode.insertBefore(to, gone.lines[0]);
+      for (const line of gone.lines) line.hidden = true;
+      for (const note of [from, to]) consoleMovesSwitch(note.closest('.diff-card'));
+    }
+  }
+}
+
+
+function consoleMovesSwitch(card) {
+  const head = card?.querySelector('.diff-card-head');
+  if (!head || head.querySelector('.diff-card-moves')) return;
+  const press = document.createElement('button');
+  press.type = 'button';
+  press.className = 'diff-card-moves';
+  press.setAttribute('aria-pressed', 'false');
+  press.textContent = 'Hide moves';
+  head.insertBefore(press, head.querySelector('.diff-card-copy'));
+}
+
+
+function toggleConsoleMoves(press) {
+  const hide = press.getAttribute('aria-pressed') !== 'true';
+  const card = press.closest('.diff-card');
+  for (const row of card.querySelectorAll('.diff-card-move, .diff-card-line.is-moved')) row.hidden = hide;
+  press.setAttribute('aria-pressed', String(hide));
+  press.textContent = hide ? 'Show moves' : 'Hide moves';
+}
+
+
+function consoleDiffRuns(card, kind) {
+  const runs = [];
+  let run = [];
+  const close = () => {
+    const text = line => line.querySelector('.diff-card-text')?.textContent ?? '';
+    while (run.length && !text(run[0]).trim()) run.shift();
+    while (run.length && !text(run.at(-1)).trim()) run.pop();
+    if (run.length >= 3 && run.some(line => /[\p{L}\p{N}]/u.test(text(line)))) {
+      const number = Number(run[0].querySelectorAll('.diff-card-number')[kind === 'removed' ? 0 : 1]?.textContent || 0);
+      runs.push({ kind, lines: run, number, key: run.map(line => text(line).replace(/\s+/g, ' ').trim()).join('\n') });
+    }
+    run = [];
+  };
+  for (const row of card.querySelector('.diff-card-rows')?.children || []) {
+    if (row.classList.contains(`is-${kind}`) && !row.hidden) run.push(row);
+    else close();
+  }
+  close();
+  return runs;
+}
+
+
+function consoleMoveNote(words) {
+  const note = document.createElement('button');
+  note.type = 'button';
+  note.className = 'diff-card-move';
+  note.textContent = words;
+  return note;
+}
+
+
+const consoleMoveEnds = new WeakMap();
+
+
 const consoleDiffPlain = new WeakMap();
+
+const consoleDiffFile = new WeakMap();
+
+const CONSOLE_DIFF_OPEN = 20;
+
+const consoleDiffAsked = new Map();
+let consoleDiffRequest = 0;
+
+
+function consoleDiffHeld(fold) {
+  const held = [];
+  for (let next = fold.nextElementSibling; next?.classList.contains('diff-card-line') && next.hidden; next = next.nextElementSibling) held.push(next);
+  return held;
+}
+
+
+function openConsoleDiffFold(fold) {
+  const held = consoleDiffHeld(fold);
+  const top = Boolean(fold.previousElementSibling);
+  const open = top ? held.slice(0, CONSOLE_DIFF_OPEN) : held.slice(-CONSOLE_DIFF_OPEN);
+  for (const line of open) line.hidden = false;
+  const left = held.length - open.length;
+  if (!left) {
+    fold.remove();
+    return;
+  }
+  if (top && open.length) fold.parentNode.insertBefore(fold, open.at(-1).nextElementSibling);
+  fold.textContent = `⋯ ${left} unchanged ${left === 1 ? 'line' : 'lines'}`;
+}
+
+
+function askConsoleDiffFold(id, fold) {
+  const card = fold.closest('.diff-card');
+  const from = Number(fold.dataset.new);
+  const to = from + Number(fold.dataset.count) - 1;
+  const shown = new Map();
+  for (const line of card.querySelectorAll('.diff-card-line')) {
+    const at = Number(line.querySelectorAll('.diff-card-number')[1]?.textContent || 0);
+    if (at) shown.set(at, line.querySelector('.diff-card-text')?.textContent ?? '');
+  }
+  const run = (start, step) => {
+    const out = [];
+    for (let at = start; out.length < 3 && shown.has(at); at += step) out.push(shown.get(at));
+    return step < 0 ? out.reverse() : out;
+  };
+  consoleDiffRequest += 1;
+  consoleDiffAsked.set(consoleDiffRequest, { id, fold });
+  fold.disabled = true;
+  send({ command: 'diffLines', id, request: consoleDiffRequest, path: consoleDiffFile.get(card) || '', from, to, before: run(from - 1, -1), after: run(to + 1, 1) });
+}
+
+
+function consoleDiffLine(old, now, text) {
+  const line = document.createElement('div');
+  line.className = 'diff-card-line';
+  line.hidden = true;
+  for (const [name, value] of [['diff-card-number', old], ['diff-card-number', now], ['diff-card-marker', ''], ['diff-card-text', text]]) {
+    const span = document.createElement('span');
+    span.className = name;
+    span.textContent = String(value);
+    line.appendChild(span);
+  }
+  return line;
+}
+
+
+window.leafConsoleDiffLines = (id, request, answer) => {
+  const asked = consoleDiffAsked.get(request);
+  consoleDiffAsked.delete(request);
+  const fold = asked?.fold;
+  if (!fold || asked.id !== id || fold.isConnected === false) return;
+  if (!Array.isArray(answer?.lines)) {
+    fold.textContent = answer?.changed ? '⋯ The file has changed since this edit' : `⋯ ${answer?.error || 'These lines could not be read'}`;
+    return;
+  }
+  const old = Number(fold.dataset.old);
+  const now = Number(fold.dataset.new);
+  let at = fold;
+  answer.lines.forEach((text, index) => {
+    const line = consoleDiffLine(old + index, now + index, text);
+    fold.parentNode.insertBefore(line, at.nextElementSibling);
+    at = line;
+  });
+  for (const name of ['data-old', 'data-new', 'data-count']) fold.removeAttribute(name);
+  fold.disabled = false;
+  openConsoleDiffFold(fold);
+  const entry = consoleLayers.get(id);
+  if (entry) consoleChatRailChanged(id, entry);
+};
 
 
 function consoleRecordItem(item) {
@@ -47257,6 +47532,7 @@ function drawConsoleChat(id, entry) {
   if (!entry.layer) return false;
   const view = consoleChatView(id, entry);
   const chat = entry.chat;
+  view.handTo = CONSOLE_HAND_OVER_TO[chat.agent] || null;
   const box = view.log;
   const held = !view.box.hidden && box.scrollHeight - box.scrollTop - box.clientHeight <= 2;
   const wanted = [];
@@ -47307,7 +47583,10 @@ function drawConsoleChat(id, entry) {
     if (nodes.get(key) === kept) continue;
     kept.node.remove();
     
-    if (!nodes.has(key)) view.open.delete(key);
+    if (!nodes.has(key)) {
+      view.open.delete(key);
+      view.open.delete(`changed:${key}`);
+    }
     moved = true;
   }
   view.nodes = nodes;
@@ -47319,7 +47598,9 @@ function drawConsoleChat(id, entry) {
 
 function consoleChatTurnSig(turn) {
   const drawn = (item) => turn.record ? item : { kind: item.kind, text: consoleChatItemText(item) };
-  return JSON.stringify({ prompt: turn.prompt, cut: turn.cut, record: !!turn.record, line: !!(turn.done || turn.working), work: turn.work.map(drawn), reply: turn.reply.map(drawn), notices: turn.notices.map(drawn) });
+  const finished = turn.record && turn.work.some(item => item.k === 'edit') ? !turn.working : undefined;
+  const hand = Boolean(turn.record && turn.reply.length && !turn.working);
+  return JSON.stringify({ prompt: turn.prompt, cut: turn.cut, record: !!turn.record, line: !!(turn.done || turn.working), finished, hand, work: turn.work.map(drawn), reply: turn.reply.map(drawn), notices: turn.notices.map(drawn) });
 }
 
 
@@ -47410,7 +47691,16 @@ function consoleChatTurn(view, turn) {
   const reply = document.createElement('div');
   reply.className = 'console-reply';
   
-  if (turn.record) for (const item of turn.work) if (item.k === 'edit') reply.appendChild(consoleRecordEdit(item));
+  const drawn = [];
+  if (turn.record) for (const item of turn.work) {
+    if (item.k !== 'edit') continue;
+    const card = consoleRecordEdit(item);
+    consoleEditFile.set(card, item.whole);
+    reply.appendChild(card);
+    drawn.push({ card, path: item.path });
+  }
+  consoleMarkMoves(drawn);
+  const changed = consoleChangedFiles(turn);
   
   if (turn.reply.length) {
     const answer = document.createElement('div');
@@ -47438,6 +47728,7 @@ function consoleChatTurn(view, turn) {
       fold.appendChild(document.createTextNode(line || 'Worked'));
       actions.appendChild(fold);
     }
+    if (changed.length) actions.appendChild(consoleChangedPress(view, turn, changed));
     if (turn.reply.length) {
       const copy = document.createElement('button');
       copy.type = 'button';
@@ -47450,7 +47741,11 @@ function consoleChatTurn(view, turn) {
       copy.appendChild(icon);
       actions.appendChild(copy);
     }
+    const handTo = consoleHandOverTo(view, turn);
+    if (handTo) actions.appendChild(consoleHandOverPress(view, turn));
     reply.appendChild(actions);
+    if (handTo) reply.appendChild(consoleHandOverList(view, turn, handTo));
+    if (changed.length) reply.appendChild(consoleChangedList(view, turn, changed));
     if (turn.work.length) {
       const work = document.createElement('div');
       work.className = 'console-work';
@@ -47462,6 +47757,51 @@ function consoleChatTurn(view, turn) {
   node.appendChild(reply);
   for (const notice of turn.notices) node.appendChild(consoleChatBlocks(consoleChatItemText(notice).split('\n')));
   return node;
+}
+
+
+const consoleEditFile = new WeakMap();
+
+
+function consoleChangedPress(view, turn, changed) {
+  const press = document.createElement('button');
+  press.type = 'button';
+  press.className = 'console-changed';
+  press.dataset.turn = turn.key;
+  press.setAttribute('aria-expanded', String(view.open.has(`changed:${turn.key}`)));
+  press.textContent = `${changed.length} ${changed.length === 1 ? 'file' : 'files'} changed`;
+  return press;
+}
+
+
+function consoleChangedList(view, turn, changed) {
+  const list = document.createElement('div');
+  list.className = 'console-changed-list';
+  list.hidden = !view.open.has(`changed:${turn.key}`);
+  for (const file of changed) {
+    const row = document.createElement('div');
+    row.className = 'console-changed-row';
+    const path = document.createElement('span');
+    path.className = 'console-changed-path';
+    path.textContent = file.path;
+    path.title = file.whole;
+    row.appendChild(path);
+    for (const [kind, label, title] of [['open', 'Open', 'Open this file in a tab'], ['diff', 'Diff', 'Show this file’s edit in the chat']]) {
+      const press = document.createElement('button');
+      press.type = 'button';
+      press.className = `console-changed-${kind}`;
+      press.dataset.path = file.whole;
+      press.title = title;
+      press.textContent = label;
+      row.appendChild(press);
+    }
+    list.appendChild(row);
+  }
+  const foot = document.createElement('div');
+  foot.className = 'console-changed-foot';
+  foot.textContent = 'Files the agent’s edit tools wrote this turn';
+  list.appendChild(foot);
+  return list;
 }
 
 
@@ -47543,12 +47883,58 @@ function onConsoleChatClick(id, entry, event) {
     consoleChatRailChanged(id, entry);
     return;
   }
+  const changed = event.target.closest?.('.console-changed');
+  if (changed) {
+    const view = entry.chatView;
+    const key = `changed:${changed.dataset.turn}`;
+    const open = !view.open.has(key);
+    if (open) view.open.add(key);
+    else view.open.delete(key);
+    changed.setAttribute('aria-expanded', String(open));
+    const list = changed.closest('.console-reply')?.querySelector('.console-changed-list');
+    if (list) list.hidden = !open;
+    
+    if (open) list?.scrollIntoView?.({ block: 'nearest' });
+    consoleChatRailChanged(id, entry);
+    return;
+  }
+  const openFile = event.target.closest?.('.console-changed-open');
+  if (openFile) {
+    send({ command: 'openRecent', path: openFile.dataset.path });
+    return;
+  }
+  const diff = event.target.closest?.('.console-changed-diff');
+  if (diff) {
+    const reply = diff.closest('.console-reply');
+    const card = reply && [...reply.children].find(each => consoleEditFile.get(each) === diff.dataset.path);
+    card?.scrollIntoView?.({ block: 'start' });
+    return;
+  }
+  const diffFold = event.target.closest?.('button.diff-card-fold');
+  if (diffFold && !diffFold.disabled) {
+    if (diffFold.dataset.new) askConsoleDiffFold(id, diffFold);
+    else openConsoleDiffFold(diffFold);
+    consoleChatRailChanged(id, entry);
+    return;
+  }
+  const moveNote = event.target.closest?.('.diff-card-move');
+  if (moveNote) {
+    consoleMoveEnds.get(moveNote)?.scrollIntoView({ block: 'center' });
+    return;
+  }
+  const movesSwitch = event.target.closest?.('.diff-card-moves');
+  if (movesSwitch) {
+    toggleConsoleMoves(movesSwitch);
+    consoleChatRailChanged(id, entry);
+    return;
+  }
   const diffCopy = event.target.closest?.('.diff-card-copy');
   if (diffCopy) {
     const text = consoleDiffPlain.get(diffCopy.closest('.diff-card'));
     if (text) send({ command: 'consoleCopy', id, text });
     return;
   }
+  if (onConsoleHandOverClick(id, entry, event)) return;
   const copy = event.target.closest?.('.console-copy');
   if (copy) {
     const node = copy.closest('.console-turn');
@@ -47566,6 +47952,133 @@ function onConsoleChatClick(id, entry, event) {
 
 
 
+const CONSOLE_HAND_OVER_TO = { claude: 'codex', codex: 'claude' };
+const CONSOLE_HAND_OVER_NAMES = { claude: 'Claude Code', codex: 'Codex' };
+
+const CONSOLE_HAND_OVER_CEILING = 20000;
+
+const CONSOLE_HAND_OVER_SETTLE_MS = 1500;
+
+const consoleHandOverAsked = new Map();
+const consoleHandOverWaiting = new Map();
+let consoleHandOverRequest = 0;
+
+
+function consoleHandOverTo(view, turn) {
+  return turn.record && turn.reply.length && !turn.working ? view.handTo : null;
+}
+
+function consoleHandOverPress(view, turn) {
+  const press = document.createElement('button');
+  press.type = 'button';
+  press.className = 'console-hand-over';
+  press.dataset.turn = turn.key;
+  press.title = 'Hand this turn to another agent';
+  press.setAttribute('aria-expanded', String(view.open.has(`hand:${turn.key}`)));
+  press.textContent = 'Hand to';
+  return press;
+}
+
+
+function consoleHandOverList(view, turn, agent) {
+  const list = document.createElement('div');
+  list.className = 'console-hand-over-list';
+  list.hidden = !view.open.has(`hand:${turn.key}`);
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.className = 'console-hand-over-agent';
+  row.dataset.turn = turn.key;
+  row.dataset.agent = agent;
+  row.textContent = CONSOLE_HAND_OVER_NAMES[agent];
+  list.appendChild(row);
+  const foot = document.createElement('div');
+  foot.className = 'console-hand-over-foot';
+  foot.textContent = 'Opens beside this console with the prompt and this answer';
+  list.appendChild(foot);
+  return list;
+}
+
+
+function consoleHandOverText(from, turn) {
+  const name = CONSOLE_HAND_OVER_NAMES[from] || 'Another agent';
+  let answer = turn.reply.map(item => item.text).join('\n\n');
+  const whole = answer.length;
+  if (whole > CONSOLE_HAND_OVER_CEILING) {
+    answer = answer.slice(0, CONSOLE_HAND_OVER_CEILING).replace(/[\uD800-\uDBFF]$/, '');
+    answer += `\n\n[The answer was cut here, at ${CONSOLE_HAND_OVER_CEILING.toLocaleString('en-US')} of its ${whole.toLocaleString('en-US')} characters.]`;
+  }
+  return `${name} was asked this, and answered as below. What do you make of its answer?\n\nThe question:\n${turn.prompt}\n\n${name}'s answer:\n${answer}`;
+}
+
+
+function onConsoleHandOverClick(id, entry, event) {
+  const press = event.target.closest?.('.console-hand-over');
+  if (press) {
+    const key = `hand:${press.dataset.turn}`;
+    const open = !entry.chatView.open.has(key);
+    if (open) entry.chatView.open.add(key);
+    else entry.chatView.open.delete(key);
+    press.setAttribute('aria-expanded', String(open));
+    const list = press.closest('.console-reply')?.querySelector('.console-hand-over-list');
+    if (list) list.hidden = !open;
+    consoleChatRailChanged(id, entry);
+    return true;
+  }
+  const row = event.target.closest?.('.console-hand-over-agent');
+  if (!row) return false;
+  const turn = entry.chat?.turns.find(each => each.key === row.dataset.turn);
+  const from = entry.chat?.agent;
+  if (!turn || CONSOLE_HAND_OVER_TO[from] !== row.dataset.agent) return true;
+  entry.chatView.open.delete(`hand:${turn.key}`);
+  row.closest('.console-hand-over-list').hidden = true;
+  row.closest('.console-reply')?.querySelector('.console-hand-over')?.setAttribute('aria-expanded', 'false');
+  consoleHandOverRequest += 1;
+  consoleHandOverAsked.set(consoleHandOverRequest, { agent: row.dataset.agent, text: consoleHandOverText(from, turn) });
+  send({ command: 'consoleHandOver', id, request: consoleHandOverRequest, agent: row.dataset.agent });
+  return true;
+}
+
+
+window.leafConsoleHandedOver = (id, request, answer) => {
+  const asked = consoleHandOverAsked.get(request);
+  consoleHandOverAsked.delete(request);
+  if (!asked) return;
+  if (answer?.opened) consoleHandOverWaiting.set(answer.opened, asked);
+  else leafToast(answer?.error || 'The other agent was not opened.');
+};
+
+
+function deliverConsoleHandOver(id, entry) {
+  const waiting = consoleHandOverWaiting.get(id);
+  if (!waiting) return;
+  if (!consoleHandOverReady(entry, waiting.agent)) {
+    waiting.readyAt = 0;
+    return;
+  }
+  
+  waiting.readyAt ||= Date.now();
+  const left = waiting.readyAt + CONSOLE_HAND_OVER_SETTLE_MS - Date.now();
+  if (left > 0) {
+    clearTimeout(waiting.timer);
+    waiting.timer = setTimeout(() => {
+      if (consoleLayers.get(id) === entry) deliverConsoleHandOver(id, entry);
+    }, left);
+    return;
+  }
+  consoleHandOverWaiting.delete(id);
+  entry.composer.field.value = waiting.text;
+  sendConsoleComposer(id, entry);
+}
+
+function consoleHandOverReady(entry, agent) {
+  if (!entry.composer || entry.chat?.agent !== agent || entry.agentSaid !== `${agent} rest`) return false;
+  if (!entry.terminal?.getMode?.(2004) || consoleComposerHolding(entry) || consoleComposerHasMessage(entry)) return false;
+  return agent !== 'codex' || (!entry.codexReconnect && consoleModelPrompt(entry, 'codex').kind === 'empty');
+}
+
+
+
+
 const CONSOLE_COMPOSER_ENTER_MS = 600;
 
 const CONSOLE_COMPOSER_HOLD_MS = 2000;
@@ -47574,6 +48087,8 @@ const CONSOLE_COMPOSER_LINES = 8;
 const CONSOLE_COMPOSER_NAMES = { claude: 'Claude', codex: 'Codex' };
 
 const CONSOLE_COMPOSER_REWINDS = new Set(['claude', 'antigravity']);
+
+const CONSOLE_COMPOSER_FORKS = new Set(['claude', 'codex']);
 
 const CONSOLE_COMPOSER_QUEUED = 'Press up to edit queued messages';
 
@@ -48051,6 +48566,9 @@ function makeConsoleComposer(id, entry, frame) {
   const attach = consoleComposerButton('console-composer-tool', 'Attach a file', 'new');
   const slash = consoleComposerButton('console-composer-tool', entry.chat?.agent === 'codex' ? 'Skills' : 'Commands and skills');
   slash.textContent = entry.chat?.agent === 'codex' ? '$' : '/';
+  const fork = consoleComposerButton('console-composer-tool console-composer-fork', 'Fork this conversation into a new console');
+  fork.textContent = 'Fork';
+  fork.hidden = !CONSOLE_COMPOSER_FORKS.has(entry.chat?.agent);
   const rewind = consoleComposerButton('console-composer-tool console-composer-rewind', 'Rewind to an earlier prompt');
   rewind.textContent = 'Rewind';
   rewind.hidden = !CONSOLE_COMPOSER_REWINDS.has(entry.chat?.agent);
@@ -48062,7 +48580,7 @@ function makeConsoleComposer(id, entry, frame) {
   const notes = document.createElement('div');
   notes.className = 'console-composer-notes';
   notes.hidden = true;
-  tools.append(attach, slash, rewind, side, mode, notes);
+  tools.append(attach, slash, fork, rewind, side, mode, notes);
   const submit = consoleComposerButton('console-composer-send', 'Send', 'forward-long');
   row.append(tools, submit);
   const list = document.createElement('div');
@@ -48072,7 +48590,7 @@ function makeConsoleComposer(id, entry, frame) {
   list.hidden = true;
   box.append(list, chips, words, row);
   frame.appendChild(box);
-  const state = { box, chips, field, attach, slash, rewind, side, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
+  const state = { box, chips, field, attach, slash, fork, rewind, side, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
   entry.composer = state;
   
   state.width = 0;
@@ -48109,6 +48627,7 @@ function makeConsoleComposer(id, entry, frame) {
     send({ command: 'consoleCompose', id, request: state.request, ask: 'files' });
   });
   slash.addEventListener('click', () => openConsoleComposerCommands(id, entry));
+  fork.addEventListener('click', () => consoleComposerFork(id, entry));
   rewind.addEventListener('click', () => consoleComposerRewind(id, entry));
   side.addEventListener('click', () => pressConsoleSideButton(id, entry));
   mode.addEventListener('click', () => consoleComposerMode(id, entry));
@@ -48181,6 +48700,8 @@ function drawConsoleComposer(id, entry) {
   if (state.slash.textContent !== mark) state.slash.textContent = mark;
   if (state.slash.title !== commandsLabel) state.slash.title = commandsLabel;
   if (state.slash.getAttribute('aria-label') !== commandsLabel) state.slash.setAttribute('aria-label', commandsLabel);
+  const forks = CONSOLE_COMPOSER_FORKS.has(chat.agent);
+  if (state.fork.hidden === forks) state.fork.hidden = !forks;
   const rewinds = CONSOLE_COMPOSER_REWINDS.has(chat.agent);
   if (state.rewind.hidden === rewinds) state.rewind.hidden = !rewinds;
   const mode = chat.agent === 'claude' ? consoleComposerModeName(chat.mode) : chat.agent === 'codex' ? consoleComposerCodexMode(chat) : null;
@@ -48434,6 +48955,21 @@ function consoleComposerRewind(id, entry) {
   }
   consoleComposerToAgent(id, entry, '/rewind');
   setTimeout(() => send({ command: 'consoleInput', id, data: '\r' }), CONSOLE_COMPOSER_ENTER_MS);
+}
+
+
+function consoleComposerFork(id, entry) {
+  if (!CONSOLE_COMPOSER_FORKS.has(entry.chat?.agent)) return;
+  const name = CONSOLE_COMPOSER_NAMES[entry.chat.agent] || 'the agent';
+  if (consoleComposerWorking(entry)) {
+    leafToast(`Wait for ${name} to finish before forking.`);
+    return;
+  }
+  if (consoleComposerHasMessage(entry)) {
+    leafToast('Send or clear your message before forking.');
+    return;
+  }
+  agentLaunchFork(id, entry.chat.agent);
 }
 
 function consoleComposerStop(id, entry) {

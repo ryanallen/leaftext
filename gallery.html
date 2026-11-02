@@ -8300,6 +8300,12 @@ body.library-resizing button {
   font-family: inherit;
   font-size: var(--lt-text-12);
 }
+/* The compare box's prompt: a few lines tall, taller by the reader's drag. */
+.crumb-menu-prompt {
+  min-height: 64px;
+  resize: vertical;
+  line-height: var(--lt-leading-1-3);
+}
 .crumb-menu-input:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
@@ -8885,7 +8891,7 @@ body.library-resizing button {
 .console-chat-link { color: var(--lt-link); text-decoration: underline; cursor: pointer; }
 @media (hover: hover) { .console-chat-link:hover { color: var(--lt-link-hover); } }
 .console-note { align-self: flex-start; max-width: 100%; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); white-space: pre-wrap; overflow-wrap: anywhere; }
-.console-reply-actions { display: flex; align-items: center; gap: var(--lt-space-4); color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+.console-reply-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-4); color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .console-worked, .console-copy { appearance: none; display: inline-flex; align-items: center; gap: var(--lt-space-6); border: none; border-radius: var(--lt-radius-md); padding: var(--lt-space-2) var(--lt-space-6); background: transparent; color: var(--lt-muted-foreground); font: inherit; cursor: pointer; }
 .console-worked:disabled { cursor: default; }
 .console-worked .lt-icon { width: 12px; height: 12px; transform: rotate(-90deg); transition: transform var(--lt-duration-150) var(--lt-ease); }
@@ -8895,6 +8901,16 @@ body.library-resizing button {
 .console-copy .lt-icon { width: 14px; height: 14px; }
 @media (hover: hover) { .console-turn:hover .console-copy { color: var(--lt-muted-foreground); } .console-worked:not(:disabled):hover, .console-copy:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
 .console-copy:focus-visible, .console-worked:focus-visible { color: var(--lt-markdown-foreground); outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
+/* The files a finished turn's edits wrote: a count on the action row that opens a list, a row per file with a press opening it and one showing its edit. */
+.console-changed, .console-changed-open, .console-changed-diff { appearance: none; display: inline-flex; align-items: center; border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-md); padding: var(--lt-space-2) var(--lt-space-6); background: transparent; color: var(--lt-muted-foreground); font: inherit; font-size: var(--lt-text-12); cursor: pointer; }
+.console-changed[aria-expanded="true"] { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); }
+@media (hover: hover) { .console-changed:hover, .console-changed-open:hover, .console-changed-diff:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
+.console-changed:focus-visible, .console-changed-open:focus-visible, .console-changed-diff:focus-visible { color: var(--lt-markdown-foreground); outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
+.console-changed-list { align-self: flex-start; display: flex; flex-direction: column; gap: var(--lt-space-6); max-width: 88%; min-width: 0; box-sizing: border-box; padding: var(--lt-space-8) var(--lt-space-12); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); background: var(--lt-surface-elevated); }
+.console-changed-list[hidden] { display: none; }
+.console-changed-row { display: flex; align-items: center; gap: var(--lt-space-6); min-width: 0; }
+.console-changed-path { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.console-changed-foot { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .console-work { display: flex; flex-direction: column; gap: var(--lt-space-6); padding-left: var(--lt-space-12); border-left: var(--lt-stroke-2) solid var(--lt-border); color: var(--lt-muted-foreground); font-size: var(--lt-text-13); }
 .console-work[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .console-worked .lt-icon { transition: none; } }
@@ -8918,6 +8934,24 @@ body.library-resizing button {
 .diff-card-line.is-added .diff-card-word { background: var(--lt-diff-added-word); color: var(--lt-diff-added-word-foreground); }
 .diff-card-line.is-removed .diff-card-word { background: var(--lt-diff-removed-word); color: var(--lt-diff-removed-word-foreground); }
 .diff-card-fold { padding: var(--lt-space-2) var(--lt-space-10); background: var(--lt-surface-muted); color: var(--lt-muted-foreground); }
+/* A line its fold still holds; the UA sheet's own `[hidden]` cannot beat the line's flex. */
+.diff-card-line[hidden] { display: none; }
+/* A fold that opens is a press, the width of the card. */
+button.diff-card-fold { appearance: none; display: block; width: 100%; border: none; font: inherit; text-align: left; cursor: pointer; }
+@media (hover: hover) { button.diff-card-fold:hover:enabled { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
+button.diff-card-fold:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: calc(-1 * var(--lt-stroke-2)); }
+button.diff-card-fold:disabled { cursor: default; }
+/* A moved line, drawn once at its new place with its other end named on the note above it. */
+.diff-card-line.is-moved { background: var(--lt-surface-muted); color: var(--lt-foreground); }
+.diff-card-move { appearance: none; display: block; width: 100%; border: none; padding: var(--lt-space-2) var(--lt-space-10); background: var(--lt-surface-muted); color: var(--lt-muted-foreground); font: inherit; text-align: left; cursor: pointer; }
+@media (hover: hover) { .diff-card-move:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
+/* A note its switch hid; the UA sheet's own `[hidden]` cannot beat the note's block. */
+.diff-card-move[hidden] { display: none; }
+/* The switch hiding a card's moves, a word on its head beside the copy press. */
+.diff-card-moves { appearance: none; flex: none; border: none; border-radius: var(--lt-radius-md); padding: var(--lt-space-2) var(--lt-space-6); background: transparent; color: var(--lt-muted-foreground); font: inherit; cursor: pointer; }
+@media (hover: hover) { .diff-card-moves:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
+.diff-card-moves:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
+.diff-card-move:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: calc(-1 * var(--lt-stroke-2)); }
 /* Scholar's composer at the foot of the chat, over the agent's own input rows: a bordered field 20 pixels round, its chips, the words, then attach, `/` and the mode on the left and the round send on the right. */
 .console-composer { position: relative; flex: none; display: flex; flex-direction: column; gap: var(--lt-space-8); margin: 0 var(--lt-space-12) var(--lt-space-12); padding: var(--lt-space-10) var(--lt-space-10) var(--lt-space-8) var(--lt-space-14); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-4xl); background: var(--lt-surface-elevated); cursor: text; transition: border-color var(--lt-duration-150) var(--lt-ease); }
 @media (hover: hover) { .console-composer:hover { border-color: var(--lt-border-strong); } }
@@ -8944,7 +8978,7 @@ body.library-resizing button {
 .console-composer-tool, .console-composer-mode { appearance: none; display: inline-flex; align-items: center; justify-content: center; flex: none; border: none; background: transparent; color: var(--lt-muted-foreground); font: inherit; cursor: pointer; }
 .console-composer-tool { width: 32px; height: 32px; border-radius: var(--lt-radius-md); font-family: monospace; font-size: var(--lt-text-15); }
 .console-composer-tool .lt-icon { width: 16px; height: 16px; }
-.console-composer-side, .console-composer-rewind { width: auto; padding: 0 var(--lt-space-6); }
+.console-composer-side, .console-composer-rewind, .console-composer-fork { width: auto; padding: 0 var(--lt-space-6); }
 .console-composer-side.is-active { background: var(--lt-wash-hover); color: var(--lt-accent-ink); }
 .console-composer-mode { height: 24px; padding: 0 var(--lt-space-10); border-radius: var(--lt-radius-pill); font-size: var(--lt-text-12); white-space: nowrap; }
 .console-composer-mode[hidden] { display: none; }
@@ -8974,6 +9008,14 @@ body.library-resizing button {
 .console-file-list-name { flex: none; }
 .console-file-list-detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--lt-muted-foreground); }
 @media (prefers-reduced-motion: reduce) { .console-composer { transition: none; } }
+/* A finished turn's hand-over: a press after the copy press that opens a list naming the other agent, over a foot saying what a press there does. */
+.console-hand-over, .console-hand-over-agent { appearance: none; display: inline-flex; align-items: center; border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-md); padding: var(--lt-space-2) var(--lt-space-6); background: transparent; color: var(--lt-muted-foreground); font: inherit; font-size: var(--lt-text-12); cursor: pointer; }
+.console-hand-over[aria-expanded="true"] { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); }
+@media (hover: hover) { .console-hand-over:hover, .console-hand-over-agent:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
+.console-hand-over:focus-visible, .console-hand-over-agent:focus-visible { color: var(--lt-markdown-foreground); outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
+.console-hand-over-list { align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start; gap: var(--lt-space-6); max-width: 88%; min-width: 0; box-sizing: border-box; padding: var(--lt-space-8) var(--lt-space-12); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); background: var(--lt-surface-elevated); }
+.console-hand-over-list[hidden] { display: none; }
+.console-hand-over-foot { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 /* The floating bar: the views, then the edits, parked over the foot of the page. Placed by the grid rather than inside the scroller, so it holds still while the document moves under it, and centered because it belongs to the page rather than to either edge of the window. */
 /* How much room the page leaves at its foot for the bar: the bar's own height plus the gap it floats above the edge, and nothing at all when it is not there. */
 :root {
@@ -20266,7 +20308,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 94 colors, the 203 values that do not change with the theme, all 114 icons, and all 190 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 94 colors, the 203 values that do not change with the theme, all 114 icons, and all 192 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -20298,7 +20340,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>94</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>114</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>190</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>192</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -20777,7 +20819,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">190 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">192 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -20971,7 +21013,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="resolved-comment"><div class="comment-quote">vanished words</div><div class="comment-message"><div class="comment-message-time">26 September 2026, 8:00am</div><div class="comment-message-text">Gone one.</div></div><div class="comment-message-time">The words this was about are no longer in the note</div></div></div>
 </section>
 <section class="part">
-<header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js; the new menu draws its launch list (new-menu.js) and every agent view in the same popup (console-launch.js) out of these rows: one row per account, the agent's logo then the name the reader gave it, with its settings press always drawn (crumb-menu-edit-shown), Past conversations with the recent icon and the same account rows behind it, Add account and the agent it is for, an account's settings with its name, sign-in state and the permission switch with its consequence, the add, link, rename and remove forms with their errors and busy primary action, the sign-in handoff, an account's launch settings, preparing and a failed start with Open Console</span></header>
+<header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js; the new menu draws its launch list (new-menu.js) and every agent view in the same popup (console-launch.js) out of these rows: one row per account, the agent's logo then the name the reader gave it, with its settings press always drawn (crumb-menu-edit-shown), Past conversations with the recent icon and the same account rows behind it, Add account and the agent it is for, an account's settings with its name, sign-in state and the permission switch with its consequence, the add, link, rename and remove forms with their errors and busy primary action, the sign-in handoff, an account's launch settings, preparing and a failed start with Open Console, and the compare box — a prompt field a few lines tall (crumb-menu-prompt), the Left and Right agent choices and Send to both</span></header>
 <div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit crumb-menu-edit-shown"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-recent"></span><span class="crumb-menu-label">Past conversations</span></button></div></div>
 </section>
 <section class="part">
@@ -21231,7 +21273,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="console-note">Update available! 0.163.0 -&gt; 0.164.0</div></div>
 </section>
 <section class="part">
-<header><h3>Console composer</h3><code class="built">.console-composer</code><span class="built">console-composer.js, at the foot of the console's chat over the agent's own input rows, Scholar's composer: a bordered field 20 pixels round on the raised surface, its border stronger under the pointer and the focus ring's color while the words have the keys, a press on its padding putting the caret in the field; the words inside console-composer-words, a matching console-composer-mirror behind the field coloring recognized commands (console-composer-command) while is-marked leaves the caret visible (console-composer-field, the agent's own placeholder, Enter sends and Shift+Enter is a new line, growing to eight lines), then attach and $ for Codex or / for Claude (console-composer-tool), opening the local skill or command list without sending, then Rewind on a Claude Code or Antigravity console (console-composer-rewind, spoken as Rewind to an earlier prompt), which types /rewind and Enter at an empty box at rest so the agent's own Rewind picker opens and says why in a growl while the agent works or words wait, then btw (console-composer-side, spoken as Ask a side question), which puts /btw  at the front of the box and is lit with is-active and pressed while the box opens with it, a press while lit taking it off, plus Claude Code's mode or Codex's permissions (console-composer-mode) on the left, and the round send in the action color on the right (console-composer-send), gray with nothing to send (is-off) and a stop press while the agent works (is-stop)</span></header>
+<header><h3>Console composer</h3><code class="built">.console-composer</code><span class="built">console-composer.js, at the foot of the console's chat over the agent's own input rows, Scholar's composer: a bordered field 20 pixels round on the raised surface, its border stronger under the pointer and the focus ring's color while the words have the keys, a press on its padding putting the caret in the field; the words inside console-composer-words, a matching console-composer-mirror behind the field coloring recognized commands (console-composer-command) while is-marked leaves the caret visible (console-composer-field, the agent's own placeholder, Enter sends and Shift+Enter is a new line, growing to eight lines), then attach and $ for Codex or / for Claude (console-composer-tool), opening the local skill or command list without sending, then Fork on a Claude Code or Codex console (console-composer-fork, spoken as Fork this conversation into a new console), which starts the same agent on a copy of the conversation in a new console standing beside the first and says why in a growl while the agent works or words wait, then Rewind on a Claude Code or Antigravity console (console-composer-rewind, spoken as Rewind to an earlier prompt), which types /rewind and Enter at an empty box at rest so the agent's own Rewind picker opens and says why in a growl while the agent works or words wait, then btw (console-composer-side, spoken as Ask a side question), which puts /btw  at the front of the box and is lit with is-active and pressed while the box opens with it, a press while lit taking it off, plus Claude Code's mode or Codex's permissions (console-composer-mode) on the left, and the round send in the action color on the right (console-composer-send), gray with nothing to send (is-off) and a stop press while the agent works (is-stop)</span></header>
 <div class="stage"><div class="console-composer"><div class="console-composer-words"><div class="console-composer-mirror" aria-hidden="true"><span class="console-composer-command">$ticket</span> a plan</div><textarea class="console-composer-field is-marked" rows="1" aria-label="Message to Codex" placeholder="Ask Codex to do anything">$ticket a plan</textarea></div><div class="console-composer-row"><div class="console-composer-tools"><button type="button" class="console-composer-tool" aria-label="Attach a file"><span class="lt-icon lt-icon-new" aria-hidden="true"></span></button><button type="button" class="console-composer-tool" aria-label="Skills" title="Skills">$</button><button type="button" class="console-composer-mode" aria-label="Change the permission mode">Permissions</button></div><button type="button" class="console-composer-send is-off" aria-label="Send"><span class="lt-icon lt-icon-forward-long" aria-hidden="true"></span></button></div></div></div>
 </section>
 <section class="part">
@@ -21251,8 +21293,16 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="console-reply"><button type="button" class="console-worked" aria-expanded="true"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>Worked for 18s • 9:17 AM</button><div class="console-work"><div class="console-chat-text">Ran dir</div></div></div></div>
 </section>
 <section class="part">
-<header><h3>Diff card</h3><code class="built">.diff-card</code><span class="built">diff_view.rs writes it and console-chat.js places it: an edit the console's agent made, drawn from its own session record between the prompt and the answer — the file, what changed, was added and was removed, and a copy press putting the plain-text form on the clipboard (diff-card-head), then each line with its old and new numbers where the record carries them, a marker and its text wrapping within the box (diff-card-line), a changed line shown twice with only its changed words marked darker (diff-card-word), and every run of unchanged lines folded into one row saying how many (diff-card-fold); at most forty rows, the rest counted in one more</span></header>
-<div class="stage"><div class="diff-card"><div class="diff-card-head"><span class="diff-card-path">src/greeting.js</span><span class="diff-card-counts">1 changed</span><button type="button" class="diff-card-copy" title="Copy the diff" aria-label="Copy the diff"><span class="lt-icon lt-icon-copy"></span></button></div><div class="diff-card-rows"><div class="diff-card-fold">⋯ 11 unchanged lines</div><div class="diff-card-line"><span class="diff-card-number">14</span><span class="diff-card-number">14</span><span class="diff-card-marker"></span><span class="diff-card-text">function greet() {</span></div><div class="diff-card-line is-removed"><span class="diff-card-number">15</span><span class="diff-card-number"></span><span class="diff-card-marker">−</span><span class="diff-card-text">  const greeting = &quot;hello <mark class="diff-card-word">there</mark>&quot;;</span></div><div class="diff-card-line is-added"><span class="diff-card-number"></span><span class="diff-card-number">15</span><span class="diff-card-marker">+</span><span class="diff-card-text">  const greeting = &quot;hello <mark class="diff-card-word">friend</mark>&quot;;</span></div><div class="diff-card-fold">⋯ 48 unchanged lines</div></div></div></div>
+<header><h3>Console changed files</h3><code class="built">.console-changed</code><span class="built">console-chat.js: on a finished turn's action row between the working line and the copy press, a bordered press counting the files the turn's edits wrote (console-changed), pressed to open a list under the row: a row per file with its path from the console's folder, an Open press opening it in a tab and a Diff press scrolling the chat to its first edit card, over a foot saying what it counts</span></header>
+<div class="stage"><div class="console-reply"><div class="console-reply-actions"><button type="button" class="console-changed" aria-expanded="true">2 files changed</button></div><div class="console-changed-list"><div class="console-changed-row"><span class="console-changed-path">src/greeting.js</span><button type="button" class="console-changed-open">Open</button><button type="button" class="console-changed-diff">Diff</button></div><div class="console-changed-row"><span class="console-changed-path">README.md</span><button type="button" class="console-changed-open">Open</button><button type="button" class="console-changed-diff">Diff</button></div><div class="console-changed-foot">Files the agent’s edit tools wrote this turn</div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Console hand-over</h3><code class="built">.console-hand-over</code><span class="built">console-chat.js: on a finished turn's action row after the copy press, a bordered press reading Hand to (console-hand-over), pressed to open a list under the row naming the other agent — Codex from a Claude Code console, Claude Code from a Codex one (console-hand-over-agent) — over a foot saying the press opens that agent beside this console with the prompt and this answer</span></header>
+<div class="stage"><div class="console-reply"><div class="console-reply-actions"><button type="button" class="console-hand-over" aria-expanded="true">Hand to</button></div><div class="console-hand-over-list"><button type="button" class="console-hand-over-agent">Codex</button><div class="console-hand-over-foot">Opens beside this console with the prompt and this answer</div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Diff card</h3><code class="built">.diff-card</code><span class="built">diff_view.rs writes it and console-chat.js places it: an edit the console's agent made, drawn from its own session record between the prompt and the answer — the file, what changed, was added and was removed, and a copy press putting the plain-text form on the clipboard (diff-card-head), then each line with its old and new numbers where the record carries them, a marker and its text wrapping within the box (diff-card-line), a changed line shown twice with only its changed words marked darker (diff-card-word), and every run of unchanged lines folded into one row saying how many (diff-card-fold), a press on it opening twenty of them at a time from the side nearest the edit — lines the edit never held read back from the file, or the row saying the file has changed since; a block moved within one turn's edits to one file drawn once, its lines marked ↕ under a ↕ moved from line N note and its old place folded into a ↕ moved to line N note (diff-card-move), a press on either note bringing the other into view, and a Hide moves switch on the head of a card that draws one hiding its notes and moved lines (diff-card-moves); at most forty rows, the rest counted in one more</span></header>
+<div class="stage"><div class="diff-card"><div class="diff-card-head"><span class="diff-card-path">src/greeting.js</span><span class="diff-card-counts">1 changed</span><button type="button" class="diff-card-copy" title="Copy the diff" aria-label="Copy the diff"><span class="lt-icon lt-icon-copy"></span></button></div><div class="diff-card-rows"><div class="diff-card-fold">⋯ 11 unchanged lines</div><div class="diff-card-line"><span class="diff-card-number">14</span><span class="diff-card-number">14</span><span class="diff-card-marker"></span><span class="diff-card-text">function greet() {</span></div><div class="diff-card-line is-removed"><span class="diff-card-number">15</span><span class="diff-card-number"></span><span class="diff-card-marker">−</span><span class="diff-card-text">  const greeting = &quot;hello <mark class="diff-card-word">there</mark>&quot;;</span></div><div class="diff-card-line is-added"><span class="diff-card-number"></span><span class="diff-card-number">15</span><span class="diff-card-marker">+</span><span class="diff-card-text">  const greeting = &quot;hello <mark class="diff-card-word">friend</mark>&quot;;</span></div><button type="button" class="diff-card-fold" data-old="17" data-new="17" data-count="48">⋯ 48 unchanged lines</button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Copy button</h3><code class="built">.code-copy</code><span class="built">decorate.js</span></header>
