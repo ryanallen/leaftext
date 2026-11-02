@@ -43612,6 +43612,8 @@ function reportConsoleAgent(id, entry, screenLines) {
     entry.codexRestingState = 'rest';
     entry.codexUpdating = false;
     if (entry.agent !== 'codex') entry.nativeSession = null;
+    
+    if (before.split(' ')[0] && !entry.agent) consoleRecentsOutOfDate();
     if (id === consoleFrontId) syncConsoleViewsBar();
   }
   const state = consoleAgentState(entry, screenLines, id);
@@ -44790,6 +44792,9 @@ window.leafConsoleFront = id => {
   if (changed) for (const entry of consoleLayers.values()) closeConsoleModel(entry);
   consoleFrontId = id;
   document.body.classList.toggle('console-front', id !== null);
+  
+  libraryPane?.classList.toggle('is-console-sidebar', id !== null);
+  consoleRecentsShown(id !== null);
   if (changed && consoleAgentRows.length) drawConsoleAgents();
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
   placeConsoleLayers();
@@ -46740,6 +46745,94 @@ function agentLaunchCompareDeliver() {
 
 function consoleCompareGone(id) {
   return Array.isArray(currentState?.tabs) && !currentState.tabs.some((tab) => tab.kind === 'console' && tab.webId === id);
+}
+
+var consoleRecentsBand = document.getElementById('consoleRecents');
+const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true };
+
+
+function consoleRecentAge(seconds, now = Date.now() / 1000) {
+  const ago = Math.max(0, now - Number(seconds || 0));
+  if (ago < 60) return 'now';
+  if (ago < 3600) return `${Math.floor(ago / 60)}m`;
+  if (ago < 86400) return `${Math.floor(ago / 3600)}h`;
+  if (ago < 86400 * 7) return `${Math.floor(ago / 86400)}d`;
+  return new Date(seconds * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+
+function askConsoleRecents() {
+  if (!consoleRecentsBand || consoleRecents.reading || !consoleRecents.stale) return;
+  if (!newMenuHostAnswers('agentLaunch')) return;
+  consoleRecents.reading = true;
+  consoleRecents.stale = false;
+  agentLaunchAsk('recents').then((answer) => {
+    consoleRecents.reading = false;
+    if (answer.error) {
+      consoleRecents.unavailable = [{ agent: '', sentence: String(answer.error) }];
+    } else {
+      consoleRecents.rows = Array.isArray(answer.recents) ? answer.recents : [];
+      consoleRecents.unavailable = Array.isArray(answer.unavailable) ? answer.unavailable : [];
+    }
+    drawConsoleRecents();
+  });
+}
+
+function consoleRecentsShown(shown) {
+  if (!consoleRecentsBand) return;
+  consoleRecentsBand.hidden = !shown;
+  if (shown) {
+    askConsoleRecents();
+    drawConsoleRecents();
+  }
+}
+
+function consoleRecentsOutOfDate() {
+  consoleRecents.stale = true;
+  if (consoleRecentsBand && !consoleRecentsBand.hidden) askConsoleRecents();
+}
+
+function drawConsoleRecents() {
+  if (!consoleRecentsBand || consoleRecentsBand.hidden) return;
+  const now = Date.now() / 1000;
+  const parts = ['<div class="console-agents-heading">Recents</div>'];
+  for (const note of consoleRecents.unavailable) {
+    const name = AGENT_LAUNCH_NAMES[note.agent];
+    parts.push(`<div class="console-recents-note">${escapeText(name ? `${name}: ${note.sentence}` : note.sentence)}</div>`);
+  }
+  if (!consoleRecents.rows.length && !consoleRecents.unavailable.length) {
+    parts.push(`<div class="console-recents-note">${consoleRecents.reading ? 'Reading your conversations…' : 'No past conversations yet.'}</div>`);
+  }
+  for (const row of consoleRecents.rows) {
+    const agent = String(row.agent || '');
+    const title = String(row.title || 'Untitled conversation');
+    const where = row.folder ? `\n${row.folder}` : '';
+    const icon = consoleIconClass(agent);
+    parts.push(`<button type="button" class="console-agent console-recent" role="listitem" data-recent-agent="${escapeAttr(agent)}" data-recent-id="${escapeAttr(String(row.id || ''))}" title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${where}`)}"><span class="console-agent-icon" aria-hidden="true"><span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state">${escapeText(consoleRecentAge(row.time, now))}</span></button>`);
+  }
+  consoleRecentsBand.innerHTML = parts.join('');
+}
+
+
+function reopenConsoleRecent(agent, conversation) {
+  const request = ++agentLaunch.request;
+  const skip = agentLaunch.state ? { skip: Boolean(agentLaunchOf(agent).skipPermissions) } : {};
+  send({ command: 'agentLaunch', action: 'reopen', agent, conversation, request, ...skip });
+  const failed = (answer) => {
+    if (answer.error && answer.failure !== 'canceled') leafToast(answer.error);
+  };
+  agentLaunch.waiting.set(request, (first) => {
+    if (first.error) return failed(first);
+    agentLaunch.waiting.set(request, failed);
+  });
+}
+
+if (consoleRecentsBand) {
+  consoleRecentsBand.addEventListener('click', (event) => {
+    const row = event.target.closest?.('.console-recent');
+    if (!row) return;
+    reopenConsoleRecent(row.dataset.recentAgent, row.dataset.recentId);
+  });
 }
 
 

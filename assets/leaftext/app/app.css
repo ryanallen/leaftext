@@ -8911,6 +8911,13 @@ body.library-resizing button {
 .console-agents { position: absolute; left: 0; right: 0; bottom: var(--library-foot-height); z-index: 2; box-sizing: border-box; height: var(--console-agents-height); padding: var(--lt-space-6) var(--lt-space-8) var(--lt-space-4); overflow: hidden; background-color: var(--lt-surface); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-attachment: fixed; }
 .library-shell .console-agents[hidden] { display: none; }
 .library-shell.library-closed .console-agents { display: none; }
+
+.library-pane.is-console-sidebar .library-scroll { visibility: hidden; }
+.library-pane.is-console-sidebar .console-agents { top: var(--library-chrome-height); bottom: auto; }
+.console-recents { position: absolute; left: 0; right: 0; top: calc(var(--library-chrome-height) + var(--console-agents-height, 0px)); bottom: var(--library-foot-height); z-index: 2; box-sizing: border-box; padding: var(--lt-space-6) var(--lt-space-8) var(--lt-space-4); overflow-x: hidden; overflow-y: auto; background-color: var(--lt-surface); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-attachment: fixed; }
+.library-shell .console-recents[hidden] { display: none; }
+.library-shell.library-closed .console-recents { display: none; }
+.console-recents-note { padding: var(--lt-space-2) var(--lt-space-6); color: var(--lt-muted-foreground); font-family: var(--app-font); font-size: var(--lt-text-11); }
 .console-agents-heading { height: 20px; padding: 0 var(--lt-space-6); color: var(--lt-muted-foreground); font-family: var(--app-font); font-size: var(--lt-text-10); font-weight: var(--lt-weight-600); letter-spacing: var(--lt-tracking-060); line-height: 20px; text-transform: uppercase; }
 .console-agent { display: flex; align-items: center; gap: var(--lt-space-6); box-sizing: border-box; width: 100%; height: 26px; padding: 0 var(--lt-space-6); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-md); background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12-5); text-align: left; cursor: default; }
 @media (hover: hover) { .console-agent:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } .console-agent-working:hover > .console-agent-icon, .console-agent:hover > .console-agent-state { color: var(--lt-foreground); } }
