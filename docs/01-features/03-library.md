@@ -657,6 +657,18 @@ While Claude Code, Codex or Antigravity runs in any console in this window, an *
 
 While a console is in front, the library pane becomes that console's sidebar: the files step aside, the **Agents** list moves up under the folder path, and **Recents** fills the rest — every past Claude Code, Codex and Antigravity conversation, newest first, each with its agent's mark, its title and how long ago it was. Press one and it reopens in a new console in the folder it ran in, carrying on where it left off. Bring a document back to the front and the files return just where you left them. An agent whose saved list cannot be read says so in a line of its own rather than leaving its conversations out without a word.
 
+Each row has a three-dot button that shows when the pointer is over it, and the same menu opens on a right-click. Every entry carries its letter at the right, and pressing that letter while the menu is open picks it:
+
+| Entry | What it does |
+| --- | --- |
+| **Mark as unread**, U | The row reads bold until you open the chat again; **Mark as read** takes it off |
+| **Pin**, P | Puts the chat in the first section over Recents, making a **Pinned** section where none stands; **Unpin** sends it back |
+| **Rename**, R | Changes the chat's name in Recents. For Claude Code and Codex the new name is written where the agent keeps its own, so the agent's own resume list shows it too |
+| **Archive**, A | Takes the chat out of the list. The **Archived** switch beside the Recents heading shows archived chats again, and **Unarchive** brings one back |
+| **Delete**, D | Asks first, naming the chat, then moves every file the agent keeps for that conversation to the Recycle Bin or the Trash, so it can be brought back from there |
+
+Unread, archived and pinned are Leaftext's own marks, kept in its settings, since no agent has them. Carry a chat out of Recents and a Pinned section appears to take it, with **New section** under the last one while the chat is carried; a section heading's own menu has **Rename section** and **Remove section**, which sends its chats back to Recents, and a section goes away with its last chat. A pinned chat whose agent has since deleted it stays in its section, its title gray and its age reading *gone*, rather than vanishing.
+
 Unlike a document, a console shows no soft fade at its top or bottom edge, so whatever a program puts there — the banner Claude Code prints as it starts, the prompt it holds at the top, the line you are typing at the bottom — reads at full strength.
 
 ### The command you ran stays at the top

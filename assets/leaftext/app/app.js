@@ -11346,6 +11346,12 @@ function hintTargetChanged(name) {
   if (there && !hintShowing && hintSuspended === name) restoreHintAfterSheet(null);
 }
 
+
+function hintTargetsMoved() {
+  const name = hintShowing || hintSuspended;
+  if (name) hintTargetChanged(name);
+}
+
 function drawHintBubble(hint, target) {
   hideHintBubble();
   const { element, rect: targetRect } = target;
@@ -12609,6 +12615,16 @@ function contextMenuRow(entry) {
   label.className = 'context-menu-label';
   label.textContent = entry.label;
   item.appendChild(label);
+  
+  if (entry.key) {
+    const key = document.createElement('span');
+    key.className = 'context-menu-key';
+    key.setAttribute('aria-hidden', 'true');
+    key.textContent = entry.key;
+    item.appendChild(key);
+    item.dataset.key = entry.key.toLowerCase();
+    item.setAttribute('aria-keyshortcuts', entry.key);
+  }
   return item;
 }
 function fillContextMenu(menu, entries, level) {
@@ -12672,7 +12688,9 @@ function fillContextMenu(menu, entries, level) {
 }
 
 function contextMenuKeydown(event) {
-  const menu = event.target.closest('.context-menu');
+  
+  const lettered = !contextMenu.hidden && event.key?.length === 1 && contextMenu.querySelector('[data-key]');
+  const menu = event.target.closest('.context-menu') || (lettered ? contextMenu : null);
   if (!menu || (menu !== contextMenu && !contextMenuChildren.some((child) => child.menu === menu))) return;
   const level = menu === contextMenu ? 0 : contextMenuChildren.findIndex((child) => child.menu === menu) + 1;
   const items = Array.from(menu.querySelectorAll('.context-menu-item:not(:disabled)'));
@@ -12702,9 +12720,21 @@ function contextMenuKeydown(event) {
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault();
     items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+    return;
+  }
+  if (event.key?.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    const picked = items.find((item) => item.dataset.key === event.key.toLowerCase());
+    if (picked) {
+      event.preventDefault();
+      picked.click();
+    }
   }
 }
 appSurface.addEventListener('keydown', contextMenuKeydown);
+
+window.addEventListener('keydown', (event) => {
+  if (!contextMenu.hidden && !appSurface.contains(event.target)) contextMenuKeydown(event);
+});
 
 function clampContextMenu(x, y) {
   leafPlaceFloating(contextMenu, x, y);
@@ -16640,7 +16670,7 @@ function bindVaultSwitch(button, retire) {
 }
 if (libraryVaultSwitch) {
   
-  registerHint('libraryVault', () => libraryVaultSwitch, 'Pick which folder the list below shows.');
+  registerHint('libraryVault', () => (libraryPane?.classList.contains('is-console-sidebar') ? null : libraryVaultSwitch), 'Pick which folder the list below shows.');
   
   bindVaultSwitch(libraryVaultSwitch, true);
 }
@@ -44794,6 +44824,7 @@ window.leafConsoleFront = id => {
   document.body.classList.toggle('console-front', id !== null);
   
   libraryPane?.classList.toggle('is-console-sidebar', id !== null);
+  hintTargetsMoved();
   consoleRecentsShown(id !== null);
   if (changed && consoleAgentRows.length) drawConsoleAgents();
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
@@ -46170,14 +46201,78 @@ var newMenuButton = document.getElementById('newButton');
 function newMenuHostAnswers(command) {
   return typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers(command);
 }
+
+const newMenuFolder = { path: null, request: 0, view: false };
+function newMenuFolderPath() {
+  return newMenuFolder.path === null ? libraryFolderHere() : newMenuFolder.path;
+}
+function newMenuFolderName(path) {
+  return String(path || '').split(/[\\/]/).filter(Boolean).pop() || String(path || '');
+}
+
+function newMenuFolderTail(path) {
+  const parts = String(path || '').split(/[\\/]/).filter(Boolean);
+  return parts.length > 3 ? `…${isMacPlatform ? '/' : '\\'}${parts.slice(-3).join(isMacPlatform ? '/' : '\\')}` : String(path || '');
+}
+function newMenuFolderBack() {
+  return { label: 'Back', icon: '<span class="lt-icon lt-icon-back" aria-hidden="true"></span>', keepOpen: true, run: () => { newMenuFolder.view = false; agentLaunchShow('main'); } };
+}
+function newMenuFolderChooser() {
+  return { label: 'Choose another folder…', keepOpen: true, run: () => {
+    newMenuFolder.request += 1;
+    send({ command: 'newMenuChooseFolder', request: newMenuFolder.request });
+  } };
+}
+
+function openNewMenuFolder(path) {
+  newMenuFolder.request += 1;
+  newMenuFolder.view = true;
+  showCrumbMenu(newMenuButton, [newMenuFolderBack(), { note: 'Reading the folder…' }], 'Back');
+  send({ command: 'newMenuFolderList', request: newMenuFolder.request, path: path || '' });
+}
+function newMenuFolderRows(listing) {
+  const go = (path) => ({ keepOpen: true, title: path, run: () => openNewMenuFolder(path) });
+  const rows = [newMenuFolderBack(), { heading: listing.name || listing.path }];
+  if (listing.parent) rows.push({ ...go(listing.parent), label: `↑ ${newMenuFolderName(listing.parent)}` });
+  for (const folder of listing.folders || []) rows.push({ ...go(folder.path), label: folder.name });
+  if (!(listing.folders || []).length) rows.push({ note: 'No folders inside this one.' });
+  if (listing.truncated) rows.push({ note: 'This folder holds more than the menu lists. Choose another folder to reach the rest.' });
+  rows.push('separator', { label: 'Start here', title: listing.path, keepOpen: true, run: () => {
+    newMenuFolder.path = listing.path;
+    newMenuFolder.view = false;
+    agentLaunchShow('main');
+  } });
+  return [...rows, newMenuFolderChooser()];
+}
+
+window.leafNewMenuFolderListed = (request, listing) => {
+  if (request !== newMenuFolder.request || !newMenuFolder.view || crumbMenuOwner !== newMenuButton || crumbMenu.hidden) return;
+  showCrumbMenu(newMenuButton, listing?.error ? [newMenuFolderBack(), { note: String(listing.error) }, newMenuFolderChooser()] : newMenuFolderRows(listing), 'Back');
+};
+
+window.leafNewMenuFolderChosen = (request, path) => {
+  if (path && request === newMenuFolder.request) openNewMenuFolder(path);
+};
 function newMenuMainRows() {
   const rows = [{
     label: 'New page',
     icon: '<span class="lt-icon lt-icon-new" aria-hidden="true"></span>',
     run: () => send({ command: 'newDocument' }),
   }];
+  const starts = newMenuHostAnswers('newConsole') || newMenuHostAnswers('agentLaunch');
+  
+  if (starts && newMenuHostAnswers('newMenuFolderList')) {
+    const path = newMenuFolderPath();
+    rows.push('separator', {
+      label: `Starts in ${newMenuFolderName(path) || 'your home folder'}`,
+      title: path || 'Your home folder',
+      icon: '<span class="lt-icon lt-icon-folder" aria-hidden="true"></span>',
+      keepOpen: true,
+      run: () => openNewMenuFolder(path),
+    }, { note: `${path ? newMenuFolderTail(path) : 'Your home folder'} — press to change` });
+  }
   if (newMenuHostAnswers('newConsole')) {
-    const folder = libraryFolderHere();
+    const folder = newMenuFolderPath();
     rows.push({
       label: 'Console',
       title: folder ? `New console in ${folder}` : 'New console',
@@ -46196,6 +46291,8 @@ function toggleNewMenu() {
     return;
   }
   agentLaunchReset();
+  newMenuFolder.path = libraryFolderHere();
+  newMenuFolder.view = false;
   showCrumbMenu(newMenuButton, newMenuMainRows());
 }
 if (newMenuButton) {
@@ -46503,7 +46600,7 @@ const AGENT_LAUNCH_VIEWS = {
   },
   failed(agent) {
     return [{ heading: `${agentLaunchLabel(agent, agentLaunch.id)} couldn’t start` }, { note: agentLaunch.failure || 'Something stopped the start.', danger: true },
-      { label: 'Open Console', run: () => send({ command: 'newConsole', path: libraryFolderHere() }) },
+      { label: 'Open Console', run: () => send({ command: 'newConsole', path: newMenuFolderPath() }) },
       { label: 'Try again', keepOpen: true, run: () => agentLaunchStart(agent, agentLaunch.id, agentLaunch.resume) },
       { label: 'Launch settings', keepOpen: true, run: () => agentLaunchSettings(agent, agentLaunch.id) },
       agentLaunchBack('main')];
@@ -46553,7 +46650,7 @@ function agentLaunchStart(agent, id, resume = false) {
   const request = ++agentLaunch.request;
   
   const skip = agentLaunch.state ? { skip: Boolean(agentLaunchOf(agent).skipPermissions) } : {};
-  send({ command: 'agentLaunch', action: 'start', agent, id, request, path: libraryFolderHere(), ...skip, ...(resume ? { resume: true } : {}) });
+  send({ command: 'agentLaunch', action: 'start', agent, id, request, path: newMenuFolderPath(), ...skip, ...(resume ? { resume: true } : {}) });
   
   agentLaunch.waiting.set(request, (first) => {
     if (first.error) return agentLaunchFailed(first);
@@ -46587,7 +46684,7 @@ function agentLaunchSignIn(agent, id) {
   agentLaunch.id = id;
   agentLaunch.resume = false;
   const request = ++agentLaunch.request;
-  send({ command: 'agentLaunch', action: 'signIn', agent, request, id, path: libraryFolderHere() });
+  send({ command: 'agentLaunch', action: 'signIn', agent, request, id, path: newMenuFolderPath() });
   agentLaunch.waiting.set(request, (first) => {
     if (first.error) { agentLaunch.error = first.error; return agentLaunchRedraw(); }
     agentLaunch.waiting.set(request, (done) => {
@@ -46616,7 +46713,7 @@ function agentLaunchCreate(agent) {
   agentLaunch.creating = true;
   agentLaunchShow('add');
   const request = ++agentLaunch.request;
-  send({ command: 'agentLaunch', action: 'create', agent, request, name, path: libraryFolderHere() });
+  send({ command: 'agentLaunch', action: 'create', agent, request, name, path: newMenuFolderPath() });
   agentLaunch.waiting.set(request, (first) => {
     agentLaunch.creating = false;
     if (first.error) { agentLaunch.error = first.error; return agentLaunchShow('add'); }
@@ -46715,7 +46812,7 @@ function agentLaunchCompare() {
     if (agentLaunchOpen()) hideCrumbMenu();
     agentLaunchCompareDeliver();
   });
-  send({ command: 'consoleCompare', request, agents, path: libraryFolderHere() });
+  send({ command: 'consoleCompare', request, agents, path: newMenuFolderPath() });
 }
 window.leafConsoleCompared = (request, answer) => {
   const waiting = agentLaunch.waiting.get(request);
@@ -46748,7 +46845,7 @@ function consoleCompareGone(id) {
 }
 
 var consoleRecentsBand = document.getElementById('consoleRecents');
-const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true };
+const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true, archived: false, renaming: false, pins: [], carry: null };
 
 
 function consoleRecentAge(seconds, now = Date.now() / 1000) {
@@ -46773,6 +46870,7 @@ function askConsoleRecents() {
     } else {
       consoleRecents.rows = Array.isArray(answer.recents) ? answer.recents : [];
       consoleRecents.unavailable = Array.isArray(answer.unavailable) ? answer.unavailable : [];
+      consoleRecents.pins = Array.isArray(answer.pins) ? answer.pins.map((section) => ({ name: String(section.name || 'Pinned'), chats: Array.isArray(section.chats) ? section.chats : [] })) : [];
     }
     drawConsoleRecents();
   });
@@ -46793,24 +46891,302 @@ function consoleRecentsOutOfDate() {
 }
 
 function drawConsoleRecents() {
-  if (!consoleRecentsBand || consoleRecentsBand.hidden) return;
+  
+  if (!consoleRecentsBand || consoleRecentsBand.hidden || consoleRecents.renaming) return;
   const now = Date.now() / 1000;
-  const parts = ['<div class="console-agents-heading">Recents</div>'];
+  const archived = consoleRecents.archived;
+  const parts = [`<div class="console-recents-heading-row" data-pin-drop="recents"><div class="console-agents-heading">${archived ? 'Archived' : 'Recents'}</div><button type="button" class="console-recents-filter" aria-pressed="${archived}" title="${archived ? 'Show recent chats' : 'Show archived chats'}"><span class="lt-icon lt-icon-archive" aria-hidden="true"></span><span>${archived ? 'Recents' : 'Archived'}</span></button></div>`];
+  const shown = consoleRecents.rows.filter((row) => Boolean(row.archived) === archived);
   for (const note of consoleRecents.unavailable) {
     const name = AGENT_LAUNCH_NAMES[note.agent];
     parts.push(`<div class="console-recents-note">${escapeText(name ? `${name}: ${note.sentence}` : note.sentence)}</div>`);
   }
-  if (!consoleRecents.rows.length && !consoleRecents.unavailable.length) {
-    parts.push(`<div class="console-recents-note">${consoleRecents.reading ? 'Reading your conversations…' : 'No past conversations yet.'}</div>`);
+  if (!shown.length && !consoleRecents.unavailable.length) {
+    parts.push(`<div class="console-recents-note">${consoleRecents.reading ? 'Reading your conversations…' : (archived ? 'No archived chats.' : 'No past conversations yet.')}</div>`);
   }
-  for (const row of consoleRecents.rows) {
-    const agent = String(row.agent || '');
-    const title = String(row.title || 'Untitled conversation');
-    const where = row.folder ? `\n${row.folder}` : '';
-    const icon = consoleIconClass(agent);
-    parts.push(`<button type="button" class="console-agent console-recent" role="listitem" data-recent-agent="${escapeAttr(agent)}" data-recent-id="${escapeAttr(String(row.id || ''))}" title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${where}`)}"><span class="console-agent-icon" aria-hidden="true"><span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state">${escapeText(consoleRecentAge(row.time, now))}</span></button>`);
+  const pinned = new Set(consoleRecents.pins.flatMap((section) => section.chats.map(consoleChatKey)));
+  for (const row of shown) {
+    if (!archived && pinned.has(consoleChatKey(row))) continue;
+    parts.push(consoleRecentRowHtml(row, now, ''));
   }
-  consoleRecentsBand.innerHTML = parts.join('');
+  
+  consoleRecentsBand.innerHTML = (archived ? '' : consoleRecentPinsHtml(now)) + parts.join('');
+}
+
+function consoleChatKey(chat) {
+  return `${chat.agent}:${chat.id}`;
+}
+
+
+function consoleRecentRowHtml(row, now, where) {
+  const agent = String(row.agent || '');
+  const title = String(row.title || 'Untitled conversation');
+  const folder = row.folder ? `\n${row.folder}` : '';
+  const ids = `data-recent-agent="${escapeAttr(agent)}" data-recent-id="${escapeAttr(String(row.id || ''))}"`;
+  const marks = (row.unread ? ' console-recent-unread' : '') + (row.gone ? ' console-pin-gone' : '');
+  const drop = where ? ` data-pin-drop="${where}"` : ' data-pin-drop="recents"';
+  const state = row.gone ? 'gone' : consoleRecentAge(row.time, now);
+  return `<div class="console-recent-row" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}"><span class="console-agent-icon" aria-hidden="true"><span class="${consoleIconClass(agent)}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state">${escapeText(row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
+}
+
+function consoleRecentPinsHtml(now) {
+  const carrying = Boolean(consoleRecents.carry?.chip);
+  const sections = consoleRecents.pins.map((section, at) => ({ section, at })).filter(({ section }) => section.chats.length);
+  const parts = [];
+  for (const { section, at } of sections) {
+    parts.push(`<div class="console-pins" role="group" aria-label="${escapeAttr(section.name)}"><div class="console-pin-heading" data-pin-section="${at}" data-pin-drop="${at}:end"><span class="console-agents-heading">${escapeText(section.name)}</span><button type="button" class="console-pin-more" data-pin-section="${at}" aria-label="${escapeAttr(`More for ${section.name}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`);
+    section.chats.forEach((chat, index) => {
+      const known = consoleRecents.rows.find((row) => consoleChatKey(row) === consoleChatKey(chat));
+      parts.push(consoleRecentRowHtml({ ...chat, ...(known || {}), title: chat.title || known?.title, gone: chat.gone }, now, `${at}:${index}`));
+    });
+    parts.push('</div>');
+  }
+  
+  if (carrying && !sections.length) parts.push('<div class="console-pins"><div class="console-pin-heading" data-pin-drop="new"><span class="console-agents-heading">Pinned</span></div></div>');
+  else if (carrying) parts.push('<div class="console-pin-new" data-pin-drop="new"><span class="lt-icon lt-icon-new" aria-hidden="true"></span><span>New section</span></div>');
+  return parts.join('');
+}
+
+function consoleRecentOf(element) {
+  const agent = element?.dataset?.recentAgent;
+  const id = element?.dataset?.recentId;
+  return consoleRecents.rows.find((row) => row.agent === agent && row.id === id)
+    || consoleRecents.pins.flatMap((section) => section.chats).find((chat) => chat.agent === agent && chat.id === id)
+    || null;
+}
+
+function consoleChatPinned(chat) {
+  return consoleRecents.pins.some((section) => section.chats.some((pin) => consoleChatKey(pin) === consoleChatKey(chat)));
+}
+
+
+function saveConsolePins() {
+  consoleRecents.pins = consoleRecents.pins.filter((section) => section.chats.length);
+  drawConsoleRecents();
+  const pins = consoleRecents.pins.map((section) => ({ name: section.name, chats: section.chats.map((chat) => ({ key: consoleChatKey(chat), title: String(chat.title || '') })) }));
+  agentLaunchAsk('setPins', { pins }).then((answer) => {
+    if (!answer.error) return;
+    leafToast(answer.error);
+    consoleRecentsOutOfDate();
+  });
+}
+
+
+function unpinConsoleChat(chat) {
+  const key = consoleChatKey(chat);
+  for (const section of consoleRecents.pins) section.chats = section.chats.filter((pin) => consoleChatKey(pin) !== key);
+  return { agent: chat.agent, id: chat.id, title: chat.title, gone: Boolean(chat.gone) };
+}
+
+
+function pinConsoleChatAt(chat, place) {
+  const before = consoleRecents.pins.map((section) => section.chats.map(consoleChatKey));
+  const pin = unpinConsoleChat(chat);
+  if (place === 'new') {
+    consoleRecents.pins.push({ name: consoleRecents.pins.some((section) => section.chats.length) ? 'New section' : 'Pinned', chats: [pin] });
+  } else if (place !== 'recents') {
+    const [at, index] = String(place).split(':');
+    const section = consoleRecents.pins[Number(at)];
+    if (!section) return;
+    
+    const was = before[Number(at)]?.indexOf(consoleChatKey(chat)) ?? -1;
+    let to = index === 'end' ? section.chats.length : Number(index);
+    if (was >= 0 && was < to) to -= 1;
+    section.chats.splice(Math.max(0, Math.min(to, section.chats.length)), 0, pin);
+  }
+  saveConsolePins();
+}
+
+function pinConsoleChat(chat) {
+  if (!consoleRecents.pins.some((section) => section.chats.length)) pinConsoleChatAt(chat, 'new');
+  else pinConsoleChatAt(chat, `${consoleRecents.pins.findIndex((section) => section.chats.length)}:end`);
+}
+
+
+function openConsolePinSectionMenu(at, x, y) {
+  const section = consoleRecents.pins[at];
+  if (!section) return;
+  showConsoleTabMenu(x, y, [
+    { label: 'Rename section', icon: 'rename', key: 'R', run: () => renameConsolePinSection(at) },
+    { label: 'Remove section', icon: 'trash', key: 'D', run: () => { consoleRecents.pins.splice(at, 1); saveConsolePins(); } },
+  ]);
+}
+
+function renameConsolePinSection(at) {
+  const heading = consoleRecentsBand.querySelector(`.console-pin-heading[data-pin-section="${at}"]`);
+  const section = consoleRecents.pins[at];
+  if (!heading || !section) return;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'rename-input console-pin-rename';
+  input.value = section.name;
+  input.maxLength = 80;
+  input.setAttribute('aria-label', 'Section name');
+  heading.hidden = true;
+  heading.parentElement.insertBefore(input, heading.nextSibling);
+  consoleRecents.renaming = true;
+  let settled = false;
+  const finish = (keep) => {
+    if (settled) return;
+    settled = true;
+    consoleRecents.renaming = false;
+    const name = input.value.trim();
+    if (keep && name && name !== section.name) {
+      section.name = name;
+      saveConsolePins();
+    } else drawConsoleRecents();
+  };
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      finish(true);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation?.();
+      finish(false);
+    }
+  });
+  input.addEventListener('blur', () => finish(true));
+  input.addEventListener('click', (event) => event.stopPropagation?.());
+  leafFocusForKeyboard(input);
+  input.select?.();
+}
+
+
+const CONSOLE_CARRY_THRESHOLD = 5;
+function consolePinDropAt(x, y) {
+  const element = document.elementFromPoint(x, y)?.closest?.('[data-pin-drop]');
+  return element && consoleRecentsBand.contains(element) ? element : null;
+}
+function lightConsolePinDrop(element) {
+  const carry = consoleRecents.carry;
+  if (carry.target === element) return;
+  carry.target?.classList.remove('is-drop-target');
+  element?.classList.add('is-drop-target');
+  carry.target = element;
+}
+function endConsoleCarry() {
+  const carry = consoleRecents.carry;
+  consoleRecents.carry = null;
+  if (!carry) return;
+  if (carry.chip) {
+    coverWebSurface(false, carry.chip);
+    carry.chip.remove();
+  }
+  carry.target?.classList.remove('is-drop-target');
+  leafReleasePointer(consoleRecentsBand, carry.pointerId);
+  if (carry.chip) drawConsoleRecents();
+}
+
+
+function markConsoleRecent(chat, action, field, on) {
+  const before = Boolean(chat[field]);
+  chat[field] = on;
+  drawConsoleRecents();
+  agentLaunchAsk(action, { agent: chat.agent, conversation: chat.id }).then((answer) => {
+    if (!answer.error) return;
+    chat[field] = before;
+    drawConsoleRecents();
+    leafToast(answer.error);
+  });
+}
+
+function consoleRecentRowOf(chat) {
+  return [...consoleRecentsBand.querySelectorAll('.console-recent')].find((row) => row.dataset.recentAgent === chat.agent && row.dataset.recentId === chat.id) || null;
+}
+
+
+function renameConsoleRecent(chat) {
+  const row = consoleRecentRowOf(chat);
+  if (!row) return;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'rename-input console-recent-rename';
+  input.value = chat.title || '';
+  input.maxLength = 200;
+  input.setAttribute('aria-label', 'Chat name');
+  row.hidden = true;
+  const more = row.parentElement.querySelector('.console-recent-more');
+  if (more) more.hidden = true;
+  row.parentElement.insertBefore(input, row.nextSibling);
+  consoleRecents.renaming = true;
+  let settled = false;
+  const finish = (keep) => {
+    if (settled) return;
+    settled = true;
+    consoleRecents.renaming = false;
+    const name = input.value.trim();
+    if (!keep || !name || name === chat.title) {
+      drawConsoleRecents();
+      return;
+    }
+    const before = chat.title;
+    chat.title = name;
+    
+    for (const section of consoleRecents.pins) for (const pin of section.chats) if (consoleChatKey(pin) === consoleChatKey(chat)) pin.title = name;
+    drawConsoleRecents();
+    agentLaunchAsk('renameChat', { agent: chat.agent, conversation: chat.id, name }).then((answer) => {
+      if (!answer.error) return;
+      chat.title = before;
+      drawConsoleRecents();
+      leafToast(answer.error);
+    });
+  };
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      finish(true);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation?.();
+      finish(false);
+    }
+  });
+  input.addEventListener('blur', () => finish(true));
+  input.addEventListener('click', (event) => event.stopPropagation?.());
+  leafFocusForKeyboard(input);
+  input.select?.();
+}
+
+
+function deleteConsoleRecent(chat) {
+  openConfirm(
+    `Delete “${chat.title || 'Untitled conversation'}”?`,
+    isMacPlatform ? 'Its conversation goes to the Trash, so you can put it back.' : 'Its conversation goes to the Recycle Bin, so you can put it back.',
+    'Delete',
+    () => {
+      agentLaunchAsk('deleteChat', { agent: chat.agent, conversation: chat.id }).then((answer) => {
+        if (answer.error) {
+          leafToast(answer.error);
+          return;
+        }
+        consoleRecents.rows = consoleRecents.rows.filter((row) => row !== chat);
+        drawConsoleRecents();
+      });
+    },
+  );
+}
+
+
+function openConsoleRecentMenu(element, x, y) {
+  const chat = consoleRecentOf(element);
+  if (!chat) return;
+  const entries = [
+    chat.unread
+      ? { label: 'Mark as read', icon: 'show', key: 'U', run: () => markConsoleRecent(chat, 'markRead', 'unread', false) }
+      : { label: 'Mark as unread', icon: 'hide', key: 'U', run: () => markConsoleRecent(chat, 'markUnread', 'unread', true) },
+    'separator',
+    consoleChatPinned(chat)
+      ? { label: 'Unpin', icon: 'bookmark-remove', key: 'P', run: () => pinConsoleChatAt(chat, 'recents') }
+      : { label: 'Pin', icon: 'favorite-off', key: 'P', run: () => pinConsoleChat(chat) },
+    { label: 'Rename', icon: 'rename', key: 'R', run: () => renameConsoleRecent(chat) },
+    'separator',
+    chat.archived
+      ? { label: 'Unarchive', icon: 'archive', key: 'A', run: () => markConsoleRecent(chat, 'unarchiveChat', 'archived', false) }
+      : { label: 'Archive', icon: 'archive', key: 'A', run: () => markConsoleRecent(chat, 'archiveChat', 'archived', true) },
+    { label: 'Delete', icon: 'trash', key: 'D', danger: true, run: () => deleteConsoleRecent(chat) },
+  ];
+  showConsoleTabMenu(x, y, entries);
 }
 
 
@@ -46827,11 +47203,119 @@ function reopenConsoleRecent(agent, conversation) {
   });
 }
 
+
+function pressConsoleRecent(row) {
+  if (row.classList.contains('console-pin-gone')) {
+    leafToast('That chat is gone; its agent no longer keeps it.');
+    return;
+  }
+  const chat = consoleRecentOf(row);
+  if (chat?.unread) markConsoleRecent(chat, 'markRead', 'unread', false);
+  reopenConsoleRecent(row.dataset.recentAgent, row.dataset.recentId);
+}
+
 if (consoleRecentsBand) {
   consoleRecentsBand.addEventListener('click', (event) => {
+    
+    if (consoleRecents.carried) {
+      consoleRecents.carried = false;
+      return;
+    }
+    const sectionMore = event.target.closest?.('.console-pin-more');
+    if (sectionMore) {
+      event.stopPropagation?.();
+      const box = sectionMore.getBoundingClientRect();
+      openConsolePinSectionMenu(Number(sectionMore.dataset.pinSection), box.left, box.bottom);
+      return;
+    }
+    if (event.target.closest?.('.console-recents-filter')) {
+      consoleRecents.archived = !consoleRecents.archived;
+      drawConsoleRecents();
+      return;
+    }
+    const more = event.target.closest?.('.console-recent-more');
+    if (more) {
+      
+      event.stopPropagation?.();
+      const box = more.getBoundingClientRect();
+      openConsoleRecentMenu(more, box.left, box.bottom);
+      return;
+    }
     const row = event.target.closest?.('.console-recent');
+    if (row) pressConsoleRecent(row);
+  });
+  consoleRecentsBand.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || event.target.closest?.('.console-recent-more')) return;
+    const row = event.target.closest?.('.console-recent');
+    const chat = row && consoleRecentOf(row);
+    if (!chat || consoleRecents.archived) return;
+    consoleRecents.carried = false;
+    consoleRecents.carry = { chat, pointerId: event.pointerId, x: event.clientX, y: event.clientY, chip: null, target: null };
+    leafHoldPointer(consoleRecentsBand, event.pointerId);
+  });
+  document.addEventListener('pointermove', (event) => {
+    const carry = consoleRecents.carry;
+    if (!carry || event.pointerId !== carry.pointerId) return;
+    if (!carry.chip) {
+      if (Math.hypot(event.clientX - carry.x, event.clientY - carry.y) < CONSOLE_CARRY_THRESHOLD) return;
+      const chip = document.createElement('div');
+      chip.className = 'library-carry-chip';
+      chip.textContent = carry.chat.title || 'Untitled conversation';
+      appSurface.appendChild(chip);
+      coverWebSurface(true, chip);
+      carry.chip = chip;
+      carry.origin = appSurface.getBoundingClientRect();
+      
+      drawConsoleRecents();
+    }
+    event.preventDefault?.();
+    carry.chip.style.transform = `translate(${event.clientX - (carry.origin.left || 0)}px, ${event.clientY - (carry.origin.top || 0)}px)`;
+    lightConsolePinDrop(consolePinDropAt(event.clientX, event.clientY));
+  });
+  document.addEventListener('pointerup', (event) => {
+    const carry = consoleRecents.carry;
+    if (!carry || event.pointerId !== carry.pointerId) return;
+    if (!carry.chip) {
+      
+      endConsoleCarry();
+      consoleRecents.carried = true;
+      setTimeout(() => { consoleRecents.carried = false; }, 0);
+      const row = consoleRecentRowOf(carry.chat);
+      if (row) pressConsoleRecent(row);
+      return;
+    }
+    const target = consolePinDropAt(event.clientX, event.clientY);
+    const place = target?.dataset.pinDrop;
+    consoleRecents.carried = true;
+    
+    setTimeout(() => { consoleRecents.carried = false; }, 0);
+    endConsoleCarry();
+    if (place && !(place === 'recents' && !consoleChatPinned(carry.chat))) pinConsoleChatAt(carry.chat, place);
+  });
+  document.addEventListener('pointercancel', (event) => {
+    if (consoleRecents.carry && event.pointerId === consoleRecents.carry.pointerId) endConsoleCarry();
+  });
+  
+  consoleRecentsBand.addEventListener('dragstart', (event) => event.preventDefault());
+  window.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !consoleRecents.carry?.chip) return;
+    event.preventDefault();
+    event.stopPropagation?.();
+    endConsoleCarry();
+  }, true);
+  consoleRecentsBand.addEventListener('contextmenu', (event) => {
+    const heading = event.target.closest?.('.console-pin-heading[data-pin-section]');
+    if (heading) {
+      event.preventDefault();
+      event.stopPropagation?.();
+      openConsolePinSectionMenu(Number(heading.dataset.pinSection), event.clientX, event.clientY);
+      return;
+    }
+    const row = event.target.closest?.('.console-recent-row');
     if (!row) return;
-    reopenConsoleRecent(row.dataset.recentAgent, row.dataset.recentId);
+    event.preventDefault();
+    event.stopPropagation?.();
+    openConsoleRecentMenu(row.querySelector('.console-recent'), event.clientX, event.clientY);
   });
 }
 
@@ -48227,6 +48711,8 @@ const CONSOLE_COMPOSER_ENTER_MS = 600;
 const CONSOLE_COMPOSER_HOLD_MS = 2000;
 
 const CONSOLE_COMPOSER_LINES = 8;
+
+const CONSOLE_COMPOSER_MENU_GAP = 6;
 const CONSOLE_COMPOSER_NAMES = { claude: 'Claude', codex: 'Codex' };
 
 const CONSOLE_COMPOSER_REWINDS = new Set(['claude', 'antigravity']);
@@ -48709,29 +49195,14 @@ function makeConsoleComposer(id, entry, frame) {
   const attach = consoleComposerButton('console-composer-tool', 'Attach a file', 'new');
   const slash = consoleComposerButton('console-composer-tool', entry.chat?.agent === 'codex' ? 'Skills' : 'Commands and skills');
   slash.textContent = entry.chat?.agent === 'codex' ? '$' : '/';
-  const rules = consoleComposerButton('console-composer-tool console-composer-rules', 'Rules this agent reads');
-  rules.textContent = 'Rules';
-  const servers = consoleComposerButton('console-composer-tool console-composer-servers', 'Tool servers');
-  servers.textContent = 'Tools';
-  const past = consoleComposerButton('console-composer-tool console-composer-past', 'Prompts sent before');
-  past.textContent = 'History';
-  const saved = consoleComposerButton('console-composer-tool console-composer-saved', 'Saved prompts');
-  saved.textContent = 'Saved';
-  const fork = consoleComposerButton('console-composer-tool console-composer-fork', 'Fork this conversation into a new console');
-  fork.textContent = 'Fork';
-  fork.hidden = !CONSOLE_COMPOSER_FORKS.has(entry.chat?.agent);
-  const rewind = consoleComposerButton('console-composer-tool console-composer-rewind', 'Rewind to an earlier prompt');
-  rewind.textContent = 'Rewind';
-  rewind.hidden = !CONSOLE_COMPOSER_REWINDS.has(entry.chat?.agent);
-  const side = consoleComposerButton('console-composer-tool console-composer-side', 'Ask a side question');
-  side.textContent = 'Side question';
-  side.setAttribute('aria-pressed', 'false');
+  
+  const more = consoleComposerButton('console-composer-tool console-composer-more', 'More', 'more');
   const mode = consoleComposerButton('console-composer-mode', 'Change the permission mode');
   mode.hidden = true;
   const notes = document.createElement('div');
   notes.className = 'console-composer-notes';
   notes.hidden = true;
-  tools.append(attach, slash, rules, servers, past, saved, fork, rewind, side, mode, notes);
+  tools.append(attach, slash, more, mode, notes);
   const submit = consoleComposerButton('console-composer-send', 'Send', 'forward-long');
   row.append(tools, submit);
   const list = document.createElement('div');
@@ -48741,7 +49212,7 @@ function makeConsoleComposer(id, entry, frame) {
   list.hidden = true;
   box.append(list, chips, words, row);
   frame.appendChild(box);
-  const state = { box, chips, field, attach, slash, rules, servers, past, saved, fork, rewind, side, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
+  const state = { box, chips, field, attach, slash, more, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
   entry.composer = state;
   
   state.width = 0;
@@ -48778,13 +49249,14 @@ function makeConsoleComposer(id, entry, frame) {
     send({ command: 'consoleCompose', id, request: state.request, ask: 'files' });
   });
   slash.addEventListener('click', () => openConsoleComposerCommands(id, entry));
-  saved.addEventListener('click', () => openConsoleSavedPrompts(id, entry));
-  past.addEventListener('click', () => openConsolePastPrompts(id, entry));
-  servers.addEventListener('click', () => openConsoleToolServers(id, entry));
-  rules.addEventListener('click', () => openConsoleRules(id, entry));
-  fork.addEventListener('click', () => consoleComposerFork(id, entry));
-  rewind.addEventListener('click', () => consoleComposerRewind(id, entry));
-  side.addEventListener('click', () => pressConsoleSideButton(id, entry));
+  more.addEventListener('click', event => {
+    
+    event.stopPropagation?.();
+    const at = more.getBoundingClientRect();
+    showConsoleTabMenu(at.left, at.top, consoleComposerMenuRows(id, entry));
+    
+    leafPlaceFloating(contextMenu, at.left, at.top - contextMenu.offsetHeight - CONSOLE_COMPOSER_MENU_GAP);
+  });
   mode.addEventListener('click', () => consoleComposerMode(id, entry));
   notes.addEventListener('click', event => {
     if (event.target.closest?.('.console-composer-note.is-warning')) consoleComposerToTerminal(entry);
@@ -48808,6 +49280,28 @@ function makeConsoleComposer(id, entry, frame) {
     chooseConsoleFile(id, entry, Number(option.dataset.index));
   });
   return state;
+}
+
+
+function consoleComposerMenuRows(id, entry) {
+  const agent = entry.chat?.agent;
+  const toField = (run) => () => {
+    run();
+    entry.composer?.field?.focus();
+  };
+  const rows = [
+    { label: 'Rules', icon: 'document', run: toField(() => openConsoleRules(id, entry)) },
+    { label: 'Tools', icon: 'package', run: toField(() => openConsoleToolServers(id, entry)) },
+    { label: 'History', icon: 'recent', run: () => openConsolePastPrompts(id, entry) },
+    { label: 'Saved', icon: 'favorite-off', run: toField(() => openConsoleSavedPrompts(id, entry)) },
+  ];
+  const branches = [];
+  if (CONSOLE_COMPOSER_FORKS.has(agent)) branches.push({ label: 'Fork', icon: 'duplicate', run: toField(() => consoleComposerFork(id, entry)) });
+  if (CONSOLE_COMPOSER_REWINDS.has(agent)) branches.push({ label: 'Rewind', icon: 'undo', run: toField(() => consoleComposerRewind(id, entry)) });
+  if (branches.length) rows.push('separator', ...branches);
+  
+  rows.push('separator', { label: 'Side question', icon: consoleSidePrefixed(entry) ? 'check' : 'comment', run: toField(() => pressConsoleSideButton(id, entry)) });
+  return rows;
 }
 
 function consoleComposerButton(className, label, icon) {
@@ -48855,18 +49349,10 @@ function drawConsoleComposer(id, entry) {
   if (state.slash.textContent !== mark) state.slash.textContent = mark;
   if (state.slash.title !== commandsLabel) state.slash.title = commandsLabel;
   if (state.slash.getAttribute('aria-label') !== commandsLabel) state.slash.setAttribute('aria-label', commandsLabel);
-  const forks = CONSOLE_COMPOSER_FORKS.has(chat.agent);
-  if (state.fork.hidden === forks) state.fork.hidden = !forks;
-  const rewinds = CONSOLE_COMPOSER_REWINDS.has(chat.agent);
-  if (state.rewind.hidden === rewinds) state.rewind.hidden = !rewinds;
   const mode = chat.agent === 'claude' ? consoleComposerModeName(chat.mode) : chat.agent === 'codex' ? consoleComposerCodexMode(chat) : null;
   state.mode.hidden = !mode;
   if (mode && state.mode.textContent !== mode) state.mode.textContent = mode;
   drawConsoleComposerNotes(state, chat.agent === 'claude' ? chat.notes || [] : []);
-  
-  const side = consoleSidePrefixed(entry);
-  state.side.classList.toggle('is-active', side);
-  if (state.side.getAttribute('aria-pressed') !== String(side)) state.side.setAttribute('aria-pressed', String(side));
   const working = consoleComposerWorking(entry);
   const ready = consoleComposerHasMessage(entry);
   const stop = working && !ready;
@@ -51724,6 +52210,8 @@ const LEAF_MERMAID_ICONS = {
     'duplicate': { body: "<line x1=\"15\" x2=\"15\" y1=\"12\" y2=\"18\" /><line x1=\"12\" x2=\"18\" y1=\"15\" y2=\"15\" /><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />", width: 24, height: 24 },
     'show': { body: "<path d=\"M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0\" /><circle cx=\"12\" cy=\"12\" r=\"3\" />", width: 24, height: 24 },
     'hide': { body: "<path d=\"M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49\" /><path d=\"M14.084 14.158a3 3 0 0 1-4.242-4.242\" /><path d=\"M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143\" /><path d=\"m2 2 20 20\" />", width: 24, height: 24 },
+    'more': { body: "<circle cx=\"12\" cy=\"12\" r=\"1\" /><circle cx=\"12\" cy=\"5\" r=\"1\" /><circle cx=\"12\" cy=\"19\" r=\"1\" />", width: 24, height: 24 },
+    'archive': { body: "<rect width=\"20\" height=\"5\" x=\"2\" y=\"3\" rx=\"1\" /><path d=\"M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8\" /><path d=\"M10 12h4\" />", width: 24, height: 24 },
     'reveal': { body: "<path d=\"M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1\" /><path d=\"m21 21-1.9-1.9\" /><circle cx=\"17\" cy=\"17\" r=\"3\" />", width: 24, height: 24 },
     'properties': { body: "<circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"M12 16v-4\" /><path d=\"M12 8h.01\" />", width: 24, height: 24 },
     'open-outside': { body: "<path d=\"M15 3h6v6\" /><path d=\"M10 14 21 3\" /><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\" />", width: 24, height: 24 },
@@ -56874,6 +57362,11 @@ function bindDocumentMinimap() {
       dragMinimapViewportToPointer(event, minimapPointerOffsetY);
     } else {
       scrollToMinimapSnapshotPoint(event, waitingForReading, waitingTrackRect);
+      
+      if (!waitingForReading && minimapDragMetrics?.trackRect) {
+        const landed = minimapViewportPlace(minimapDragMetrics, readerScrollElement().scrollTop);
+        minimapPointerOffsetY = event.clientY - minimapDragMetrics.trackRect.top - landed.viewportTop;
+      }
     }
     focusAfterJump();
   }));
@@ -58169,13 +58662,7 @@ function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
   if (content) {
     content.style.height = `${scaledDocumentHeight}px`;
   }
-  const scrollTop = Math.min(metrics.scrollable, Math.max(0, scrollTopOverride === null ? metrics.scrollTop : scrollTopOverride));
-  const scrollRatio = metrics.scrollable === 0 ? 0 : Math.min(1, Math.max(0, scrollTop / metrics.scrollable));
-  const viewportHeight = Math.max(22, metrics.viewportHeight * metrics.previewScale);
-  const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);
-  const previewTop = -scrollRatio * Math.max(0, scaledDocumentHeight - metrics.trackHeight);
-  const viewportDocumentTop = scrollTop * metrics.previewScale;
-  const viewportTop = Math.min(Math.max(0, metrics.trackHeight - boundedViewportHeight), Math.max(0, previewTop + viewportDocumentTop));
+  const { previewTop, viewportTop, boundedViewportHeight } = minimapViewportPlace(metrics, scrollTopOverride === null ? metrics.scrollTop : scrollTopOverride);
   const spaceAfterViewport = Math.max(0, metrics.trackHeight - viewportTop - boundedViewportHeight);
   
   if (content) {
@@ -58669,6 +59156,17 @@ function measureDocumentMinimap(track) {
   
   track.style.height = `${trackHeight}px`;
   return { source, sourceWidth, contentWidth, sourceTop, trackRect, trackHeight, viewportHeight, scrollHeight, scrollable, scrollTop, previewScale, scaledDocumentHeight };
+}
+
+function minimapViewportPlace(metrics, scrollTopWanted) {
+  const scrollTop = Math.min(metrics.scrollable, Math.max(0, scrollTopWanted));
+  const scrollRatio = metrics.scrollable === 0 ? 0 : Math.min(1, Math.max(0, scrollTop / metrics.scrollable));
+  const viewportHeight = Math.max(22, metrics.viewportHeight * metrics.previewScale);
+  const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);
+  const previewTop = -scrollRatio * Math.max(0, metrics.scaledDocumentHeight - metrics.trackHeight);
+  const viewportDocumentTop = scrollTop * metrics.previewScale;
+  const viewportTop = Math.min(Math.max(0, metrics.trackHeight - boundedViewportHeight), Math.max(0, previewTop + viewportDocumentTop));
+  return { previewTop, viewportTop, boundedViewportHeight };
 }
 function updateConsoleMinimapPreview(track, content, minimap) {
   const entry = frontConsoleEntry();

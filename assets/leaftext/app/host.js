@@ -38,6 +38,8 @@ export const COMMANDS = {
   renameConsoleAccount: [REFUSED, 'this page has no console account to rename'],
   consoleFolderList: [REFUSED, 'a published page has no console whose folder could be listed'],
   consoleChooseFolder: [REFUSED, 'a published page has no console to choose a folder for'],
+  newMenuFolderList: [REFUSED, 'a published page has no folder to start a local command line in'],
+  newMenuChooseFolder: [REFUSED, 'a published page has no folder to start a local command line in'],
   consoleUseFolder: [REFUSED, 'a published page has no console agent to move or start'],
   consoleInput: [REFUSED, 'a published page has no console process to receive input'],
   consoleHandOver: [REFUSED, 'a published page has no agent session to read or hand on'],

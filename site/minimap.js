@@ -179,6 +179,20 @@ export function initMinimap(source) {
   }
 
   // ---- the viewport rectangle --------------------------------------------
+  // Where the viewport rectangle stands in the track for a scroll offset, how tall it is, and how far the picture behind it has slid; drawing the rectangle and a click that has to know where it will be both ask this.
+  function viewportPlace(m, scrollTop) {
+    const scrollRatio = m.scrollable === 0 ? 0 : Math.min(1, Math.max(0, scrollTop / m.scrollable));
+    const rawViewportHeight = Math.max(MIN_VIEWPORT_HEIGHT, m.viewportHeight * m.previewScale);
+    const boundedViewportHeight = Math.min(m.trackHeight, rawViewportHeight);
+    const previewTop = -scrollRatio * Math.max(0, m.scaledDocHeight - m.trackHeight);
+    const viewportDocumentTop = scrollTop * m.previewScale;
+    const viewportTop = Math.min(
+      Math.max(0, m.trackHeight - boundedViewportHeight),
+      Math.max(0, previewTop + viewportDocumentTop)
+    );
+    return { previewTop, viewportTop, boundedViewportHeight };
+  }
+
   // Place the rectangle (and slide the thumbnail) to reflect the current scroll position. When the thumbnail is taller than the rail it scrolls inside the rail, the way a code-editor minimap does on long files.
   function updateViewport(measurement) {
     viewportFrame = 0;
@@ -188,15 +202,7 @@ export function initMinimap(source) {
     content.style.height = `${scaledDocHeight}px`;
     track.style.height = `${m.trackHeight}px`;
 
-    const scrollRatio = m.scrollable === 0 ? 0 : Math.min(1, Math.max(0, m.scrollTop / m.scrollable));
-    const rawViewportHeight = Math.max(MIN_VIEWPORT_HEIGHT, m.viewportHeight * m.previewScale);
-    const boundedViewportHeight = Math.min(m.trackHeight, rawViewportHeight);
-    const previewTop = -scrollRatio * Math.max(0, scaledDocHeight - m.trackHeight);
-    const viewportDocumentTop = m.scrollTop * m.previewScale;
-    const viewportTop = Math.min(
-      Math.max(0, m.trackHeight - boundedViewportHeight),
-      Math.max(0, previewTop + viewportDocumentTop)
-    );
+    const { previewTop, viewportTop, boundedViewportHeight } = viewportPlace(m, m.scrollTop);
 
     // Both of these move on every frame of a scroll, so both are written as a transform rather than as `top`. Measured in a browser over a 60,748px published page: either one written as `top` lays the whole page out on every frame it moves — 120 frames, 120 layouts — and moving only the lane left that count exactly where it was, because the box beside it was still a layout property. Both on a transform: no layout at all. The `top: 0` both stylesheets give them is the origin these offsets are measured from, so the number written is the same number.
     content.style.transform = `translateY(${previewTop}px)`;
@@ -264,6 +270,9 @@ export function initMinimap(source) {
       dragToPointer(event, pointerOffsetY);
     } else {
       jumpToPoint(event);
+      // A hand that moves a pixel after the jump carries on from where it landed, rather than dragging a rectangle centered on the pointer, which on a picture taller than the track is another place in the page.
+      const m = measure();
+      pointerOffsetY = event.clientY - track.getBoundingClientRect().top - viewportPlace(m, m.scrollTop).viewportTop;
     }
   });
   track.addEventListener('pointermove', (event) => {

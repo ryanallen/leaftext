@@ -660,6 +660,7 @@
 | Agent plugin install | [✅][l-agent-plugin] | ? | [❌][t-seen] | [❌][c-seen] |
 | Agents held to checks | [✅][l-agent-harness] | ? | [❌][t-seen] | [❌][c-seen] |
 | Drop paths into console | [✅][l-agent-drop] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pick agent start folder | [✅][l-agent-drop] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agent conversation as chat | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Chat or terminal switch | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Choose agent's folder | [✅][l-agent-folder] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

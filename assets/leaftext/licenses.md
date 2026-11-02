@@ -2,7 +2,7 @@
 
 # Licenses
 
-Leaftext 5.25.1 carries the drawings, libraries and Rust packages below, each under its author's own license, reproduced here word for word.
+Leaftext 5.26.0 carries the drawings, libraries and Rust packages below, each under its author's own license, reproduced here word for word.
 
 ## Drawings
 

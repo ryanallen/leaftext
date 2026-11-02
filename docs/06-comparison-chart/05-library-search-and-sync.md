@@ -402,6 +402,12 @@
 | Agents name their consoles | [✅][l-agent-name] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Console links open | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Command pinned at top | [✅][l-console-pin] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Past agent chats listed | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Mark a chat unread | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Rename a past chat | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Archive a past chat | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Delete chat to bin | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pin chats in sections | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agent prompt pinned | [✅][l-console-prompt] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Clicks reach console programs | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Tasks launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -486,6 +492,7 @@
 [l-console-agents]: ../01-features/03-library.md#every-agent-in-one-list
 [l-agent-name]: ../01-features/10-agents.md#run-the-agent-in-a-console
 [l-console-pin]: ../01-features/03-library.md#the-command-you-ran-stays-at-the-top
+[l-agent-recents]: ../01-features/03-library.md#past-conversations-in-the-sidebar
 [l-console-prompt]: ../01-features/03-library.md#the-prompt-you-sent-an-agent-stays-at-the-top
 [l-layout]: ../01-features/03-library.md#layout
 [l-narrow]: ../01-features/03-library.md#narrow-windows
