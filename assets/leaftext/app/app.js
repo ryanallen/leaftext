@@ -44482,9 +44482,87 @@ function sendConsoleMouse(id, terminal, button, event, release) {
   return cell;
 }
 
+
+const CONSOLE_PICKERS = {
+  codex: { title: /^\s*(?:Select Model and Effort|Select Reasoning Level for \S.*)$/, foot: /^\s*enter \w+ ·.*esc back\s*$/ },
+  antigravity: { title: /^\s*Switch Model\s*$/, foot: /↑\/↓ Navigate/ },
+};
+
+
+function consolePickerKeys(entry, row, lines) {
+  const picker = CONSOLE_PICKERS[entry.agent];
+  const body = picker ? consolePickerBody(picker, lines, row) : null;
+  if (!body) return null;
+  
+  const mark = body.findIndex(line => /^\s*[›>❯]\s+\S/.test(line.text));
+  if (mark < 0) return '';
+  let first = mark;
+  let last = mark;
+  while (first > 0 && body[first - 1].text.trim()) first -= 1;
+  while (last < body.length - 1 && body[last + 1].text.trim()) last += 1;
+  const rows = consolePickerRows(body.slice(first, last + 1));
+  const marked = rows.findIndex(each => each.marked);
+  const index = rows.findIndex(each => each.lines.includes(row));
+  if (marked < 0 || index < 0) return '';
+  const arrow = (entry.terminal.getMode(1) ? '\x1bO' : '\x1b[') + (index < marked ? 'A' : 'B');
+  return arrow.repeat(Math.abs(index - marked)) + '\r';
+}
+
+
+function consolePickerRows(body) {
+  const markOf = text => /^(\s*[›>❯]\s+)\S/.exec(text)?.[1].length ?? -1;
+  const column = body.map(line => markOf(line.text)).find(length => length > 0);
+  if (!column) return [];
+  const rows = [];
+  let open = null;
+  for (const line of body) {
+    const start = line.text.search(/\S/);
+    const marked = markOf(line.text) === column;
+    if (start === column || marked) rows.push(open = { lines: [line.row], marked });
+    else if (open && start > column) open.lines.push(line.row);
+    else open = null;
+  }
+  return rows;
+}
+
+
+function consolePickerBody(picker, lines, row) {
+  let title = -1;
+  for (let at = row; at >= 0; at -= 1) {
+    if (picker.foot.test(lines[at])) return null;
+    if (picker.title.test(lines[at])) { title = at; break; }
+  }
+  if (title < 0) return null;
+  let foot = row;
+  while (foot < lines.length && !picker.foot.test(lines[foot])) foot += 1;
+  if (foot >= lines.length) return null;
+  return lines.slice(title + 1, foot).map((text, at) => ({ text, row: title + 1 + at }));
+}
+
+
+function consolePickerPress(id, entry, event) {
+  const terminal = entry.terminal;
+  if (event.button !== 0 || event.shiftKey || !CONSOLE_PICKERS[entry.agent] || !terminal?.buffer?.active) return false;
+  const base = consoleBuffer(entry).baseY;
+  const lines = readConsoleScreenOnce(terminal.wasmTerm, () => Array.from({ length: terminal.rows }, (_, at) => consoleLineText(entry, base + at) ?? ''));
+  const keys = consolePickerKeys(entry, consoleCellAt(terminal, event).row - 1, lines);
+  if (keys === null) return false;
+  event.preventDefault();
+  event.stopPropagation();
+  terminal.focus();
+  entry.mouseHeld = null;
+  entry.mouseClicked = true;
+  if (keys && event.detail <= 1) {
+    cancelConsoleModel(entry);
+    send({ command: 'consoleInput', id, data: keys });
+  }
+  return true;
+}
+
 function consoleMousePress(id, entry, event) {
   const terminal = entry.terminal;
   entry.mouseClicked = false;
+  if (consolePickerPress(id, entry, event)) return true;
   if ((event.button !== 0 && event.button !== 1) || !consoleMouseWanted(terminal, event)) return false;
   event.preventDefault();
   event.stopPropagation();
@@ -46913,11 +46991,12 @@ function placeConsoleChatOverPanel(entry) {
   }
   const held = view.log.scrollHeight - view.log.scrollTop - view.log.clientHeight <= 2;
   entry.chatOverPanel = rule;
+  
+  view.box.hidden = false;
   const screen = consoleScreen(entry.terminal);
   const frame = view.box.offsetParent;
   if (screen && frame) view.box.style.bottom = `${Math.max(0, frame.getBoundingClientRect().bottom - screen.getBoundingClientRect().top - rule * consoleRowHeight(entry.terminal))}px`;
   if (entry.composer) entry.composer.box.hidden = true;
-  view.box.hidden = false;
   if (held) view.log.scrollTop = view.log.scrollHeight;
 }
 
@@ -47097,36 +47176,25 @@ function consoleChatStatusRow(entry, read) {
 
 
 function consoleRecordEdit(item) {
-  const node = document.createElement('div');
-  node.className = 'console-diff';
-  const lines = Array.isArray(item.lines) ? item.lines : [];
-  const removed = lines.filter(line => line.startsWith('-')).length;
-  const added = lines.filter(line => line.startsWith('+')).length;
-  const head = document.createElement('div');
-  head.className = 'console-diff-head';
-  head.textContent = `${item.path || 'An edit'} — ${removed} removed, ${added} added`;
-  node.appendChild(head);
-  const body = document.createElement('div');
-  body.className = 'console-diff-lines';
-  const shown = lines.slice(0, CONSOLE_DIFF_LINES);
-  for (const line of shown) {
-    const row = document.createElement('div');
-    row.className = line.startsWith('+') ? 'console-diff-line is-added' : line.startsWith('-') ? 'console-diff-line is-removed' : 'console-diff-line';
-    row.textContent = line || ' ';
-    body.appendChild(row);
+  if (typeof item.card !== 'string') {
+    const node = document.createElement('div');
+    node.className = 'console-chat-text';
+    node.textContent = `${item.path || 'An edit'} — ${item.error || 'no diff to draw'}`;
+    return node;
   }
-  if (lines.length > shown.length) {
-    const more = document.createElement('div');
-    more.className = 'console-diff-line';
-    more.textContent = `… ${lines.length - shown.length} more lines`;
-    body.appendChild(more);
-  }
-  node.appendChild(body);
+  const holder = document.createElement('div');
+  const spot = document.createElement('div');
+  holder.appendChild(spot);
+  spot.outerHTML = item.card;
+  const node = holder.firstElementChild;
+  const path = node.querySelector('.diff-card-path');
+  if (path && item.path) path.textContent = item.path;
+  consoleDiffPlain.set(node, String(item.plain || ''));
   return node;
 }
 
 
-const CONSOLE_DIFF_LINES = 40;
+const consoleDiffPlain = new WeakMap();
 
 
 function consoleRecordItem(item) {
@@ -47475,6 +47543,12 @@ function onConsoleChatClick(id, entry, event) {
     consoleChatRailChanged(id, entry);
     return;
   }
+  const diffCopy = event.target.closest?.('.diff-card-copy');
+  if (diffCopy) {
+    const text = consoleDiffPlain.get(diffCopy.closest('.diff-card'));
+    if (text) send({ command: 'consoleCopy', id, text });
+    return;
+  }
   const copy = event.target.closest?.('.console-copy');
   if (copy) {
     const node = copy.closest('.console-turn');
@@ -47498,6 +47572,8 @@ const CONSOLE_COMPOSER_HOLD_MS = 2000;
 
 const CONSOLE_COMPOSER_LINES = 8;
 const CONSOLE_COMPOSER_NAMES = { claude: 'Claude', codex: 'Codex' };
+
+const CONSOLE_COMPOSER_REWINDS = new Set(['claude', 'antigravity']);
 
 const CONSOLE_COMPOSER_QUEUED = 'Press up to edit queued messages';
 
@@ -47975,6 +48051,9 @@ function makeConsoleComposer(id, entry, frame) {
   const attach = consoleComposerButton('console-composer-tool', 'Attach a file', 'new');
   const slash = consoleComposerButton('console-composer-tool', entry.chat?.agent === 'codex' ? 'Skills' : 'Commands and skills');
   slash.textContent = entry.chat?.agent === 'codex' ? '$' : '/';
+  const rewind = consoleComposerButton('console-composer-tool console-composer-rewind', 'Rewind to an earlier prompt');
+  rewind.textContent = 'Rewind';
+  rewind.hidden = !CONSOLE_COMPOSER_REWINDS.has(entry.chat?.agent);
   const side = consoleComposerButton('console-composer-tool console-composer-side', 'Ask a side question');
   side.textContent = 'Side question';
   side.setAttribute('aria-pressed', 'false');
@@ -47983,7 +48062,7 @@ function makeConsoleComposer(id, entry, frame) {
   const notes = document.createElement('div');
   notes.className = 'console-composer-notes';
   notes.hidden = true;
-  tools.append(attach, slash, side, mode, notes);
+  tools.append(attach, slash, rewind, side, mode, notes);
   const submit = consoleComposerButton('console-composer-send', 'Send', 'forward-long');
   row.append(tools, submit);
   const list = document.createElement('div');
@@ -47993,7 +48072,7 @@ function makeConsoleComposer(id, entry, frame) {
   list.hidden = true;
   box.append(list, chips, words, row);
   frame.appendChild(box);
-  const state = { box, chips, field, attach, slash, side, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
+  const state = { box, chips, field, attach, slash, rewind, side, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
   entry.composer = state;
   
   state.width = 0;
@@ -48030,6 +48109,7 @@ function makeConsoleComposer(id, entry, frame) {
     send({ command: 'consoleCompose', id, request: state.request, ask: 'files' });
   });
   slash.addEventListener('click', () => openConsoleComposerCommands(id, entry));
+  rewind.addEventListener('click', () => consoleComposerRewind(id, entry));
   side.addEventListener('click', () => pressConsoleSideButton(id, entry));
   mode.addEventListener('click', () => consoleComposerMode(id, entry));
   notes.addEventListener('click', event => {
@@ -48101,6 +48181,8 @@ function drawConsoleComposer(id, entry) {
   if (state.slash.textContent !== mark) state.slash.textContent = mark;
   if (state.slash.title !== commandsLabel) state.slash.title = commandsLabel;
   if (state.slash.getAttribute('aria-label') !== commandsLabel) state.slash.setAttribute('aria-label', commandsLabel);
+  const rewinds = CONSOLE_COMPOSER_REWINDS.has(chat.agent);
+  if (state.rewind.hidden === rewinds) state.rewind.hidden = !rewinds;
   const mode = chat.agent === 'claude' ? consoleComposerModeName(chat.mode) : chat.agent === 'codex' ? consoleComposerCodexMode(chat) : null;
   state.mode.hidden = !mode;
   if (mode && state.mode.textContent !== mode) state.mode.textContent = mode;
@@ -48319,6 +48401,8 @@ function consoleComposerAttach(id, entry, paths) {
 function consoleComposerToAgent(id, entry, text) {
   const state = entry.composer;
   state.field.value = '';
+  
+  state.field.focus();
   closeConsoleFileList(entry);
   consoleKeyTyped(id);
   send({ command: 'consoleInput', id, data: text });
@@ -48334,6 +48418,22 @@ function openConsoleComposerCommands(id, entry) {
   field.focus();
   field.selectionStart = field.selectionEnd = word ? word[0].length : 1;
   onConsoleComposerInput(id, entry);
+}
+
+
+function consoleComposerRewind(id, entry) {
+  if (!CONSOLE_COMPOSER_REWINDS.has(entry.chat?.agent)) return;
+  const name = CONSOLE_COMPOSER_NAMES[entry.chat.agent] || 'the agent';
+  if (consoleComposerWorking(entry)) {
+    leafToast(`Wait for ${name} to finish before rewinding.`);
+    return;
+  }
+  if (consoleComposerHasMessage(entry)) {
+    leafToast('Send or clear your message before rewinding.');
+    return;
+  }
+  consoleComposerToAgent(id, entry, '/rewind');
+  setTimeout(() => send({ command: 'consoleInput', id, data: '\r' }), CONSOLE_COMPOSER_ENTER_MS);
 }
 
 function consoleComposerStop(id, entry) {
