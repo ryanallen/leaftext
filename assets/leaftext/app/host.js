@@ -93,6 +93,7 @@ export const COMMANDS = {
   openSourceBeside: [REFUSED, 'the browser owns tabs on a site'],
   setSplitLayout: [REFUSED, 'the browser owns tabs on a site'],
   goHome: [ANSWERED],
+  openLibrary: [REFUSED, 'a published site keeps its library in its pane and draws no Library row'],
   openLink: [ANSWERED],
   openExternal: [REFUSED, 'the browser follows a link out of the site itself'],
   openGlossary: [ANSWERED],

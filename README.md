@@ -175,7 +175,7 @@ Search notes, follow links, and find free books from Internet Archive, Open Libr
 
 ### Point it at a folder and it becomes a vault
 
-![The library pane open beside a document, with New, Search and Library at its top, the vault switcher on the Library row, and a file list showing three folders first and then the files beside them](imgs/library-v2.png)
+![The Library tab open beside a document's tab: the sidebar keeps New, Search and Library, then All chats; the page area shows the vault's three folders and then its files](imgs/library-v3.png)
 
 A side pane that browses one folder at a time, with a breadcrumb that always says where you are. Name a folder a **vault** and it becomes the thing search and syncing work over; the same switcher over the start screen takes you back from Library. Nothing is crawled, and nothing is written into your folder. **[Library →](docs/01-features/03-library.md#vaults)**
 

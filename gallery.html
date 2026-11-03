@@ -7647,11 +7647,11 @@ body.is-library-settling .app-bar::after {
 body.is-library-closing .library-crumbs,
 body.is-library-closing .library-nav,
 body.is-library-closing .library-foot,
-body.is-library-closing .library-scroll,
+body.is-library-closing .library-pane .library-scroll,
 body.is-library-settling .library-crumbs,
 body.is-library-settling .library-nav,
 body.is-library-settling .library-foot,
-body.is-library-settling .library-scroll {
+body.is-library-settling .library-pane .library-scroll {
   opacity: 0;
   transition: opacity var(--lt-duration-260) var(--lt-ease);
 }
@@ -7659,7 +7659,7 @@ body.is-library-settling .library-scroll {
 body.is-library-opening .library-crumbs,
 body.is-library-opening .library-nav,
 body.is-library-opening .library-foot,
-body.is-library-opening .library-scroll {
+body.is-library-opening .library-pane .library-scroll {
   animation: leaf-library-open-arrive var(--lt-duration-260) var(--lt-ease);
 }
 @keyframes leaf-library-open-arrive {
@@ -8863,6 +8863,28 @@ body.library-resizing button {
   /* Standing in for the page means standing where it stands: with no pane to sit against, the card is held off the left frame by the same gutter, and the arc that caps its top-left is already moved out to it. */
   margin-left: var(--reader-gutter);
 }
+/* The library page: the pane's own lists, moved here by library-nav.js so the chats keep the pane. It stands where the map does, wearing the page's frame, over whatever is in front. */
+.reader-library {
+  grid-column: 2 / 4;
+  grid-row: 1;
+  z-index: 5;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  background: var(--lt-markdown-background);
+  border-left: var(--lt-stroke-1) solid var(--lt-border);
+  border-right: var(--lt-stroke-1) solid var(--lt-border);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
+}
+.reader-library[hidden] { display: none; }
+.library-shell.library-closed .reader-library {
+  margin-left: var(--reader-gutter);
+}
+/* Clear of the app bar the page tucks under, and held off the card's edges like a page's text. */
+.reader-library .library-scroll {
+  padding: calc(var(--app-bar-height) + var(--lt-space-8)) var(--lt-space-16) var(--lt-space-8);
+}
 .reader-graph-canvas {
   width: 100%;
   height: 100%;
@@ -9011,11 +9033,17 @@ body.library-resizing button {
 .console-minimap-preview { position: relative; overflow: hidden; color: var(--lt-markdown-foreground); font-family: monospace; font-size: var(--lt-text-12); }
 .console-minimap-lines { position: absolute; left: 0; right: 0; }
 .console-minimap-line { white-space: pre; overflow: hidden; }
-/* A console in front makes the pane its sidebar: the files hidden where they stand, so a document brings them back at the same scroll, and All chats filling the rest down to the foot. */
-.library-pane.is-console-sidebar .library-scroll { visibility: hidden; }
-.console-recents { position: absolute; left: 0; right: 0; top: var(--library-chrome-height); bottom: var(--library-foot-height); z-index: 2; box-sizing: border-box; padding: var(--lt-space-6) var(--lt-space-8) var(--lt-space-4); overflow-x: hidden; overflow-y: auto; background-color: var(--lt-surface); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-attachment: fixed; }
-.library-shell .console-recents[hidden] { display: none; }
-.library-shell.library-closed .console-recents { display: none; }
+/* All chats fills the pane under the rows, down to the foot; the library's lists stand in the page on the right (library-nav.js). */
+.sidebar-lists { position: absolute; left: 0; right: 0; top: var(--library-chrome-height); bottom: var(--library-foot-height); z-index: 2; box-sizing: border-box; padding: var(--lt-space-6) var(--lt-space-8) var(--lt-space-4); overflow-x: hidden; overflow-y: auto; background-color: var(--lt-surface); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-attachment: fixed; }
+.library-shell .sidebar-lists[hidden], .library-shell .console-recents[hidden], .sidebar-outline[hidden] { display: none; }
+.library-shell.library-closed .sidebar-lists { display: none; }
+/* A section of the sidebar folds from its own heading: the heading is the press, its chevron turned while folded. */
+.sidebar-fold { appearance: none; display: flex; align-items: center; gap: var(--lt-space-4); border: none; border-radius: var(--lt-radius-md); background: transparent; cursor: pointer; }
+@media (hover: hover) { .sidebar-fold:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
+.sidebar-fold .lt-icon { width: 10px; height: 10px; transition: transform var(--lt-duration-150) var(--lt-ease); }
+.sidebar-fold[aria-expanded="false"] .lt-icon { transform: rotate(-90deg); }
+.sidebar-outline { margin-bottom: var(--lt-space-6); }
+.sidebar-outline-count { padding: 0 var(--lt-space-6); color: var(--lt-muted-foreground); font-family: var(--app-font); font-size: var(--lt-text-10); }
 .console-recents-note { padding: var(--lt-space-2) var(--lt-space-6); color: var(--lt-muted-foreground); font-family: var(--app-font); font-size: var(--lt-text-11); }
 .console-agents-heading { height: 20px; padding: 0 var(--lt-space-6); color: var(--lt-muted-foreground); font-family: var(--app-font); font-size: var(--lt-text-10); font-weight: var(--lt-weight-600); letter-spacing: var(--lt-tracking-060); line-height: 20px; text-transform: uppercase; }
 .console-agent { display: flex; align-items: center; gap: var(--lt-space-6); box-sizing: border-box; width: 100%; height: 26px; padding: 0 var(--lt-space-6); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-md); background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12-5); text-align: left; cursor: default; }
@@ -20521,7 +20549,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 118 icons, and all 193 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 118 icons, and all 195 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -20553,7 +20581,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>118</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>193</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>195</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -21038,7 +21066,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">193 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">195 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -21284,7 +21312,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="console-recents" style="position:relative;height:96px" role="list" aria-label="Chats"><div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="lt-icon lt-icon-agent-claude"></span></span><span class="lt-icon lt-icon-agent-claude"></span></span><span class="console-agent-name">app 2</span><span class="console-agent-state console-agent-needs">Needs you</span></button></div><div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running console-agent-front console-agent-working"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="lt-icon lt-icon-agent-claude"></span></span><span class="lt-icon lt-icon-agent-claude"></span></span><span class="console-agent-name">scratchpad</span><span class="console-agent-state">Working</span></button></div><div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="lt-icon lt-icon-agent-codex"></span></span><span class="lt-icon lt-icon-agent-codex"></span></span><span class="console-agent-name">site</span><span class="console-agent-state">At rest</span></button></div></div></div>
 </section>
 <section class="part">
-<header><h3>Pane rows</h3><code class="built">.library-nav</code><span class="built">library-nav.js, the band under the app bar where a published site keeps its trail (has-nav on the pane gives it the band's height): three rows (library-nav-row), each an icon and then its word (library-nav-word) in the chat rows' own shape and ink — New opens the plus's menu anchored on the row, Search raises the find bar on the vault, and Library swaps the space under the rows between the chats and the files, lit while the files stand (aria-pressed); the Library row (library-nav-library) carries at its end the open document's heart and the folder's sort while the files stand (library-row-end), then the vault switch, then Sync while the vault has unpushed work</span></header>
+<header><h3>Pane rows</h3><code class="built">.library-nav</code><span class="built">library-nav.js, the band under the app bar where a published site keeps its trail (has-nav on the pane gives it the band's height): three rows (library-nav-row), each an icon and then its word (library-nav-word) in the chat rows' own shape and ink — New opens the plus's menu anchored on the row, Search raises the find bar on the vault, and Library opens the window's Library tab, lit while it is in front (aria-pressed), the outline and the chats staying under the rows; the Library row (library-nav-library) carries at its end the open document's heart and the folder's sort while the Library tab is in front (library-row-end), then the vault switch, then Sync while the vault has unpushed work</span></header>
 <div class="stage"><div class="library-pane has-nav" style="position:relative;height:110px;--library-app-bar:0px"><div class="library-nav" role="toolbar" aria-label="Sidebar"><button type="button" class="library-nav-row"><span class="lt-icon lt-icon-new" aria-hidden="true"></span><span class="library-nav-word">New</span></button><button type="button" class="library-nav-row"><span class="lt-icon lt-icon-search" aria-hidden="true"></span><span class="library-nav-word">Search</span></button><div class="library-nav-library"><button type="button" class="library-nav-row" aria-pressed="true"><span class="lt-icon lt-icon-library" aria-hidden="true"></span><span class="library-nav-word">Library</span></button><span class="library-row-end"></span><button type="button" class="library-vault-switch" aria-expanded="false" aria-label="Vaults"><span class="library-crumb-caret" aria-hidden="true">▾</span><span class="lt-icon lt-icon-computer"></span></button></div></div></div></div>
 </section>
 <section class="part">
@@ -21534,6 +21562,14 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Graph</h3><code class="built">.reader-graph</code><span class="built">app-shell.html, drawn by graph.js and graph-scene.js</span></header>
 <div class="stage"><div class="reader-graph" style="height:120px"><p class="reader-graph-legend"><span class="graph-key graph-key-document"></span>your documents<span class="graph-key graph-key-external"></span>web addresses</p></div></div>
+</section>
+<section class="part">
+<header><h3>Library page</h3><code class="built">.reader-library</code><span class="built">app-shell.html, shown by library-nav.js while the window's Library tab is in front: the pane's own file list with its Back row, and a calendar day, moved into the page's place where the map stands</span></header>
+<div class="stage"><section class="reader-library" aria-label="Library" style="height:120px"><div class="library-scroll"></div></section></div>
+</section>
+<section class="part">
+<header><h3>Sidebar lists</h3><code class="built">.sidebar-lists</code><span class="built">app-shell.html, filled by library-nav.js and console-recents.js: the one scroll box under the pane's rows — the Outline section (sidebar-outline) while a page with headings is in front, its heading a fold (sidebar-fold) with the count beside it (sidebar-outline-count), then the chats, whose All chats heading folds the same way</span></header>
+<div class="stage"><div class="sidebar-lists" style="position:relative;height:120px"><section class="sidebar-outline"><div class="console-recents-heading-row"><button type="button" class="console-agents-heading sidebar-fold" aria-expanded="true"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>Outline</button><span class="sidebar-outline-count">3 headings</span></div></section><div class="console-recents-heading-row"><button type="button" class="console-agents-heading sidebar-fold" aria-expanded="false"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>All chats</button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Flow canvas</h3><code class="built">.flow</code><span class="built">flow-canvas.js, with flow-menu.js drawing its right-click menu</span></header>

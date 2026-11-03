@@ -4,7 +4,7 @@
 
 The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for it.
 
-![The library pane open beside a document: New, Search and Library at the top, Library pressed with the sort button, vault switcher and books at its row, and the vault's folders first and then its files under it](../../imgs/library-v2.png)
+![The Library tab open beside a document's tab: the sidebar keeps New, Search and Library, then All chats; the page area shows the vault's three folders and then its files](../../imgs/library-v3.png)
 
 ## The pane's rows
 
@@ -12,20 +12,20 @@ The pane opens on three rows, each an icon and then its word:
 
 - **New** opens the menu for a new page, a console or an agent, the same one the tab strip's plus used to open.
 - **Search** opens the find bar on the whole vault, or on the document when there is no vault.
-- **Library** swaps the space under the rows between your chats and the files — the folder, the open document's headings and what links to it. The row is lit while the files stand, and Leaftext remembers which you left. At its right end stand the [vault switcher](#vaults), the [Sync button](#github-sync) while there is work to send, and, while the files stand, the open document's heart and the [folder's view button](#sorting-and-drawing-a-folder).
+- **Library** opens the window's **Library** tab beside the one you are reading, and the folder's files fill the page area there. The document you were on keeps its own tab, one press away, and a second press of Library brings the same Library tab forward rather than opening another. The row is lit while the Library tab is in front. At its right end stand the [vault switcher](#vaults), the [Sync button](#github-sync) while there is work to send, and, while the Library tab is in front, the [folder's view button](#sorting-and-drawing-a-folder).
 
-Under them come your [pinned chats](#past-conversations-in-the-sidebar) and then **All chats**, with the agents running now at the top.
+Under them, while a document is in front, comes its **Outline** — [the document's headings](#the-open-documents-headings) — then your [pinned chats](#past-conversations-in-the-sidebar) and then **All chats**, with the agents running now at the top. The chats never leave the sidebar. Press the **Outline** or **All chats** heading to fold that section away and again to open it; Leaftext remembers each one.
 
 ## Summary
 
 | Feature | What you get |
 | --- | --- |
-| [The pane's rows](#the-panes-rows) | **New**, **Search** and **Library** head the pane, over your pinned chats and **All chats**; Library swaps the chats for the files and back |
+| [The pane's rows](#the-panes-rows) | **New**, **Search** and **Library** head the pane, over the open document's outline, your pinned chats and **All chats**; Library opens a Library tab of the folder's files, and the chats never leave |
 | [Vaults](#vaults) | A folder you name as a library root. The switcher at the end of the Library row creates, edits and moves between them |
 | [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the switcher the first time you open the pane, and goes for good the moment you point at that button. A sheet takes it down, unmet, and it returns once the last one closes |
 | [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
 | [File tree](#file-tree) | One folder at a time, with a row that steps back out; every folder you open appears at once |
-| [The open document's headings](#the-open-documents-headings) | Open a document and the pane holds its outline instead of the files, the page's own title first and the heading you are reading lit; a back row puts the files back, and so does asking the pane for a folder |
+| [The open document's headings](#the-open-documents-headings) | Open a document and the sidebar holds its outline above the chats, the page's own title first and the heading you are reading lit; its heading folds it away |
 | [Breadcrumb](#file-tree) | On a published site, the page's path under the app bar; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | [Search](#search) | Filename and content search across the active vault, from the [find bar](02-navigation.md#find-in-this-document)'s **All files** |
 | [Books online](#books-online) | One vault searches Internet Archive, Open Library, Project Gutenberg and Standard Ebooks, and opens available EPUBs |
@@ -172,12 +172,11 @@ Neither list is a filter of its own: every press goes to the one search box.
 
 ### The open document's headings
 
-Opening a document swaps the file list for that document's [outline](02-navigation.md#outline) — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit as you scroll. Clicking a row jumps to that heading.
+While a document is in front, the sidebar holds its [outline](02-navigation.md#outline) above the chats — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit as you scroll. Clicking a row jumps to that heading.
 
-- A back row above the list wears the folder's name and puts the files back, the same way the row above a folder listing steps out of it.
-- Sending the pane somewhere puts the files back on its own, because asking for a folder is asking for the files in it. Switching [vault](#vaults), pressing a crumb, opening a folder from a file's right-click menu, and pressing a favorite folder on the start screen all land in that folder's list rather than leaving the headings up. The files arrive in one draw, when the folder does.
-- Under that row, **On this page** names the list, with how many headings it holds at its right. Each level reads a step smaller than the one above it, and the levels below the second sit in quieter ink, so the shape of the document shows without counting the indents.
-- Once you have put the files back and walked the pane somewhere, it stays there. Marking a favorite, closing or moving a tab, and a page opening behind the one you are reading all leave the pane on the folder you left it on; only going to a different document brings that document's headings up.
+- The **Outline** heading counts the headings at its right. Each level reads a step smaller than the one above it, and the levels below the second sit in quieter ink, so the shape of the document shows without counting the indents.
+- Press the **Outline** heading to fold the list away and again to open it; it stays the way you left it.
+- With the Library tab, a console or anything else without a document in front, there is no Outline section.
 - An HTML file, and a web page opened by its address, lists its own headings too, read out of the page as it is drawn and read again whenever the page changes size, so a page that builds its headings as it runs lists them once they are there. Clicking a row scrolls the page to that heading, and the row under the top of the page is lit as you scroll.
 - A document with only a title, or none, has no outline, so the files stay where they are.
 

@@ -351,17 +351,17 @@ In the rendered view a replace is written to the file's source, not to the page.
 
 ### Outline
 
-![The library pane holding the open document's headings: the back row naming its folder, an On this page line with the heading count at its right, the page's own title as the first row, and the sections indented under it and stepping down in size, with the one being read lit](../../imgs/outline.png)
+![The sidebar holding the open document's outline above the chats: the Outline heading with its fold and the count of twenty-one headings, the page's own title as the first row, and the sections indented under it and stepping down in size](../../imgs/outline-v2.png)
 
-Open a document and the [library pane](03-library.md) swaps its file list for that document's **Outline** — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit. The lit row moves as you scroll, so the pane says where you are as well as what is there.
+Open a document and the [sidebar](03-library.md#the-panes-rows) shows that document's **Outline** above the chats — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit. The lit row moves as you scroll, so the sidebar says where you are as well as what is there.
 
-- Above the list, a back row wearing the folder's name puts the files back. So does sending the pane somewhere — switching [vault](03-library.md#vaults), pressing a crumb, or opening a folder — since asking for a folder is asking for the files in it.
-- Under it, **On this page** names the list, with how many headings are in it at its right — **23 headings** — counted off the rows drawn below, so the number and the list can never disagree.
+- The **Outline** heading counts the headings at its right — **23 headings** — counted off the rows drawn below, so the number and the list can never disagree. Press it to fold the list away and again to open it; it stays the way you left it.
+- On a published site the outline stands in the pane in place of the files instead, with a back row wearing the folder's name that puts the files back.
 - **The page's own title is the first row**, so every section below it hangs under something you can see, and it is counted with them.
 - **The levels look like levels.** The shallowest headings read largest and boldest; each level in is a step smaller and lighter, and from the third level in they sit in the page's quieter ink. So the shape of a document shows in the type as well as in the indenting, which matters most in a narrow pane where the indents run out.
 - Clicking a row jumps to that heading, and the jump joins scroll history, so Back returns to where you were reading. The row you clicked is the row that lights, with its heading still on screen — the lit row is read from the line a document is read from, under the app bar, rather than from the top edge of the reader behind it.
 - It is built from the rendered headings, so it behaves the same for Markdown, [XML](01-rendering.md#xml), [JSON or YAML](01-rendering.md#data-files-json-and-yaml), and [email](01-rendering.md#email-eml).
-- It appears whenever a document has a title plus at least one more heading; a document with only a title leaves the file list showing.
+- It appears whenever a document has a title plus at least one more heading.
 - **A very long outline opens as fast as a short one.** However many headings a document holds, only the rows in the pane and a pane's worth either side are drawn, and the rest are drawn as you reach them — so the count, the scrollbar and every jump still cover the whole document while nothing waits on thousands of rows. With a row focused, the arrow keys step a heading at a time, Page Up and Page Down move a pane, and Home and End go to the first and last heading; Enter or Space jumps to the one you land on.
 
 The outline lists the sections within the current document, which makes it a companion to the [minimap](04-minimap.md): the outline is the document's structure as clickable text, the minimap a scaled picture of the whole page.

@@ -366,6 +366,24 @@ function releaseShellWidth() {
 
 let libraryOutlineOpen = false;
 
+const SIDEBAR_FOLDS_KEY = 'leaftext.sidebarFolds';
+const sidebarFolds = { outline: false, chats: false };
+try {
+  const held = JSON.parse(window.localStorage?.getItem(SIDEBAR_FOLDS_KEY) || '{}');
+  sidebarFolds.outline = held?.outline === true;
+  sidebarFolds.chats = held?.chats === true;
+} catch {
+  
+}
+function setSidebarFold(which, folded) {
+  sidebarFolds[which] = !!folded;
+  try {
+    window.localStorage?.setItem(SIDEBAR_FOLDS_KEY, JSON.stringify(sidebarFolds));
+  } catch {
+    
+  }
+}
+
 let changeRepoRevealed = false;
 
 const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', lastBesideBounds: '', booted: false,
@@ -10127,7 +10145,7 @@ function outsideThePage(x, y) {
 function tabStaysInItsWindow(index) {
   const tabs = (currentState && currentState.tabs) || [];
   const kind = tabs[index] && tabs[index].kind;
-  return kind === 'harness';
+  return kind === 'harness' || kind === 'library';
 }
 
 function tabIsAlone() {
@@ -15210,7 +15228,9 @@ function renderLibraryLists() {
   if (libraryCalendarDay) libraryCalendarDay.hidden = !day;
   libraryOutline.hidden = !outlining;
   const wasHidden = libraryTree.hidden;
-  libraryTree.hidden = day || outlining;
+  
+  libraryTree.hidden = day || (outlining && !libraryOutlineInSidebar());
+  drawSidebarOutline();
   
   if (wasHidden && !libraryTree.hidden) scheduleLibraryRowWindow();
 }
@@ -15532,7 +15552,7 @@ const libraryRowEnd = document.getElementById('libraryRowEnd');
 let libraryRowEndHtml = null;
 function drawLibraryRowEnd() {
   if (!libraryRowEnd) return;
-  const html = libraryPane.classList.contains('is-console-sidebar') ? '' : trailFavoriteHtml() + trailViewHtml();
+  const html = !libraryPageShowing() ? '' : trailFavoriteHtml() + trailViewHtml();
   if (html === libraryRowEndHtml) return;
   libraryRowEndHtml = html;
   libraryRowEnd.innerHTML = html;
@@ -16699,7 +16719,7 @@ function bindVaultSwitch(button, retire) {
 }
 if (libraryVaultSwitch) {
   
-  registerHint('libraryVault', () => (libraryPane?.classList.contains('is-console-sidebar') ? null : libraryVaultSwitch), 'Pick which folder the list below shows.');
+  registerHint('libraryVault', () => (libraryNav && !libraryPageShowing() ? null : libraryVaultSwitch), 'Pick which folder the list below shows.');
   
   bindVaultSwitch(libraryVaultSwitch, true);
 }
@@ -16947,7 +16967,17 @@ window.leafVaultGitBusy = (id) => {
 
 
 let libraryOutlineFrame = 0;
-const libraryOutlineScroll = libraryOutline.parentElement;
+
+let libraryOutlineScroll = libraryOutline.parentElement;
+function libraryOutlineInSidebar() {
+  return !!libraryOutline.closest?.('#sidebarLists');
+}
+function setLibraryOutlineScroller(box) {
+  libraryOutlineScroll = box;
+  box.addEventListener('scroll', () => {
+    if (libraryOutlineShowing()) scheduleLibraryOutline();
+  }, { passive: true });
+}
 let libraryOutlineSource = null;
 let libraryOutlineOffsets = [0];
 let libraryOutlineShallowest = 1;
@@ -16955,7 +16985,13 @@ let libraryOutlineWindowStart = -1;
 let libraryOutlineWindowEnd = -1;
 
 function libraryOutlineShowing() {
+  
+  if (libraryOutlineInSidebar()) return !sidebarFolds.outline && sidebarOutlineFront() && readDocumentOutlineRows().length > 0;
   return libraryOutlineOpen && readDocumentOutlineRows().length > 0;
+}
+
+function sidebarOutlineFront() {
+  return !!(activeDocumentPath() || activeWebTab());
 }
 
 function scheduleLibraryOutline() {
@@ -16972,6 +17008,7 @@ function libraryOutlineFolderName() {
 }
 
 function outlineBackRowHtml() {
+  if (libraryOutlineInSidebar()) return '';
   const name = libraryOutlineFolderName();
   const label = `Back to ${name}`;
   return `<button type="button" class="library-nav-folder library-nav-up" data-close-outline="1" title="${escapeAttr(label)}" aria-label="${escapeAttr(label)}">${BACK_ARROW_SVG}<span class="library-file-label">${escapeText(name)}</span></button>`;
@@ -16984,6 +17021,7 @@ function outlineRowHtml(row, shallowest, current) {
   return `<button type="button" class="library-outline-row library-outline-depth-${depth}${selected}"${aria} data-outline-section="${escapeAttr(row.id)}" title="${escapeAttr(row.text)}"><span class="library-file-label">${escapeText(row.text)}</span></button>`;
 }
 function outlineNoteHtml(count) {
+  if (libraryOutlineInSidebar()) return '';
   return `<div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">${formatCountLabel(count, 'heading', 'headings')}</span></div>`;
 }
 
@@ -17135,7 +17173,7 @@ function lightLibraryOutlineSection(section) {
     else row.removeAttribute('aria-current');
   }
 }
-libraryOutlineScroll.addEventListener('scroll', () => {
+libraryOutline.parentElement.addEventListener('scroll', () => {
   if (libraryOutlineShowing()) scheduleLibraryOutline();
 }, { passive: true });
 
@@ -21597,6 +21635,8 @@ window.leafSetState = (state, heading) => {
   takePayloadSplit(next);
   currentState = next;
   
+  libraryPageFollowsFront();
+  
   if (graphExitPending) {
     graphExitPending = false;
     closeGraphView();
@@ -22392,6 +22432,8 @@ function renderTabs(state) {
     renderLibraryCrumbs(libraryChain);
     return;
   }
+  
+  libraryPageFollowsFront();
   
   tabArrivalLeave();
   const tabs = state.tabs || [];
@@ -44762,6 +44804,7 @@ window.leafConsoleFront = id => {
   
   hintTargetsMoved();
   if (changed && consoleAgentRows.length) drawConsoleRecents();
+  if (changed) libraryPageFollowsFront();
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
   placeConsoleLayers();
   syncConsoleViewsBar();
@@ -46836,7 +46879,12 @@ function drawConsoleRecents() {
   const status = consoleRecents.status;
   const archived = status === 'archived';
   const filtered = status !== 'active';
-  const parts = [`<div class="console-recents-heading-row" data-pin-drop="recents"><div class="console-agents-heading">All chats</div><button type="button" class="console-recents-filter" aria-haspopup="menu" aria-pressed="${filtered}" title="Filter chats"><span class="lt-icon lt-icon-filter-lines" aria-hidden="true"></span><span>${filtered ? CONSOLE_CHAT_STATUS_WORDS[status] : 'Filter'}</span></button></div>`];
+  const parts = [`<div class="console-recents-heading-row" data-pin-drop="recents"><button type="button" class="console-agents-heading sidebar-fold" data-sidebar-fold="chats" aria-expanded="${!sidebarFolds.chats}" title="${sidebarFolds.chats ? 'Open all chats' : 'Fold all chats'}"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>All chats</button><button type="button" class="console-recents-filter" aria-haspopup="menu" aria-pressed="${filtered}" title="Filter chats"><span class="lt-icon lt-icon-filter-lines" aria-hidden="true"></span><span>${filtered ? CONSOLE_CHAT_STATUS_WORDS[status] : 'Filter'}</span></button></div>`];
+  
+  if (sidebarFolds.chats) {
+    consoleRecentsBand.innerHTML = (archived ? '' : consoleRecentPinsHtml(now)) + parts.join('');
+    return;
+  }
   const shown = consoleRecents.rows.filter((row) => status === 'all' || Boolean(row.archived) === archived);
   for (const note of consoleRecents.unavailable) {
     const name = AGENT_LAUNCH_NAMES[note.agent];
@@ -47244,6 +47292,12 @@ if (consoleRecentsBand) {
       openConsolePinSectionMenu(Number(sectionMore.dataset.pinSection), box.left, box.bottom);
       return;
     }
+    const fold = event.target.closest?.('[data-sidebar-fold="chats"]');
+    if (fold) {
+      setSidebarFold('chats', !sidebarFolds.chats);
+      drawConsoleRecents();
+      return;
+    }
     const filter = event.target.closest?.('.console-recents-filter');
     if (filter) {
       
@@ -47369,38 +47423,83 @@ if (consoleRecentsBand) {
 var libraryNav = document.getElementById('libraryNav');
 var librarySearchRow = document.getElementById('librarySearchRow');
 var libraryRow = document.getElementById('libraryRow');
+var readerLibrary = document.getElementById('readerLibrary');
+var sidebarLists = document.getElementById('sidebarLists');
+var sidebarOutline = document.getElementById('sidebarOutline');
+var sidebarOutlineFold = document.getElementById('sidebarOutlineFold');
+var sidebarOutlineCount = document.getElementById('sidebarOutlineCount');
 
-const LIBRARY_SHOWS_FILES_KEY = 'leaftext.libraryShowsFiles';
-let libraryShowsFiles = false;
-try {
-  libraryShowsFiles = window.localStorage?.getItem(LIBRARY_SHOWS_FILES_KEY) === '1';
-} catch {
-  libraryShowsFiles = false;
+let libraryPageOpen = false;
+function libraryPageShowing() {
+  return libraryPageOpen;
+}
+function libraryTabInFront() {
+  const tabs = (currentState && currentState.tabs) || [];
+  const active = currentState ? currentState.active : null;
+  return !!libraryNav && typeof active === 'number' && !!tabs[active] && tabs[active].kind === 'library';
 }
 
-function showLibraryPaneHalf() {
-  const chats = !!libraryNav && !libraryShowsFiles;
-  libraryPane?.classList.toggle('is-console-sidebar', chats);
+function moveLibraryListsToPage() {
+  const lists = libraryPane?.querySelector('.library-scroll');
+  if (lists && readerLibrary && lists.parentElement !== readerLibrary) readerLibrary.append(lists);
+  if (sidebarOutline && libraryOutline.parentElement !== sidebarOutline) {
+    sidebarOutline.append(libraryOutline);
+    setLibraryOutlineScroller(sidebarLists);
+  }
+}
+
+function coverLibraryPageFront() {
+  if (libraryPageOpen && app) {
+    commitActiveEditingBlock();
+    if (document.activeElement && app.contains(document.activeElement)) document.activeElement.blur();
+  }
+  const covered = libraryPageOpen || graphViewOpen;
+  app?.classList.toggle('is-under-map', covered);
+  readerMinimap?.classList.toggle('is-under-map', covered);
+  for (const entry of consoleLayers.values()) entry.layer.classList.toggle('is-under-map', libraryPageOpen);
+}
+function drawLibraryPage() {
+  libraryPane?.classList.add('is-console-sidebar');
+  consoleRecentsShown(true);
+  if (readerLibrary) readerLibrary.hidden = !libraryPageOpen;
+  coverLibraryPageFront();
+  coverWebSurface(libraryPageOpen, readerLibrary);
   if (libraryRow) {
-    libraryRow.setAttribute('aria-pressed', String(libraryShowsFiles));
-    libraryRow.title = libraryShowsFiles ? 'Show the chats' : 'Show the files';
+    libraryRow.setAttribute('aria-pressed', String(libraryPageOpen));
+    libraryRow.title = libraryPageOpen ? 'The library' : 'Open the library';
   }
-  consoleRecentsShown(chats);
   drawLibraryRowEnd();
+  drawSidebarOutline();
   hintTargetsMoved();
-}
-function toggleLibraryFiles() {
-  setLibraryFiles(!libraryShowsFiles);
+  
+  if (libraryPageOpen && libraryTree && !libraryTree.hidden) scheduleLibraryRowWindow();
 }
 
-function setLibraryFiles(shown) {
-  libraryShowsFiles = !!shown;
-  try {
-    window.localStorage?.setItem(LIBRARY_SHOWS_FILES_KEY, libraryShowsFiles ? '1' : '0');
-  } catch {
-    
+function libraryPageFollowsFront() {
+  const open = libraryTabInFront();
+  if (open === libraryPageOpen) return;
+  libraryPageOpen = open;
+  drawLibraryPage();
+}
+
+function openLibraryTab() {
+  send({ command: 'openLibrary' });
+}
+
+function drawSidebarOutline() {
+  if (!sidebarOutline || !libraryNav) return;
+  const headings = sidebarOutlineFront() ? readDocumentOutlineRows().length : 0;
+  sidebarOutline.hidden = !headings;
+  if (sidebarOutlineCount) sidebarOutlineCount.textContent = headings ? formatCountLabel(headings, 'heading', 'headings') : '';
+  if (sidebarOutlineFold) {
+    sidebarOutlineFold.setAttribute('aria-expanded', String(!sidebarFolds.outline));
+    sidebarOutlineFold.title = sidebarFolds.outline ? 'Open the outline' : 'Fold the outline';
   }
-  showLibraryPaneHalf();
+}
+function toggleSidebarOutline() {
+  setSidebarFold('outline', !sidebarFolds.outline);
+  drawSidebarOutline();
+  scheduleLibraryOutline();
 }
 
 function openLibrarySearch() {
@@ -47408,8 +47507,20 @@ function openLibrarySearch() {
   if (allFilesSearchAvailable()) setFindScope('vault');
 }
 if (librarySearchRow) librarySearchRow.addEventListener('click', () => openLibrarySearch());
-if (libraryRow) libraryRow.addEventListener('click', () => toggleLibraryFiles());
-if (libraryNav) showLibraryPaneHalf();
+if (libraryRow) libraryRow.addEventListener('click', () => openLibraryTab());
+if (sidebarOutlineFold) sidebarOutlineFold.addEventListener('click', () => toggleSidebarOutline());
+if (libraryNav) {
+  
+  try {
+    window.localStorage?.removeItem('leaftext.libraryShowsFiles');
+  } catch {
+    
+  }
+  if (sidebarLists) sidebarLists.hidden = false;
+  moveLibraryListsToPage();
+  libraryPageOpen = libraryTabInFront();
+  drawLibraryPage();
+}
 
 
 
