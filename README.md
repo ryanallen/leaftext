@@ -175,7 +175,7 @@ Search notes, follow links, and find free books from Internet Archive, Open Libr
 
 ### Point it at a folder and it becomes a vault
 
-![The library pane open beside a document, showing the vault switcher, the folder breadcrumb, and a file list showing three folders first and then the files beside them](imgs/library.png)
+![The library pane open beside a document, with New, Search and Library at its top, the vault switcher on the Library row, and a file list showing three folders first and then the files beside them](imgs/library-v2.png)
 
 A side pane that browses one folder at a time, with a breadcrumb that always says where you are. Name a folder a **vault** and it becomes the thing search and syncing work over; the same switcher over the start screen takes you back from Library. Nothing is crawled, and nothing is written into your folder. **[Library →](docs/01-features/03-library.md#vaults)**
 
@@ -211,9 +211,9 @@ The [graph view](docs/01-features/03-library.md#graph) maps the links between yo
 
 ### Push a vault to GitHub
 
-![A vault's settings panel showing the connected GitHub repository, and the sync button at the end of the breadcrumb carrying a count of changes waiting to be pushed](imgs/github-sync.png)
+![A vault's settings panel showing the connected GitHub repository, and the sync button at the end of the Library row carrying a count of changes waiting to be pushed](imgs/github-sync-v2.png)
 
-A vault can be a git repository that pushes to GitHub. GitHub sync runs the `git` already on your machine. A sync button appears on the breadcrumb whenever there's work that hasn't reached GitHub, and one vault can turn on automatic sync, which sends once your changes stop. **[GitHub sync →](docs/01-features/03-library.md#github-sync)**
+A vault can be a git repository that pushes to GitHub. GitHub sync runs the `git` already on your machine. A sync button appears on the Library row whenever there's work that hasn't reached GitHub, and one vault can turn on automatic sync, which sends once your changes stop. **[GitHub sync →](docs/01-features/03-library.md#github-sync)**
 
 ## Built to work beside AI
 
@@ -235,7 +235,7 @@ Leaftext does not yet start outside tool servers through MCP or define a word in
 
 ### Never lose your place
 
-![Tabs and Back/Forward history in the app bar](imgs/navigation.png)
+![Tabs and Back/Forward history in the app bar](imgs/navigation-v2.png)
 
 It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs) — including [live web pages](docs/01-features/02-navigation.md#web-tabs), typed into a new tab as an address or a search — Back and Forward through your [history](docs/01-features/02-navigation.md#history), an [outline](docs/01-features/02-navigation.md#outline) of the open document in the pane beside it, and Ctrl-click on a link to [open it behind](docs/01-features/02-navigation.md#opening-a-link-in-a-new-page) the page you are reading. Two of them can stand [side by side](docs/01-features/02-navigation.md#two-documents-side-by-side), each column scrolling on its own with its own rail, and one document can show its [source beside its page](docs/01-features/07-editing.md#source-beside-the-page). Change a file in another app and Leaftext [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
 

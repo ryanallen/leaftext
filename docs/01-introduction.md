@@ -56,7 +56,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 
 - Point Leaftext at a folder to make it a [vault](01-features/03-library.md#vaults) — the unit search, syncing, and the graph work over.
 - Find free books from [Internet Archive, Open Library, Project Gutenberg and Standard Ebooks](01-features/03-library.md#books-online), then read downloaded EPUBs offline.
-- Browse it a folder at a time in the [library pane](01-features/03-library.md#file-tree), with a breadcrumb that always says where you are.
+- Browse it a folder at a time in the [library pane](01-features/03-library.md#file-tree), with a row that steps back out a folder.
 - [Search](01-features/03-library.md#search) names and contents across the vault, with snippets. No index on disk, and nothing uploaded.
 - Press a [tag](01-features/03-library.md#tags) to find its notes and nested tags; rename it across the vault after confirming the file count.
 - See how it all connects in the [graph view](01-features/03-library.md#graph) — documents, the links between them, and the web addresses they cite.
@@ -69,7 +69,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Draw a flowchart instead of typing one in the [flowchart editor](01-features/07-editing.md#the-flowchart-editor) — a canvas beside the Mermaid text, both kept in step — or press participants and messages in the [sequence diagram editor](01-features/07-editing.md#the-sequence-diagram-editor). Open any diagram already in a page the same way, and [export](01-features/01-rendering.md#mermaid-diagrams) one as its own Markdown file or picture from its own corner, with the padlock shut.
 - Switch any document to its raw source in the [code view](01-features/07-editing.md#code-view) — highlighted, line-numbered, editable — and [save](01-features/07-editing.md#save) only when you say so.
 - Get [typing help](01-features/07-editing.md#typing-help) while you write there: Monaco's IntelliSense, answered from your own notes — `[[` completes a note name, `#` a heading, and a broken link is underlined.
-- Start from nothing with the **+** in the app bar: a [new document](01-features/07-editing.md#new-document) opens ready to type, and its first save is where you choose the file.
+- Start from nothing with **New** at the top of the library pane: a [new document](01-features/07-editing.md#new-document) opens ready to type, and its first save is where you choose the file.
 
 ### Make it yours
 

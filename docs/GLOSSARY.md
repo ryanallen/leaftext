@@ -12,7 +12,7 @@ Another name a note answers to, listed in its `aliases` [frontmatter](GLOSSARY.m
 
 ## App bar
 
-The strip along the top of the window: the leaf mark, the [library pane](GLOSSARY.md#library-pane) button, Back and Forward, the [tab](GLOSSARY.md#tab) strip, then Open and **+** at the right. The palette that opens the [theme picker](GLOSSARY.md#theme-picker) is at the foot of the [library pane](GLOSSARY.md#library-pane) rather than up here. There is no Settings button; the [update bell](GLOSSARY.md#update-bell) joins the right-hand group only while there is something to install. It is also the title bar — drag it to move the window, double-click it to maximize or restore — with Leaftext's own window buttons on both: squares at its right end on Windows, three theme-colored dots at its left end on a Mac. What it holds is about the app; what the [floating toolbar](GLOSSARY.md#floating-toolbar) holds is about the document.
+The strip along the top of the window: the leaf mark, the [library pane](GLOSSARY.md#library-pane) button, Back and Forward, the [tab](GLOSSARY.md#tab) strip, then Open and Export at the right. **New** is the first row of the [library pane](GLOSSARY.md#library-pane). The palette that opens the [theme picker](GLOSSARY.md#theme-picker) is at the foot of the [library pane](GLOSSARY.md#library-pane) rather than up here. There is no Settings button; the [update bell](GLOSSARY.md#update-bell) joins the right-hand group only while there is something to install. It is also the title bar — drag it to move the window, double-click it to maximize or restore — with Leaftext's own window buttons on both: squares at its right end on Windows, three theme-colored dots at its left end on a Mac. What it holds is about the app; what the [floating toolbar](GLOSSARY.md#floating-toolbar) holds is about the document.
 
 ## Appearance
 
@@ -44,7 +44,7 @@ A panel that slides up over the reading view without taking you off the page —
 
 ## Breadcrumb
 
-The folder path across the top of the [library pane](GLOSSARY.md#library-pane) — `Fieldwork › docs › features`. Click any crumb to step back to that level. What does not fit collapses into a `…` menu. The [sync button](GLOSSARY.md#sync-button) appears at its end.
+On a published site, the page's path across the top of the [library pane](GLOSSARY.md#library-pane) — `Fieldwork › docs › features`. Click any crumb to step back to that level. What does not fit collapses into a `…` menu. The app's own pane opens on its New, Search and Library rows instead.
 
 ## Bubble
 
@@ -116,7 +116,7 @@ How a file spells its characters. Leaftext reads UTF-8, and UTF-16 or UTF-32 by 
 
 ## File tree
 
-The [library pane](GLOSSARY.md#library-pane)'s file list — one folder at a time, with a row that steps back out and a [breadcrumb](GLOSSARY.md#breadcrumb) above it. Each click reads exactly one directory, so nothing below what you opened is ever touched.
+The [library pane](GLOSSARY.md#library-pane)'s file list, shown while Library is pressed — one folder at a time, with a row that steps back out. Each click reads exactly one directory, so nothing below what you opened is ever touched.
 
 ## Floating toolbar
 
@@ -220,7 +220,7 @@ The leaf at the left of the [app bar](GLOSSARY.md#app-bar). Click it to return t
 
 ## Library pane
 
-The pane down the left side: a [vault switcher](GLOSSARY.md#vault-switcher), a [breadcrumb](GLOSSARY.md#breadcrumb), and the [file tree](GLOSSARY.md#file-tree). Vault-wide search is the [find bar](GLOSSARY.md#find-bar)'s **All files** scope. Toggle the pane with the panel button in the [app bar](GLOSSARY.md#app-bar). See [Library](01-features/03-library.md).
+The pane down the left side: the **New**, **Search** and **Library** rows, the last carrying the [vault switcher](GLOSSARY.md#vault-switcher), then your pinned chats and **All chats**, or the [file tree](GLOSSARY.md#file-tree) while Library is pressed. Vault-wide search is the [find bar](GLOSSARY.md#find-bar)'s **All files** scope. Toggle the pane with the panel button in the [app bar](GLOSSARY.md#app-bar). See [Library](01-features/03-library.md).
 
 ## Library sheet
 
@@ -268,7 +268,7 @@ The editor Visual Studio Code is built on, compiled into Leaftext and used for t
 
 ## New document
 
-A blank page in a new [tab](GLOSSARY.md#tab), started with the **+** in the [app bar](GLOSSARY.md#app-bar) or on the [home screen](GLOSSARY.md#home-screen). It opens with the reading view's [padlock](GLOSSARY.md#padlock) off and the caret ready, is called [*Untitled*](GLOSSARY.md#untitled) until its first [save](GLOSSARY.md#save), and has no file until then.
+A blank page in a new [tab](GLOSSARY.md#tab), started with **New** at the top of the [library pane](GLOSSARY.md#library-pane) or on the [home screen](GLOSSARY.md#home-screen). It opens with the reading view's [padlock](GLOSSARY.md#padlock) off and the caret ready, is called [*Untitled*](GLOSSARY.md#untitled) until its first [save](GLOSSARY.md#save), and has no file until then.
 
 ## Notarization
 
@@ -360,7 +360,7 @@ A way of reading, toggled from the tray behind the [floating toolbar](GLOSSARY.m
 
 ## Sync button
 
-The button that appears at the end of a [vault](GLOSSARY.md#vault)'s [breadcrumb](GLOSSARY.md#breadcrumb) whenever there is work that has not reached GitHub, carrying the count. Absent when there is nothing to send. See [GitHub sync](GLOSSARY.md#github-sync).
+The button that appears at the end of the [library pane](GLOSSARY.md#library-pane)'s Library row whenever there is work that has not reached GitHub, carrying the count. Absent when there is nothing to send. See [GitHub sync](GLOSSARY.md#github-sync).
 
 ## Syntax highlighting
 
@@ -428,7 +428,7 @@ Name and content search across the active [vault](GLOSSARY.md#vault). Name match
 
 ## Vault switcher
 
-The button at the left of the [breadcrumb](GLOSSARY.md#breadcrumb) — a box, or a cloud once the [vault](GLOSSARY.md#vault) syncs. A mouse arriving on it opens the list and a press holds it open; touch and pen open it on the press. It lists your vaults, offers **New vault…** — a page of the kinds of vault: a folder, a cloned repository or a storage service — and opens each one's settings for renaming, repointing, removing, or connecting it to [GitHub](GLOSSARY.md#github-sync).
+The button at the end of the [library pane](GLOSSARY.md#library-pane)'s Library row — a box, or a cloud once the [vault](GLOSSARY.md#vault) syncs. A mouse arriving on it opens the list and a press holds it open; touch and pen open it on the press. It lists your vaults, offers **New vault…** — a page of the kinds of vault: a folder, a cloned repository or a storage service — and opens each one's settings for renaming, repointing, removing, or connecting it to [GitHub](GLOSSARY.md#github-sync).
 
 ## Viewport indicator
 

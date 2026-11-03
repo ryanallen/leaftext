@@ -9958,6 +9958,12 @@ if (window.__leafSite) {
     const button = document.getElementById(id);
     if (button) button.remove();
   }
+  
+  document.getElementById('libraryNav')?.remove();
+} else {
+  
+  document.getElementById('libraryCrumbs')?.remove();
+  document.getElementById('libraryPane')?.classList.add('has-nav');
 }
 
 if (window.__leafEmbedded) document.body.classList.add('is-embedded');
@@ -15519,13 +15525,36 @@ function bindCrumbTrailButtons() {
       toggleCrumbMenu(more, folderMenuItems(crumbHiddenSegments));
     });
   }
-  bindTrailViewButton();
+  bindTrailViewButton(libraryCrumbTrail);
+}
+
+const libraryRowEnd = document.getElementById('libraryRowEnd');
+let libraryRowEndHtml = null;
+function drawLibraryRowEnd() {
+  if (!libraryRowEnd) return;
+  const html = libraryPane.classList.contains('is-console-sidebar') ? '' : trailFavoriteHtml() + trailViewHtml();
+  if (html === libraryRowEndHtml) return;
+  libraryRowEndHtml = html;
+  libraryRowEnd.innerHTML = html;
+  const favorite = libraryRowEnd.querySelector('[data-trail-favorite]');
+  if (favorite) {
+    favorite.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      event.stopPropagation();
+      toggleFavorite(favorite.dataset.trailFavorite, 'document');
+    });
+  }
+  bindTrailViewButton(libraryRowEnd);
 }
 
 let crumbFitSettling = false;
 let crumbFitSettlingSegments = null;
 function renderLibraryCrumbs(chain) {
-  if (!libraryCrumbTrail) return;
+  if (!libraryCrumbTrail) {
+    libraryCrumbChain = chain;
+    drawLibraryRowEnd();
+    return;
+  }
   libraryCrumbChain = window.__leafSite ? siteCrumbChain() : chain;
   if (crumbFitSettling) {
     crumbFitSettlingSegments = prepareCrumbFit();
@@ -17483,8 +17512,8 @@ function toggleLibraryRowHidden(path) {
   const hidden = libraryFolderView.hidden;
   sendFolderView({ hidden: hidden.includes(node.name) ? hidden.filter((name) => name !== node.name) : hidden.concat([node.name]) });
 }
-function bindTrailViewButton() {
-  const button = libraryCrumbTrail.querySelector('[data-trail-view]');
+function bindTrailViewButton(root) {
+  const button = root.querySelector('[data-trail-view]');
   if (!button) return;
   
   button.addEventListener('pointerdown', (event) => {
@@ -21358,6 +21387,32 @@ window.addEventListener('compositionupdate', () => {
 window.addEventListener('compositionend', () => {
   composing = false;
 });
+
+function stepThroughTabs(step) {
+  
+  const drawn = (currentState.tabs || []).map((tab, index) => index).filter((index) => {
+    const tab = currentState.tabs[index];
+    return !(tab.kind === 'console' && consoleHoldsAgent(tab.webId));
+  });
+  if (drawn.length > 0) {
+    
+    const stops = drawn.length + 1;
+    const current = drawn.indexOf(currentState.active) + 1;
+    const next = (current + step + stops) % stops;
+    if (next === 0) {
+      send({ command: 'goHome' });
+    } else {
+      
+      beginReaderLoading();
+      send({
+        command: 'switchTab',
+        index: drawn[next - 1],
+        scroll_anchor: currentScrollAnchor(),
+        code_scroll: codeViewActive ? viewScrollFraction() : null,
+      });
+    }
+  }
+}
 window.addEventListener('keydown', (event) => {
   if (event.isComposing || composing) {
     return;
@@ -21434,26 +21489,7 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.ctrlKey && !event.metaKey && !event.altKey && event.key === 'Tab') {
     event.preventDefault();
-    const tabCount = (currentState.tabs || []).length;
-    if (tabCount > 0) {
-      
-      const stops = tabCount + 1;
-      const current = currentState.active == null ? 0 : currentState.active + 1;
-      const step = event.shiftKey ? -1 : 1;
-      const next = (current + step + stops) % stops;
-      if (next === 0) {
-        send({ command: 'goHome' });
-      } else {
-        
-        beginReaderLoading();
-        send({
-          command: 'switchTab',
-          index: next - 1,
-          scroll_anchor: currentScrollAnchor(),
-          code_scroll: codeViewActive ? viewScrollFraction() : null,
-        });
-      }
-    }
+    stepThroughTabs(event.shiftKey ? -1 : 1);
     return;
   }
   const key = event.key;
@@ -22371,6 +22407,8 @@ function renderTabs(state) {
   });
   const consoleLabel = unlocksShowing().has('console-scanlines') ? `tab-label ${CONSOLE_SCANLINES}` : 'tab-label';
   const markup = tabs.map((tab, index) => {
+    
+    if (tab.kind === 'console' && consoleHoldsAgent(tab.webId)) return '';
     if (tab.kind === 'console') {
       const layer = consoleLayers.get(tab.webId);
       const icon = consoleIconClass(layer?.agent);
@@ -22459,7 +22497,10 @@ tabBar.addEventListener('pointerdown', (event) => {
 tabBar.addEventListener('click', (event) => {
   const label = event.target.closest('[data-tab-index]');
   if (!label || suppressTabClick) return;
-  const index = Number(label.dataset.tabIndex);
+  switchToTab(Number(label.dataset.tabIndex), pressedColumnSide(label));
+});
+
+function switchToTab(index, column) {
   const wasActive = index === (currentState && currentState.active);
   const tab = (currentState.tabs || [])[index];
   
@@ -22472,13 +22513,13 @@ tabBar.addEventListener('click', (event) => {
     index,
     scroll_anchor: currentScrollAnchor(),
     code_scroll: codeViewActive ? viewScrollFraction() : null,
-    column: pressedColumnSide(label),
+    column,
   };
   if (keptReaderRender && tab && keptReaderRender.path === tab.path && keptReaderRender.key) command.renderKey = keptReaderRender.key;
   send(command);
   
   followFileInLibrary(tab ? tab.path || null : null, true, wasActive);
-});
+}
 tabBar.addEventListener('pointerdown', (event) => {
   const tabEl = event.target.closest('.tab');
   if (!tabEl || event.button !== 0 || event.target.closest('.tab-close, .tab-favorite')) return;
@@ -42045,6 +42086,8 @@ function sayStartupDrawn(hasDocument) {
   if (opensADocument && !hasDocument) return;
   window.__leafStartupSaid = true;
   
+  consoleRecentsOutOfDate();
+  
   send({ command: 'startupReady' });
   
   if (!window.__leafFrameless && !window.__leafMacFrame) window.leafStartupDone();
@@ -42894,17 +42937,6 @@ registerPaneFootAction({
   press: () => openHomeSheet('recent'),
 });
 
-registerPaneFootAction({
-  id: 'paneFootSearch',
-  label: 'Search',
-  icon: 'search',
-  has: () => true,
-  press: () => {
-    openFindBar();
-    if (allFilesSearchAvailable()) setFindScope('vault');
-  },
-});
-
 
 
 
@@ -43672,7 +43704,6 @@ function reportConsoleAgent(id, entry, screenLines) {
 }
 
 
-var consoleAgentsBand = document.getElementById('consoleAgents');
 let consoleAgentRows = [];
 const consoleAgentOrder = { needs: 0, done: 1, working: 2, rest: 3 };
 const consoleAgentWords = { needs: 'Needs you', done: 'Done', working: 'Working', rest: 'At rest' };
@@ -43683,123 +43714,29 @@ function sortedConsoleAgents(rows) {
 }
 
 
-const consoleAgentButtons = new Map();
-let consoleAgentsHeading = null;
-
-let consoleAgentsHeld = false;
-
-function consoleAgentButton(id) {
-  let button = consoleAgentButtons.get(id);
-  if (button) return button;
-  button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'console-agent';
-  button.setAttribute('role', 'listitem');
-  button.dataset.consoleId = String(id);
-  
-  const box = document.createElement('span');
-  box.className = 'console-agent-icon';
-  box.setAttribute('aria-hidden', 'true');
-  const glow = document.createElement('span');
-  glow.className = 'console-agent-glow';
-  const halo = document.createElement('span');
-  halo.className = 'lt-icon lt-icon-terminal';
-  glow.append(halo);
-  const icon = document.createElement('span');
-  icon.className = 'lt-icon lt-icon-terminal';
-  box.append(glow, icon);
-  const name = document.createElement('span');
-  name.className = 'console-agent-name';
-  const state = document.createElement('span');
-  state.className = 'console-agent-state';
-  button.append(box, name, state);
-  button.agentIcons = [halo, icon];
-  button.agentName = name;
-  button.agentState = state;
-  consoleAgentButtons.set(id, button);
-  return button;
-}
-
-function drawConsoleAgents() {
-  if (!consoleAgentsBand) return;
-  const rows = sortedConsoleAgents(consoleAgentRows);
-  consoleAgentsBand.hidden = !rows.length;
-  libraryPane?.classList.toggle('has-agents', rows.length > 0);
-  libraryPane?.style.setProperty('--console-agent-rows', String(rows.length));
-  if (!consoleAgentsHeading) {
-    consoleAgentsHeading = document.createElement('div');
-    consoleAgentsHeading.className = 'console-agents-heading';
-    consoleAgentsHeading.textContent = 'Agents';
-  }
-  if (!rows.length) {
-    consoleAgentsHeading.remove();
-    for (const button of consoleAgentButtons.values()) button.remove();
-    consoleAgentButtons.clear();
-    return;
-  }
-  if (consoleAgentsHeading.parentElement !== consoleAgentsBand || consoleAgentsBand.firstElementChild !== consoleAgentsHeading) consoleAgentsBand.insertBefore(consoleAgentsHeading, consoleAgentsBand.firstElementChild);
-  const listed = new Set(rows.map(row => Number(row.id)));
-  for (const [id, button] of consoleAgentButtons) {
-    if (listed.has(id)) continue;
-    button.remove();
-    consoleAgentButtons.delete(id);
-  }
-  let place = consoleAgentsHeading;
-  for (const row of rows) {
-    const id = Number(row.id);
-    const standing = consoleAgentButtons.has(id);
-    const button = consoleAgentButton(id);
-    const title = String(row.title ?? '');
-    const tip = row.prompt ? String(row.prompt) : title;
-    if (button.title !== tip) button.title = tip;
-    if (button.agentName.textContent !== title) button.agentName.textContent = title;
-    const icon = consoleIconClass(row.agent);
-    for (const mark of button.agentIcons) if (mark.className !== icon) mark.className = icon;
-    const words = consoleAgentWords[row.state] || '';
-    if (button.agentState.textContent !== words) button.agentState.textContent = words;
-    button.classList.toggle('console-agent-front', id === consoleFrontId);
-    button.classList.toggle('console-agent-working', row.state === 'working');
-    button.agentState.classList.toggle('console-agent-needs', row.state === 'needs');
-    if (consoleAgentsHeld && standing && button.parentElement === consoleAgentsBand) continue;
-    if (consoleAgentsHeld) {
-      if (button.parentElement !== consoleAgentsBand) consoleAgentsBand.appendChild(button);
-      continue;
-    }
-    if (place.nextElementSibling !== button) consoleAgentsBand.insertBefore(button, place.nextElementSibling);
-    place = button;
-  }
-}
-
-
 function liveConsoleAgents() {
   return sortedConsoleAgents(consoleAgentRows);
 }
 
+
+function consoleHoldsAgent(id) {
+  return consoleAgentRows.some(row => Number(row.id) === Number(id)) || !!consoleLayers.get(Number(id))?.launched?.agent;
+}
+
 window.leafConsoleAgents = rows => {
   consoleAgentRows = Array.isArray(rows) ? rows : [];
-  drawConsoleAgents();
+  drawConsoleRecents();
+  
+  if (currentState?.tabs) renderTabs(currentState);
 };
 
 
 window.leafPressConsoleTab = id => {
-  const label = tabBar.querySelector(`.console-tab[data-console-id="${Number(id)}"] [data-tab-index]`);
-  if (label) label.click();
-  return !!label;
+  const index = (currentState?.tabs || []).findIndex(tab => tab.kind === 'console' && Number(tab.webId) === Number(id));
+  if (index < 0) return false;
+  switchToTab(index);
+  return true;
 };
-
-if (consoleAgentsBand) {
-  consoleAgentsBand.addEventListener('click', event => {
-    const row = event.target.closest?.('.console-agent');
-    if (!row) return;
-    const id = Number(row.dataset.consoleId);
-    if (!window.leafPressConsoleTab(id)) send({ command: 'focusConsole', id });
-  });
-  consoleAgentsBand.addEventListener('pointerenter', () => { consoleAgentsHeld = true; });
-  consoleAgentsBand.addEventListener('pointerleave', () => {
-    consoleAgentsHeld = false;
-    drawConsoleAgents();
-  });
-}
 
 function consoleTitleSaid(id, title) {
   const entry = consoleLayers.get(id);
@@ -44823,10 +44760,8 @@ window.leafConsoleFront = id => {
   consoleFrontId = id;
   document.body.classList.toggle('console-front', id !== null);
   
-  libraryPane?.classList.toggle('is-console-sidebar', id !== null);
   hintTargetsMoved();
-  consoleRecentsShown(id !== null);
-  if (changed && consoleAgentRows.length) drawConsoleAgents();
+  if (changed && consoleAgentRows.length) drawConsoleRecents();
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
   placeConsoleLayers();
   syncConsoleViewsBar();
@@ -46777,6 +46712,8 @@ window.leafConsoleLaunched = (id, launched) => {
   entry.launched = launched && typeof launched === 'object' ? launched : null;
   if (!entry.launched) cancelConsoleHistory(entry, true);
   drawConsoleStatus(id, entry);
+  
+  if (currentState?.tabs) renderTabs(currentState);
 };
 
 if (typeof crumbMenu !== 'undefined' && crumbMenu) {
@@ -46845,7 +46782,7 @@ function consoleCompareGone(id) {
 }
 
 var consoleRecentsBand = document.getElementById('consoleRecents');
-const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true, archived: false, renaming: false, pins: [], carry: null };
+const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true, status: 'active', renaming: false, pins: [], carry: null, held: false, runningOrder: [] };
 
 
 function consoleRecentAge(seconds, now = Date.now() / 1000) {
@@ -46880,23 +46817,27 @@ function consoleRecentsShown(shown) {
   if (!consoleRecentsBand) return;
   consoleRecentsBand.hidden = !shown;
   if (shown) {
-    askConsoleRecents();
+    
+    if (window.__leafStartupSaid) askConsoleRecents();
     drawConsoleRecents();
   }
 }
 
 function consoleRecentsOutOfDate() {
   consoleRecents.stale = true;
-  if (consoleRecentsBand && !consoleRecentsBand.hidden) askConsoleRecents();
+  if (consoleRecentsBand && !consoleRecentsBand.hidden && window.__leafStartupSaid) askConsoleRecents();
 }
 
 function drawConsoleRecents() {
   
   if (!consoleRecentsBand || consoleRecentsBand.hidden || consoleRecents.renaming) return;
   const now = Date.now() / 1000;
-  const archived = consoleRecents.archived;
-  const parts = [`<div class="console-recents-heading-row" data-pin-drop="recents"><div class="console-agents-heading">${archived ? 'Archived' : 'Recents'}</div><button type="button" class="console-recents-filter" aria-pressed="${archived}" title="${archived ? 'Show recent chats' : 'Show archived chats'}"><span class="lt-icon lt-icon-archive" aria-hidden="true"></span><span>${archived ? 'Recents' : 'Archived'}</span></button></div>`];
-  const shown = consoleRecents.rows.filter((row) => Boolean(row.archived) === archived);
+  
+  const status = consoleRecents.status;
+  const archived = status === 'archived';
+  const filtered = status !== 'active';
+  const parts = [`<div class="console-recents-heading-row" data-pin-drop="recents"><div class="console-agents-heading">All chats</div><button type="button" class="console-recents-filter" aria-haspopup="menu" aria-pressed="${filtered}" title="Filter chats"><span class="lt-icon lt-icon-filter-lines" aria-hidden="true"></span><span>${filtered ? CONSOLE_CHAT_STATUS_WORDS[status] : 'Filter'}</span></button></div>`];
+  const shown = consoleRecents.rows.filter((row) => status === 'all' || Boolean(row.archived) === archived);
   for (const note of consoleRecents.unavailable) {
     const name = AGENT_LAUNCH_NAMES[note.agent];
     parts.push(`<div class="console-recents-note">${escapeText(name ? `${name}: ${note.sentence}` : note.sentence)}</div>`);
@@ -46905,12 +46846,81 @@ function drawConsoleRecents() {
     parts.push(`<div class="console-recents-note">${consoleRecents.reading ? 'Reading your conversations…' : (archived ? 'No archived chats.' : 'No past conversations yet.')}</div>`);
   }
   const pinned = new Set(consoleRecents.pins.flatMap((section) => section.chats.map(consoleChatKey)));
+  
+  const running = consoleRunningConversations();
+  if (!archived) parts.push(consoleRunningRowsHtml());
   for (const row of shown) {
     if (!archived && pinned.has(consoleChatKey(row))) continue;
+    if (!archived && running.has(String(row.id))) continue;
     parts.push(consoleRecentRowHtml(row, now, ''));
   }
   
   consoleRecentsBand.innerHTML = (archived ? '' : consoleRecentPinsHtml(now)) + parts.join('');
+}
+
+
+function consoleRunningConversations() {
+  return new Set(consoleAgentRows.flatMap((row) => (Array.isArray(row.conversations) ? row.conversations.map(String) : [])));
+}
+
+
+function consoleRunningRows() {
+  const rows = sortedConsoleAgents(consoleAgentRows);
+  if (!consoleRecents.held) {
+    consoleRecents.runningOrder = rows.map((row) => Number(row.id));
+    return rows;
+  }
+  const place = (row) => {
+    const at = consoleRecents.runningOrder.indexOf(Number(row.id));
+    return at < 0 ? Infinity : at;
+  };
+  return rows.slice().sort((a, b) => place(a) - place(b));
+}
+
+
+function consoleRunningRowsHtml() {
+  return consoleRunningRows().map((row) => {
+    const id = Number(row.id);
+    const title = String(row.title ?? '');
+    const tip = row.prompt ? String(row.prompt) : title;
+    const icon = consoleIconClass(row.agent);
+    const marks = (id === consoleFrontId ? ' console-agent-front' : '') + (row.state === 'working' ? ' console-agent-working' : '');
+    const needs = row.state === 'needs' ? ' console-agent-needs' : '';
+    return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running${marks}" data-console-id="${id}" title="${escapeAttr(tip)}"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="${icon}"></span></span><span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state${needs}">${escapeText(consoleAgentWords[row.state] || '')}</span></button><button type="button" class="console-recent-more" data-console-id="${id}" aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
+  }).join('');
+}
+
+
+function consoleRunningMenuRows(id) {
+  const index = (currentState?.tabs || []).findIndex((tab) => tab.kind === 'console' && Number(tab.webId) === Number(id));
+  const rows = index < 0 ? [] : [
+    { icon: 'split', label: 'Open beside', run: () => send({ command: 'openBeside', index }) },
+    { icon: 'window-restore', label: 'Move to a new window', run: () => send({ command: 'tearOutTab', index, scroll_anchor: null }) },
+    { icon: 'close', label: 'Close', run: () => send({ command: 'closeTab', index }) },
+  ];
+  return rows.concat(consoleTabMenuRows({ dataset: { consoleId: String(id) } }) || []);
+}
+function openConsoleRunningMenu(id, x, y) {
+  const rows = consoleRunningMenuRows(id);
+  if (rows.length) showConsoleTabMenu(x, y, rows);
+}
+
+
+function pressConsoleRunning(id) {
+  if (!window.leafPressConsoleTab(id)) send({ command: 'focusConsole', id });
+}
+
+
+const CONSOLE_CHAT_STATUS_WORDS = { active: 'Active', archived: 'Archived', all: 'All' };
+function consoleChatStatusRows() {
+  return [{ heading: 'Status' }, ...Object.entries(CONSOLE_CHAT_STATUS_WORDS).map(([status, label]) => ({
+    label,
+    selected: consoleRecents.status === status,
+    run: () => {
+      consoleRecents.status = status;
+      drawConsoleRecents();
+    },
+  }))];
 }
 
 function consoleChatKey(chat) {
@@ -47211,6 +47221,12 @@ function pressConsoleRecent(row) {
   }
   const chat = consoleRecentOf(row);
   if (chat?.unread) markConsoleRecent(chat, 'markRead', 'unread', false);
+  
+  const live = consoleAgentRows.find((agent) => Array.isArray(agent.conversations) && agent.conversations.map(String).includes(String(row.dataset.recentId)));
+  if (live) {
+    pressConsoleRunning(Number(live.id));
+    return;
+  }
   reopenConsoleRecent(row.dataset.recentAgent, row.dataset.recentId);
 }
 
@@ -47228,12 +47244,20 @@ if (consoleRecentsBand) {
       openConsolePinSectionMenu(Number(sectionMore.dataset.pinSection), box.left, box.bottom);
       return;
     }
-    if (event.target.closest?.('.console-recents-filter')) {
-      consoleRecents.archived = !consoleRecents.archived;
-      drawConsoleRecents();
+    const filter = event.target.closest?.('.console-recents-filter');
+    if (filter) {
+      
+      event.stopPropagation?.();
+      toggleCrumbMenu(filter, consoleChatStatusRows());
       return;
     }
     const more = event.target.closest?.('.console-recent-more');
+    if (more && more.dataset.consoleId) {
+      event.stopPropagation?.();
+      const box = more.getBoundingClientRect();
+      openConsoleRunningMenu(Number(more.dataset.consoleId), box.left, box.bottom);
+      return;
+    }
     if (more) {
       
       event.stopPropagation?.();
@@ -47241,14 +47265,32 @@ if (consoleRecentsBand) {
       openConsoleRecentMenu(more, box.left, box.bottom);
       return;
     }
+    
+    const runningRow = event.target.closest?.('.console-running');
+    if (runningRow) {
+      if (event.detail === 0) pressConsoleRunning(Number(runningRow.dataset.consoleId));
+      return;
+    }
     const row = event.target.closest?.('.console-recent');
     if (row) pressConsoleRecent(row);
   });
+  consoleRecentsBand.addEventListener('pointerenter', () => { consoleRecents.held = true; });
+  consoleRecentsBand.addEventListener('pointerleave', () => {
+    consoleRecents.held = false;
+    drawConsoleRecents();
+  });
   consoleRecentsBand.addEventListener('pointerdown', (event) => {
+    
+    const runningRow = event.button === 0 ? event.target.closest?.('.console-running') : null;
+    if (runningRow) {
+      event.preventDefault?.();
+      pressConsoleRunning(Number(runningRow.dataset.consoleId));
+      return;
+    }
     if (event.button !== 0 || event.target.closest?.('.console-recent-more')) return;
     const row = event.target.closest?.('.console-recent');
     const chat = row && consoleRecentOf(row);
-    if (!chat || consoleRecents.archived) return;
+    if (!chat || consoleRecents.status === 'archived') return;
     consoleRecents.carried = false;
     consoleRecents.carry = { chat, pointerId: event.pointerId, x: event.clientX, y: event.clientY, chip: null, target: null };
     leafHoldPointer(consoleRecentsBand, event.pointerId);
@@ -47315,9 +47357,59 @@ if (consoleRecentsBand) {
     if (!row) return;
     event.preventDefault();
     event.stopPropagation?.();
+    const running = row.querySelector('.console-running');
+    if (running) {
+      openConsoleRunningMenu(Number(running.dataset.consoleId), event.clientX, event.clientY);
+      return;
+    }
     openConsoleRecentMenu(row.querySelector('.console-recent'), event.clientX, event.clientY);
   });
 }
+
+var libraryNav = document.getElementById('libraryNav');
+var librarySearchRow = document.getElementById('librarySearchRow');
+var libraryRow = document.getElementById('libraryRow');
+
+const LIBRARY_SHOWS_FILES_KEY = 'leaftext.libraryShowsFiles';
+let libraryShowsFiles = false;
+try {
+  libraryShowsFiles = window.localStorage?.getItem(LIBRARY_SHOWS_FILES_KEY) === '1';
+} catch {
+  libraryShowsFiles = false;
+}
+
+function showLibraryPaneHalf() {
+  const chats = !!libraryNav && !libraryShowsFiles;
+  libraryPane?.classList.toggle('is-console-sidebar', chats);
+  if (libraryRow) {
+    libraryRow.setAttribute('aria-pressed', String(libraryShowsFiles));
+    libraryRow.title = libraryShowsFiles ? 'Show the chats' : 'Show the files';
+  }
+  consoleRecentsShown(chats);
+  drawLibraryRowEnd();
+  hintTargetsMoved();
+}
+function toggleLibraryFiles() {
+  setLibraryFiles(!libraryShowsFiles);
+}
+
+function setLibraryFiles(shown) {
+  libraryShowsFiles = !!shown;
+  try {
+    window.localStorage?.setItem(LIBRARY_SHOWS_FILES_KEY, libraryShowsFiles ? '1' : '0');
+  } catch {
+    
+  }
+  showLibraryPaneHalf();
+}
+
+function openLibrarySearch() {
+  openFindBar();
+  if (allFilesSearchAvailable()) setFindScope('vault');
+}
+if (librarySearchRow) librarySearchRow.addEventListener('click', () => openLibrarySearch());
+if (libraryRow) libraryRow.addEventListener('click', () => toggleLibraryFiles());
+if (libraryNav) showLibraryPaneHalf();
 
 
 
@@ -52212,6 +52304,8 @@ const LEAF_MERMAID_ICONS = {
     'hide': { body: "<path d=\"M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49\" /><path d=\"M14.084 14.158a3 3 0 0 1-4.242-4.242\" /><path d=\"M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143\" /><path d=\"m2 2 20 20\" />", width: 24, height: 24 },
     'more': { body: "<circle cx=\"12\" cy=\"12\" r=\"1\" /><circle cx=\"12\" cy=\"5\" r=\"1\" /><circle cx=\"12\" cy=\"19\" r=\"1\" />", width: 24, height: 24 },
     'archive': { body: "<rect width=\"20\" height=\"5\" x=\"2\" y=\"3\" rx=\"1\" /><path d=\"M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8\" /><path d=\"M10 12h4\" />", width: 24, height: 24 },
+    'filter-lines': { body: "<path d=\"M3 6h18\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M7 12h10\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M10 18h4\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
+    'library': { body: "<path d=\"M4.5 4.5h3.5v15H4.5z\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M8 7h3.5v12.5H8z\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M13.2 7.4l3.3-.9 3.4 12.4-3.3.9z\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M6.25 7.5v1.5M9.75 10v1.5\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'reveal': { body: "<path d=\"M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1\" /><path d=\"m21 21-1.9-1.9\" /><circle cx=\"17\" cy=\"17\" r=\"3\" />", width: 24, height: 24 },
     'properties': { body: "<circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"M12 16v-4\" /><path d=\"M12 8h.01\" />", width: 24, height: 24 },
     'open-outside': { body: "<path d=\"M15 3h6v6\" /><path d=\"M10 14 21 3\" /><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\" />", width: 24, height: 24 },

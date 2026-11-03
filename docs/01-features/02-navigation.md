@@ -15,7 +15,7 @@ Links inside note and glossary sheets follow the same route as links in the docu
 | [Web tabs](#web-tabs) | Browse a live web page beside your documents |
 | [Console tabs](03-library.md#console) | Run a command line in the folder shown by the library |
 | [Two documents side by side](#two-documents-side-by-side) | Stand a second tab beside the one you are reading, each column scrolling on its own with its own rail |
-| [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
+| [New document](07-editing.md#new-document) | **New** at the top of the library pane starts a blank page, ready to type |
 | [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with how many headings it holds |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you arrive at on screen at once |
 | [Refresh](#history) | Draw the open file and its current glossary again, dropping page-only state such as a folded block or dragged table column |
@@ -40,7 +40,7 @@ Links inside note and glossary sheets follow the same route as links in the docu
 
 ## Web tabs
 
-Press **+** and enter an address in the field in the middle of the empty page. A bare host such as `ryanallen.com` opens over HTTPS; words open a Google search. **Browse free books** under it opens [Books online](03-library.md#books-online). Typing the first character of a note removes the field and the button.
+Press **New** at the top of the [library pane](03-library.md#layout), choose **New page**, and enter an address in the field in the middle of the empty page. A bare host such as `ryanallen.com` opens over HTTPS; words open a Google search. **Browse free books** under it opens [Books online](03-library.md#books-online). Typing the first character of a note removes the field and the button.
 
 On [Home](#recent-files), add the **Web address** box with the small plus below the boxes. Type an address or search words and press **Enter** or **Go** to open a new selected web tab. Tabs already open stay available.
 
@@ -106,9 +106,9 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 ### The app bar
 
-![The Leaftext app bar: the leaf mark, then the tab strip with the plus at its end, then Open and Export at the right](../../imgs/navigation.png)
+![The Leaftext app bar: the leaf mark, the pane button, Back, Refresh and Forward, then the tab strip, then Open and Export at the right](../../imgs/navigation-v2.png)
 
-**+** ([new document](07-editing.md#new-document)) and the [console button](03-library.md#console) stand together at the end of the tab strip, where the last tab ends and the next one will begin. At the right Open and [Export](#export-a-pdf). The palette that opens the [theme picker](06-themes.md#choose) stands with the other launchers at the foot of the [library pane](03-library.md#browsing).
+**New** ([new document](07-editing.md#new-document), a [console](03-library.md#console) or an agent) is the first row of the [library pane](03-library.md#the-panes-rows) rather than a button in the tab strip. At the right Open and [Export](#export-a-pdf). The palette that opens the [theme picker](06-themes.md#choose) stands with the other launchers at the foot of the [library pane](03-library.md#browsing).
 
 The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back, Refresh and Forward, then the tab strip. Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
 
@@ -217,7 +217,7 @@ One document can stand beside itself as well: **Open source beside** on a tab pu
 
 #### When the bar runs out of room
 
-Tabs are never squeezed to make space for the toolbar, and a strip that has run out of room folds nothing: the tabs scroll under the **+** at their end instead. What folds is the bar itself running wider than the window — its buttons go into a chevron menu one at a time, right to left: the trailing actions first, then Back, Refresh and Forward, then the window controls. Two never fold — the leaf, which is the way home, and the [library](03-library.md#layout) button, which on a narrow window is the only way to reach the library at all. Once a group has gone entirely — Open and Export, or Back, Refresh and Forward — the row closes up over it rather than holding a gap where it stood. The **+** is never one of them: it belongs to the tabs rather than to the toolbar, and the tabs are never folded away. Widening the window puts each one back where it came from. A button you reached with Tab keeps the keyboard while the window changes width, whether it stands on the bar or inside the open chevron menu, and follows the button when it crosses between the two.
+Tabs are never squeezed to make space for the toolbar, and a strip that has run out of room folds nothing: the tabs scroll instead. What folds is the bar itself running wider than the window — its buttons go into a chevron menu one at a time, right to left: the trailing actions first, then Back, Refresh and Forward, then the window controls. Two never fold — the leaf, which is the way home, and the [library](03-library.md#layout) button, which on a narrow window is the only way to reach the library at all. Once a group has gone entirely — Open and Export, or Back, Refresh and Forward — the row closes up over it rather than holding a gap where it stood. The tabs are never folded away; [New](03-library.md#layout), which used to stand at their end, is the first row of the library pane. Widening the window puts each one back where it came from. A button you reached with Tab keeps the keyboard while the window changes width, whether it stands on the bar or inside the open chevron menu, and follows the button when it crosses between the two.
 
 That matters most on a small window with nothing open, where the window's own close, minimize and maximize buttons would otherwise run off the right edge: the bar is measured on its own account, so the chevron holds whatever will not fit beside them.
 
@@ -421,7 +421,7 @@ Every other shape still does its own work, because it describes a gesture rather
 
 ### What a control does under the pointer
 
-Point at one of the icon buttons along the bar — [Back and Forward](#history) at the left, **+** at the end of the tabs, Open and Export at the right — at a launcher at the foot of the [library](03-library.md#browsing) pane — at a file row in the [library](03-library.md#browsing) pane, or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The fill goes to the theme's own color, the glyph reverses out of it, and the ink and the edge arrive over the same beat, as they do on every control in the app.
+Point at one of the icon buttons along the bar — [Back and Forward](#history) at the left, Open and Export at the right — at a launcher at the foot of the [library](03-library.md#browsing) pane — at a file row in the [library](03-library.md#browsing) pane, or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The fill goes to the theme's own color, the glyph reverses out of it, and the ink and the edge arrive over the same beat, as they do on every control in the app.
 
 That is the whole answer. Nothing changes shape, nothing slides: the control stays exactly the box, the corner and the place it rests at, so the thing you aimed at is the thing under the pointer and no row changes height. The color reverses the moment the pointer leaves, and with [Reduce Motion](05-settings.md#reduce-motion) on it arrives in one frame.
 
