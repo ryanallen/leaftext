@@ -35,6 +35,8 @@ export function findBrowser() {
 /**
  * A headless browser opened on `url` with its debugging port attached: `send` speaks the protocol, `evaluate` runs an expression in the page and answers what it came to, `close` ends the browser.
  *
+ * The page comes back with `url` loaded. A browser started on an address lists that address before the tab's empty starting page is replaced, so a reading taken at once read `about:blank` about one time in a hundred; so it starts on `about:blank` and navigates once attached, waiting up to thirty seconds for the document to load.
+ *
  * Focus emulation is turned on before anything is handed back. A headless page hides itself five to nine seconds in, and a hidden page runs no animation frame — which is where the front end does every bit of its placing, so a click lands, the address is written, and the reader never moves while every step says it worked. It is the one call measured to hold it awake past twenty seconds; `Page.bringToFront` and the two occlusion flags were all tried and none of them does.
  */
 export async function openHeadless(url, { width = 1600, height = 1000, browser = findBrowser() } = {}) {
@@ -52,7 +54,7 @@ export async function openHeadless(url, { width = 1600, height = 1000, browser =
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${profile}`,
     `--window-size=${width},${height}`,
-    url,
+    'about:blank',
   ]);
 
   let address = null;
@@ -109,6 +111,26 @@ export async function openHeadless(url, { width = 1600, height = 1000, browser =
   };
 
   await send('Emulation.setFocusEmulationEnabled', { enabled: true });
+
+  if (url !== 'about:blank') {
+    const went = await send('Page.navigate', { url });
+    if (went.errorText) {
+      socket.close();
+      close();
+      throw new Error(`the page did not open: ${went.errorText}`);
+    }
+    let loaded = false;
+    for (const began = Date.now(); !loaded && Date.now() - began < 30000; ) {
+      // An evaluate landing while the document is replaced throws, which is the same answer as not loaded yet.
+      loaded = await evaluate(`location.href !== 'about:blank' && document.readyState === 'complete'`).catch(() => false);
+      if (!loaded) await new Promise((done) => setTimeout(done, 25));
+    }
+    if (!loaded) {
+      socket.close();
+      close();
+      throw new Error('the page never finished loading');
+    }
+  }
 
   return {
     send,
