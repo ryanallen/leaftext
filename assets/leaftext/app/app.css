@@ -7994,7 +7994,7 @@ body.library-resizing button {
   box-sizing: border-box;
   
   display: grid;
-  grid-template-columns: minmax(min(140px, 100%), max-content);
+  grid-template-columns: minmax(0, max-content);
   justify-content: start;
   align-content: start;
   height: var(--library-foot-height);
@@ -8003,9 +8003,6 @@ body.library-resizing button {
   background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
   background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
-}
-.library-pane.has-foot:not(.has-grove) .library-foot {
-  grid-template-columns: minmax(0, max-content);
 }
 
 .library-foot::before {
@@ -8025,10 +8022,6 @@ body.library-resizing button {
 }
 .library-pane.has-foot {
   --library-foot-height: 66px;
-}
-
-.library-pane.has-foot.has-grove {
-  --library-foot-height: 102px;
 }
 
 .library-profile {
@@ -8056,6 +8049,11 @@ body.library-resizing button {
 }
 .library-profile[hidden] {
   display: none;
+}
+
+.library-profile.is-row {
+  flex: none;
+  margin-top: 0;
 }
 
 .library-profile.has-claim {
@@ -8174,6 +8172,7 @@ body.library-resizing button {
 .library-nav-row {
   cursor: default;
   display: flex;
+  flex: none;
   align-items: center;
   gap: var(--lt-space-6);
   box-sizing: border-box;
@@ -8187,6 +8186,10 @@ body.library-resizing button {
   font-size: var(--lt-text-12-5);
   font-weight: var(--lt-weight-600);
   text-align: left;
+}
+
+.library-nav-row[hidden] {
+  display: none;
 }
 .library-nav-row .lt-icon {
   flex: none;
@@ -9007,9 +9010,9 @@ body.library-resizing button {
 .console-agent { display: flex; align-items: center; gap: var(--lt-space-6); box-sizing: border-box; width: 100%; height: 26px; padding: 0 var(--lt-space-6); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-md); background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12-5); text-align: left; cursor: default; }
 @media (hover: hover) { .console-agent:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } .console-agent-working:hover > .console-agent-icon, .console-agent:hover > .console-agent-state { color: var(--lt-foreground); } }
 .console-agent-front { border-color: var(--lt-border); background: var(--lt-background); }
-.console-agent-icon { position: relative; display: inline-flex; flex: none; color: var(--lt-primary-ink); }
+.console-agent-icon { position: relative; display: inline-flex; flex: none; }
 .console-agent-icon .lt-icon { width: 14px; height: 14px; }
-.console-agent-working .console-agent-icon { color: var(--lt-muted-foreground); }
+.console-agent-working .console-agent-icon { color: var(--lt-primary-ink); }
 .console-agent-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .console-agent-state { flex: none; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); }
 .console-agent-needs { color: var(--lt-primary-ink); font-weight: var(--lt-weight-600); }
@@ -9030,6 +9033,7 @@ body.library-resizing button {
 .console-pin-heading:focus-within .console-pin-more { opacity: 1; transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease); }
 @media (hover: hover) { .console-pin-heading:hover .console-pin-more { opacity: 1; transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease); } .console-pin-more:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
 .console-pin-gone .console-agent-name { color: var(--lt-muted-foreground); font-style: italic; }
+.console-pin-gone .console-agent-icon { color: var(--lt-muted-foreground); }
 .console-pin-new { display: flex; align-items: center; gap: var(--lt-space-6); height: 26px; margin-bottom: var(--lt-space-8); padding: 0 var(--lt-space-6); border: var(--lt-stroke-1) dashed var(--lt-border); border-radius: var(--lt-radius-md); color: var(--lt-muted-foreground); font-family: var(--app-font); font-size: var(--lt-text-12); }
 .console-pin-new .lt-icon { width: 12px; height: 12px; }
 .console-pin-rename { height: 20px; padding: 0 var(--lt-space-6); font-size: var(--lt-text-11); }
@@ -10267,6 +10271,23 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 }
 .reader-drop-beside.closes-right {
   grid-column: 5;
+}
+
+.split-close {
+  position: relative;
+  z-index: var(--lt-z-20);
+  grid-column: 5;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
+  margin-top: calc(var(--app-bar-height) + var(--lt-space-12));
+  margin-right: var(--lt-space-12);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+}
+.split-close.is-left {
+  grid-column: 2;
 }
 .reader-drop-beside-name:empty {
   display: none;
@@ -17587,6 +17608,10 @@ p.shelf-foot {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+}
+
+.calendar-day-list {
+  margin-top: var(--lt-space-16);
 }
 .calendar-month {
   display: grid;

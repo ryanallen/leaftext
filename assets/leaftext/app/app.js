@@ -1151,6 +1151,8 @@ let rightColumn = null;
 
 let keyedColumn = null;
 
+const splitCloseButton = document.getElementById('splitClose');
+
 let freshColumnState = null;
 
 
@@ -1187,6 +1189,15 @@ function focusColumn(column) {
   writeViewFades();
   
   scheduleLibraryOutline();
+  writeSplitClose();
+}
+
+
+function writeSplitClose() {
+  if (!splitCloseButton) return;
+  const beside = besideColumn();
+  splitCloseButton.hidden = !beside;
+  splitCloseButton.classList.toggle('is-left', beside === leftColumn);
 }
 
 
@@ -1375,6 +1386,7 @@ function applySplit(beside, state) {
   
   const keyed = !open || !beside || beside.side === 'right' ? leftColumn : rightColumn;
   focusColumn(keyed);
+  writeSplitClose();
   
   if (open !== splitDrawnOpen) {
     splitDrawnOpen = open;
@@ -1582,6 +1594,8 @@ const readerDropZone = document.getElementById('readerDropBeside');
 const readerDropZoneName = document.getElementById('readerDropBesideName');
 const readerLeftEdgeFade = document.getElementById('readerEdgeFade');
 const rightColumnShell = document.getElementById('appRight');
+
+if (splitCloseButton) splitCloseButton.addEventListener('click', () => send({ command: 'closeBeside' }));
 
 if (readerSplitLine) readerSplitLine.addEventListener('pointerdown', startSplitDrag);
 document.addEventListener('pointermove', moveSplitDrag);
@@ -9982,6 +9996,13 @@ if (window.__leafSite) {
   
   document.getElementById('libraryCrumbs')?.remove();
   document.getElementById('libraryPane')?.classList.add('has-nav');
+  
+  const grove = document.getElementById('libraryProfile');
+  const rows = document.getElementById('libraryNav');
+  if (grove && rows) {
+    grove.classList.add('library-nav-row', 'is-row');
+    rows.append(grove);
+  }
 }
 
 if (window.__leafEmbedded) document.body.classList.add('is-embedded');
@@ -15223,13 +15244,12 @@ function renderProject() {
 }
 
 function renderLibraryLists() {
-  const day = calendarDayShowing();
-  const outlining = !day && libraryOutlineShowing();
-  if (libraryCalendarDay) libraryCalendarDay.hidden = !day;
+  calendarFollowVault();
+  const outlining = libraryOutlineShowing();
   libraryOutline.hidden = !outlining;
   const wasHidden = libraryTree.hidden;
   
-  libraryTree.hidden = day || (outlining && !libraryOutlineInSidebar());
+  libraryTree.hidden = outlining && !libraryOutlineInSidebar();
   drawSidebarOutline();
   
   if (wasHidden && !libraryTree.hidden) scheduleLibraryRowWindow();
@@ -15872,7 +15892,8 @@ function openCrumbList(button, items) {
   crumbMenuVault = null;
   toggleCrumbMenu(button, items);
 }
-function showCrumbMenu(button, items, focusLabel) {
+
+function showCrumbMenu(button, items, focusLabel, above) {
   forgetCloudRecoveryMenu();
   
   const reopening = crumbMenuOwner === button && !crumbMenu.hidden;
@@ -16042,11 +16063,12 @@ function showCrumbMenu(button, items, focusLabel) {
   
   crumbMenu.classList.toggle('is-bridged', button.classList.contains('library-vault-switch'));
   
-  const browsing = button.id === 'libraryRow';
+  const browsing = above !== undefined || button.id === 'libraryRow' || (button === newMenuButton && newMenuFolder.view);
   crumbMenu.classList.toggle('is-browsing', browsing);
   
   const anchor = button.getBoundingClientRect();
-  crumbMenu.style.maxHeight = browsing ? `${Math.max(0, window.innerHeight - anchor.bottom - CRUMB_MENU_DROP - LEAF_FLOAT_MARGIN)}px` : '';
+  const room = above ? anchor.top - leafAppRect().top : window.innerHeight - anchor.bottom;
+  crumbMenu.style.maxHeight = browsing ? `${Math.max(0, room - CRUMB_MENU_DROP - LEAF_FLOAT_MARGIN)}px` : '';
   leafPlaceFloating(crumbMenu, anchor.left, anchor.bottom + CRUMB_MENU_DROP);
   
   if (requestedFocus || (firstFocusable && !reopening)) leafFocusForKeyboard(requestedFocus || firstFocusable);
@@ -21721,6 +21743,8 @@ window.leafSetColumn = (state, anchor) => {
 window.leafSetFavorites = (favorites) => {
   currentState.favorites = Array.isArray(favorites) ? favorites : [];
   renderTabs(currentState);
+  
+  refreshPaneFoot();
 };
 
 window.leafReloadDocument = (state) => {
@@ -22131,6 +22155,8 @@ window.leafSetWorkspace = (state) => {
   renderTabs(currentState);
   renderNavigation();
   
+  refreshPaneFoot();
+  
   const path = activeDocumentPath();
   if (path !== librarySelectedPath) followFileInLibrary(path, false);
   else renderLibrary();
@@ -22315,6 +22341,7 @@ function toggleFavorite(path, kind) {
     ? favorites.filter((favorite) => favorite.path !== path)
     : favorites.concat([{ vaultId: null, path, kind: kind || 'document' }]);
   renderTabs(currentState);
+  refreshPaneFoot();
   send({ command: 'toggleFavorite', path, kind: kind || 'document' });
 }
 
@@ -37591,7 +37618,8 @@ function grovePillName(profile) {
 function drawGrovePill() {
   if (!libraryProfile) return;
   libraryProfile.hidden = !leafProfile;
-  libraryPane.classList.toggle('has-grove', !!leafProfile);
+  
+  refitPaneRows();
   if (!leafProfile) return;
   
   const moment = leafProfile.enabled ? groveMoment : null;
@@ -42845,20 +42873,40 @@ var PANE_FOOT_GAP = 4;
 
 var paneFootRailWidth = null;
 var paneFootChevronUp = false;
+
+var paneRows = document.getElementById('libraryNav');
 function registerPaneFootAction({ id, label, icon, has, press }) {
-  if (!libraryFootRail) return null;
+  const row = !!paneRows;
+  if (!row && !libraryFootRail) return null;
   const button = document.createElement('button');
   button.type = 'button';
   button.id = id;
-  button.className = 'icon-button library-foot-button';
   button.title = label;
   button.setAttribute('aria-label', label);
-  button.innerHTML = `<span class="lt-icon lt-icon-${icon}"></span>`;
+  if (row) {
+    button.className = 'library-nav-row';
+    button.innerHTML = `<span class="lt-icon lt-icon-${icon}" aria-hidden="true"></span><span class="library-nav-word">${label}</span>`;
+    paneRows.insertBefore(button, libraryProfile && libraryProfile.parentElement === paneRows ? libraryProfile : null);
+  } else {
+    button.className = 'icon-button library-foot-button';
+    button.innerHTML = `<span class="lt-icon lt-icon-${icon}"></span>`;
+    libraryFootRail.insertBefore(button, libraryFootToggle);
+  }
   button.addEventListener('click', () => press());
-  libraryFootRail.insertBefore(button, libraryFootToggle);
-  paneFootActions.push({ id, button, has });
+  paneFootActions.push({ id, button, has, row });
   refreshPaneFoot();
   return button;
+}
+
+var paneRowsStanding;
+
+function refitPaneRows() {
+  if (!paneRows || !libraryPane) return;
+  let standing = 0;
+  for (const child of Array.from(paneRows.children)) if (!child.hidden) standing += 1;
+  if (standing === paneRowsStanding) return;
+  paneRowsStanding = standing;
+  libraryPane.style.setProperty('--library-crumbs-height', `${10 + standing * 26 + Math.max(standing - 1, 0) * 2}px`);
 }
 
 function refreshPaneFoot() {
@@ -42867,8 +42915,9 @@ function refreshPaneFoot() {
   for (const action of paneFootActions) {
     const present = !!action.has();
     action.button.hidden = !present;
-    if (present) drawn += 1;
+    if (present && !action.row) drawn += 1;
   }
+  refitPaneRows();
   libraryFoot.hidden = drawn === 0;
   
   libraryPane.classList.toggle('has-foot', drawn > 0);
@@ -42884,7 +42933,8 @@ function paneFootFits(folded = libraryFootPanel.children.length > 0) {
   return standing * PANE_FOOT_BUTTON + Math.max(standing - 1, 0) * PANE_FOOT_GAP <= paneFootRailWidth;
 }
 function foldPaneFoot() {
-  const buttons = paneFootActions.map((action) => action.button);
+  
+  const buttons = paneFootActions.filter((action) => !action.row).map((action) => action.button);
   return foldIntoPanel({
     homes: new Map([[libraryFootRail, [...buttons, libraryFootToggle]]]),
     candidates: buttons.map((el) => ({ el })),
@@ -42972,6 +43022,19 @@ registerPaneFootAction({
   press: () => openHomeSheet('recent'),
 });
 
+if (!paneRows) {
+  registerPaneFootAction({
+    id: 'paneFootSearch',
+    label: 'Search',
+    icon: 'search',
+    has: () => true,
+    press: () => {
+      openFindBar();
+      if (allFilesSearchAvailable()) setFindScope('vault');
+    },
+  });
+}
+
 
 
 
@@ -42987,7 +43050,9 @@ var calendarFieldSelect = document.getElementById('calendarField');
 var calendarPreviousButton = document.getElementById('calendarPrevious');
 var calendarNextButton = document.getElementById('calendarNext');
 var calendarTodayButton = document.getElementById('calendarToday');
-var libraryCalendarDay = document.getElementById('libraryCalendarDay');
+
+var calendarMonthGrid = document.getElementById('calendarMonthGrid');
+var calendarDayList = document.getElementById('calendarDayList');
 var CALENDAR_WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 var CALENDAR_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -43004,6 +43069,8 @@ var calendarSpan = 'month';
 var calendarAnchor = new Date();
 
 var calendarDay = null;
+
+var calendarAskedDay = false;
 
 var calendarToken = 0;
 var calendarAnswer = null;
@@ -43144,6 +43211,7 @@ function requestCalendar() {
     selected: at >= 0 ? at : null,
     token: calendarToken,
   });
+  calendarAskedDay = at >= 0;
   return days;
 }
 
@@ -43151,6 +43219,7 @@ function releaseCalendar() {
   cancelCalendarStepHold();
   calendarToken += 1;
   calendarAnswer = null;
+  calendarAskedDay = false;
   send({ command: 'calendarRange', field: calendarField, days: [], selected: null, token: calendarToken });
 }
 window.leafSetCalendar = (answer) => {
@@ -43161,7 +43230,7 @@ window.leafSetCalendar = (answer) => {
   
   if (calendarFieldsMark() !== calendarFieldsDrawn) drawCalendarFields();
   if (!calendarSheet.hidden) drawCalendarMonth();
-  if (calendarDay) drawCalendarDayList();
+  if (calendarDay && calendarAskedDay) drawCalendarDayList();
 };
 function drawCalendarMonth() {
   const days = calendarShownDays();
@@ -43182,10 +43251,10 @@ function drawCalendarMonth() {
   const one = calendarSpan === 'day';
   const heads = (one ? [CALENDAR_WEEKDAYS[(calendarAnchor.getDay() + 6) % 7]] : CALENDAR_WEEKDAYS).map((name) => `<span class="calendar-weekday">${name}</span>`).join('');
   
-  const focused = document.activeElement && calendarSheetBody.contains && calendarSheetBody.contains(document.activeElement) ? document.activeElement.getAttribute('data-calendar-at') : null;
-  calendarSheetBody.innerHTML = `<div class="calendar-month${one ? ' is-one-day' : ''}" role="group" aria-label="${escapeAttr(words.title)}">${heads}${cells.join('')}</div>`;
+  const focused = document.activeElement && calendarMonthGrid.contains && calendarMonthGrid.contains(document.activeElement) ? document.activeElement.getAttribute('data-calendar-at') : null;
+  calendarMonthGrid.innerHTML = `<div class="calendar-month${one ? ' is-one-day' : ''}" role="group" aria-label="${escapeAttr(words.title)}">${heads}${cells.join('')}</div>`;
   if (focused !== null) {
-    const again = calendarSheetBody.querySelector(`[data-calendar-at="${focused}"]`);
+    const again = calendarMonthGrid.querySelector(`[data-calendar-at="${focused}"]`);
     if (again) again.focus();
   }
   const within = days.reduce((sum, day, at) => sum + (day.inMonth ? Number(counts[at]) || 0 : 0), 0);
@@ -43272,12 +43341,8 @@ function closeCalendarSheet(options) {
   document.removeEventListener('keydown', onCalendarKey);
   closeSheet(calendarSheet, calendarBackdrop, options);
   
-  if (calendarDay) {
-    calendarAnchor = calendarDateOf(calendarDay.date);
-    requestCalendar();
-  } else {
-    releaseCalendar();
-  }
+  if (calendarDay) calendarAnchor = calendarDateOf(calendarDay.date);
+  releaseCalendar();
   leafFocusForKeyboard(calendarFootButton || calendarLastFocus);
 }
 
@@ -43289,40 +43354,33 @@ function pickCalendarDay(at) {
   const day = calendarShownDays()[at];
   if (!day) return;
   calendarDay = { date: day.date };
-  closeCalendarSheet();
-  markCalendarSquare();
-  renderLibraryLists();
+  requestCalendar();
+  drawCalendarMonth();
   drawCalendarDayList();
 }
 function clearCalendarDay() {
   if (!calendarDay) return;
   calendarDay = null;
-  if (calendarSheet.hidden) releaseCalendar();
-  markCalendarSquare();
-  renderLibraryLists();
-}
-function markCalendarSquare() {
-  if (!calendarFootButton) return;
-  calendarFootButton.classList.toggle('is-active', !!calendarDay);
-  calendarFootButton.setAttribute('aria-pressed', calendarDay ? 'true' : 'false');
+  drawCalendarDayList();
+  if (calendarSheet.hidden) return;
+  requestCalendar();
+  drawCalendarMonth();
 }
 
-function calendarDayShowing() {
-  if (!libraryCalendarDay) return false;
-  if (activeVaultId !== calendarVaultId) {
-    calendarVaultId = activeVaultId;
-    if (calendarDay) {
-      calendarDay = null;
-      markCalendarSquare();
-    }
-    if (calendarSheet && !calendarSheet.hidden) closeCalendarSheet();
-    refreshPaneFoot();
+function calendarFollowVault() {
+  if (!calendarDayList || activeVaultId === calendarVaultId) return;
+  calendarVaultId = activeVaultId;
+  if (calendarDay) {
+    calendarDay = null;
+    drawCalendarDayList();
   }
-  return !!calendarDay;
+  if (calendarSheet && !calendarSheet.hidden) closeCalendarSheet();
+  refreshPaneFoot();
 }
 function drawCalendarDayList() {
+  calendarDayList.hidden = !calendarDay;
   if (!calendarDay) {
-    libraryCalendarDay.innerHTML = '';
+    calendarDayList.innerHTML = '';
     return;
   }
   const answer = calendarAnswer || {};
@@ -43346,9 +43404,13 @@ function drawCalendarDayList() {
       .join('');
     if (answer.truncated) rows += `<div class="library-empty">The first ${formatCount(documents.length)}.</div>`;
   }
-  libraryCalendarDay.innerHTML = note + rows;
-  libraryCalendarDay.querySelectorAll('[data-open-path]').forEach(bindLibraryFileRow);
-  const clear = libraryCalendarDay.querySelector('.library-calendar-clear');
+  calendarDayList.innerHTML = note + rows;
+  calendarDayList.querySelectorAll('[data-open-path]').forEach((row) => {
+    bindLibraryFileRow(row);
+    
+    row.addEventListener('click', () => closeCalendarSheet());
+  });
+  const clear = calendarDayList.querySelector('.library-calendar-clear');
   if (clear) clear.addEventListener('click', () => clearCalendarDay());
 }
 
@@ -43409,17 +43471,6 @@ if (calendarSheet) {
     has: calendarAvailable,
     press: openCalendarSheet,
   });
-  if (calendarFootButton) {
-    calendarFootButton.setAttribute('aria-pressed', 'false');
-    
-    calendarFootButton.addEventListener('keydown', (event) => {
-      if (event.key !== 'ArrowUp' || !calendarDay) return;
-      const row = libraryCalendarDay.querySelector('.library-file') || libraryCalendarDay.querySelector('.library-calendar-clear');
-      if (!row) return;
-      event.preventDefault();
-      row.focus();
-    });
-  }
 }
 
 const consoleLayers = new Map();
@@ -46203,17 +46254,16 @@ function openNewMenuFolder(path) {
 }
 function newMenuFolderRows(listing) {
   const go = (path) => ({ keepOpen: true, title: path, run: () => openNewMenuFolder(path) });
-  const rows = [newMenuFolderBack(), { heading: listing.name || listing.path }];
+  const rows = [newMenuFolderBack(), { heading: listing.name || listing.path }, { label: 'Start here', title: listing.path, keepOpen: true, run: () => {
+    newMenuFolder.path = listing.path;
+    newMenuFolder.view = false;
+    agentLaunchShow('main');
+  } }, newMenuFolderChooser(), 'separator'];
   if (listing.parent) rows.push({ ...go(listing.parent), label: `↑ ${newMenuFolderName(listing.parent)}` });
   for (const folder of listing.folders || []) rows.push({ ...go(folder.path), label: folder.name });
   if (!(listing.folders || []).length) rows.push({ note: 'No folders inside this one.' });
   if (listing.truncated) rows.push({ note: 'This folder holds more than the menu lists. Choose another folder to reach the rest.' });
-  rows.push('separator', { label: 'Start here', title: listing.path, keepOpen: true, run: () => {
-    newMenuFolder.path = listing.path;
-    newMenuFolder.view = false;
-    agentLaunchShow('main');
-  } });
-  return [...rows, newMenuFolderChooser()];
+  return rows;
 }
 
 window.leafNewMenuFolderListed = (request, listing) => {
@@ -46972,6 +47022,16 @@ function openConsoleRunningMenu(id, x, y) {
 }
 
 
+const CONSOLE_CONVERSATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function consoleRunningChat(id) {
+  const row = consoleAgentRows.find((agent) => Number(agent.id) === Number(id));
+  const conversations = (Array.isArray(row?.conversations) ? row.conversations : []).map(String).filter((conversation) => CONSOLE_CONVERSATION_ID.test(conversation));
+  if (!conversations.length) return null;
+  const saved = consoleRecents.rows.find((chat) => chat.agent === row.agent && conversations.includes(String(chat.id)));
+  return saved || { agent: String(row.agent), id: conversations[conversations.length - 1], title: String(row.title || '') };
+}
+
+
 function pressConsoleRunning(id) {
   if (!window.leafPressConsoleTab(id)) send({ command: 'focusConsole', id });
 }
@@ -46999,11 +47059,16 @@ function consoleRecentRowHtml(row, now, where, live = null) {
   const title = String(row.title || 'Untitled conversation');
   const folder = row.folder ? `\n${row.folder}` : '';
   const ids = `data-recent-agent="${escapeAttr(agent)}" data-recent-id="${escapeAttr(String(row.id || ''))}"`;
-  const marks = (row.unread ? ' console-recent-unread' : '') + (row.gone ? ' console-pin-gone' : '');
+  const working = live?.state === 'working';
+  
+  const gone = row.gone && !live;
+  const marks = (row.unread ? ' console-recent-unread' : '') + (gone ? ' console-pin-gone' : '') + (working ? ' console-agent-working' : '');
+  const icon = consoleIconClass(agent);
+  const glow = working ? `<span class="console-agent-glow"><span class="${icon}"></span></span>` : '';
   const drop = where ? ` data-pin-drop="${where}"` : ' data-pin-drop="recents"';
-  const state = live ? (consoleAgentWords[live.state] || '') : row.gone ? 'gone' : consoleRecentAge(row.time, now);
+  const state = live ? (consoleAgentWords[live.state] || '') : gone ? 'gone' : consoleRecentAge(row.time, now);
   const needs = live?.state === 'needs' ? ' console-agent-needs' : '';
-  return `<div class="console-recent-row" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}"><span class="console-agent-icon" aria-hidden="true"><span class="${consoleIconClass(agent)}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state${needs}">${escapeText(live || row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
+  return `<div class="console-recent-row" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}"><span class="console-agent-icon" aria-hidden="true">${glow}<span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state${needs}">${escapeText(live || row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
 }
 
 function consoleRecentPinsHtml(now) {
@@ -47285,18 +47350,19 @@ function reopenConsoleRecent(agent, conversation, heard = null) {
 
 
 function pressConsoleRecent(row) {
+  const chat = consoleRecentOf(row);
+  
+  const live = consoleAgentRows.find((agent) => Array.isArray(agent.conversations) && agent.conversations.map(String).includes(String(row.dataset.recentId)));
+  if (live) {
+    if (chat?.unread) markConsoleRecent(chat, 'markRead', 'unread', false);
+    pressConsoleRunning(Number(live.id));
+    return;
+  }
   if (row.classList.contains('console-pin-gone')) {
     leafToast('That chat is gone; its agent no longer keeps it.');
     return;
   }
-  const chat = consoleRecentOf(row);
   if (chat?.unread) markConsoleRecent(chat, 'markRead', 'unread', false);
-  
-  const live = consoleAgentRows.find((agent) => Array.isArray(agent.conversations) && agent.conversations.map(String).includes(String(row.dataset.recentId)));
-  if (live) {
-    pressConsoleRunning(Number(live.id));
-    return;
-  }
   
   send({ command: 'openSavedChat', agent: row.dataset.recentAgent, conversation: row.dataset.recentId, title: String(chat?.title || '') });
 }
@@ -47361,7 +47427,15 @@ if (consoleRecentsBand) {
     const runningRow = event.button === 0 ? event.target.closest?.('.console-running') : null;
     if (runningRow) {
       event.preventDefault?.();
-      pressConsoleRunning(Number(runningRow.dataset.consoleId));
+      const id = Number(runningRow.dataset.consoleId);
+      const chat = consoleRecents.status === 'archived' ? null : consoleRunningChat(id);
+      if (!chat) {
+        pressConsoleRunning(id);
+        return;
+      }
+      consoleRecents.carried = false;
+      consoleRecents.carry = { chat, console: id, pointerId: event.pointerId, x: event.clientX, y: event.clientY, chip: null, target: null };
+      leafHoldPointer(consoleRecentsBand, event.pointerId);
       return;
     }
     if (event.button !== 0 || event.target.closest?.('.console-recent-more')) return;
@@ -47399,6 +47473,10 @@ if (consoleRecentsBand) {
       endConsoleCarry();
       consoleRecents.carried = true;
       setTimeout(() => { consoleRecents.carried = false; }, 0);
+      if (carry.console) {
+        pressConsoleRunning(carry.console);
+        return;
+      }
       const row = consoleRecentRowOf(carry.chat);
       if (row) pressConsoleRecent(row);
       return;
@@ -48828,6 +48906,9 @@ const CONSOLE_HAND_OVER_CEILING = 20000;
 
 const CONSOLE_HAND_OVER_SETTLE_MS = 1500;
 
+const CONSOLE_HAND_OVER_FOOTER_MS = 8000;
+const CONSOLE_HAND_OVER_LOOK_MS = 100;
+
 const consoleHandOverAsked = new Map();
 const consoleHandOverWaiting = new Map();
 let consoleHandOverRequest = 0;
@@ -48862,7 +48943,7 @@ function consoleHandOverList(view, turn, agent) {
   list.appendChild(row);
   const foot = document.createElement('div');
   foot.className = 'console-hand-over-foot';
-  foot.textContent = 'Opens beside this console with the prompt and this answer';
+  foot.textContent = 'Opens a new chat with the prompt and this answer';
   list.appendChild(foot);
   return list;
 }
@@ -48927,16 +49008,23 @@ function deliverConsoleHandOver(id, entry) {
   
   waiting.readyAt ||= Date.now();
   const left = waiting.readyAt + CONSOLE_HAND_OVER_SETTLE_MS - Date.now();
-  if (left > 0) {
+  
+  const footer = waiting.agent === 'codex' && !consoleCodexFooterDrawn(entry) && Date.now() - waiting.readyAt < CONSOLE_HAND_OVER_FOOTER_MS;
+  if (left > 0 || footer) {
     clearTimeout(waiting.timer);
     waiting.timer = setTimeout(() => {
       if (consoleLayers.get(id) === entry) deliverConsoleHandOver(id, entry);
-    }, left);
+    }, left > 0 ? left : CONSOLE_HAND_OVER_LOOK_MS);
     return;
   }
   consoleHandOverWaiting.delete(id);
   entry.composer.field.value = waiting.text;
   sendConsoleComposer(id, entry);
+}
+
+
+function consoleCodexFooterDrawn(entry) {
+  return consoleBottomLines(entry, 3).some(line => /←\s*for\s*agents/.test(line));
 }
 
 function consoleHandOverReady(entry, agent) {
@@ -51115,9 +51203,8 @@ function drawConsoleFolderMenu(id, entry, items) {
   const menu = entry.folderMenu;
   if (!menu || consoleLayers.get(id) !== entry || !menu.anchor.isConnected) return;
   menu.items = items;
-  showCrumbMenu(menu.anchor, items);
+  showCrumbMenu(menu.anchor, items, null, menu.above);
   if (crumbMenuOwner !== menu.anchor) return;
-  menu.anchor.setAttribute('aria-expanded', 'true');
   const rect = menu.anchor.getBoundingClientRect();
   leafPlaceFloating(crumbMenu, rect.left, menu.above ? rect.top - crumbMenu.offsetHeight - CRUMB_MENU_DROP : rect.bottom + CRUMB_MENU_DROP);
 }

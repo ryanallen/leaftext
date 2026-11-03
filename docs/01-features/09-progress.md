@@ -6,11 +6,11 @@ Leaftext keeps a quiet record of what you do in it and shows it as your **Grove*
 
 ## Open your Grove
 
-The **Grove** pill sits at the bottom of the [library pane](03-library.md), under the row of buttons for Scheduled tasks, Favorites, Recent and Search. It runs the width of that row, and never narrower than four of those buttons' worth, so its words read whole even on a fresh copy with nothing in Favorites or Recent; it shows the Leaftext leaf and your Grove level — or **Grove 2 full** when its bar is full and the next level is ready to take, with the pill in the theme's accent. Press it and a large sheet rises from the bottom of the window with your Grove level and its bar — the XP it holds toward the next Grove level, or **At its ceiling** once every area has grown as far as it goes — then a year of days — one square a day on your own computer's calendar, darker the more grew on it — and every Growth area, its level and a bar for how far into that level it has grown. Drag the sheet down, press the cross, press outside it or press Escape to put it away. The document stays open underneath.
+The **Grove** is the last of the rows at the top of the [library pane](03-library.md#launchers-under-the-library-row), under New, Search, the library row and the launchers. It shows the Leaftext leaf and your Grove level — or **Grove 2 full** when its bar is full and the next level is ready to take, with the row in the theme's accent. Press it and a large sheet rises from the bottom of the window with your Grove level and its bar — the XP it holds toward the next Grove level, or **At its ceiling** once every area has grown as far as it goes — then a year of days — one square a day on your own computer's calendar, darker the more grew on it — and every Growth area, its level and a bar for how far into that level it has grown. Drag the sheet down, press the cross, press outside it or press Escape to put it away. The document stays open underneath.
 
 ![The Grove sheet risen over a document: Your Grove with six seeds and the Keep a record switch on in its header, the Growth and Tree tabs under it drawn as the tabs over a document, Growth framed and open into the sheet and Tree a darker grain cell, Grove 2 with the line saying everything you do in Leaftext fills this one bar, and in place of the thin bar a wide green press reading Hold to grow to Grove 3 over the line saying the bar is full and that Grove 3 brings six seeds, then a year of days with the last few weeks shaded, the Growth areas in two columns one even gap apart, each at its own level with its own bar, and a column beside them holding Earned lately with a See all XP button on its heading and a Today block counting the words read today](../../imgs/grove-sheet-5.png)
 
-When the library pane is dragged narrow the pill's words shorten and then go, and the leaf stays. When the pane is shut the pill goes with it; open the pane to reach it again.
+When the library pane is dragged narrow the Grove's words shorten and then go, and the leaf stays. When the pane is shut the Grove goes with it; open the pane to reach it again.
 
 ## What it counts
 
@@ -44,7 +44,7 @@ Leafing counts the reading you actually reach. A paragraph, heading or other pro
 
 ## See XP as it lands
 
-With the Grove shut, whatever pays XP says so on the pill for a few seconds — **+1 Leafing** — with a thin bar along its foot showing how far that area now is into its level, and pointing at it gives the same words the area's bar says. When one thing you did pays two areas, each takes its turn. Then the pill goes back to your Grove level. Nothing plays when the app opens.
+With the Grove shut, whatever pays XP says so on the Grove row for a few seconds — **+1 Leafing** — with a thin bar along its foot showing how far that area now is into its level, and pointing at it gives the same words the area's bar says. When one thing you did pays two areas, each takes its turn. Then the pill goes back to your Grove level. Nothing plays when the app opens.
 
 With the Grove open, the same things pop in at the bottom of the sheet instead and rise over it — **500 words read** or **Picture page read**, then **+1 Leafing XP** — each standing a couple of seconds and fading, up to three at a time, while the area's own card fills and its level rolls over to the new one and the Grove bar takes the same XP. Anything that pays while the All XP list is up waits there and rises when you come back, joined into one line where the same thing paid more than once. With Reduce Motion on, the words simply appear and go, and the levels change with no roll.
 
@@ -102,6 +102,6 @@ Every gain is kept a second time in `growth-log.jsonl`, beside the record: one l
 
 ## Turn it off
 
-Open your Grove and press **Keep a record** in the sheet's header. With the record off nothing is counted, no bar moves, no level is earned, the pill reads **Grove** with no number, and the sheet holds only the switch and a line saying so. Everything you have grown on the page, the title and the extra lore go away while it is off, and a theme you are wearing stays on. Press the switch again to start counting where you left off, with everything you grew back as it was.
+Open your Grove and press **Keep a record** in the sheet's header. With the record off nothing is counted, no bar moves, no level is earned, the Grove row reads **Grove** with no number, and the sheet holds only the switch and a line saying so. Everything you have grown on the page, the title and the extra lore go away while it is off, and a theme you are wearing stays on. Press the switch again to start counting where you left off, with everything you grew back as it was.
 
 The published site and a document embedded in another product keep no record, and show no pill.

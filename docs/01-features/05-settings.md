@@ -10,7 +10,7 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 
 | Setting | Options | Default | Where the control is |
 | --- | --- | --- | --- |
-| [Theme](#theme) | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Random | The palette at the library pane's foot |
+| [Theme](#theme) | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Random | The Themes row at the top of the library pane |
 | [Appearance](06-themes.md#appearance) | System, Light, Dark, Daylight | Daylight | The same [theme picker](06-themes.md#choose) |
 | [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus | The [graph](03-library.md#graph) view's own toolbar |
 | [Calendar date](#calendar-date) | Changed, Made, or a date field written in the vault | Due | The [calendar](03-library.md#calendar) sheet |

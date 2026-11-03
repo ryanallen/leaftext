@@ -40,8 +40,8 @@ Under them, while a document is in front, comes its **Outline** — [the documen
 | [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
 | [Folder actions](#folders-and-the-space-around-them) | Right-click a folder on this computer — or the empty space in its pane — to make a file or a folder in it, paste, export it as a site, reveal it, or see its properties. A Books online category offers Open folder only |
-| [Calendar](#calendar) | A month, week or day of the vault's documents by when they were changed, made or dated; pick a day and the pane lists it |
-| [Launchers at the foot](#launchers-at-the-foot) | Scheduled tasks, Favorites, Recent, Search and Calendar, one press from the bottom of the pane |
+| [Calendar](#calendar) | A month, week or day of the vault's documents by when they were changed, made or dated; pick a day and its documents are listed under the month |
+| [Launchers under the library row](#launchers-under-the-library-row) | Themes, Scheduled tasks, Favorites, Recent, Calendar and your Grove, each a row under New, Search and the library row |
 | [Console](#console) | A command line for the folder shown in the library, opened from the + menu above the tabs |
 | [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
 
@@ -402,7 +402,7 @@ A colon only starts a field when what is in front of it looks like a field name 
 
 A checkbox in a note can carry [a date](01-rendering.md#task-lists). Every one of them that is still open shows up in one box on the home screen, above Recent and Favorites, with the nearest due at the top.
 
-With a document open, the Tasks button at the [foot of the library](#launchers-at-the-foot) opens the same list over it.
+With a document open, the Scheduled tasks row [under the library row](#launchers-under-the-library-row) opens the same list over it.
 
 The box is about the vault you are in, the same as Recent and Favorites. Leave the vault and its rows go with it; the new vault's own arrive once its text has been read.
 
@@ -418,7 +418,7 @@ A ticked box is not in the list, and neither is a checkbox with no date on it �
 
 ## Calendar
 
-Inside a vault, the Calendar button at the [foot of the library](#launchers-at-the-foot) opens a month of the vault's documents in a sheet from the bottom of the window. Each day wears up to three marks for the documents dated to it, and its full date and count are read out to a screen reader.
+Inside a vault, the Calendar row [under the library row](#launchers-under-the-library-row) opens a month of the vault's documents in a sheet from the bottom of the window. Each day wears up to three marks for the documents dated to it, and its full date and count are read out to a screen reader.
 
 | Control | What it does |
 | --- | --- |
@@ -426,7 +426,7 @@ Inside a vault, the Calendar button at the [foot of the library](#launchers-at-t
 | Month, Week, Day | How long a stretch is shown. The choice is kept until the app closes |
 | The arrows and Today | Step back or forward by the stretch shown, or jump to today |
 
-Pressing a day closes the sheet and leaves the pane listing that day's documents, up to 50, with the folder each sits in. The cross beside the day's name puts back the outline or file tree that was there. A search from the [find bar](02-navigation.md#find-in-this-document) leaves the day where it is.
+Pressing a day rings it and lists that day's documents under the month, up to 50, with the folder each sits in; the month and the list scroll together inside the sheet. Pressing a document opens it and puts the sheet away, and the day stays picked, so the calendar opens on it again. The cross beside the day's name clears the day and leaves the month up. A search from the [find bar](02-navigation.md#find-in-this-document) leaves the day where it is.
 
 The keyboard works the month too: the arrows move a day or a week, Home and End reach the week's edges, Page Up and Page Down turn the month, Enter or Space picks, and Escape closes the sheet.
 
@@ -612,25 +612,24 @@ The pane keeps up with changes on disk, so a file you just created shows up with
 - A [graph of one document](#graph) rather than a vault holds nothing in memory to patch, so it is simply read again — a folder listing and a file per link, which is cheap enough not to cache. It cannot go stale, and a redraw that produces the same picture never reaches the screen.
 - The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault — and again whenever the window is focused, which is what catches a commit you made in a terminal: that writes nothing but the repository's own bookkeeping, which the watcher ignores.
 
-## Launchers at the foot
+## Launchers under the library row
 
-A row of buttons sits at the bottom of the pane, so the lists on the home screen are one press away while a document is open:
+Under New, Search and the library row, the pane carries a row for each place you can go without leaving the document, so the lists on the home screen are one press away while a document is open:
 
-| Button | What it opens |
+| Row | What it opens |
 | --- | --- |
-| Tasks | The [Scheduled tasks](#scheduled-tasks) list, over the document. Shown only while a dated checkbox is still open |
+| Themes | The [theme](06-themes.md) picker, over the document. Always there; hover it for the theme in use |
+| Scheduled tasks | The [Scheduled tasks](#scheduled-tasks) list, over the document. Shown only while a dated checkbox is still open |
 | Favorites | The home screen's Favorites list, over the document. Shown only while something is a favorite |
 | Recent | The home screen's Recent list, over the document. Shown only while something has been opened |
-| Search | The [find bar](02-navigation.md#find-in-this-document)'s **All files**, over the vault when one is open and over the folder the pane shows when none is |
 | Calendar | The [Calendar](#calendar) month, over the document. Shown only inside a vault |
+| Grove | [Your Grove](09-progress.md), the record of how you use Leaftext. Shown only while Leaftext keeps a record |
 
-A button with nothing to open is left out and the row closes up around it. Opening a list never leaves the document: close the list and you are where you were. Every button wears the drawing of the icon set your [theme](06-themes.md) uses.
+Each row is an icon and its word, like the rows above it. A row with nothing to open is left out, and the outline and the chats under the rows move up into its place. Opening a list never leaves the document: close the list and you are where you were. Close the pane and the rows go with it.
 
-Drag the pane narrower and the row stays one row: whatever no longer fits folds under a chevron at its end, the same one the app bar folds into, and opens upward as a menu. Widening puts each button back in its place. A launcher you reached with Tab keeps the keyboard while the pane moves, on the row or inside the open menu. Close the pane and the row goes with it.
+### On a published site
 
-The row and the pill sit on a small page of their own, which ends just past the last button — or past the pill, where the pill is wider — so on a pane dragged wide the pane's own texture fills the rest of the width. The page grows and shrinks as buttons come and go and as they fold, and on a pane too narrow for even one button it gives way to the buttons alone.
-
-Under the row sits the **Grove** pill, which opens [Your Grove](09-progress.md), the record of how you use Leaftext. It runs the width of that row, and never narrower than four launchers' worth, so it reads whole on a fresh copy with only Themes and Search on the row. Drag the pane narrower than the pill and it narrows too, shortening its words and keeping its leaf, and it goes with the row when the pane shuts.
+A site made with [Export as site](#folders-and-the-space-around-them) has no rows. Its pane keeps the folder trail at the top and a small page at the bottom holding Themes and **Search**, which opens the [find bar](02-navigation.md#find-in-this-document). Drag that pane narrower and whatever no longer fits folds under a chevron, the same one the app bar folds into, and opens upward as a menu.
 
 ## Console
 
@@ -656,7 +655,7 @@ A web or mail address a console prints — `https://`, `http://` or `mailto:` �
 
 ### A finished console says so
 
-While a program in a console is working, its mark — on a plain console's tab, or an agent's row in All chats, since a console holding an agent has no tab — is gray and a soft glow pulses behind it; when it finishes, the icon turns the theme's main color and holds still, so with several agents running you can see which one is ready for you without opening each. An agent at rest keeps the colored mark too, and only a plain shell at rest stays gray. Claude Code says it is working and when it has finished in its title, and Leaftext reads that; Codex and Antigravity report their state from their own screens. A plain shell counts as finished once it has printed for a while and then gone quiet for five seconds, or rings the terminal bell. Typing into a finished plain shell takes the color off; looking at the tab alone does not. Typing to Claude Code, Codex or Antigravity while its row in All chats says **Working** leaves the tab glowing — in the terminal or by sending a message from the chat box — until the agent reports another state. Under [Reduce Motion](05-settings.md#reduce-motion) the glow holds still.
+While a plain console is working, its tab's mark is gray and a soft glow pulses behind it; when it finishes, the icon turns the theme's main color and holds still, and a plain shell at rest stays gray. A console holding an agent has no tab, so its mark is on its row in All chats: while the agent works the mark is the theme's main color with the glow pulsing behind it, and the moment it finishes, rests or asks for you the mark is the same color as the chat's name and holds still, so with several agents running the busy ones are the only colored marks in the list. A saved chat's mark is the color of its name too, and a pinned chat whose agent is working pulses like its running row. Claude Code says it is working and when it has finished in its title, and Leaftext reads that; Codex and Antigravity report their state from their own screens. A plain shell counts as finished once it has printed for a while and then gone quiet for five seconds, or rings the terminal bell. Typing into a finished plain shell takes the color off; looking at the tab alone does not. Typing to Claude Code, Codex or Antigravity while its row in All chats says **Working** leaves the tab glowing — in the terminal or by sending a message from the chat box — until the agent reports another state. Under [Reduce Motion](05-settings.md#reduce-motion) the glow holds still.
 
 ### Every agent in one list
 
@@ -676,7 +675,7 @@ Each row has a three-dot button that shows when the pointer is over it, and the 
 | **Archive**, A | Takes the chat out of the list. The **Filter** button on the All chats heading picks **Active**, **Archived** or **All**; under Archived, **Unarchive** brings one back |
 | **Delete**, D | Asks first, naming the chat, then moves every file the agent keeps for that conversation to the Recycle Bin or the Trash, so it can be brought back from there |
 
-Unread, archived and pinned are Leaftext's own marks, kept in its settings, since no agent has them. Carry a chat out of All chats and a Pinned section appears to take it, with **New section** under the last one while the chat is carried; a section heading's own menu has **Rename section** and **Remove section**, which sends its chats back to All chats, and a section goes away with its last chat. A pinned chat whose agent has since deleted it stays in its section, its title gray and its age reading *gone*, rather than vanishing.
+Unread, archived and pinned are Leaftext's own marks, kept in its settings, since no agent has them. Carry a chat out of All chats and a Pinned section appears to take it, with **New section** under the last one while the chat is carried; a section heading's own menu has **Rename section** and **Remove section**, which sends its chats back to All chats, and a section goes away with its last chat. A chat whose agent is working is carried the same way and stands in Pinned with its state, its console coming forward when a press is let go rather than when it goes down; a console whose agent has not yet started a conversation has nothing to pin, and its row only brings it forward. A pinned chat whose agent has since deleted it stays in its section, its title gray and its age reading *gone*, rather than vanishing.
 
 Unlike a document, a console shows no soft fade at its top or bottom edge, so whatever a program puts there — the banner Claude Code prints as it starts, the prompt it holds at the top, the line you are typing at the bottom — reads at full strength.
 
@@ -712,7 +711,7 @@ The active vault is saved in `manifest.db` beside the vault list, not in [settin
 
 ### Narrow windows
 
-![A narrow Leaftext window with the library open as a full-width sheet over the document: New, Search and the library row named Dropbox at its top, then the open page's Outline with its five headings, then All chats, and the palette, history and calendar launchers with the Grove pill along the sheet's foot](../../imgs/library-sheet-v3.png)
+![A narrow Leaftext window with the library open as a full-width sheet over the document: New, Search and the Library row at its top, then the Themes, Recent and Grove 1 rows under them, then the open page's Outline with its headings](../../imgs/library-sheet-v4.png)
 
 Below the point where a pane at the width it opens at and a usable reader both fit, the library stops being a column beside the page and becomes a sheet over it. The same panel button opens it: it slides in from the left at full width, covering the document, with New, Search and the library row at the top and the open document's outline and the chats under them — or arrives in place, with no slide, under [Reduce Motion](05-settings.md#reduce-motion). Picking a document dismisses it, since the page you just opened is behind it. The app bar stays above the sheet, so the button that opened it also closes it. On a phone or tablet the button goes back to rest the moment your finger lifts, so it never looks lit after the library has shut; a mouse still lights it while the pointer is over it. Every other button in the app works the same way.
 

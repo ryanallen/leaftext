@@ -419,8 +419,7 @@
 | Lists over document | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Theme icon set | [✅][l-launchers] | ? | ? | [❌][c-seen] |
 | Chevron when narrow | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Progress under launchers | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Pill shortens words | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Grove row | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Launcher registry | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Palette first launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Chevron returns focus | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -486,7 +485,7 @@
 [l-syncing]: ../01-features/03-library.md#syncing
 [l-nested]: ../01-features/03-library.md#repositories-inside-repositories
 [l-live]: ../01-features/03-library.md#live-updates
-[l-launchers]: ../01-features/03-library.md#launchers-at-the-foot
+[l-launchers]: ../01-features/03-library.md#launchers-under-the-library-row
 [l-console]: ../01-features/03-library.md#console
 [l-console-done]: ../01-features/03-library.md#a-finished-console-says-so
 [l-console-agents]: ../01-features/03-library.md#every-agent-in-one-list
