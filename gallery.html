@@ -9096,6 +9096,10 @@ body.library-resizing button {
 .console-chat { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); right: var(--lt-space-8); bottom: var(--lt-space-8); z-index: 5; display: flex; flex-direction: column; overflow: hidden; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-5); }
 .console-chat-log { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; user-select: text; }
 .console-chat[hidden] { display: none; }
+/* A saved chat: its conversation with no program behind it, standing where the Library page stands while its tab is in front, and drawn inside with the live chat's own frame. */
+.saved-chat { grid-column: 2 / 4; grid-row: 1; z-index: 5; position: relative; box-sizing: border-box; overflow: hidden; background: var(--lt-markdown-background); border-left: var(--lt-stroke-1) solid var(--lt-border); border-right: var(--lt-stroke-1) solid var(--lt-border); border-bottom: var(--lt-stroke-1) solid var(--lt-border); border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius); }
+.saved-chat[hidden] { display: none; }
+.library-shell.library-closed .saved-chat { margin-left: var(--reader-gutter); }
 .console-chat.is-above-status { bottom: calc(var(--lt-space-8) + var(--lt-space-24)); }
 /* While Chat and Console stand at a console's foot, the row is as tall as the bar, so the bar covers neither the terminal's last row nor the message box. */
 .console-layer.has-console-views .console-status { height: calc(var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
@@ -20549,7 +20553,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 118 icons, and all 195 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 118 icons, and all 196 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -20581,7 +20585,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>118</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>195</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>196</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -21066,7 +21070,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">195 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">196 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -21566,6 +21570,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Library page</h3><code class="built">.reader-library</code><span class="built">app-shell.html, shown by library-nav.js while the window's Library tab is in front: the pane's own file list with its Back row, and a calendar day, moved into the page's place where the map stands</span></header>
 <div class="stage"><section class="reader-library" aria-label="Library" style="height:120px"><div class="library-scroll"></div></section></div>
+</section>
+<section class="part">
+<header><h3>Saved chat</h3><code class="built">.saved-chat</code><span class="built">app-shell.html, drawn by console-saved-chat.js while a saved chat's tab is in front: its conversation from the agent's own record with no program behind it, in the live chat's frame and turns, with the message box under them</span></header>
+<div class="stage"><section class="saved-chat" aria-label="Conversation" style="height:120px"></section></div>
 </section>
 <section class="part">
 <header><h3>Sidebar lists</h3><code class="built">.sidebar-lists</code><span class="built">app-shell.html, filled by library-nav.js and console-recents.js: the one scroll box under the pane's rows — the Outline section (sidebar-outline) while a page with headings is in front, its heading a fold (sidebar-fold) with the count beside it (sidebar-outline-count), then the chats, whose All chats heading folds the same way</span></header>

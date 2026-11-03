@@ -94,6 +94,8 @@ export const COMMANDS = {
   setSplitLayout: [REFUSED, 'the browser owns tabs on a site'],
   goHome: [ANSWERED],
   openLibrary: [REFUSED, 'a published site keeps its library in its pane and draws no Library row'],
+  openSavedChat: [REFUSED, 'a published page has no agents and no saved chats'],
+  stopIdleConsole: [REFUSED, 'a published page has no consoles to stop'],
   openLink: [ANSWERED],
   openExternal: [REFUSED, 'the browser follows a link out of the site itself'],
   openGlossary: [ANSWERED],

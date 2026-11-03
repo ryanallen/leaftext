@@ -9078,6 +9078,10 @@ body.library-resizing button {
 .console-chat { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); right: var(--lt-space-8); bottom: var(--lt-space-8); z-index: 5; display: flex; flex-direction: column; overflow: hidden; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-5); }
 .console-chat-log { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; user-select: text; }
 .console-chat[hidden] { display: none; }
+
+.saved-chat { grid-column: 2 / 4; grid-row: 1; z-index: 5; position: relative; box-sizing: border-box; overflow: hidden; background: var(--lt-markdown-background); border-left: var(--lt-stroke-1) solid var(--lt-border); border-right: var(--lt-stroke-1) solid var(--lt-border); border-bottom: var(--lt-stroke-1) solid var(--lt-border); border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius); }
+.saved-chat[hidden] { display: none; }
+.library-shell.library-closed .saved-chat { margin-left: var(--reader-gutter); }
 .console-chat.is-above-status { bottom: calc(var(--lt-space-8) + var(--lt-space-24)); }
 
 .console-layer.has-console-views .console-status { height: calc(var(--reader-toolbar-room) - var(--lt-shadow-spread)); }

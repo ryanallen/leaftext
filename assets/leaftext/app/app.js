@@ -21430,7 +21430,7 @@ function stepThroughTabs(step) {
   
   const drawn = (currentState.tabs || []).map((tab, index) => index).filter((index) => {
     const tab = currentState.tabs[index];
-    return !(tab.kind === 'console' && consoleHoldsAgent(tab.webId));
+    return !(tab.kind === 'chat' || (tab.kind === 'console' && consoleHoldsAgent(tab.webId)));
   });
   if (drawn.length > 0) {
     
@@ -22450,7 +22450,7 @@ function renderTabs(state) {
   const consoleLabel = unlocksShowing().has('console-scanlines') ? `tab-label ${CONSOLE_SCANLINES}` : 'tab-label';
   const markup = tabs.map((tab, index) => {
     
-    if (tab.kind === 'console' && consoleHoldsAgent(tab.webId)) return '';
+    if (tab.kind === 'chat' || (tab.kind === 'console' && consoleHoldsAgent(tab.webId))) return '';
     if (tab.kind === 'console') {
       const layer = consoleLayers.get(tab.webId);
       const icon = consoleIconClass(layer?.agent);
@@ -46825,7 +46825,7 @@ function consoleCompareGone(id) {
 }
 
 var consoleRecentsBand = document.getElementById('consoleRecents');
-const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true, status: 'active', renaming: false, pins: [], carry: null, held: false, runningOrder: [] };
+const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true, status: 'active', renaming: false, pins: [], carry: null, held: false, listOrder: [] };
 
 
 function consoleRecentAge(seconds, now = Date.now() / 1000) {
@@ -46893,49 +46893,74 @@ function drawConsoleRecents() {
   if (!shown.length && !consoleRecents.unavailable.length) {
     parts.push(`<div class="console-recents-note">${consoleRecents.reading ? 'Reading your conversations…' : (archived ? 'No archived chats.' : 'No past conversations yet.')}</div>`);
   }
-  const pinned = new Set(consoleRecents.pins.flatMap((section) => section.chats.map(consoleChatKey)));
-  
-  const running = consoleRunningConversations();
-  if (!archived) parts.push(consoleRunningRowsHtml());
-  for (const row of shown) {
-    if (!archived && pinned.has(consoleChatKey(row))) continue;
-    if (!archived && running.has(String(row.id))) continue;
-    parts.push(consoleRecentRowHtml(row, now, ''));
-  }
+  for (const item of consoleChatListItems(shown, archived)) parts.push(item.html());
   
   consoleRecentsBand.innerHTML = (archived ? '' : consoleRecentPinsHtml(now)) + parts.join('');
 }
 
 
-function consoleRunningConversations() {
-  return new Set(consoleAgentRows.flatMap((row) => (Array.isArray(row.conversations) ? row.conversations.map(String) : [])));
+function consoleChatWriters() {
+  const writers = new Map();
+  for (const row of consoleAgentRows) for (const conversation of (Array.isArray(row.conversations) ? row.conversations : [])) writers.set(String(conversation), row);
+  return writers;
 }
 
 
-function consoleRunningRows() {
-  const rows = sortedConsoleAgents(consoleAgentRows);
-  if (!consoleRecents.held) {
-    consoleRecents.runningOrder = rows.map((row) => Number(row.id));
-    return rows;
+function consoleChatListItems(shown, archived) {
+  const now = Date.now() / 1000;
+  const items = [];
+  if (archived) {
+    for (const row of shown) items.push({ key: `chat:${consoleChatKey(row)}`, html: () => consoleRecentRowHtml(row, now, '') });
+    return items;
   }
-  const place = (row) => {
-    const at = consoleRecents.runningOrder.indexOf(Number(row.id));
-    return at < 0 ? Infinity : at;
-  };
-  return rows.slice().sort((a, b) => place(a) - place(b));
+  const pinned = new Set(consoleRecents.pins.flatMap((section) => section.chats.map(consoleChatKey)));
+  const pinnedIds = new Set(consoleRecents.pins.flatMap((section) => section.chats.map((chat) => String(chat.id))));
+  const listed = new Set(shown.map((row) => String(row.id)));
+  const writers = consoleChatWriters();
+  const placed = new Set();
+  for (const row of sortedConsoleAgents(consoleAgentRows)) {
+    const conversations = (Array.isArray(row.conversations) ? row.conversations : []).map(String);
+    const pinnedHere = conversations.some((conversation) => pinnedIds.has(conversation));
+    const hasRow = pinnedHere || conversations.some((conversation) => listed.has(conversation));
+    if (hasRow && (row.state !== 'needs' || pinnedHere)) continue;
+    placed.add(Number(row.id));
+    items.push({ key: `console:${row.id}`, html: () => consoleRunningRowHtml(row) });
+  }
+  for (const row of shown) {
+    if (pinned.has(consoleChatKey(row))) continue;
+    const live = writers.get(String(row.id));
+    if (!live) {
+      items.push({ key: `chat:${consoleChatKey(row)}`, html: () => consoleRecentRowHtml(row, now, '') });
+      continue;
+    }
+    if (placed.has(Number(live.id))) continue;
+    placed.add(Number(live.id));
+    items.push({ key: `console:${live.id}`, html: () => consoleRunningRowHtml(live) });
+  }
+  const keys = items.map((item) => item.key);
+  if (!consoleRecents.held) {
+    consoleRecents.listOrder = keys;
+    return items;
+  }
+  
+  let last = -1;
+  const held = items.map((item, index) => {
+    const at = consoleRecents.listOrder.indexOf(item.key);
+    if (at >= 0) last = at;
+    return { item, index, place: at >= 0 ? at : last + 0.5 };
+  });
+  return held.sort((a, b) => a.place - b.place || a.index - b.index).map(({ item }) => item);
 }
 
 
-function consoleRunningRowsHtml() {
-  return consoleRunningRows().map((row) => {
-    const id = Number(row.id);
-    const title = String(row.title ?? '');
-    const tip = row.prompt ? String(row.prompt) : title;
-    const icon = consoleIconClass(row.agent);
-    const marks = (id === consoleFrontId ? ' console-agent-front' : '') + (row.state === 'working' ? ' console-agent-working' : '');
-    const needs = row.state === 'needs' ? ' console-agent-needs' : '';
-    return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running${marks}" data-console-id="${id}" title="${escapeAttr(tip)}"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="${icon}"></span></span><span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state${needs}">${escapeText(consoleAgentWords[row.state] || '')}</span></button><button type="button" class="console-recent-more" data-console-id="${id}" aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
-  }).join('');
+function consoleRunningRowHtml(row) {
+  const id = Number(row.id);
+  const title = String(row.title ?? '');
+  const tip = row.prompt ? String(row.prompt) : title;
+  const icon = consoleIconClass(row.agent);
+  const marks = (id === consoleFrontId ? ' console-agent-front' : '') + (row.state === 'working' ? ' console-agent-working' : '');
+  const needs = row.state === 'needs' ? ' console-agent-needs' : '';
+  return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running${marks}" data-console-id="${id}" title="${escapeAttr(tip)}"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="${icon}"></span></span><span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state${needs}">${escapeText(consoleAgentWords[row.state] || '')}</span></button><button type="button" class="console-recent-more" data-console-id="${id}" aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
 }
 
 
@@ -46944,7 +46969,7 @@ function consoleRunningMenuRows(id) {
   const rows = index < 0 ? [] : [
     { icon: 'split', label: 'Open beside', run: () => send({ command: 'openBeside', index }) },
     { icon: 'window-restore', label: 'Move to a new window', run: () => send({ command: 'tearOutTab', index, scroll_anchor: null }) },
-    { icon: 'close', label: 'Close', run: () => send({ command: 'closeTab', index }) },
+    { icon: 'close', label: 'Stop', run: () => send({ command: 'closeTab', index }) },
   ];
   return rows.concat(consoleTabMenuRows({ dataset: { consoleId: String(id) } }) || []);
 }
@@ -46976,26 +47001,28 @@ function consoleChatKey(chat) {
 }
 
 
-function consoleRecentRowHtml(row, now, where) {
+function consoleRecentRowHtml(row, now, where, live = null) {
   const agent = String(row.agent || '');
   const title = String(row.title || 'Untitled conversation');
   const folder = row.folder ? `\n${row.folder}` : '';
   const ids = `data-recent-agent="${escapeAttr(agent)}" data-recent-id="${escapeAttr(String(row.id || ''))}"`;
   const marks = (row.unread ? ' console-recent-unread' : '') + (row.gone ? ' console-pin-gone' : '');
   const drop = where ? ` data-pin-drop="${where}"` : ' data-pin-drop="recents"';
-  const state = row.gone ? 'gone' : consoleRecentAge(row.time, now);
-  return `<div class="console-recent-row" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}"><span class="console-agent-icon" aria-hidden="true"><span class="${consoleIconClass(agent)}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state">${escapeText(row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
+  const state = live ? (consoleAgentWords[live.state] || '') : row.gone ? 'gone' : consoleRecentAge(row.time, now);
+  const needs = live?.state === 'needs' ? ' console-agent-needs' : '';
+  return `<div class="console-recent-row" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}"><span class="console-agent-icon" aria-hidden="true"><span class="${consoleIconClass(agent)}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state${needs}">${escapeText(live || row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
 }
 
 function consoleRecentPinsHtml(now) {
   const carrying = Boolean(consoleRecents.carry?.chip);
   const sections = consoleRecents.pins.map((section, at) => ({ section, at })).filter(({ section }) => section.chats.length);
   const parts = [];
+  const writers = consoleChatWriters();
   for (const { section, at } of sections) {
     parts.push(`<div class="console-pins" role="group" aria-label="${escapeAttr(section.name)}"><div class="console-pin-heading" data-pin-section="${at}" data-pin-drop="${at}:end"><span class="console-agents-heading">${escapeText(section.name)}</span><button type="button" class="console-pin-more" data-pin-section="${at}" aria-label="${escapeAttr(`More for ${section.name}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`);
     section.chats.forEach((chat, index) => {
       const known = consoleRecents.rows.find((row) => consoleChatKey(row) === consoleChatKey(chat));
-      parts.push(consoleRecentRowHtml({ ...chat, ...(known || {}), title: chat.title || known?.title, gone: chat.gone }, now, `${at}:${index}`));
+      parts.push(consoleRecentRowHtml({ ...chat, ...(known || {}), title: chat.title || known?.title, gone: chat.gone }, now, `${at}:${index}`, writers.get(String(chat.id)) || null));
     });
     parts.push('</div>');
   }
@@ -47248,15 +47275,17 @@ function openConsoleRecentMenu(element, x, y) {
 }
 
 
-function reopenConsoleRecent(agent, conversation) {
+function reopenConsoleRecent(agent, conversation, heard = null) {
   const request = ++agentLaunch.request;
   const skip = agentLaunch.state ? { skip: Boolean(agentLaunchOf(agent).skipPermissions) } : {};
   send({ command: 'agentLaunch', action: 'reopen', agent, conversation, request, ...skip });
   const failed = (answer) => {
     if (answer.error && answer.failure !== 'canceled') leafToast(answer.error);
+    heard?.(answer);
   };
   agentLaunch.waiting.set(request, (first) => {
     if (first.error) return failed(first);
+    heard?.(first);
     agentLaunch.waiting.set(request, failed);
   });
 }
@@ -47275,7 +47304,8 @@ function pressConsoleRecent(row) {
     pressConsoleRunning(Number(live.id));
     return;
   }
-  reopenConsoleRecent(row.dataset.recentAgent, row.dataset.recentId);
+  
+  send({ command: 'openSavedChat', agent: row.dataset.recentAgent, conversation: row.dataset.recentId, title: String(chat?.title || '') });
 }
 
 if (consoleRecentsBand) {
@@ -47453,10 +47483,11 @@ function coverLibraryPageFront() {
     commitActiveEditingBlock();
     if (document.activeElement && app.contains(document.activeElement)) document.activeElement.blur();
   }
-  const covered = libraryPageOpen || graphViewOpen;
+  const chat = savedChatShowing();
+  const covered = libraryPageOpen || graphViewOpen || chat;
   app?.classList.toggle('is-under-map', covered);
   readerMinimap?.classList.toggle('is-under-map', covered);
-  for (const entry of consoleLayers.values()) entry.layer.classList.toggle('is-under-map', libraryPageOpen);
+  for (const entry of consoleLayers.values()) entry.layer.classList.toggle('is-under-map', libraryPageOpen || chat);
 }
 function drawLibraryPage() {
   libraryPane?.classList.add('is-console-sidebar');
@@ -47476,6 +47507,8 @@ function drawLibraryPage() {
 }
 
 function libraryPageFollowsFront() {
+  
+  savedChatFollowsFront();
   const open = libraryTabInFront();
   if (open === libraryPageOpen) return;
   libraryPageOpen = open;
@@ -50600,6 +50633,297 @@ function chooseConsoleRules(id, entry, index) {
   closeConsoleFileList(entry);
   send({ command: 'openRecent', path: row.path });
 }
+
+
+var savedChatPage = document.getElementById('savedChat');
+var savedChat = { key: '', agent: '', conversation: '', title: '', record: null, view: null, entry: null, field: null, starting: false };
+
+var savedChatHandOver = null;
+
+const SAVED_CHAT_BRIDGE_MS = 20000;
+
+const SAVED_CHAT_HAND_OVER_MS = 250;
+
+const SAVED_CHAT_STEADY_MS = 1000;
+
+
+function savedChatTab() {
+  const tabs = (currentState && currentState.tabs) || [];
+  const active = currentState ? currentState.active : null;
+  const tab = typeof active === 'number' ? tabs[active] : null;
+  return tab && tab.kind === 'chat' ? tab : null;
+}
+
+function savedChatShowing() {
+  return !!savedChatPage && !savedChatPage.hidden;
+}
+
+
+function savedChatFollowsFront() {
+  if (!savedChatPage) return;
+  
+  noteConsoleAnswersSeen();
+  const tab = savedChatTab();
+  if (tab) showSavedChat(tab);
+  const shown = !!tab || savedChatBridging();
+  if (savedChatPage.hidden === !shown) return;
+  savedChatPage.hidden = !shown;
+  
+  if (!shown) savedChat.key = '';
+  coverLibraryPageFront();
+  coverWebSurface(shown, savedChatPage);
+}
+
+
+function savedChatBridging() {
+  const hand = savedChatHandOver;
+  if (!hand) return false;
+  
+  const took = currentState?.tabs?.[hand.tab];
+  if (!hand.console && took?.kind === 'console' && currentState.active === hand.tab) {
+    hand.console = Number(took.webId);
+    hand.until = Date.now() + SAVED_CHAT_BRIDGE_MS;
+    setTimeout(savedChatFollowsFront, SAVED_CHAT_BRIDGE_MS + 1);
+    watchSavedChatHandOver(hand);
+  }
+  if (!hand.console || consoleFrontId !== hand.console || Date.now() > hand.until) return false;
+  return !consoleAgentRows.some((row) => Number(row.id) === hand.console && row.state === 'needs');
+}
+
+function showSavedChat(tab) {
+  const [agent, conversation] = String(tab.url || '').split('/');
+  const key = `${agent}:${conversation}`;
+  if (savedChat.key === key) return;
+  
+  const listed = (consoleRecents.rows || []).find((row) => row.agent === agent && String(row.id) === conversation);
+  savedChat = { key, agent, conversation, title: String(tab.title || ''), record: { events: [], offset: 0, earlier: false, revision: 0 }, view: null, entry: null, field: null, starting: false };
+  savedChat.entry = { statusRecord: { folderPath: listed?.folder || '' } };
+  buildSavedChat();
+  readSavedChat();
+}
+
+function buildSavedChat() {
+  savedChatPage.textContent = '';
+  const box = document.createElement('div');
+  box.className = 'console-chat';
+  const log = document.createElement('div');
+  log.className = 'console-chat-log';
+  log.setAttribute('role', 'log');
+  log.setAttribute('aria-label', 'Conversation');
+  const list = document.createElement('div');
+  list.className = 'console-chat-turns';
+  log.appendChild(list);
+  box.append(log, savedChatComposer());
+  savedChatPage.appendChild(box);
+  savedChat.view = { box, log, list, nodes: new Map(), open: new Set() };
+  savedChat.entry.chatView = savedChat.view;
+  
+  log.addEventListener('click', (event) => onConsoleChatClick(0, savedChat.entry, event));
+}
+
+
+function savedChatComposer() {
+  const composer = document.createElement('div');
+  composer.className = 'console-composer';
+  const words = document.createElement('div');
+  words.className = 'console-composer-words';
+  const field = document.createElement('textarea');
+  field.className = 'console-composer-field';
+  field.rows = 1;
+  field.spellcheck = false;
+  field.placeholder = `Ask ${AGENT_LAUNCH_NAMES[savedChat.agent] || 'the agent'}…`;
+  words.appendChild(field);
+  const row = document.createElement('div');
+  row.className = 'console-composer-row';
+  const tools = document.createElement('div');
+  tools.className = 'console-composer-tools';
+  const submit = consoleComposerButton('console-composer-send', 'Send', 'forward-long');
+  row.append(tools, submit);
+  composer.append(words, row);
+  composer.addEventListener('mousedown', (event) => {
+    if (event.target !== field && !event.target.closest?.('button')) {
+      event.preventDefault();
+      field.focus();
+    }
+  });
+  field.addEventListener('input', () => {
+    fitConsoleComposerField(field);
+    if (savedChatHandOver) savedChatHandOver.draft = field.value;
+    
+    if (field.value.trim()) startSavedChat();
+  });
+  field.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    sendSavedChat();
+  });
+  submit.addEventListener('click', () => sendSavedChat());
+  savedChat.field = field;
+  return composer;
+}
+
+
+function startSavedChat() {
+  if (savedChat.starting) return;
+  savedChat.starting = true;
+  const started = { agent: savedChat.agent, conversation: savedChat.conversation, console: 0, tab: currentState?.active, until: 0, draft: savedChat.field?.value || '', held: '' };
+  savedChatHandOver = started;
+  reopenConsoleRecent(started.agent, started.conversation, (answer) => {
+    if (savedChatHandOver !== started) return;
+    if (answer.console && !started.console) {
+      started.console = Number(answer.console);
+      started.until = Date.now() + SAVED_CHAT_BRIDGE_MS;
+      setTimeout(savedChatFollowsFront, SAVED_CHAT_BRIDGE_MS + 1);
+      watchSavedChatHandOver(started);
+    }
+    if (!answer.error) return;
+    
+    savedChatHandOver = null;
+    if (savedChat.agent === started.agent && savedChat.conversation === started.conversation) {
+      savedChat.starting = false;
+      savedChat.view?.list.querySelector('.console-waiting')?.remove();
+      if (savedChat.field && started.held) {
+        savedChat.field.value = [started.held, savedChat.field.value].filter(Boolean).join('\n');
+        fitConsoleComposerField(savedChat.field);
+      }
+    }
+  });
+}
+
+
+function sendSavedChat() {
+  const field = savedChat.field;
+  const text = String(field?.value || '').replace(/\s+$/, '');
+  if (!text.trim()) return;
+  startSavedChat();
+  if (!savedChatHandOver || savedChatHandOver.held) return;
+  savedChatHandOver.held = text;
+  savedChatHandOver.draft = '';
+  field.value = '';
+  fitConsoleComposerField(field);
+  savedChat.view.list.appendChild(consoleChatWaiting([text]));
+  savedChat.view.log.scrollTop = savedChat.view.log.scrollHeight;
+}
+
+
+function watchSavedChatHandOver(hand) {
+  const timer = setInterval(() => {
+    if (savedChatHandOver !== hand || handSavedChatToPrompt(hand)) clearInterval(timer);
+  }, SAVED_CHAT_HAND_OVER_MS);
+}
+
+
+function handSavedChatToPrompt(hand, now = Date.now()) {
+  
+  if (savedChatHandOver !== hand) return true;
+  const entry = consoleLayers.get(hand.console);
+  if (!entry?.terminal) return false;
+  const asking = consoleAgentRows.some((row) => Number(row.id) === hand.console && row.state === 'needs');
+  if (asking || consoleModelPrompt(entry, hand.agent).kind !== 'empty') {
+    hand.emptySince = null;
+    return false;
+  }
+  if (hand.emptySince == null) hand.emptySince = now;
+  if (now - hand.emptySince < SAVED_CHAT_STEADY_MS) return false;
+  savedChatHandOver = null;
+  if (entry.composer && entry.chat) {
+    const field = entry.composer.field;
+    if (hand.held) {
+      field.value = hand.held;
+      sendConsoleComposer(hand.console, entry);
+    }
+    if (hand.draft && !field.value) {
+      field.value = hand.draft;
+      fitConsoleComposerField(field);
+    }
+  } else {
+    const text = hand.held || hand.draft;
+    if (text) {
+      const marked = Boolean(entry.terminal.getMode?.(2004));
+      send({ command: 'consoleInput', id: hand.console, data: marked ? `\x1b[200~${text}\x1b[201~` : text });
+      if (hand.held) {
+        setTimeout(() => send({ command: 'consoleInput', id: hand.console, data: '\r' }), CONSOLE_COMPOSER_ENTER_MS);
+        consolePromptTold(hand.console, true, text);
+      }
+    }
+  }
+  
+  savedChatFollowsFront();
+  return true;
+}
+
+function readSavedChat() {
+  const asked = savedChat.key;
+  agentLaunchAsk('savedRecord', { agent: savedChat.agent, conversation: savedChat.conversation, offset: 0 }).then((answer) => {
+    if (savedChat.key !== asked || !answer) return;
+    if (answer.error) {
+      savedChat.view.list.replaceChildren(consoleChatOpening([String(answer.error)]));
+      return;
+    }
+    const record = savedChat.record;
+    record.events = Array.isArray(answer.events) ? answer.events : [];
+    record.offset = Number(answer.offset) || 0;
+    record.earlier = !!answer.earlier;
+    record.revision += 1;
+    drawSavedChat();
+  });
+}
+
+function drawSavedChat() {
+  const { view, record, entry } = savedChat;
+  const turns = consoleRecordGroup(entry, record, entry.statusRecord.folderPath);
+  const nodes = [];
+  if (record.earlier) nodes.push(consoleChatOpening(['Earlier turns are in the agent’s own history.']));
+  for (const turn of turns) nodes.push(consoleChatTurn(view, turn));
+  view.list.replaceChildren(...nodes);
+  
+  view.log.scrollTop = view.log.scrollHeight;
+}
+
+
+
+const SAVED_CHAT_IDLE_MS = 10 * 60 * 1000;
+const SAVED_CHAT_IDLE_CHECK_MS = 30 * 1000;
+
+
+function consoleIdleNow(id, entry) {
+  const row = consoleAgentRows.find((each) => Number(each.id) === Number(id));
+  if (!row || !(row.state === 'rest' || (row.state === 'done' && entry.doneSeen))) return false;
+  if (consoleFrontId === id) return false;
+  const beside = currentState?.beside;
+  if (beside && Number((currentState.tabs || [])[beside.tab]?.webId) === Number(id)) return false;
+  if (String(entry.composer?.field?.value || '').trim()) return false;
+  if ((entry.chat?.notes || []).some((note) => /\b\d+ shells?\b/.test(String(note.full || '')))) return false;
+  if (savedChatHandOver && savedChatHandOver.console === Number(id)) return false;
+  return true;
+}
+
+
+function noteConsoleAnswersSeen() {
+  for (const [id, entry] of consoleLayers) {
+    const state = consoleAgentRows.find((each) => Number(each.id) === Number(id))?.state;
+    if (state !== 'done') entry.doneSeen = false;
+    else if (consoleFrontId === id) entry.doneSeen = true;
+  }
+}
+
+
+function watchIdleConsoles(now = Date.now()) {
+  noteConsoleAnswersSeen();
+  for (const [id, entry] of consoleLayers) {
+    if (!consoleIdleNow(id, entry)) {
+      entry.idleSince = null;
+      entry.idleAsked = false;
+      continue;
+    }
+    if (entry.idleSince == null) entry.idleSince = now;
+    else if (!entry.idleAsked && now - entry.idleSince >= SAVED_CHAT_IDLE_MS) {
+      entry.idleAsked = true;
+      send({ command: 'stopIdleConsole', id: Number(id) });
+    }
+  }
+}
+setInterval(watchIdleConsoles, SAVED_CHAT_IDLE_CHECK_MS);
 
 
 
