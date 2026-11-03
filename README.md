@@ -175,7 +175,7 @@ Search notes, follow links, and find free books from Internet Archive, Open Libr
 
 ### Point it at a folder and it becomes a vault
 
-![The Library tab open beside a document's tab: the sidebar keeps New, Search and Library, then All chats; the page area shows the vault's three folders and then its files](imgs/library-v3.png)
+![The library row named Dropbox with its dropdown open under it: the vaults, the path Dropbox › reading-room › docs on one line, and the folder's subfolders and files; the document stays in front under its own tab](imgs/library-v4.png)
 
 A side pane that browses one folder at a time, with a breadcrumb that always says where you are. Name a folder a **vault** and it becomes the thing search and syncing work over; the same switcher over the start screen takes you back from Library. Nothing is crawled, and nothing is written into your folder. **[Library →](docs/01-features/03-library.md#vaults)**
 

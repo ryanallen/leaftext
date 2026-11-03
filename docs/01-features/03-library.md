@@ -4,7 +4,7 @@
 
 The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for it.
 
-![The Library tab open beside a document's tab: the sidebar keeps New, Search and Library, then All chats; the page area shows the vault's three folders and then its files](../../imgs/library-v3.png)
+![The library row named Dropbox with its dropdown open under it: the vaults Library and Dropbox, ticked, then New vault and Books online, then the path Dropbox › reading-room › docs on one line, the folder above, and the folder's subfolders and files; the document stays in front under its own tab](../../imgs/library-v4.png)
 
 ## The pane's rows
 
@@ -12,7 +12,7 @@ The pane opens on three rows, each an icon and then its word:
 
 - **New** opens the menu for a new page, a console or an agent, the same one the tab strip's plus used to open.
 - **Search** opens the find bar on the whole vault, or on the document when there is no vault.
-- **Library** opens the window's **Library** tab beside the one you are reading, and the folder's files fill the page area there. The document you were on keeps its own tab, one press away, and a second press of Library brings the same Library tab forward rather than opening another. The row is lit while the Library tab is in front. At its right end stand the [vault switcher](#vaults), the [Sync button](#github-sync) while there is work to send, and, while the Library tab is in front, the [folder's view button](#sorting-and-drawing-a-folder).
+- **The library row** is named after the [vault](#vaults) you are in — **Library** for the whole library — and opens a dropdown under it, with no tab and nothing over the page you are reading. At its top are your vaults, the one you are in ticked; under them the path to the folder you are in, on one line, each step a press that goes there; then the folder above, [how the folder is sorted](#sorting-and-drawing-a-folder), and the folder's subfolders and files. A folder steps in right there, the dropdown staying open; a file opens in a tab and the dropdown closes. A folder of more than 400 items lists the first 400 and says so, and Search reaches the rest. Press the row again, press Escape or press anywhere else to close it; the row is lit while it is open. The [Sync button](#github-sync) stands at the row's right end while there is work to send.
 
 Under them, while a document is in front, comes its **Outline** — [the document's headings](#the-open-documents-headings) — then your [pinned chats](#past-conversations-in-the-sidebar) and then **All chats**, with the agents running now at the top. The chats never leave the sidebar. Press the **Outline** or **All chats** heading to fold that section away and again to open it; Leaftext remembers each one.
 
@@ -20,9 +20,9 @@ Under them, while a document is in front, comes its **Outline** — [the documen
 
 | Feature | What you get |
 | --- | --- |
-| [The pane's rows](#the-panes-rows) | **New**, **Search** and **Library** head the pane, over the open document's outline, your pinned chats and **All chats**; Library opens a Library tab of the folder's files, and the chats never leave |
-| [Vaults](#vaults) | A folder you name as a library root. The switcher at the end of the Library row creates, edits and moves between them |
-| [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the switcher the first time you open the pane, and goes for good the moment you point at that button. A sheet takes it down, unmet, and it returns once the last one closes |
+| [The pane's rows](#the-panes-rows) | **New**, **Search** and **Library** head the pane, over the open document's outline, your pinned chats and **All chats**; the library row, named after your vault, opens a dropdown that browses the folder right there, and the chats never leave |
+| [Vaults](#vaults) | A folder you name as a library root. The library row's dropdown creates, edits and moves between them |
+| [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the library row the first time you open the pane, and goes for good the moment you point at it. A sheet takes it down, unmet, and it returns once the last one closes |
 | [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
 | [File tree](#file-tree) | One folder at a time, with a row that steps back out; every folder you open appears at once |
 | [The open document's headings](#the-open-documents-headings) | Open a document and the sidebar holds its outline above the chats, the page's own title first and the heading you are reading lit; its heading folds it away |
@@ -51,7 +51,7 @@ Under them, while a document is in front, comes its **Outline** — [the documen
 
 A **vault** is a folder you have told Leaftext to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
 
-Press the button at the end of the Library row to open the vault switcher. Press it again to close the list; moving the pointer past it or away from the open list leaves the list as it is. The same button appears over the start screen whenever a vault exists, so switching to Library never leaves you there. What it wears says what you are in: **this machine** for the whole library, a **box** for a vault whose files only live here, and a **cloud** when saving in that vault also reaches somewhere else — [GitHub](#github-sync), or a [cloud folder](#your-cloud-is-already-a-folder). Its mark stays the regular weight and sits apart from its name.
+Press the library row, which carries the name of the vault you are in, to open its dropdown; the vaults stand at its top. Press the row again to close it; moving the pointer past it or away from the open list leaves the list as it is. A switch button appears over the start screen whenever a vault exists, so switching to Library never leaves you there. What that button wears says what you are in: **this machine** for the whole library, a **box** for a vault whose files only live here, and a **cloud** when saving in that vault also reaches somewhere else — [GitHub](#github-sync), or a [cloud folder](#your-cloud-is-already-a-folder). Its mark stays the regular weight and sits apart from its name.
 
 While the list is open, the button stays lit. Vaults read A to Z, ignoring capitals.
 
@@ -68,9 +68,9 @@ Each Leaftext window opens its own vault. Picking one in a window changes that w
 
 ### The bubble on your first launch
 
-A caret and a mark is not much to go on, so the first time you open Leaftext with the pane showing, a small bubble floats over the window with a chevron aimed at that button, saying **"Pick which folder the list below shows."**
+A name and a caret is not much to go on, so the first time you open Leaftext with the pane showing, a small bubble floats over the window with a chevron aimed at the library row, saying **"Choose a vault and browse its folders here."**
 
-It goes the moment you point at the button, and it never comes back — pressing the button does the same. The bubble itself ignores the pointer, so moving across it on the way somewhere else neither takes the words away nor gets in the way of what is under it, and a [menu](#file-actions) opened into the space it is standing in is drawn over it rather than under. There is no close button and no timer.
+It goes the moment you point at the row, and it never comes back — pressing the row does the same. The bubble itself ignores the pointer, so moving across it on the way somewhere else neither takes the words away nor gets in the way of what is under it, and a [menu](#file-actions) opened into the space it is standing in is drawn over it rather than under. There is no close button and no timer.
 
 One bubble per launch at most, with a quiet launch in between, and nothing at all once you have met them. With the pane shut there is no bubble, and that launch is not spent — you get it the next time the pane is open.
 
@@ -151,7 +151,7 @@ Tab into the list and a ring marks the row you are on — separate from the tint
 
 ### Sorting and drawing a folder
 
-The button at the end of the Library row, shown while the files stand under it, opens the view menu for the folder you are in. It is lit whenever the folder is drawn any way but the default, and resting on it says how.
+The library row's dropdown says how the folder you are in is drawn, on the row under its path — "Sorted by name, a to z" — and pressing that row turns the dropdown into the view menu for the folder. On a published site the same menu is the button at the end of the breadcrumb, lit whenever the folder is drawn any way but the default.
 
 - **Sort by** name, date modified, date created or size, either way round. Folders stay above files in every order.
 - **Group by date** puts headings between the files — Today, Yesterday, Previous 7 days, Previous 30 days, then a month at a time — while the folder is sorted by a date.
@@ -176,7 +176,7 @@ While a document is in front, the sidebar holds its [outline](02-navigation.md#o
 
 - The **Outline** heading counts the headings at its right. Each level reads a step smaller than the one above it, and the levels below the second sit in quieter ink, so the shape of the document shows without counting the indents.
 - Press the **Outline** heading to fold the list away and again to open it; it stays the way you left it.
-- With the Library tab, a console or anything else without a document in front, there is no Outline section.
+- With a console or anything else without a document in front, there is no Outline section.
 - An HTML file, and a web page opened by its address, lists its own headings too, read out of the page as it is drawn and read again whenever the page changes size, so a page that builds its headings as it runs lists them once they are there. Clicking a row scrolls the page to that heading, and the row under the top of the page is lit as you scroll.
 - A document with only a title, or none, has no outline, so the files stay where they are.
 
@@ -712,9 +712,9 @@ The active vault is saved in `manifest.db` beside the vault list, not in [settin
 
 ### Narrow windows
 
-![A narrow Leaftext window with the library open as a full-width sheet over the document: New, Search and Library at its top, Library pressed with the sort button and vault switcher beside it, the open page's headings under them, the leaf and lit library button still visible above it, and the palette, history and calendar launchers with the Grove pill along the sheet's foot](../../imgs/library-sheet-v2.png)
+![A narrow Leaftext window with the library open as a full-width sheet over the document: New, Search and the library row named Dropbox at its top, then the open page's Outline with its five headings, then All chats, and the palette, history and calendar launchers with the Grove pill along the sheet's foot](../../imgs/library-sheet-v3.png)
 
-Below the point where a pane at the width it opens at and a usable reader both fit, the library stops being a column beside the page and becomes a sheet over it. The same panel button opens it: it slides in from the left at full width, covering the document, with the vault name and path at the top — or arrives in place, with no slide, under [Reduce Motion](05-settings.md#reduce-motion). Picking a document dismisses it, since the page you just opened is behind it. The app bar stays above the sheet, so the button that opened it also closes it. On a phone or tablet the button goes back to rest the moment your finger lifts, so it never looks lit after the library has shut; a mouse still lights it while the pointer is over it. Every other button in the app works the same way.
+Below the point where a pane at the width it opens at and a usable reader both fit, the library stops being a column beside the page and becomes a sheet over it. The same panel button opens it: it slides in from the left at full width, covering the document, with New, Search and the library row at the top and the open document's outline and the chats under them — or arrives in place, with no slide, under [Reduce Motion](05-settings.md#reduce-motion). Picking a document dismisses it, since the page you just opened is behind it. The app bar stays above the sheet, so the button that opened it also closes it. On a phone or tablet the button goes back to rest the moment your finger lifts, so it never looks lit after the library has shut; a mouse still lights it while the pointer is over it. Every other button in the app works the same way.
 
 The sheet is not saved. It describes the current view rather than a preference, so widening the window puts the pane back beside the page and there is no sheet to restore.
 

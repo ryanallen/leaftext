@@ -8215,8 +8215,8 @@ body.library-resizing button {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Library pressed: the files stand under the rows, and the row is lit the way the console in front is. */
-.library-nav-row[aria-pressed="true"] {
+/* Its dropdown open: the row is lit the way the console in front is. */
+.library-nav-row[aria-expanded="true"] {
   border-color: var(--lt-border);
   background: var(--lt-background);
 }
@@ -8224,15 +8224,6 @@ body.library-resizing button {
   .library-nav-row:hover {
     background: var(--lt-wash-hover);
   }
-}
-.library-row-end {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: var(--lt-space-2);
-}
-.library-row-end:empty {
-  display: none;
 }
 .library-crumbs {
   top: var(--library-app-bar);
@@ -8485,6 +8476,11 @@ body.library-resizing button {
 .crumb-menu {
   min-width: 132px;
   max-width: 300px;
+}
+/* A folder's whole listing is taller than the window, so the library row's dropdown scrolls inside itself, down only; library.js stops it at the window's foot under the row. */
+.crumb-menu.is-browsing {
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 /* The strip under a vault switcher belongs to its open list. Its height matches CRUMB_MENU_DROP in library.js. */
 .crumb-menu.is-bridged::after {
@@ -8863,28 +8859,6 @@ body.library-resizing button {
   /* Standing in for the page means standing where it stands: with no pane to sit against, the card is held off the left frame by the same gutter, and the arc that caps its top-left is already moved out to it. */
   margin-left: var(--reader-gutter);
 }
-/* The library page: the pane's own lists, moved here by library-nav.js so the chats keep the pane. It stands where the map does, wearing the page's frame, over whatever is in front. */
-.reader-library {
-  grid-column: 2 / 4;
-  grid-row: 1;
-  z-index: 5;
-  box-sizing: border-box;
-  position: relative;
-  overflow: hidden;
-  background: var(--lt-markdown-background);
-  border-left: var(--lt-stroke-1) solid var(--lt-border);
-  border-right: var(--lt-stroke-1) solid var(--lt-border);
-  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
-}
-.reader-library[hidden] { display: none; }
-.library-shell.library-closed .reader-library {
-  margin-left: var(--reader-gutter);
-}
-/* Clear of the app bar the page tucks under, and held off the card's edges like a page's text. */
-.reader-library .library-scroll {
-  padding: calc(var(--app-bar-height) + var(--lt-space-8)) var(--lt-space-16) var(--lt-space-8);
-}
 .reader-graph-canvas {
   width: 100%;
   height: 100%;
@@ -9037,6 +9011,8 @@ body.library-resizing button {
 .sidebar-lists { position: absolute; left: 0; right: 0; top: var(--library-chrome-height); bottom: var(--library-foot-height); z-index: 2; box-sizing: border-box; padding: var(--lt-space-6) var(--lt-space-8) var(--lt-space-4); overflow-x: hidden; overflow-y: auto; background-color: var(--lt-surface); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-attachment: fixed; }
 .library-shell .sidebar-lists[hidden], .library-shell .console-recents[hidden], .sidebar-outline[hidden] { display: none; }
 .library-shell.library-closed .sidebar-lists { display: none; }
+/* The narrow window's sheet is the pane drawn over the page while the shell still wears closed, so its lists come back with it. */
+.library-shell.library-narrow.library-overlay .sidebar-lists:not([hidden]) { display: block; }
 /* A section of the sidebar folds from its own heading: the heading is the press, its chevron turned while folded. */
 .sidebar-fold { appearance: none; display: flex; align-items: center; gap: var(--lt-space-4); border: none; border-radius: var(--lt-radius-md); background: transparent; cursor: pointer; }
 @media (hover: hover) { .sidebar-fold:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
@@ -9434,6 +9410,18 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 }
 .crumb-menu-actions .crumb-menu-action.is-primary {
   color: var(--lt-accent-ink);
+}
+/* A path rather than a pair: each step as wide as its name, left to right, wrapping when the path is long. */
+.crumb-menu-actions.is-path {
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+}
+.crumb-menu-actions.is-path .crumb-menu-action {
+  flex: 0 1 auto;
+  width: auto;
+  justify-content: flex-start;
+  padding-left: var(--lt-space-4);
+  padding-right: var(--lt-space-4);
 }
 .crumb-menu-note.is-danger {
   color: var(--lt-danger);
@@ -20553,7 +20541,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 118 icons, and all 196 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 118 icons, and all 195 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -20585,7 +20573,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>118</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>196</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>195</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -21070,7 +21058,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">196 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">195 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -21260,8 +21248,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="resolved-comment"><div class="comment-quote">vanished words</div><div class="comment-message"><div class="comment-message-time">26 September 2026, 8:00am</div><div class="comment-message-text">Gone one.</div></div><div class="comment-message-time">The words this was about are no longer in the note</div></div></div>
 </section>
 <section class="part">
-<header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js; the new menu draws its launch list (new-menu.js) — its first rows New page, then under a separator the folder a console or agent starts in, a press opening a folder view of the same rows the console folder menu draws: Back, the folder as a heading, the folder above, each folder inside, Start here and Choose another folder… — and every agent view in the same popup (console-launch.js) out of these rows: one row per account, the agent's logo then the name the reader gave it, with its settings press always drawn (crumb-menu-edit-shown), Past conversations with the recent icon and the same account rows behind it, Add account and the agent it is for, an account's settings with its name, sign-in state and the permission switch with its consequence, the add, link, rename and remove forms with their errors and busy primary action, the sign-in handoff, an account's launch settings, preparing and a failed start with Open Console, and the compare box — a prompt field a few lines tall (crumb-menu-prompt), the Left and Right agent choices and Send to both</span></header>
-<div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit crumb-menu-edit-shown"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-recent"></span><span class="crumb-menu-label">Past conversations</span></button></div></div>
+<header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js; the sidebar's library row draws its dropdown (library-nav.js) — the vaults under their heading, then the path on one line of steps (is-path on the actions row), the folder above, and the folder's subfolders and files, cut at 400 with a line saying so; the new menu draws its launch list (new-menu.js) — its first rows New page, then under a separator the folder a console or agent starts in, a press opening a folder view of the same rows the console folder menu draws: Back, the folder as a heading, the folder above, each folder inside, Start here and Choose another folder… — and every agent view in the same popup (console-launch.js) out of these rows: one row per account, the agent's logo then the name the reader gave it, with its settings press always drawn (crumb-menu-edit-shown), Past conversations with the recent icon and the same account rows behind it, Add account and the agent it is for, an account's settings with its name, sign-in state and the permission switch with its consequence, the add, link, rename and remove forms with their errors and busy primary action, the sign-in handoff, an account's launch settings, preparing and a failed start with Open Console, and the compare box — a prompt field a few lines tall (crumb-menu-prompt), the Left and Right agent choices and Send to both</span></header>
+<div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit crumb-menu-edit-shown"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button><div class="crumb-menu-actions is-path"><button type="button" class="context-menu-item crumb-menu-item crumb-menu-action"><span class="crumb-menu-label">leaftext</span></button><button type="button" class="context-menu-item crumb-menu-item crumb-menu-action is-primary"><span class="crumb-menu-label">› docs</span></button></div><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-recent"></span><span class="crumb-menu-label">Past conversations</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js, library-keys.js (the keyboard ring on a row, inside its edge), library-picks.js (a picked row, a lighter tint of the accent with a hairline inside its edge, worn beside the open row's own tint), library-carry.js (the chip naming what a pointer carries, and the ring on the folder row, the crumb or the pane's own list it would land in), library-rows.js (the view button at the trail's end, lit out of name order and wearing the sort mark, the date heading between a grouped folder's files and the Favorites and Files headings over a folder holding a favorite, all one quiet heading, the fuller file row, a softly filled card with no edge that takes the hover wash under the pointer — the file name and the time it changed, the title on a quieter library-file-title line where it says more than the name, and two lines of its prose — and a folder row's count; a Kindle book row is the fuller row with the book's title, its container in the type badge and its author on a quieter library-file-author line, under a heading counting the folder's books, the ones that open and the ones that are shut; a compact folder, and a row past the folder's cap, draw the single line; a row kept out and drawn by Show hidden wears is-hidden, dimmed; a file Leaftext cannot open is listed where it sits wearing is-unreadable, its words dimmed over a whole row wash and its tooltip saying why), library-axes.js (the Tags and Fields lists: a row per tag or field with its branch mark, turned when open, its count, and one inset a level deep), library-services.js (**Books online…** under New vault…, its own group above Back wearing the Define book mark); in the Books online vault a library, its categories, All books and the Next row are folder rows, a catalog's book is the Kindle book row pressed by its number, its author line ending on this computer once its EPUB is saved and the row dimmed with aria-busy while it is fetched, in the Books online vault the top-level rows are its libraries, each a folder row counting its books where its library can count, and the host's own sentence stands where a catalog is still arriving</span></header>
@@ -21316,8 +21304,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="console-recents" style="position:relative;height:96px" role="list" aria-label="Chats"><div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="lt-icon lt-icon-agent-claude"></span></span><span class="lt-icon lt-icon-agent-claude"></span></span><span class="console-agent-name">app 2</span><span class="console-agent-state console-agent-needs">Needs you</span></button></div><div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running console-agent-front console-agent-working"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="lt-icon lt-icon-agent-claude"></span></span><span class="lt-icon lt-icon-agent-claude"></span></span><span class="console-agent-name">scratchpad</span><span class="console-agent-state">Working</span></button></div><div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="lt-icon lt-icon-agent-codex"></span></span><span class="lt-icon lt-icon-agent-codex"></span></span><span class="console-agent-name">site</span><span class="console-agent-state">At rest</span></button></div></div></div>
 </section>
 <section class="part">
-<header><h3>Pane rows</h3><code class="built">.library-nav</code><span class="built">library-nav.js, the band under the app bar where a published site keeps its trail (has-nav on the pane gives it the band's height): three rows (library-nav-row), each an icon and then its word (library-nav-word) in the chat rows' own shape and ink — New opens the plus's menu anchored on the row, Search raises the find bar on the vault, and Library opens the window's Library tab, lit while it is in front (aria-pressed), the outline and the chats staying under the rows; the Library row (library-nav-library) carries at its end the open document's heart and the folder's sort while the Library tab is in front (library-row-end), then the vault switch, then Sync while the vault has unpushed work</span></header>
-<div class="stage"><div class="library-pane has-nav" style="position:relative;height:110px;--library-app-bar:0px"><div class="library-nav" role="toolbar" aria-label="Sidebar"><button type="button" class="library-nav-row"><span class="lt-icon lt-icon-new" aria-hidden="true"></span><span class="library-nav-word">New</span></button><button type="button" class="library-nav-row"><span class="lt-icon lt-icon-search" aria-hidden="true"></span><span class="library-nav-word">Search</span></button><div class="library-nav-library"><button type="button" class="library-nav-row" aria-pressed="true"><span class="lt-icon lt-icon-library" aria-hidden="true"></span><span class="library-nav-word">Library</span></button><span class="library-row-end"></span><button type="button" class="library-vault-switch" aria-expanded="false" aria-label="Vaults"><span class="library-crumb-caret" aria-hidden="true">▾</span><span class="lt-icon lt-icon-computer"></span></button></div></div></div></div>
+<header><h3>Pane rows</h3><code class="built">.library-nav</code><span class="built">library-nav.js, the band under the app bar where a published site keeps its trail (has-nav on the pane gives it the band's height): three rows (library-nav-row), each an icon and then its word (library-nav-word) in the chat rows' own shape and ink — New opens the plus's menu anchored on the row, Search raises the find bar on the vault, and the library row reads the name of the vault picked ("Library" until one is) with a caret after it and opens its dropdown in the crumb menu, lit while that is open (aria-expanded), the outline and the chats staying under the rows; the library row (library-nav-library) carries Sync at its end while the vault has unpushed work</span></header>
+<div class="stage"><div class="library-pane has-nav" style="position:relative;height:110px;--library-app-bar:0px"><div class="library-nav" role="toolbar" aria-label="Sidebar"><button type="button" class="library-nav-row"><span class="lt-icon lt-icon-new" aria-hidden="true"></span><span class="library-nav-word">New</span></button><button type="button" class="library-nav-row"><span class="lt-icon lt-icon-search" aria-hidden="true"></span><span class="library-nav-word">Search</span></button><div class="library-nav-library"><button type="button" class="library-nav-row" aria-haspopup="menu" aria-expanded="true"><span class="lt-icon lt-icon-library" aria-hidden="true"></span><span class="library-nav-word">leaftext</span><span class="library-crumb-caret" aria-hidden="true">▾</span></button></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Console recents</h3><code class="built">.console-recents</code><span class="built">console-recents.js, under the pane's rows whatever is in front unless Library is pressed: the chats stand (is-console-sidebar on the pane), the folder list hidden where it stands, and this list filling the rest down to the launchers, scrolling inside itself; the running agents first, then one row per past conversation of every agent, newest first, reusing the running row with the agent's mark, its title and how long ago; an agent whose saved list cannot be read says so in a muted line (console-recents-note); a press reopens that conversation in a new console in the folder it ran in; each row (console-recent-row) carries three dots (console-recent-more) standing over its age while it is pointed at or holds the keyboard, which with a right-click open the chat's menu in the context menu's shape, each entry with its letter; a chat marked unread names itself in bold (console-recent-unread) until it is opened; Rename turns the title into a name box in the row's place (console-recent-rename), Enter or leaving it keeping the name and Escape putting the old one back; the All chats heading stands in a row (console-recents-heading-row) with a Filter button (console-recents-filter) whose menu's Status rows show Active, Archived or All, pressed in aria-pressed and naming the choice while it is not Active; in Archived each row's menu reads Unarchive; pinned sections (console-pins) stand over All chats, each under a heading (console-pin-heading) whose three dots (console-pin-more) open Rename section, typed in place (console-pin-rename), and Remove section; a section with no chats is not drawn, a pinned chat its agent has deleted reads muted (console-pin-gone), and while a chat is carried under the pane's library-carry-chip the place it would land is ringed (is-drop-target) and a dashed New section row (console-pin-new) stands under the last section</span></header>
@@ -21566,10 +21554,6 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Graph</h3><code class="built">.reader-graph</code><span class="built">app-shell.html, drawn by graph.js and graph-scene.js</span></header>
 <div class="stage"><div class="reader-graph" style="height:120px"><p class="reader-graph-legend"><span class="graph-key graph-key-document"></span>your documents<span class="graph-key graph-key-external"></span>web addresses</p></div></div>
-</section>
-<section class="part">
-<header><h3>Library page</h3><code class="built">.reader-library</code><span class="built">app-shell.html, shown by library-nav.js while the window's Library tab is in front: the pane's own file list with its Back row, and a calendar day, moved into the page's place where the map stands</span></header>
-<div class="stage"><section class="reader-library" aria-label="Library" style="height:120px"><div class="library-scroll"></div></section></div>
 </section>
 <section class="part">
 <header><h3>Saved chat</h3><code class="built">.saved-chat</code><span class="built">app-shell.html, drawn by console-saved-chat.js while a saved chat's tab is in front: its conversation from the agent's own record with no program behind it, in the live chat's frame and turns, with the message box under them</span></header>

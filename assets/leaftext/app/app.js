@@ -9967,7 +9967,7 @@ if (window.__leafSite) {
   const historyActions = document.querySelector('.history-actions');
   if (historyActions) historyActions.remove();
   
-  for (const id of ['libraryVaultSwitch', 'librarySyncButton']) {
+  for (const id of ['librarySyncButton']) {
     const button = document.getElementById(id);
     if (button) button.remove();
   }
@@ -10145,7 +10145,7 @@ function outsideThePage(x, y) {
 function tabStaysInItsWindow(index) {
   const tabs = (currentState && currentState.tabs) || [];
   const kind = tabs[index] && tabs[index].kind;
-  return kind === 'harness' || kind === 'library';
+  return kind === 'harness';
 }
 
 function tabIsAlone() {
@@ -15548,31 +15548,11 @@ function bindCrumbTrailButtons() {
   bindTrailViewButton(libraryCrumbTrail);
 }
 
-const libraryRowEnd = document.getElementById('libraryRowEnd');
-let libraryRowEndHtml = null;
-function drawLibraryRowEnd() {
-  if (!libraryRowEnd) return;
-  const html = !libraryPageShowing() ? '' : trailFavoriteHtml() + trailViewHtml();
-  if (html === libraryRowEndHtml) return;
-  libraryRowEndHtml = html;
-  libraryRowEnd.innerHTML = html;
-  const favorite = libraryRowEnd.querySelector('[data-trail-favorite]');
-  if (favorite) {
-    favorite.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0) return;
-      event.stopPropagation();
-      toggleFavorite(favorite.dataset.trailFavorite, 'document');
-    });
-  }
-  bindTrailViewButton(libraryRowEnd);
-}
-
 let crumbFitSettling = false;
 let crumbFitSettlingSegments = null;
 function renderLibraryCrumbs(chain) {
   if (!libraryCrumbTrail) {
     libraryCrumbChain = chain;
-    drawLibraryRowEnd();
     return;
   }
   libraryCrumbChain = window.__leafSite ? siteCrumbChain() : chain;
@@ -15973,6 +15953,7 @@ function showCrumbMenu(button, items, focusLabel) {
     if (entry.buttons) {
       const bar = document.createElement('div');
       bar.className = 'crumb-menu-actions';
+      if (entry.barClass) bar.classList.add(entry.barClass);
       for (const button of entry.buttons) {
         const action = document.createElement('button');
         action.type = 'button';
@@ -16061,7 +16042,11 @@ function showCrumbMenu(button, items, focusLabel) {
   
   crumbMenu.classList.toggle('is-bridged', button.classList.contains('library-vault-switch'));
   
+  const browsing = button.id === 'libraryRow';
+  crumbMenu.classList.toggle('is-browsing', browsing);
+  
   const anchor = button.getBoundingClientRect();
+  crumbMenu.style.maxHeight = browsing ? `${Math.max(0, window.innerHeight - anchor.bottom - CRUMB_MENU_DROP - LEAF_FLOAT_MARGIN)}px` : '';
   leafPlaceFloating(crumbMenu, anchor.left, anchor.bottom + CRUMB_MENU_DROP);
   
   if (requestedFocus || (firstFocusable && !reopening)) leafFocusForKeyboard(requestedFocus || firstFocusable);
@@ -16226,6 +16211,9 @@ window.leafSetLibraryFolder = (payload) => {
   if (librarySelectedPath) centerSelectedLibraryRowOnce(folder);
   refreshPaneFoot();
   searchAfterFolder(next);
+  
+  drawLibraryRowWord();
+  redrawLibraryMenu();
 };
 
 window.leafSetVaults = (payload) => {
@@ -16688,6 +16676,8 @@ window.leafSignInEnded = (attemptId) => {
 
 
 function renderLibraryVaultSwitch() {
+  
+  drawLibraryRowWord();
   if (!libraryVaultSwitch) return;
   
   setVaultGlyph(libraryVaultSwitch, vaultGlyph(true, activeVaultId));
@@ -16717,9 +16707,12 @@ function bindVaultSwitch(button, retire) {
     openCrumbList(button, vaultMenuItems());
   });
 }
+
+const libraryVaultHintTarget = libraryVaultSwitch || document.getElementById('libraryRow');
+if (libraryVaultHintTarget && !libraryVaultSwitch) registerHint('libraryVault', () => libraryVaultHintTarget, 'Choose a vault and browse its folders here.');
 if (libraryVaultSwitch) {
   
-  registerHint('libraryVault', () => (libraryNav && !libraryPageShowing() ? null : libraryVaultSwitch), 'Pick which folder the list below shows.');
+  registerHint('libraryVault', () => libraryVaultSwitch, 'Pick which folder the list below shows.');
   
   bindVaultSwitch(libraryVaultSwitch, true);
 }
@@ -21635,7 +21628,7 @@ window.leafSetState = (state, heading) => {
   takePayloadSplit(next);
   currentState = next;
   
-  libraryPageFollowsFront();
+  savedChatFollowsFront();
   
   if (graphExitPending) {
     graphExitPending = false;
@@ -22433,7 +22426,7 @@ function renderTabs(state) {
     return;
   }
   
-  libraryPageFollowsFront();
+  savedChatFollowsFront();
   
   tabArrivalLeave();
   const tabs = state.tabs || [];
@@ -44804,7 +44797,7 @@ window.leafConsoleFront = id => {
   
   hintTargetsMoved();
   if (changed && consoleAgentRows.length) drawConsoleRecents();
-  if (changed) libraryPageFollowsFront();
+  if (changed) savedChatFollowsFront();
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
   placeConsoleLayers();
   syncConsoleViewsBar();
@@ -47453,70 +47446,61 @@ if (consoleRecentsBand) {
 var libraryNav = document.getElementById('libraryNav');
 var librarySearchRow = document.getElementById('librarySearchRow');
 var libraryRow = document.getElementById('libraryRow');
-var readerLibrary = document.getElementById('readerLibrary');
+var libraryRowWord = document.getElementById('libraryRowWord');
 var sidebarLists = document.getElementById('sidebarLists');
 var sidebarOutline = document.getElementById('sidebarOutline');
 var sidebarOutlineFold = document.getElementById('sidebarOutlineFold');
 var sidebarOutlineCount = document.getElementById('sidebarOutlineCount');
 
-let libraryPageOpen = false;
-function libraryPageShowing() {
-  return libraryPageOpen;
-}
-function libraryTabInFront() {
-  const tabs = (currentState && currentState.tabs) || [];
-  const active = currentState ? currentState.active : null;
-  return !!libraryNav && typeof active === 'number' && !!tabs[active] && tabs[active].kind === 'library';
+const LIBRARY_MENU_ROWS = 400;
+
+function drawLibraryRowWord() {
+  if (!libraryRow || !libraryRowWord) return;
+  const name = libraryRootLabel();
+  libraryRowWord.textContent = name;
+  libraryRow.title = `Browse ${name}`;
 }
 
-function moveLibraryListsToPage() {
-  const lists = libraryPane?.querySelector('.library-scroll');
-  if (lists && readerLibrary && lists.parentElement !== readerLibrary) readerLibrary.append(lists);
-  if (sidebarOutline && libraryOutline.parentElement !== sidebarOutline) {
-    sidebarOutline.append(libraryOutline);
-    setLibraryOutlineScroller(sidebarLists);
-  }
-}
-
-function coverLibraryPageFront() {
-  if (libraryPageOpen && app) {
-    commitActiveEditingBlock();
-    if (document.activeElement && app.contains(document.activeElement)) document.activeElement.blur();
-  }
-  const chat = savedChatShowing();
-  const covered = libraryPageOpen || graphViewOpen || chat;
-  app?.classList.toggle('is-under-map', covered);
-  readerMinimap?.classList.toggle('is-under-map', covered);
-  for (const entry of consoleLayers.values()) entry.layer.classList.toggle('is-under-map', libraryPageOpen || chat);
-}
-function drawLibraryPage() {
-  libraryPane?.classList.add('is-console-sidebar');
-  consoleRecentsShown(true);
-  if (readerLibrary) readerLibrary.hidden = !libraryPageOpen;
-  coverLibraryPageFront();
-  coverWebSurface(libraryPageOpen, readerLibrary);
-  if (libraryRow) {
-    libraryRow.setAttribute('aria-pressed', String(libraryPageOpen));
-    libraryRow.title = libraryPageOpen ? 'The library' : 'Open the library';
-  }
-  drawLibraryRowEnd();
-  drawSidebarOutline();
-  hintTargetsMoved();
+function libraryMenuPath() {
+  const steps = [{ path: '', name: libraryRootLabel() }, ...libraryChain.map((link) => ({ path: link.path, name: link.name }))];
+  const rows = [{
+    barClass: 'is-path',
+    buttons: steps.map((step, at) => ({
+      label: at ? `› ${step.name}` : step.name,
+      primary: at === steps.length - 1,
+      keepOpen: true,
+      run: () => setLibraryFolder(step.path),
+    })),
+  }];
+  const parent = steps[steps.length - 2];
+  if (parent) rows.push({ label: `↑ ${parent.name}`, title: parent.path || parent.name, keepOpen: true, run: () => setLibraryFolder(parent.path) });
   
-  if (libraryPageOpen && libraryTree && !libraryTree.hidden) scheduleLibraryRowWindow();
+  if (libraryFolderView) {
+    const view = libraryFolderView;
+    rows.push({ label: libraryViewWords(view), title: 'Sort and view this folder', icon: `<span class="lt-icon lt-icon-${view.descending ? 'sort-descending' : 'sort-ascending'}" aria-hidden="true"></span>`, keepOpen: true, run: () => showCrumbMenu(libraryRow, libraryViewMenuItems()) });
+  }
+  return rows;
 }
 
-function libraryPageFollowsFront() {
-  
-  savedChatFollowsFront();
-  const open = libraryTabInFront();
-  if (open === libraryPageOpen) return;
-  libraryPageOpen = open;
-  drawLibraryPage();
+function libraryMenuEntries() {
+  const entries = libraryEntries.filter(Boolean);
+  const rows = entries.slice(0, LIBRARY_MENU_ROWS).map((node) => node.kind === 'folder'
+    ? { label: node.name, title: node.path, icon: FOLDER_ICON_SVG, keepOpen: true, run: () => setLibraryFolder(node.path) }
+    : { label: node.name, title: node.path, icon: LEAF_FILE_ICON, run: () => send({ command: 'openRecent', path: node.path }) });
+  if (!entries.length) rows.push({ note: libraryNotice || 'Nothing in this folder.' });
+  if (entries.length > LIBRARY_MENU_ROWS) rows.push({ note: `This folder holds ${entries.length} items; the first ${LIBRARY_MENU_ROWS} are listed. Search reaches the rest.` });
+  return rows;
 }
 
-function openLibraryTab() {
-  send({ command: 'openLibrary' });
+function libraryMenuRows() {
+  return [{ heading: 'Vaults' }, ...vaultMenuItems(), 'separator', ...libraryMenuPath(), ...libraryMenuEntries()];
+}
+function libraryMenuOpen() {
+  return !!libraryRow && crumbMenuOwner === libraryRow && !crumbMenu.hidden;
+}
+
+function redrawLibraryMenu() {
+  if (libraryMenuOpen()) showCrumbMenu(libraryRow, libraryMenuRows());
 }
 
 function drawSidebarOutline() {
@@ -47540,7 +47524,21 @@ function openLibrarySearch() {
   if (allFilesSearchAvailable()) setFindScope('vault');
 }
 if (librarySearchRow) librarySearchRow.addEventListener('click', () => openLibrarySearch());
-if (libraryRow) libraryRow.addEventListener('click', () => openLibraryTab());
+if (libraryRow) {
+  
+  libraryRow.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    event.preventDefault();
+    retireHint('libraryVault');
+    retireLibraryIntro();
+    openCrumbList(libraryRow, libraryMenuRows());
+  });
+  
+  libraryRow.addEventListener('click', (event) => {
+    if (event.detail === 0) openCrumbList(libraryRow, libraryMenuRows());
+  });
+}
 if (sidebarOutlineFold) sidebarOutlineFold.addEventListener('click', () => toggleSidebarOutline());
 if (libraryNav) {
   
@@ -47549,10 +47547,18 @@ if (libraryNav) {
   } catch {
     
   }
+  libraryPane?.classList.add('is-console-sidebar');
+  consoleRecentsShown(true);
   if (sidebarLists) sidebarLists.hidden = false;
-  moveLibraryListsToPage();
-  libraryPageOpen = libraryTabInFront();
-  drawLibraryPage();
+  
+  const lists = libraryPane?.querySelector('.library-scroll');
+  if (lists) lists.hidden = true;
+  if (sidebarOutline && libraryOutline.parentElement !== sidebarOutline) {
+    sidebarOutline.append(libraryOutline);
+    setLibraryOutlineScroller(sidebarLists);
+  }
+  drawLibraryRowWord();
+  drawSidebarOutline();
 }
 
 
@@ -50670,8 +50676,15 @@ function savedChatFollowsFront() {
   savedChatPage.hidden = !shown;
   
   if (!shown) savedChat.key = '';
-  coverLibraryPageFront();
+  coverSavedChatFront();
   coverWebSurface(shown, savedChatPage);
+}
+
+function coverSavedChatFront() {
+  const chat = savedChatShowing();
+  app?.classList.toggle('is-under-map', graphViewOpen || chat);
+  readerMinimap?.classList.toggle('is-under-map', graphViewOpen || chat);
+  for (const entry of consoleLayers.values()) entry.layer.classList.toggle('is-under-map', chat);
 }
 
 
