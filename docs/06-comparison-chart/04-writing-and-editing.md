@@ -667,6 +667,8 @@
 | Formatting hidden in diffs | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Folded diff lines open | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Moved lines drawn once | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Prompt held over chat | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Speak a prompt | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Files changed this turn | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Hand turn to agent | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Fork a conversation | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -757,6 +759,6 @@
 [l-agent-harness]: ../01-features/10-agents.md#hold-an-agent-to-your-checks
 [l-agent-drop]: ../01-features/10-agents.md#run-the-agent-in-a-console
 [l-agent-chat]: ../01-features/10-agents.md#the-conversation-as-a-chat
-[l-agent-fork]: ../01-features/10-agents.md#fork-hand-over-and-compare
+[l-agent-fork]: ../01-features/10-agents.md#fork-and-compare
 [l-agent-folder]: ../01-features/10-agents.md#the-agents-status-under-its-console
 [o-cli]: https://obsidian.md/help/cli

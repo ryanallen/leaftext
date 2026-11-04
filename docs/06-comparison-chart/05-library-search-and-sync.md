@@ -408,7 +408,10 @@
 | Archive a past chat | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Delete chat to bin | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Pin chats in sections | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Filter and sort chats | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Group chats by agent | [✅][l-agent-recents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agent prompt pinned | [✅][l-console-prompt] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Step between prompts | [✅][l-console-prompt] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Clicks reach console programs | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Tasks launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Favorites launcher | [✅][l-launchers] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
