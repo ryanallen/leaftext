@@ -35,7 +35,7 @@ Links inside note and glossary sheets follow the same route as links in the docu
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the theme's color under the pointer and throwing a dotted shadow around themselves |
 | [Single window](#tabs) | One running Leaftext holding as many windows as you like: Control N, or Command N on a Mac, opens a new one, and so does launching Leaftext again with no file on Windows; opening a file from outside still adds it as a tab to the window you were last in |
 | [When another app is in front](#when-another-app-is-in-front) | The whole window settles together the moment it falls behind another app — chrome, document, pictures and the little picture of the page all keep some color at half strength, with black text going less dark, faded in and out over the same beat |
-| [More](#more) | The last press on the floating bar: Themes, the Grove, New window, Full screen and About Leaftext wherever you are, the Calendar beside a document, Scheduled tasks beside an agent, and Zoom on a web page |
+| [More](#more) | The last press in the icon rail: Themes, the Grove, New window and About Leaftext wherever you are, the Calendar in a vault with dated notes, Scheduled tasks where there are any, and Zoom on a web page |
 | [When the bar runs out of room](#when-the-bar-runs-out-of-room) | On a window too narrow for the whole app bar, its buttons fold into a chevron menu one at a time — and the window's own close, minimize and maximize stay on the bar |
 | [Code view](07-editing.md) | Toggle any document to its raw, editable source |
 
@@ -83,7 +83,7 @@ flowchart LR
 | Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
 | [Stand the next tab beside this one](#two-documents-side-by-side), and close the split | `Ctrl+\` | `Cmd+\` |
-| [Full screen](06-themes.md#windows), also a row in [More](#more) | `F11` | Green dot at the top left |
+| [Full screen](06-themes.md#windows), the window's own button at the top right | `F11` | Green dot at the top left |
 | Save (with [unsaved edits](07-editing.md#save), your own typing included) | `Ctrl+S` | `Cmd+S` |
 | [Undo](07-editing.md#undo) — a word of your typing, then the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
 | [Redo](07-editing.md#undo) a word of typing, or a whole edit, you took back | `Ctrl+Y` or `Ctrl+Shift+Z` | `Cmd+Shift+Z` |
@@ -167,21 +167,19 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 
 ### More
 
-Themes is not here: the palette at the app bar's right end, beside Sync, opens the [theme picker](06-themes.md#choose) whatever is in front, and its tooltip names the family and appearance you are on.
-
-The last press on the floating bar, at its right end, opens **More**: what you reach for now and then, sorted by what is in front of you. Every row is a press, and the keyboard walks them.
+The last press in the icon rail, at its foot, opens **More**: everything that is not a control of the page in front, in one place, and the only More there is. Every row is a press, and the keyboard walks them.
 
 | Row | When it stands | What it does |
 | --- | --- | --- |
 | **Zoom** | A web page is in front | Minus, the level and plus; pressing the level goes back to actual size |
-| **Calendar** | A document is in front, inside a vault that has dated notes | Opens the [calendar](03-library.md#calendar) |
-| **Scheduled tasks** | An agent is in front and there are tasks | Opens the [scheduled tasks](03-library.md#scheduled-tasks) list |
+| **Themes** | Always | Opens the [theme picker](06-themes.md#choose); its tooltip names the family and appearance you are on |
+| **Calendar** | The vault has dated notes | Opens the [calendar](03-library.md#calendar) |
+| **Scheduled tasks** | There are tasks | Opens the [scheduled tasks](03-library.md#scheduled-tasks) list |
 | **Grove** | Always | Opens [the Grove](09-progress.md), with your level bar in the row |
 | **New window** | Always | Opens a second window, and shows its key, `Ctrl+N` or `Cmd+N` |
-| **Full screen** | Always | Fills the screen, and shows its key |
 | **About Leaftext** | Always | Shows the version you are running, **Restart to update** while an update is waiting, **Licenses**, which opens every third-party notice as a document, and **Open the journal**, which opens the app's [journal](05-settings.md#journal) read-only in a tab, the file a bug report attaches |
 
-There is no Settings row, because there is no settings panel. On a published site the bar carries no More.
+There is no Settings row, because there is no settings panel, and no Full screen row, because the window's own button at the top right does that. On a published site there is no rail and no More.
 
 Over a console holding Claude Code, Codex or Antigravity the bar carries **Chat** and **Console** in place of the views, with the same sliding pill and nothing else: Chat shows the agent's conversation, and Console shows its own terminal with the keys in it until you press Chat again. See [the conversation as a chat](10-agents.md#the-conversation-as-a-chat).
 

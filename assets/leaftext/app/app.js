@@ -9968,15 +9968,13 @@ if (window.__leafSite) {
   document.getElementById('appSync')?.remove();
   document.getElementById('libraryBrowse')?.remove();
   
-  for (const id of ['openButton', 'newButton', 'paneDocumentsOpen']) {
+  for (const id of ['openButton', 'newButton']) {
     const button = document.getElementById(id);
     if (button) button.remove();
   }
   
   document.getElementById('libraryNav')?.remove();
   document.getElementById('appRail')?.remove();
-  
-  document.getElementById('readerMore')?.remove();
 } else {
   
   document.getElementById('libraryCrumbs')?.remove();
@@ -11711,7 +11709,11 @@ const {
 } = window.__lt.assets;
 
 const openButton = document.getElementById('openButton');
-if (openButton) openButton.addEventListener('click', () => send({ command: 'open' }));
+
+if (openButton) openButton.addEventListener('click', () => {
+  const folder = typeof libraryFolderHere === 'function' ? libraryFolderHere() : '';
+  send(folder ? { command: 'open', folder } : { command: 'open' });
+});
 
 const PAGE_EXPORT_HINTS = {
   pdf: 'The whole document as one continuous page, in the theme on screen',
@@ -42923,8 +42925,6 @@ var libraryFootPanel = document.getElementById('libraryFootPanel');
 
 var paneFootActions = [];
 
-var MORE_EVERY_CONTEXT = ['document', 'agent', 'web'];
-
 var PANE_FOOT_BUTTON = 32;
 var PANE_FOOT_GAP = 4;
 
@@ -42932,10 +42932,10 @@ var paneFootRailWidth = null;
 var paneFootChevronUp = false;
 
 var paneRows = document.getElementById('libraryNav');
-function registerPaneFootAction({ id, label, icon, has, press, contexts, title }) {
+function registerPaneFootAction({ id, label, icon, has, press, title }) {
   
   if (paneRows) {
-    paneFootActions.push({ id, label, icon, has, press, title, contexts: contexts || MORE_EVERY_CONTEXT, row: true, more: true, button: null });
+    paneFootActions.push({ id, label, icon, has, press, title, row: true, more: true, button: null });
     return null;
   }
   const row = false;
@@ -43055,19 +43055,14 @@ if (libraryFootToggle && libraryFootPanel) {
   }
 }
 
-const appThemeButton = document.getElementById('appThemeButton');
-if (paneRows && appThemeButton) {
-  themeSheetOpen = appThemeButton;
-  appThemeButton.addEventListener('click', () => openThemeSheet());
-} else {
-  themeSheetOpen = registerPaneFootAction({
-    id: 'themeSheetOpen',
-    label: 'Themes',
-    icon: 'theme',
-    has: () => true,
-    press: () => openThemeSheet(),
-  });
-}
+themeSheetOpen = registerPaneFootAction({
+  id: 'themeSheetOpen',
+  label: 'Themes',
+  icon: 'theme',
+  title: themeTooltip,
+  has: () => true,
+  press: () => openThemeSheet(),
+});
 if (themeSheetOpen) {
   themeSheetOpen.setAttribute('aria-haspopup', 'dialog');
   updateThemeSelection();
@@ -43076,7 +43071,6 @@ registerPaneFootAction({
   id: 'paneFootTasks',
   label: 'Scheduled tasks',
   icon: 'check-circle',
-  contexts: ['agent'],
   has: () => leafScheduledTasks.length > 0,
   press: () => openHomeSheet('scheduled'),
 });
@@ -43545,10 +43539,9 @@ if (calendarSheet) {
     id: 'paneFootCalendar',
     label: 'Calendar',
     icon: 'calendar',
-    contexts: ['document'],
     has: calendarAvailable,
     press: openCalendarSheet,
-  }) || document.getElementById('readerMore');
+  }) || document.getElementById('railMore');
 }
 
 const consoleLayers = new Map();
@@ -48025,15 +48018,6 @@ var paneDocuments = document.getElementById('paneDocuments');
 var paneDocumentsPinned = document.getElementById('paneDocumentsPinned');
 var paneDocumentsRecent = document.getElementById('paneDocumentsRecent');
 
-var paneDocumentsOpen = document.getElementById('paneDocumentsOpen');
-if (paneDocumentsOpen) {
-  paneDocumentsOpen.addEventListener('click', () => {
-    const folder = libraryFolderHere();
-    send(folder ? { command: 'open', folder } : { command: 'open' });
-  });
-}
-var sidebarOutlineBack = document.getElementById('sidebarOutlineBack');
-
 var paneView = 'chats';
 function paneShows(view) {
   paneView = view;
@@ -48217,7 +48201,6 @@ if (libraryBrowse) {
 if (railChats) railChats.addEventListener('click', () => showChatsInPane());
 if (railDocuments) railDocuments.addEventListener('click', () => showDocumentsInPane());
 if (railOutline) railOutline.addEventListener('click', () => showOutlineInPane());
-if (sidebarOutlineBack) sidebarOutlineBack.addEventListener('click', () => paneShows('documents'));
 if (libraryNav) {
   
   try {
@@ -48240,7 +48223,7 @@ if (libraryNav) {
   if (narrowWindowQuery && narrowWindowQuery.addEventListener) narrowWindowQuery.addEventListener('change', drawLibraryRowWord);
 }
 
-var readerMore = document.getElementById('readerMore');
+var railMore = document.getElementById('railMore');
 
 var webZoomLevels = new Map();
 function webZoomOf(webId) {
@@ -48256,7 +48239,7 @@ window.leafWebZoom = (webId, percent) => {
   if (percent === 100) webZoomLevels.delete(webId);
   else webZoomLevels.set(webId, percent);
   if (currentState) renderTabs(currentState);
-  if (crumbMenuOwner === readerMore && !crumbMenu.hidden) showReaderMore();
+  if (crumbMenuOwner === railMore && !crumbMenu.hidden) showRailMore();
 };
 function zoomWebTab(step) {
   const tab = activeWebTab();
@@ -48275,7 +48258,7 @@ function moreMenuRows() {
   const context = moreContext();
   const rows = [];
   for (const action of paneFootActions) {
-    if (!action.more || !action.contexts.includes(context) || !action.has()) continue;
+    if (!action.more || !action.has()) continue;
     rows.push({ label: action.label, title: action.title ? action.title() : undefined, icon: moreIcon(action.icon), run: () => action.press() });
   }
   
@@ -48291,8 +48274,6 @@ function moreMenuRows() {
   if (libraryProfile && !libraryProfile.hidden) rows.push({ element: libraryProfile });
   rows.push('separator');
   rows.push({ label: 'New window', key: isMacPlatform ? '⌘N' : 'Ctrl+N', icon: moreIcon('window-restore'), run: () => send({ command: 'newWindow' }) });
-  
-  rows.push({ label: 'Full screen', key: isMacPlatform ? '' : 'F11', icon: moreIcon('expand'), run: () => send({ command: 'windowToggleFullscreen' }) });
   rows.push('separator', { label: 'About Leaftext', icon: moreIcon('leaf'), value: LEAF_VERSION ? `v${LEAF_VERSION}` : '', keepOpen: true, run: () => showAboutLeaftext() });
   return rows;
 }
@@ -48302,38 +48283,41 @@ function aboutLeaftextRows() {
   if (updateState.status === 'staged') rows.push({ label: 'Restart to update', icon: moreIcon('update'), title: `Restart to install v${updateState.version}`, run: () => send({ command: 'applyUpdate' }) });
   rows.push({ label: 'Licenses', icon: moreIcon('document'), run: () => send({ command: 'openNotices' }) });
   if (window.__leafHostAnswers?.('openJournal') !== false) rows.push({ label: 'Open the journal', icon: moreIcon('text'), title: 'What the app has printed, read-only, for a bug report', run: () => send({ command: 'openJournal' }) });
-  rows.push('separator', { label: 'Back', icon: moreIcon('back'), keepOpen: true, run: () => showReaderMore() });
+  rows.push('separator', { label: 'Back', icon: moreIcon('back'), keepOpen: true, run: () => showRailMore() });
   return rows;
 }
 function showAboutLeaftext() {
-  showCrumbMenu(readerMore, aboutLeaftextRows(), 'Licenses');
-  const anchor = readerMore.getBoundingClientRect();
-  leafPlaceFloating(crumbMenu, anchor.right - crumbMenu.offsetWidth, anchor.top - crumbMenu.offsetHeight - CRUMB_MENU_DROP);
+  showCrumbMenu(railMore, aboutLeaftextRows(), 'Licenses');
+  placeRailMoreMenu();
 }
 
-function toggleReaderMore() {
-  if (crumbMenuOwner === readerMore && !crumbMenu.hidden) {
+function placeRailMoreMenu() {
+  const anchor = railMore.getBoundingClientRect();
+  leafPlaceFloating(crumbMenu, anchor.right + CRUMB_MENU_DROP, anchor.bottom - crumbMenu.offsetHeight);
+}
+
+function toggleRailMore() {
+  if (crumbMenuOwner === railMore && !crumbMenu.hidden) {
     hideCrumbMenu();
     return;
   }
-  showReaderMore();
+  showRailMore();
 }
 
-function showReaderMore() {
-  showCrumbMenu(readerMore, moreMenuRows());
-  const anchor = readerMore.getBoundingClientRect();
-  leafPlaceFloating(crumbMenu, anchor.right - crumbMenu.offsetWidth, anchor.top - crumbMenu.offsetHeight - CRUMB_MENU_DROP);
+function showRailMore() {
+  showCrumbMenu(railMore, moreMenuRows());
+  placeRailMoreMenu();
 }
-if (readerMore) {
-  readerMore.addEventListener('pointerdown', (event) => {
+if (railMore) {
+  railMore.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
-    toggleReaderMore();
+    toggleRailMore();
   });
   
-  readerMore.addEventListener('click', (event) => {
-    if (event.detail === 0) toggleReaderMore();
+  railMore.addEventListener('click', (event) => {
+    if (event.detail === 0) toggleRailMore();
   });
 }
 
