@@ -9968,7 +9968,7 @@ if (window.__leafSite) {
   document.getElementById('appSync')?.remove();
   document.getElementById('libraryBrowse')?.remove();
   
-  for (const id of ['openButton', 'newButton', 'tabNewButton', 'paneDocumentsOpen']) {
+  for (const id of ['openButton', 'newButton', 'paneDocumentsOpen']) {
     const button = document.getElementById(id);
     if (button) button.remove();
   }
@@ -18596,7 +18596,7 @@ function applyGraphView() {
 }
 
 function readerViewsStand() {
-  return Boolean(activeDocumentPath() || activeWebTab() || consoleViewsEntry());
+  return Boolean(activeDocumentPath() || activeWebTab() || consoleViewsEntry() || savedChatTab());
 }
 
 function consoleViewsEntry() {
@@ -18612,19 +18612,24 @@ function consoleIdOf(entry) {
   return null;
 }
 function consoleViewsKey(entry) {
-  return entry ? `${consoleFrontId}|${entry.agent}|${Boolean(entry.chatHeldOff)}` : '';
+  
+  if (!entry) return savedChatTab() ? 'saved' : '';
+  return `${consoleFrontId}|${entry.agent}|${Boolean(entry.chatHeldOff)}`;
 }
 
 function syncConsoleViewsBar() {
   if (consoleViewsKey(consoleViewsEntry()) !== consoleViewsDrawn) renderReaderToolbar(readerViewsStand());
 }
 
-function renderConsoleViews(entry) {
+function renderConsoleViews(entry, saved = false) {
   consoleViewsDrawn = consoleViewsKey(entry);
+  const shown = Boolean(entry) || saved;
   const documentGroup = viewReadingButton?.parentElement;
-  if (documentGroup) documentGroup.hidden = Boolean(entry);
-  if (consoleViewsGroup) consoleViewsGroup.hidden = !entry;
-  readerToolbar.classList.toggle('is-console-views', Boolean(entry));
+  if (documentGroup) documentGroup.hidden = shown;
+  if (consoleViewsGroup) consoleViewsGroup.hidden = !shown;
+  readerToolbar.classList.toggle('is-console-views', shown);
+  
+  savedChatPage?.classList.toggle('has-console-views', saved);
   
   if (consoleViewsHolder !== entry) {
     for (const each of [consoleViewsHolder, entry]) {
@@ -18636,12 +18641,12 @@ function renderConsoleViews(entry) {
     }
     consoleViewsHolder = entry?.layer ? entry : null;
   }
-  if (!entry) return;
+  if (!shown) return;
   readerToolbar.classList.remove('has-open-tray');
   readerToolTrayTouchOpen = '';
   if (readerViewTools) readerViewTools.hidden = true;
   if (readerToolTray) readerToolTray.hidden = true;
-  const current = entry.chatHeldOff ? consoleTerminalButton : consoleChatButton;
+  const current = entry?.chatHeldOff ? consoleTerminalButton : consoleChatButton;
   for (const button of [consoleChatButton, consoleTerminalButton]) {
     if (!button) continue;
     const on = button === current;
@@ -18659,6 +18664,8 @@ for (const button of [consoleChatButton, consoleTerminalButton]) {
   button?.addEventListener('click', () => {
     const entry = consoleViewsEntry();
     if (entry) setConsoleChatHeldOff(consoleFrontId, entry, button === consoleTerminalButton);
+    
+    else if (button === consoleTerminalButton && savedChatTab()) startSavedChat({ toConsole: true });
   });
 }
 function webGraphAddress() {
@@ -18725,15 +18732,16 @@ function drawReaderStatus(view) {
 
 function renderReaderToolbar(viewsStand) {
   const consoleEntry = viewsStand ? consoleViewsEntry() : null;
+  const savedFront = Boolean(viewsStand && !consoleEntry && savedChatTab());
   
-  renderExportPdfAction(viewsStand && !activeWebTab() && !consoleEntry);
+  renderExportPdfAction(viewsStand && !activeWebTab() && !consoleEntry && !savedFront);
   if (!readerToolbar) return;
   readerToolbar.hidden = !viewsStand;
   document.body.classList.toggle('has-reader-toolbar', Boolean(viewsStand));
   if (viewGraphButton) viewGraphButton.hidden = false;
-  renderConsoleViews(consoleEntry);
-  if (consoleEntry || !viewsStand) drawReaderStatus(null);
-  if (consoleEntry) return;
+  renderConsoleViews(consoleEntry, savedFront);
+  if (consoleEntry || savedFront || !viewsStand) drawReaderStatus(null);
+  if (consoleEntry || savedFront) return;
   if (!viewsStand) {
     readerToolbar.classList.remove('has-open-tray');
     readerToolTrayTouchOpen = '';
@@ -21545,7 +21553,7 @@ function stepThroughTabs(step) {
   
   const drawn = (currentState.tabs || []).map((tab, index) => index).filter((index) => {
     const tab = currentState.tabs[index];
-    return !(tab.kind === 'chat' || (tab.kind === 'console' && consoleHoldsAgent(tab.webId)));
+    return !(tab.kind === 'chat' || tab.kind === 'console');
   });
   if (drawn.length > 0) {
     
@@ -22489,9 +22497,6 @@ function bringTabIntoView(tab) {
 const stripRightGroup = document.getElementById('stripBeside');
 const stripLeftGroup = document.getElementById('stripKeys');
 
-const tabNewButton = document.getElementById('tabNewButton');
-if (tabNewButton) tabNewButton.addEventListener('click', () => send({ command: 'newDocument' }));
-
 function columnStripUnder(clientX, clientY, from) {
   if (!splitOpen() || !(currentState && currentState.beside)) return null;
   for (const [element, side] of [
@@ -22749,14 +22754,15 @@ function setDirtyState(path, dirty) {
   updateEditingChrome();
 }
 
+
 function holdViewButtonsStill() {
   if (!readerToolbar) return;
-  const viewGroup = readerToolbar.querySelector('.reader-tool-group:not([hidden])');
-  if (!viewGroup) return;
-  const toolbarRect = readerToolbar.getBoundingClientRect();
-  const viewRect = viewGroup.getBoundingClientRect();
-  const trailingPadding = parseFloat(getComputedStyle(readerToolbar).paddingRight) || 0;
-  const value = `${Math.max(0, toolbarRect.right - viewRect.right - trailingPadding)}px`;
+  const gap = parseFloat(getComputedStyle(readerToolbar).columnGap) || 0;
+  let width = 0;
+  for (const button of [undoButton, redoButton, saveButton]) {
+    if (button && !button.hidden) width += button.getBoundingClientRect().width + gap;
+  }
+  const value = `${Math.max(0, width)}px`;
   if (readerToolbar.style.getPropertyValue('--reader-toolbar-edits') === value) return;
   readerToolbar.style.setProperty('--reader-toolbar-edits', value);
 }
@@ -43049,14 +43055,19 @@ if (libraryFootToggle && libraryFootPanel) {
   }
 }
 
-themeSheetOpen = registerPaneFootAction({
-  id: 'themeSheetOpen',
-  label: 'Themes',
-  icon: 'theme',
-  title: themeTooltip,
-  has: () => true,
-  press: () => openThemeSheet(),
-});
+const appThemeButton = document.getElementById('appThemeButton');
+if (paneRows && appThemeButton) {
+  themeSheetOpen = appThemeButton;
+  appThemeButton.addEventListener('click', () => openThemeSheet());
+} else {
+  themeSheetOpen = registerPaneFootAction({
+    id: 'themeSheetOpen',
+    label: 'Themes',
+    icon: 'theme',
+    has: () => true,
+    press: () => openThemeSheet(),
+  });
+}
 if (themeSheetOpen) {
   themeSheetOpen.setAttribute('aria-haspopup', 'dialog');
   updateThemeSelection();
@@ -45473,7 +45484,7 @@ function consoleStatusFields(record) {
   const agent = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity' }[record.agent];
   if (agent) fields.push({ field: 'agent', text: agent, agent: record.agent, notes: record.cost != null ? [`$${record.cost.toFixed(2)}`] : [] });
   else if (record.cost != null) fields.push({ field: 'cost', text: `$${record.cost.toFixed(2)}` });
-  if (record.folder || controls) fields.push({ field: 'folder', text: record.folder || 'Folder', path: record.folderPath });
+  
   if (record.account) fields.push({ field: 'account', text: record.account });
   if (record.model || controls) fields.push({ field: 'model', text: record.model ? consoleStatusShortModel(record.model) : 'Model', full: record.model || 'Model' });
   if (controls) {
@@ -45523,7 +45534,6 @@ function drawConsoleStatus(id, entry, reportedState) {
     const launchedAccount = field.field === 'launchAccount';
     const effort = field.field === 'effort';
     const context = field.field === 'context' && ['claude', 'codex', 'antigravity'].includes(record.agent);
-    if (field.field === 'folder' && ['claude', 'codex', 'antigravity'].includes(record.agent)) return consoleFolderButton(id, entry, field);
     const item = document.createElement(model || effort || context || account || launchedAccount ? 'button' : 'span');
     item.className = field.field === 'agent' ? 'console-status-field console-status-agent' : 'console-status-field';
     item.dataset.field = field.field;
@@ -45668,7 +45678,7 @@ function fitConsoleStatus(entry) {
   const strip = entry.status;
   if (!strip || strip.hidden) return;
   for (const item of strip.querySelectorAll('[data-field]')) item.hidden = false;
-  for (const selector of ['span[data-field="folder"]', '[data-field="cost"]', '[data-limit="weekly"]', '[data-field="limits"]', '[data-field="account"]', '[data-field="effort"]', 'button[data-field="folder"]']) {
+  for (const selector of ['[data-field="cost"]', '[data-limit="weekly"]', '[data-field="limits"]', '[data-field="account"]', '[data-field="effort"]']) {
     if (!(strip.clientWidth > 0) || strip.scrollWidth <= strip.clientWidth) return;
     for (const item of strip.querySelectorAll(selector)) item.hidden = true;
   }
@@ -51428,6 +51438,7 @@ function savedChatFollowsFront() {
   }
   
   const lit = shown ? `${savedChat.agent}:${savedChat.conversation}` : '';
+  syncConsoleViewsBar();
   if (lit === savedChatLit) return;
   savedChatLit = lit;
   drawConsoleRecents();
@@ -51511,7 +51522,19 @@ function savedChatComposer() {
     field.focus();
     send({ command: 'startDictation' });
   });
-  tools.appendChild(dictate);
+  const attach = consoleComposerButton('console-composer-tool', 'Attach a file', 'new');
+  const slash = consoleComposerButton('console-composer-tool', savedChat.agent === 'codex' ? 'Skills' : 'Commands and skills');
+  slash.textContent = savedChat.agent === 'codex' ? '$' : '/';
+  const more = consoleComposerButton('console-composer-tool console-composer-more', 'More', 'more');
+  const mode = consoleComposerButton('console-composer-mode', 'Change the permission mode');
+  mode.hidden = true;
+  for (const [button, press] of [[attach, 'attach'], [slash, 'slash'], [more, 'more'], [mode, 'mode']]) {
+    button.addEventListener('click', (event) => {
+      event?.stopPropagation?.();
+      startSavedChat({ press });
+    });
+  }
+  tools.append(attach, slash, dictate, more, mode);
   const submit = consoleComposerButton('console-composer-send', 'Send', 'forward-long');
   row.append(tools, submit);
   composer.append(words, row);
@@ -51538,10 +51561,15 @@ function savedChatComposer() {
 }
 
 
-function startSavedChat() {
-  if (savedChat.starting) return;
+function startSavedChat({ toConsole = false, press = '' } = {}) {
+  
+  if (savedChat.starting) {
+    if (toConsole && savedChatHandOver) savedChatHandOver.toConsole = true;
+    if (press && savedChatHandOver) savedChatHandOver.press = press;
+    return;
+  }
   savedChat.starting = true;
-  const started = { agent: savedChat.agent, conversation: savedChat.conversation, console: 0, tab: currentState?.active, until: 0, draft: savedChat.field?.value || '', held: '' };
+  const started = { agent: savedChat.agent, conversation: savedChat.conversation, console: 0, tab: currentState?.active, until: 0, draft: savedChat.field?.value || '', held: '', toConsole, press };
   savedChatHandOver = started;
   reopenConsoleRecent(started.agent, started.conversation, (answer) => {
     if (savedChatHandOver !== started) return;
@@ -51616,6 +51644,12 @@ function handSavedChatToPrompt(hand, now = Date.now()) {
     }
     savedChatFollowsFront();
     
+    if (hand.press) entry.composer[hand.press]?.click?.();
+    if (hand.toConsole) {
+      setConsoleChatHeldOff(hand.console, entry, true);
+      return true;
+    }
+    
     if (entry.chatView?.log) entry.chatView.log.scrollTop = entry.chatView.log.scrollHeight;
     if (typing) {
       field.focus();
@@ -51635,6 +51669,7 @@ function handSavedChatToPrompt(hand, now = Date.now()) {
   }
   
   savedChatFollowsFront();
+  if (hand.toConsole) setConsoleChatHeldOff(hand.console, entry, true);
   return true;
 }
 

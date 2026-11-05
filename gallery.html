@@ -6846,28 +6846,6 @@ body.frameless.is-fullscreen .startup-card {
   /* The shoulder above the tabs and nothing at the sides: the 16px that keeps the first and last tab off the zones either side is the group's, because the group is the box that scrolls. No bottom inset — the tabs have to reach the divider. */
   padding: var(--lt-space-4) 0 0;
 }
-/* The plus after the last tab: a quiet mark in the strip's own ink that wears the wash on a hover, as the design draws it. */
-.tab-new {
-  flex: none;
-  align-self: center;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-left: calc(-1 * var(--lt-space-12));
-  padding: 0;
-  border: 0;
-  border-radius: var(--lt-radius-md);
-  background: transparent;
-  color: var(--lt-muted-foreground);
-}
-@media (hover: hover) {
-  .tab-new:hover {
-    background: var(--lt-wash-hover);
-    color: var(--lt-foreground);
-  }
-}
 /* The strip and the header paint the page's own color, so a page scrolled up under them never shows through; the source view's page is the editor's color. */
 .tab-bar,
 .page-head {
@@ -9831,6 +9809,8 @@ body.library-resizing button {
 .console-status-ring-fill { stroke: var(--lt-primary-ink); }
 /* Over a console the bar stands only with Chat and Console in it. */
 .reader-column.is-under-console, .console-front .reader-toolbar:not(.is-console-views) { visibility: hidden; }
+/* No console stands on top: its tab keeps its marks and its drag in the markup, out of sight. Consoles are picked from the pane's chats. */
+.tab.console-tab { display: none; }
 .console-tab .tab-label { display: flex; align-items: center; gap: var(--lt-space-4); position: relative; }
 /* Its own box, because an ellipsis never draws on a bare run of text inside a flex label. */
 .console-tab-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -9960,6 +9940,8 @@ body.library-resizing button {
 /* A saved chat: its conversation with no program behind it, standing where the Library page stands while its tab is in front, and drawn inside with the live chat's own frame. */
 .saved-chat { grid-column: 2 / 4; grid-row: 1; z-index: 5; position: relative; box-sizing: border-box; overflow: hidden; background: var(--lt-markdown-background); border-left: var(--lt-stroke-1) solid transparent; border-right: var(--lt-stroke-1) solid transparent; border-bottom: var(--lt-stroke-1) solid transparent; border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius); }
 .saved-chat[hidden] { display: none; }
+/* Chat and Console stand over a saved chat too, so its box rises above the bar the way a live chat's does. */
+.saved-chat.has-console-views .console-chat { bottom: calc(var(--lt-space-8) + var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
 .library-shell.library-closed .saved-chat { margin-left: var(--reader-gutter); }
 .console-chat.is-above-status { bottom: calc(var(--lt-space-8) + var(--lt-space-24)); }
 /* While Chat and Console stand at a console's foot, the row is as tall as the bar, so the bar covers neither the terminal's last row nor the message box. */
@@ -22109,8 +22091,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="app-bar" style="position:static"><span class="app-bar-lead"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></span></div></div>
 </section>
 <section class="part">
-<header><h3>Tab strip</h3><code class="built">.tab</code><span class="built">dom.js, render-state.js, with a plus after the last tab (tab-new) that opens a new page</span></header>
-<div class="stage"><div class="tab-bar"><span class="tab tab-active"><button type="button" class="tab-label">A note.md</button><span class="tab-dirty-dot"></span><button type="button" class="tab-close" style="opacity:1"><span class="lt-icon lt-icon-tab-close"></span></button></span><span class="tab"><button type="button" class="tab-label">Another note.json</button></span><button type="button" class="tab-new"><span class="lt-icon lt-icon-new"></span></button></div></div>
+<header><h3>Tab strip</h3><code class="built">.tab</code><span class="built">dom.js, render-state.js</span></header>
+<div class="stage"><div class="tab-bar"><span class="tab tab-active"><button type="button" class="tab-label">A note.md</button><span class="tab-dirty-dot"></span><button type="button" class="tab-close" style="opacity:1"><span class="lt-icon lt-icon-tab-close"></span></button></span><span class="tab"><button type="button" class="tab-label">Another note.json</button></span></div></div>
 </section>
 <section class="part">
 <header><h3>Tab favorite heart</h3><code class="built">.tab-favorite</code><span class="built">render-state.js</span></header>

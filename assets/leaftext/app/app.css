@@ -6839,28 +6839,6 @@ body.frameless.is-fullscreen .startup-card {
   padding: var(--lt-space-4) 0 0;
 }
 
-.tab-new {
-  flex: none;
-  align-self: center;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-left: calc(-1 * var(--lt-space-12));
-  padding: 0;
-  border: 0;
-  border-radius: var(--lt-radius-md);
-  background: transparent;
-  color: var(--lt-muted-foreground);
-}
-@media (hover: hover) {
-  .tab-new:hover {
-    background: var(--lt-wash-hover);
-    color: var(--lt-foreground);
-  }
-}
-
 .tab-bar,
 .page-head {
   background: var(--lt-markdown-background);
@@ -9813,6 +9791,8 @@ body.library-resizing button {
 .console-status-ring-fill { stroke: var(--lt-primary-ink); }
 
 .reader-column.is-under-console, .console-front .reader-toolbar:not(.is-console-views) { visibility: hidden; }
+
+.tab.console-tab { display: none; }
 .console-tab .tab-label { display: flex; align-items: center; gap: var(--lt-space-4); position: relative; }
 
 .console-tab-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -9942,6 +9922,8 @@ body.library-resizing button {
 
 .saved-chat { grid-column: 2 / 4; grid-row: 1; z-index: 5; position: relative; box-sizing: border-box; overflow: hidden; background: var(--lt-markdown-background); border-left: var(--lt-stroke-1) solid transparent; border-right: var(--lt-stroke-1) solid transparent; border-bottom: var(--lt-stroke-1) solid transparent; border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius); }
 .saved-chat[hidden] { display: none; }
+
+.saved-chat.has-console-views .console-chat { bottom: calc(var(--lt-space-8) + var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
 .library-shell.library-closed .saved-chat { margin-left: var(--reader-gutter); }
 .console-chat.is-above-status { bottom: calc(var(--lt-space-8) + var(--lt-space-24)); }
 

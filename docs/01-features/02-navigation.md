@@ -167,6 +167,8 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 
 ### More
 
+Themes is not here: the palette at the app bar's right end, beside Sync, opens the [theme picker](06-themes.md#choose) whatever is in front, and its tooltip names the family and appearance you are on.
+
 The last press on the floating bar, at its right end, opens **More**: what you reach for now and then, sorted by what is in front of you. Every row is a press, and the keyboard walks them.
 
 | Row | When it stands | What it does |
@@ -174,7 +176,6 @@ The last press on the floating bar, at its right end, opens **More**: what you r
 | **Zoom** | A web page is in front | Minus, the level and plus; pressing the level goes back to actual size |
 | **Calendar** | A document is in front, inside a vault that has dated notes | Opens the [calendar](03-library.md#calendar) |
 | **Scheduled tasks** | An agent is in front and there are tasks | Opens the [scheduled tasks](03-library.md#scheduled-tasks) list |
-| **Themes** | Always | Opens the [theme picker](06-themes.md#choose); its tooltip names the family and appearance you are on |
 | **Grove** | Always | Opens [the Grove](09-progress.md), with your level bar in the row |
 | **New window** | Always | Opens a second window, and shows its key, `Ctrl+N` or `Cmd+N` |
 | **Full screen** | Always | Fills the screen, and shows its key |
