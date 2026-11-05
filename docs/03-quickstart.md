@@ -52,8 +52,9 @@ flowchart LR
 | Leaf mark | Returns to the home screen |
 | Library button | Opens and closes the [library pane](01-features/03-library.md) |
 | Back / Forward | Moves through document and scroll history |
-| Tab bar | Keeps multiple documents open; a [new document](01-features/07-editing.md#new-document) starts from **New** at the top of the library pane |
-| Open, Export | Open a file, and [write the page you are reading as a PDF, a picture, a web page with or without a separate assets folder, a Markdown note with its pictures beside it or an EPUB book](01-features/02-navigation.md#export-the-page). A folder's menu can [export the folder as a site](01-features/03-library.md#folders-and-the-space-around-them). There is no Settings button — every control stands where it applies, so [preferences](01-features/05-settings.md) are wherever they are used, and the palette that chooses a [theme](01-features/06-themes.md#choose) is at the foot of the library pane |
+| Vault picker | Names the vault and folder of whatever is in front, in the middle of the bar, and opens the [browse sheet](01-features/03-library.md#the-vault-picker) |
+| Tab bar | Keeps multiple documents open, on the page under the bar; a [new document](01-features/07-editing.md#new-document) starts from **New** at the top of the icon rail |
+| Page header: Open, Export | Names where the document in front sits, under the tabs, then opens a file and [writes the page you are reading as a PDF, a picture, a web page with or without a separate assets folder, a Markdown note with its pictures beside it or an EPUB book](01-features/02-navigation.md#export-the-page). A folder's menu can [export the folder as a site](01-features/03-library.md#folders-and-the-space-around-them). There is no Settings button — every control stands where it applies, so [preferences](01-features/05-settings.md) are wherever they are used, and the [theme](01-features/06-themes.md#choose) picker is a row of More on the floating bar |
 
 ### The page itself
 

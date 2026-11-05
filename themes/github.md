@@ -24,7 +24,7 @@
 | surface                                 | `#ffffff`                                      |
 | surface-elevated                        | `#ffffff`                                      |
 | surface-muted                           | `#f6f8fa`                                      |
-| surface-sunken                          | `#f6f8fa`                                      |
+| surface-sunken                          | `#eef1f4`                                      |
 | border                                  | `#d1d9e0`                                      |
 | border-strong                           | `#818b98`                                      |
 | shadow-ink                              | `#00000033`                                    |
@@ -69,7 +69,7 @@
 | markdown-alert-caution                  | `#d1242f`                                      |
 | markdown-badge-background               | `#f6f8fa`                                      |
 | markdown-badge-foreground               | `#25292e`                                      |
-| markdown-table-border                   | `#8a9097`                                      |
+| markdown-table-border                   | `#848b92`                                      |
 | markdown-thematic-break                 | `#d1d9e0b3`                                    |
 | markdown-math-inline-background         | `#f6f8fa`                                      |
 | markdown-keyboard-background            | `#ffffff`                                      |

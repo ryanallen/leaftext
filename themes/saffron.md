@@ -85,7 +85,7 @@ One hue, amber: every surface, border, heading and accent is a shade of it, and 
 | navigation-recent-border                | `#e7dfd4`                 |
 | navigation-recent-item-foreground       | `#282117`                 |
 | navigation-recent-item-hover-foreground | `#986313`                 |
-| focus-ring                              | `#c68118`                 |
+| focus-ring                              | `#ba7917`                 |
 | focus-selection-background              | `#f9e6cb`                 |
 | focus-selection-foreground              | `#282117`                 |
 | syntax-background                       | `#f8f6f2`                 |

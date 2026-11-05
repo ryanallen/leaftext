@@ -85,7 +85,7 @@ Black, white and gray only: every surface, border, heading and accent is a shade
 | navigation-recent-border                | `#e0e0e0`                   |
 | navigation-recent-item-foreground       | `#222222`                   |
 | navigation-recent-item-hover-foreground | `#6e6e6e`                   |
-| focus-ring                              | `#8f8f8f`                   |
+| focus-ring                              | `#888888`                   |
 | focus-selection-background              | `#e9e9e9`                   |
 | focus-selection-foreground              | `#222222`                   |
 | syntax-background                       | `#f6f6f6`                   |

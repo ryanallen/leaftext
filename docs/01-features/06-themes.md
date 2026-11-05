@@ -6,17 +6,19 @@ From the user side, themes are simple: open the theme picker, tap a family, pick
 
 ## Families
 
-Pick a family in the theme picker. Fifteen ship free and six more are earned with seeds in [the Grove](09-progress.md), listed in color order — the reds first, round through orange, yellow, green, blue and purple to rose, with the gray last; a family you have not earned yet stands in the picker dimmed, with its price in seeds, and pressing it opens that family in the Grove. Beside the cards stands a color bar running from white through each family's own main color to black: drag it, or focus it and use ↑ ↓ Home End, and the card under the thumb is marked and scrolled into view. A family goes on when the thumb rests on it, so a slow drag walks through the looks and a fast one lands where you let go; dragging into the white end sets the Light appearance and into the black end sets Dark, on the family last under the thumb. A family you have not earned has no place on the bar until you have it. A fresh install opens on [Random](#random) family with a [Daylight](#appearance) appearance; **Fern** is the fallback family if a saved choice can't be read. To see them rather than read them, open [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every family drawn on one page, in light and dark, along with every color, icon and part of the interface. Each family is also a plain Markdown file that opens with a screenshot of its own palette — browse those in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
+Pick a family in the theme picker. Eighteen ship free and six more are earned with seeds in [the Grove](09-progress.md), listed in color order — the reds first, round through orange, yellow, green, blue and purple to rose, with the gray last; a family you have not earned yet stands in the picker dimmed, with its price in seeds, and pressing it opens that family in the Grove. Beside the cards stands a color bar running from white through each family's own main color to black: drag it, or focus it and use ↑ ↓ Home End, and the card under the thumb is marked and scrolled into view. A family goes on when the thumb rests on it, so a slow drag walks through the looks and a fast one lands where you let go; dragging into the white end sets the Light appearance and into the black end sets Dark, on the family last under the thumb. A family you have not earned has no place on the bar until you have it. A fresh install opens on [Random](#random) family with a [Daylight](#appearance) appearance; **Fern** is the fallback family if a saved choice can't be read. To see them rather than read them, open [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every family drawn on one page, in light and dark, along with every color, icon and part of the interface. Each family is also a plain Markdown file that opens with a screenshot of its own palette — browse those in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
 
 | Family | Palette | Icons |
 | --- | --- | --- |
 | [Amaranth](https://github.com/ryanallen/leaftext/blob/main/themes/amaranth.md) | Clean light/dark base ramps with a violet accent | Heroicons |
 | [Arabica](https://github.com/ryanallen/leaftext/blob/main/themes/arabica.md) | A coffee palette — creamy latte light, dark-roast espresso dark — with an AnuPpuccin mauve accent | Remix |
+| [Artemisia](https://github.com/ryanallen/leaftext/blob/main/themes/artemisia.md) | Structured silver with graphite controls — the one mid-tone family, set in IBM Plex Sans | Feather |
 | [Bloodleaf](https://github.com/ryanallen/leaftext/blob/main/themes/bloodleaf.md) | Blood-red veins on a white ground — an over-exposed white light with a red accent and a sky-blue second hue, against a blue-black night dark | Remix |
+| [Bluebell](https://github.com/ryanallen/leaftext/blob/main/themes/bluebell.md) | Deep blue with a periwinkle accent, Manrope headings over Sora | Phosphor |
 | [Camellia](https://github.com/ryanallen/leaftext/blob/main/themes/camellia.md) | A rose palette — blush paper and wine ink light, deep plum dark — with a camellia-pink accent and Cormorant Garamond headings | Phosphor |
+| [Copperleaf](https://github.com/ryanallen/leaftext/blob/main/themes/copperleaf.md) | Warm graphite with a copper accent and Fraunces headings | Heroicons |
 | [Eucalyptus](https://github.com/ryanallen/leaftext/blob/main/themes/eucalyptus.md) | A teal palette — cool blue-green paper light, near-black blue-green dark — with a eucalyptus-teal accent, set in Lato | Remix |
 | [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md) | **Fallback family.** An Amaranth-based palette with a fern-green cast | Tabler |
-| [Foxglove](https://github.com/ryanallen/leaftext/blob/main/themes/foxglove.md) | A printed-report palette — warm paper light, the darkest ground in the picker for dark — with a violet accent and Instrument Serif headings | Feather |
 | [Ginger](https://github.com/ryanallen/leaftext/blob/main/themes/ginger.md) | A warm palette — cream light, cool slate dark — with a ginger-orange accent | Tabler |
 | [GitHub](https://github.com/ryanallen/leaftext/blob/main/themes/github.md) | GitHub's light/dark palette, in its own system-font stack | Feather |
 | [Goldenrod](https://github.com/ryanallen/leaftext/blob/main/themes/goldenrod.md) | A stark black-and-gold palette — honey-on-white light, near-black dark — with a golden-yellow accent | Lucide |
@@ -25,8 +27,13 @@ Pick a family in the theme picker. Fifteen ship free and six more are earned wit
 | [Nightshade](https://github.com/ryanallen/leaftext/blob/main/themes/nightshade.md) | The classic Dracula palette (light "Alucard" and dark) | Phosphor |
 | [Pippin](https://github.com/ryanallen/leaftext/blob/main/themes/pippin.md) | A crisp, macOS-style palette — clean neutral grays with a system-blue accent | Lucide |
 | [Sage](https://github.com/ryanallen/leaftext/blob/main/themes/sage.md) | A neutral grayscale palette with a muted-blue (Minimal-style) accent | Leaftext |
+| [Spearmint](https://github.com/ryanallen/leaftext/blob/main/themes/spearmint.md) | Ceramic dark with a mint accent, Inter headings over Lexend | Tabler |
 
-A sixteenth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
+A nineteenth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
+
+In every family the icon rail down the window's left edge, the side pane beside it and the page are three different tones, so the three read apart at a glance in light and dark alike.
+
+**Foxglove is gone.** A window that was wearing it opens on Fern in the same appearance, and Random no longer draws it.
 
 ## Previews
 
@@ -40,13 +47,25 @@ Every family rendering the same reference document, split diagonally so the ligh
 
 ![Arabica — the same document in the light and dark variants](../../imgs/themes/arabica.png)
 
+### Artemisia
+
+![Artemisia — the same document in the light and dark variants](../../imgs/themes/artemisia.png)
+
 ### Bloodleaf
 
 ![Bloodleaf — the same document in the light and dark variants](../../imgs/themes/bloodleaf.png)
 
+### Bluebell
+
+![Bluebell — the same document in the light and dark variants](../../imgs/themes/bluebell.png)
+
 ### Camellia
 
 ![Camellia — the same document in the light and dark variants](../../imgs/themes/camellia.png)
+
+### Copperleaf
+
+![Copperleaf — the same document in the light and dark variants](../../imgs/themes/copperleaf.png)
 
 ### Eucalyptus
 
@@ -55,10 +74,6 @@ Every family rendering the same reference document, split diagonally so the ligh
 ### Fern
 
 ![Fern — the same document in the light and dark variants](../../imgs/themes/fern.png)
-
-### Foxglove
-
-![Foxglove — the same document in the light and dark variants](../../imgs/themes/foxglove.png)
 
 ### Ginger
 
@@ -91,6 +106,10 @@ Every family rendering the same reference document, split diagonally so the ligh
 ### Sage
 
 ![Sage — the same document in the light and dark variants](../../imgs/themes/sage.png)
+
+### Spearmint
+
+![Spearmint — the same document in the light and dark variants](../../imgs/themes/spearmint.png)
 
 ### Earned families
 
@@ -152,7 +171,7 @@ flowchart LR
 
 ![The theme picker open as a bottom sheet: the appearance control across the top, then a scrolling grid of family cards, each wearing its own paper, ink, five-swatch strip and heading font, with the current family ringed and ticked](../../imgs/theme-picker.png)
 
-Press the palette at the foot of the [library](03-library.md#browsing) pane to slide up the theme picker. It lists every family as a preview card — plus [Random](#random) at the end — with an Appearance control (System / Light / Dark / Daylight) at the top. Each card wears its own theme: the theme's paper and ink, a strip of five swatches (background, text, brand, and two code colors), and the theme's heading font, all following the current appearance. Changes apply immediately, to the window the picker was opened in and no other, so two windows can wear two themes and be told apart at a glance — family and appearance both. A tab pulled out into its own window opens wearing what its window wore, Random's draw included, and every window comes back in its own theme after a restart. The first window's is saved as `theme_family` and `theme_mode` in `settings.json`, and every other window's beside its tabs (see [Settings](05-settings.md#theme)). Close the picker with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards — the same [bottom sheet](../GLOSSARY.md#bottom-sheet) the glossary uses.
+Press **More** at the right end of the floating bar and choose **Themes** to slide up the theme picker. It lists every family as a preview card — plus [Random](#random) at the end — with an Appearance control (System / Light / Dark / Daylight) at the top. Each card wears its own theme: the theme's paper and ink, a strip of five swatches (background, text, brand, and two code colors), and the theme's heading font, all following the current appearance. Changes apply immediately, to the window the picker was opened in and no other, so two windows can wear two themes and be told apart at a glance — family and appearance both. A tab pulled out into its own window opens wearing what its window wore, Random's draw included, and every window comes back in its own theme after a restart. The first window's is saved as `theme_family` and `theme_mode` in `settings.json`, and every other window's beside its tabs (see [Settings](05-settings.md#theme)). Close the picker with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards — the same [bottom sheet](../GLOSSARY.md#bottom-sheet) the glossary uses.
 
 ## Fonts
 

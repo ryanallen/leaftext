@@ -59,6 +59,14 @@ console.error = (...args) => {
 
 
 
+function appBarHeightPx() {
+  const style = getComputedStyle(document.body);
+  return (Number.parseFloat(style.getPropertyValue('--app-bar-row')) || 0) + (Number.parseFloat(style.getPropertyValue('--app-tab-row')) || 0);
+}
+
+
+
+
 let flowPickerAdd = null;
 let flowPickerName = '';
 
@@ -367,10 +375,9 @@ function releaseShellWidth() {
 let libraryOutlineOpen = false;
 
 const SIDEBAR_FOLDS_KEY = 'leaftext.sidebarFolds';
-const sidebarFolds = { outline: false, chats: false };
+const sidebarFolds = { chats: false };
 try {
   const held = JSON.parse(window.localStorage?.getItem(SIDEBAR_FOLDS_KEY) || '{}');
-  sidebarFolds.outline = held?.outline === true;
   sidebarFolds.chats = held?.chats === true;
 } catch {
   
@@ -388,35 +395,7 @@ let changeRepoRevealed = false;
 
 const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', lastBesideBounds: '', booted: false,
   bar: null, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0, coverStanding: false,
-  metrics: null, image: '', held: null, railTab: null, palettes: new Map(), paletteGenerations: new Map(), liveScroll: 0 };
-function pruneWebTabPalettes(state) {
-  const ids = new Set((state.tabs || []).filter(tab => tab.kind === 'web').map(tab => tab.webId));
-  for (const id of webAddressState.palettes.keys()) if (!ids.has(id)) webAddressState.palettes.delete(id);
-  for (const id of webAddressState.paletteGenerations.keys()) if (!ids.has(id)) webAddressState.paletteGenerations.delete(id);
-}
-function webTabPaletteStyle(tab, active) {
-  if (!active) return '';
-  const palette = webAddressState.palettes.get(tab.webId);
-  const fill = palette ? palette.fill : 'var(--lt-background)';
-  const ink = palette ? palette.ink : 'var(--lt-foreground)';
-  return ` style="--tab-page-fill:${fill};--tab-page-ink:${ink}"`;
-}
-window.leafWebPalette = payload => {
-  if (!payload || !Number.isSafeInteger(payload.id) || payload.id <= 0 || !Number.isSafeInteger(payload.generation)) return;
-  const tab = currentState && (currentState.tabs || []).find(one => one.kind === 'web' && one.webId === payload.id);
-  if (!tab) return;
-  const last = webAddressState.paletteGenerations.get(payload.id) || 0;
-  if (payload.generation < last) return;
-  webAddressState.paletteGenerations.set(payload.id, payload.generation);
-  const fill = pageCanvasColor(payload.readings);
-  if (fill) {
-    const ink = colorContrast(fill, '#000') >= colorContrast(fill, '#fff') ? '#000' : '#fff';
-    webAddressState.palettes.set(payload.id, {fill, ink});
-  } else {
-    webAddressState.palettes.delete(payload.id);
-  }
-  if (activeWebTab()?.webId === payload.id) renderTabs(currentState);
-};
+  metrics: null, image: '', held: null, railTab: null, liveScroll: 0 };
 function activeWebTab() {
   const tab = currentState && currentState.tabs && currentState.tabs[currentState.active];
   return tab && tab.kind === 'web' ? tab : null;
@@ -567,9 +546,8 @@ function scheduleWebSurfaceBounds() {
     const left = cell.left + parseFloat(cardStyle.borderLeftWidth || 0);
     const bottom = cell.bottom - parseFloat(cardStyle.borderBottomWidth || 0);
     const cardRight = cell.right - parseFloat(cardStyle.borderRightWidth || 0);
-    const bar = appBar.getBoundingClientRect();
     const ratio = window.devicePixelRatio || 1;
-    const top = Math.max(cell.top + parseFloat(cardStyle.borderTopWidth || 0), bar.bottom);
+    const top = Math.max(cell.top + parseFloat(cardStyle.borderTopWidth || 0), appChromeBottom());
     const addressBar = webAddressState.bar;
     if (addressBar && tab) {
       const surface = appSurface.getBoundingClientRect();
@@ -583,7 +561,7 @@ function scheduleWebSurfaceBounds() {
     const radius = Math.max(0, parseFloat(cardStyle.borderBottomLeftRadius || 0));
     
     const topRadius = Math.max(0, parseFloat(cardStyle.getPropertyValue('--lt-radius-md')) || 0);
-    sendBesideWebBounds(ratio, bar.bottom);
+    sendBesideWebBounds(ratio, appChromeBottom());
     const holes = tab ? webSurfaceHoles({ left, top, right, bottom }, ratio) : null;
     const bounds = {
       command: 'webSurfaceBounds', x: Math.max(0, Math.round(left * ratio)),
@@ -779,13 +757,18 @@ function drawWebMinimap() {
   }, {passive:false});
   updateWebMinimap();
 }
+
+function appChromeBottom() {
+  const bar = appBar.getBoundingClientRect().bottom;
+  return tabBar ? Math.max(bar, tabBar.getBoundingClientRect().bottom) : bar;
+}
 function updateWebMinimap() {
   const metrics = webAddressState.metrics;
   const rail = currentMinimap();
   if (!metrics || !rail || !activeWebTab()) return;
   const track = rail.querySelector('.document-minimap-track');
   const content = rail.querySelector('.document-minimap-content');
-  const height = Math.max(1, app.getBoundingClientRect().height - appBar.getBoundingClientRect().height);
+  const height = Math.max(1, app.getBoundingClientRect().bottom - appChromeBottom());
   track.style.height = height + 'px';
   const scale = Math.max(1, content.getBoundingClientRect().width) / metrics.width;
   placeMinimapViewport(rail, {scaledDocumentHeight:metrics.height*scale, scrollTop:metrics.scroll,
@@ -9981,28 +9964,28 @@ if (window.__leafSite) {
   const historyActions = document.querySelector('.history-actions');
   if (historyActions) historyActions.remove();
   
-  for (const id of ['librarySyncButton']) {
-    const button = document.getElementById(id);
-    if (button) button.remove();
-  }
+  document.getElementById('appVaultPicker')?.remove();
+  document.getElementById('appSync')?.remove();
+  document.getElementById('libraryBrowse')?.remove();
   
-  for (const id of ['openButton', 'newButton']) {
+  for (const id of ['openButton', 'newButton', 'tabNewButton', 'paneDocumentsOpen']) {
     const button = document.getElementById(id);
     if (button) button.remove();
   }
   
   document.getElementById('libraryNav')?.remove();
+  document.getElementById('appRail')?.remove();
+  
+  document.getElementById('readerMore')?.remove();
 } else {
   
   document.getElementById('libraryCrumbs')?.remove();
   document.getElementById('libraryPane')?.classList.add('has-nav');
   
+  if (!window.__leafEmbedded) document.getElementById('appSurface')?.classList.add('has-app-rail');
+  
   const grove = document.getElementById('libraryProfile');
-  const rows = document.getElementById('libraryNav');
-  if (grove && rows) {
-    grove.classList.add('library-nav-row', 'is-row');
-    rows.append(grove);
-  }
+  if (grove) grove.classList.add('library-nav-row', 'is-row');
 }
 
 if (window.__leafEmbedded) document.body.classList.add('is-embedded');
@@ -14743,7 +14726,8 @@ function clampOpenPaneWidth(width) {
 }
 
 function openPaneFloor(width) {
-  return Math.max(width, appBarLeadWidth());
+  
+  return Math.max(width, appBarLeadWidth() - appRailWidth());
 }
 
 
@@ -14760,7 +14744,7 @@ if (libraryWidth === DEFAULT_PANE_WIDTH) {
 }
 
 function libraryTooNarrow() {
-  return leafShellWidth() < DEFAULT_PANE_WIDTH + MIN_READER_WIDTH;
+  return (!!narrowWindowQuery && narrowWindowQuery.matches) || leafShellWidth() < DEFAULT_PANE_WIDTH + MIN_READER_WIDTH;
 }
 function libraryIsClosed() {
   return libraryUserClosed || libraryTooNarrow();
@@ -14795,9 +14779,15 @@ function shellTrack(paneWidth, minimapColumn, besideMinimapColumn) {
   return `${paneWidth} minmax(0, ${shares.left}fr) ${leftRail} var(--reader-split-track) minmax(0, ${shares.right}fr) ${rightRail} var(--reader-gutter)`;
 }
 
+const APP_RAIL_WIDTH = 48;
+function appRailWidth() {
+  return appSurface.classList.contains('has-app-rail') ? APP_RAIL_WIDTH : 0;
+}
+
 function writePaneWidth(width) {
   libraryShell.style.setProperty('grid-template-columns', shellTrack(`${window.__leafEmbedded ? 0 : width}px`, drawnMinimapColumn, drawnBesideMinimapColumn));
-  appBar.style.setProperty('--library-rail-width', `${width}px`);
+  
+  appBar.style.setProperty('--library-rail-width', `${width + appRailWidth()}px`);
   writeStripShares();
 }
 function writeRestingPaneWidth() {
@@ -14823,6 +14813,8 @@ function applyPaneLayout(holdRail, holdRefit) {
   refitSplit();
   
   scheduleCrumbFit();
+  
+  drawRailPressed();
 }
 
 const LIBRARY_BOUNCE_PX = 16;
@@ -14972,6 +14964,14 @@ function toggleLibrary() {
   persistLibraryLayout();
 }
 libraryOpen.addEventListener('click', toggleLibrary);
+
+function closeLibrarySheetOnPressElsewhere(event) {
+  if (!librarySheetOpen) return;
+  const target = event.target;
+  if (libraryPane.contains(target) || libraryOpen.contains(target) || crumbMenu.contains(target) || contextMenu.contains(target)) return;
+  closeLibrarySheet();
+}
+window.addEventListener('pointerdown', closeLibrarySheetOnPressElsewhere);
 
 let dividerDrag = null;
 
@@ -15215,7 +15215,11 @@ function revealSelectedInLibrary() {
 
 function followFileInLibrary(path, focus, forceRefresh) {
   
-  if (path && path !== librarySelectedPath) clearLibraryPicks();
+  if (path && path !== librarySelectedPath) {
+    clearLibraryPicks();
+    noteFrontItemChanged();
+  }
+  const changedItem = (path || null) !== librarySelectedPath;
   librarySelectedPath = path || null;
   
   libraryOutlineOpen = !!path || !!activeWebTab();
@@ -15225,6 +15229,8 @@ function followFileInLibrary(path, focus, forceRefresh) {
   
   if (graphViewOpen) graphSetActive(librarySelectedPath, focus, forceRefresh);
   renderLibrary();
+  
+  if (changedItem && consoleFrontId === null) paneFollowsFront();
 }
 
 function libraryParentCrumb() {
@@ -15271,6 +15277,7 @@ function setLibraryFolder(path) {
   libraryProjectPath = path || '';
   
   paneSentSomewhere = true;
+  noteFolderBrowsed();
   persistLibraryState();
   send({ command: 'getFolder', path: libraryProjectPath });
 }
@@ -15361,6 +15368,7 @@ function bindLibraryFileRow(button) {
     send({ command: 'openRecent', path: button.dataset.openPath });
     
     closeLibrarySheet();
+    closeLibraryBrowse();
   });
 }
 
@@ -15622,6 +15630,10 @@ const previousRemoteByVault = new Map();
 let cloudFolders = null;
 
 let cloneRevealed = false;
+
+function setCrumbMenuOwner(button) {
+  crumbMenuOwner = button;
+}
 function hideCrumbMenu() {
   forgetCloudRecoveryMenu();
   if (crumbMenu.hidden) return;
@@ -15893,15 +15905,7 @@ function openCrumbList(button, items) {
   toggleCrumbMenu(button, items);
 }
 
-function showCrumbMenu(button, items, focusLabel, above) {
-  forgetCloudRecoveryMenu();
-  
-  const reopening = crumbMenuOwner === button && !crumbMenu.hidden;
-  if (!reopening) hideCrumbMenu();
-  if (!items.length) return;
-  crumbMenuOwner = button;
-  crumbMenuHoldsForm = items.some((entry) => entry && entry.form === true);
-  crumbMenu.textContent = '';
+function drawCrumbEntries(box, items, focusLabel, close) {
   let firstFocusable = null;
   let requestedFocus = null;
   for (const entry of items) {
@@ -15909,14 +15913,14 @@ function showCrumbMenu(button, items, focusLabel, above) {
       const separator = document.createElement('div');
       separator.className = 'context-menu-separator';
       separator.setAttribute('role', 'separator');
-      crumbMenu.appendChild(separator);
+      box.appendChild(separator);
       continue;
     }
     if (entry.heading) {
       const heading = document.createElement('div');
       heading.className = 'crumb-menu-heading';
       heading.textContent = entry.heading;
-      crumbMenu.appendChild(heading);
+      box.appendChild(heading);
       continue;
     }
     
@@ -15924,7 +15928,7 @@ function showCrumbMenu(button, items, focusLabel, above) {
       const note = document.createElement('div');
       note.className = entry.danger ? 'crumb-menu-note is-danger' : 'crumb-menu-note';
       note.textContent = entry.note;
-      crumbMenu.appendChild(note);
+      box.appendChild(note);
       continue;
     }
     if (entry.input !== undefined) {
@@ -15954,23 +15958,32 @@ function showCrumbMenu(button, items, focusLabel, above) {
           if (entry.onEnter) entry.onEnter();
           else {
             commit();
-            hideCrumbMenu();
+            close();
           }
         } else if (event.key === 'Escape') {
           event.preventDefault();
           settled = true;
           if (entry.onEscape) entry.onEscape();
-          else hideCrumbMenu();
+          else close();
         }
       });
       
       if (entry.commit && entry.commitOnBlur !== false) field.addEventListener('blur', commit);
-      crumbMenu.appendChild(field);
+      box.appendChild(field);
       firstFocusable = firstFocusable || field;
       if (entry.placeholder === focusLabel) requestedFocus = field;
       continue;
     }
     
+    if (entry.element) {
+      const row = document.createElement('div');
+      row.className = 'crumb-menu-row';
+      row.appendChild(entry.element);
+      row.addEventListener('click', () => close());
+      box.appendChild(row);
+      firstFocusable = firstFocusable || entry.element;
+      continue;
+    }
     if (entry.buttons) {
       const bar = document.createElement('div');
       bar.className = 'crumb-menu-actions';
@@ -15987,20 +16000,20 @@ function showCrumbMenu(button, items, focusLabel, above) {
           if (event.button !== 0) return;
           event.stopPropagation();
           event.preventDefault();
-          if (!button.keepOpen) hideCrumbMenu();
+          if (!button.keepOpen) close();
           button.run();
         });
         action.addEventListener('keydown', (event) => {
           if (event.key !== 'Enter' && event.key !== ' ') return;
           event.stopPropagation();
           event.preventDefault();
-          if (!button.keepOpen) hideCrumbMenu();
+          if (!button.keepOpen) close();
           button.run();
         });
         bar.appendChild(action);
         firstFocusable = firstFocusable || action;
       }
-      crumbMenu.appendChild(bar);
+      box.appendChild(bar);
       continue;
     }
     const row = document.createElement('div');
@@ -16018,6 +16031,13 @@ function showCrumbMenu(button, items, focusLabel, above) {
     
     item.innerHTML = `${entry.icon || ''}<span class="crumb-menu-label"></span>${holds || (entry.switch ? '<span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span>' : (entry.selected ? MENU_CHECK_SVG : ''))}`;
     item.querySelector('.crumb-menu-label').textContent = entry.label;
+    
+    if (entry.key) {
+      const key = document.createElement('span');
+      key.className = 'context-menu-key';
+      key.textContent = entry.key;
+      item.appendChild(key);
+    }
     if (holds) {
       item.querySelector('.crumb-menu-value').textContent = entry.value;
       item.setAttribute('aria-haspopup', 'menu');
@@ -16027,7 +16047,7 @@ function showCrumbMenu(button, items, focusLabel, above) {
     
     const runEntry = () => {
       
-      if (!entry.keepOpen) hideCrumbMenu();
+      if (!entry.keepOpen) close();
       entry.run();
     };
     item.addEventListener('pointerdown', (event) => {
@@ -16061,10 +16081,23 @@ function showCrumbMenu(button, items, focusLabel, above) {
       });
       row.appendChild(edit);
     }
-    crumbMenu.appendChild(row);
+    box.appendChild(row);
     firstFocusable = firstFocusable || item;
     if (entry.label === focusLabel) requestedFocus = item;
   }
+  return { firstFocusable, requestedFocus };
+}
+
+function showCrumbMenu(button, items, focusLabel, above) {
+  forgetCloudRecoveryMenu();
+  
+  const reopening = crumbMenuOwner === button && !crumbMenu.hidden;
+  if (!reopening) hideCrumbMenu();
+  if (!items.length) return;
+  crumbMenuOwner = button;
+  crumbMenuHoldsForm = items.some((entry) => entry && entry.form === true);
+  crumbMenu.textContent = '';
+  const { firstFocusable, requestedFocus } = drawCrumbEntries(crumbMenu, items, focusLabel, hideCrumbMenu);
   button.setAttribute('aria-expanded', 'true');
   
   crumbMenu.classList.toggle('is-bridged', button.classList.contains('library-vault-switch'));
@@ -16075,7 +16108,9 @@ function showCrumbMenu(button, items, focusLabel, above) {
   const anchor = button.getBoundingClientRect();
   const room = above ? anchor.top - leafAppRect().top : window.innerHeight - anchor.bottom;
   crumbMenu.style.maxHeight = browsing ? `${Math.max(0, room - CRUMB_MENU_DROP - LEAF_FLOAT_MARGIN)}px` : '';
-  leafPlaceFloating(crumbMenu, anchor.left, anchor.bottom + CRUMB_MENU_DROP);
+  
+  if (button.classList.contains('app-rail-button')) leafPlaceFloating(crumbMenu, anchor.right + CRUMB_MENU_DROP, anchor.top);
+  else leafPlaceFloating(crumbMenu, anchor.left, anchor.bottom + CRUMB_MENU_DROP);
   
   if (requestedFocus || (firstFocusable && !reopening)) leafFocusForKeyboard(requestedFocus || firstFocusable);
 }
@@ -16849,7 +16884,9 @@ function renderVaultSyncButton() {
   const changed = repo ? repo.changed || 0 : 0;
   const ahead = repo ? repo.ahead || 0 : 0;
   const amount = changed > 0 ? `${changed} ${changed === 1 ? 'file' : 'files'}` : `${ahead} ${ahead === 1 ? 'commit' : 'commits'}`;
-  if (count) count.textContent = spinning ? '' : stopped ? `Stopped · ${amount}` : amount;
+  
+  const going = syncProgress ? `Syncing · ${syncProgress.percent}%` : 'Syncing';
+  if (count) count.textContent = spinning ? going : stopped ? `Stopped · ${amount}` : amount;
   const destination = repo && repo.remote ? repo.remote : 'GitHub';
   const summary = `${changed ? `${changed} changed ${changed === 1 ? 'file' : 'files'}` : 'No changed files'}; ${ahead} ${ahead === 1 ? 'commit' : 'commits'} to send to ${destination}.`;
   const label = spinning
@@ -16860,6 +16897,8 @@ function renderVaultSyncButton() {
   librarySyncButton.title = label;
   librarySyncButton.setAttribute('aria-label', label);
   renderVaultSyncProgress(spinning);
+  
+  redrawLibraryMenu();
 }
 
 function renderVaultSyncProgress(spinning) {
@@ -17007,7 +17046,7 @@ let libraryOutlineWindowEnd = -1;
 
 function libraryOutlineShowing() {
   
-  if (libraryOutlineInSidebar()) return !sidebarFolds.outline && sidebarOutlineFront() && readDocumentOutlineRows().length > 0;
+  if (libraryOutlineInSidebar()) return sidebarOutlineFront() && readDocumentOutlineRows().length > 0;
   return libraryOutlineOpen && readDocumentOutlineRows().length > 0;
 }
 
@@ -18469,6 +18508,8 @@ window.leafOutsideDrop = (drop) => {
 
 
 
+
+var pageHeadPath = document.getElementById('pageHeadPath');
 let graphData = null; 
 let graphRequested = false; 
 let graphScene = null; 
@@ -18606,7 +18647,10 @@ function renderConsoleViews(entry) {
     const on = button === current;
     button.setAttribute('aria-pressed', String(on));
     button.classList.toggle('is-active', on);
-    if (on) consoleViewsGroup.style.setProperty('--reader-tool-chip-x', `${Math.round(button.offsetLeft)}px`);
+    if (on) {
+      consoleViewsGroup.style.setProperty('--reader-tool-chip-x', `${Math.round(button.offsetLeft)}px`);
+      consoleViewsGroup.style.setProperty('--reader-tool-chip-w', `${Math.round(button.offsetWidth)}px`);
+    }
   }
   syncReaderToolDividerState();
   coverLivePageWithReaderToolbar();
@@ -18635,6 +18679,49 @@ function renderExportPdfAction(hasDocument) {
   exportPdfButton.hidden = !hasDocument || codeViewActive || graphViewOpen;
   if (wasHidden !== exportPdfButton.hidden) refitAppBar();
 }
+var readerStatus = document.getElementById('readerStatus');
+var readerStatusView = document.getElementById('readerStatusView');
+var readerStatusName = document.getElementById('readerStatusName');
+const READER_STATUS_VIEWS = { reading: 'Reading view', code: 'Source view', graph: 'Graph view' };
+
+function drawPageHead() {
+  const path = pageHeadPath;
+  if (!path) return;
+  const web = activeWebTab();
+  const tab = currentState?.tabs?.[currentState.active];
+  const file = !web && tab && tab.path && !consoleViewsEntry() ? String(tab.path) : '';
+  let words = [];
+  if (web) {
+    words = [web.url || ''];
+  } else if (file) {
+    
+    const parts = file.split(/[\\/]/).filter(Boolean);
+    const vault = vaultForPath(file);
+    if (vault) {
+      const below = vaultPathKey(file).slice(vaultPathKey(vault.rootPath).length).split('/').filter(Boolean).length;
+      words = [vault.name, ...parts.slice(parts.length - below)];
+    } else {
+      words = parts.slice(-2);
+    }
+  } else if (typeof libraryRowWords === 'function') {
+    words = activeVaultId ? [libraryRootLabel(), ...libraryChain.map((link) => link.name)] : [libraryRowWords().short];
+  }
+  const line = words.filter(Boolean).join(' / ');
+  if (path.textContent !== line) path.textContent = line;
+  path.title = file || line;
+}
+
+function drawReaderStatus(view) {
+  drawPageHead();
+  if (!readerStatus) return;
+  const tab = view ? currentState?.tabs?.[currentState.active] : null;
+  const name = tab ? String(tab.path || '').split(/[\\/]/).pop() || String(tab.title || '') : '';
+  readerStatus.hidden = !tab;
+  readerToolbar?.classList.toggle('is-over-status', Boolean(tab));
+  if (!tab) return;
+  readerStatusView.textContent = READER_STATUS_VIEWS[view] || '';
+  readerStatusName.textContent = name;
+}
 
 function renderReaderToolbar(viewsStand) {
   const consoleEntry = viewsStand ? consoleViewsEntry() : null;
@@ -18645,6 +18732,7 @@ function renderReaderToolbar(viewsStand) {
   document.body.classList.toggle('has-reader-toolbar', Boolean(viewsStand));
   if (viewGraphButton) viewGraphButton.hidden = false;
   renderConsoleViews(consoleEntry);
+  if (consoleEntry || !viewsStand) drawReaderStatus(null);
   if (consoleEntry) return;
   if (!viewsStand) {
     readerToolbar.classList.remove('has-open-tray');
@@ -18669,8 +18757,10 @@ function renderReaderToolbar(viewsStand) {
   );
   if (activeButton && activeButton.parentElement) {
     activeButton.parentElement.style.setProperty('--reader-tool-chip-x', `${Math.round(activeButton.offsetLeft)}px`);
+    activeButton.parentElement.style.setProperty('--reader-tool-chip-w', `${Math.round(activeButton.offsetWidth)}px`);
   }
   renderViewTools(current);
+  drawReaderStatus(current);
   syncReaderToolTrayState();
   syncReaderToolDividerState();
   coverLivePageWithReaderToolbar();
@@ -20939,7 +21029,7 @@ window.setInterval(() => {
 initializeMinimapState();
 const READER_SCROLL_SETTLE_MS = 120;
 
-const READER_CONTENT_TOP_GAP = 88;
+const READER_CONTENT_TOP_GAP = 156;
 const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';
 
 function themeFamilyName(family) {
@@ -21085,16 +21175,20 @@ if (themeSpectrum) {
 function themeRandomChosen() {
   return window.leafTheme.getFamily() === 'random';
 }
+
+function themeTooltip() {
+  const mode = window.leafTheme.getMode();
+  const family = window.leafTheme.getFamily();
+  const named = family === 'random' ? 'Random: ' + themeFamilyName(window.leafTheme.getWornFamily()) : themeFamilyName(family);
+  return 'Themes — ' + named + ' · ' + (THEME_MODE_NAMES[mode] || mode);
+}
 function updateThemeSelection() {
   const mode = window.leafTheme.getMode();
   const family = window.leafTheme.getFamily();
   const worn = window.leafTheme.getWornFamily();
   const random = family === 'random';
   
-  if (themeSheetOpen) {
-    const named = random ? 'Random: ' + themeFamilyName(worn) : themeFamilyName(family);
-    themeSheetOpen.title = 'Themes — ' + named + ' · ' + (THEME_MODE_NAMES[mode] || mode);
-  }
+  if (themeSheetOpen) themeSheetOpen.title = themeTooltip();
   
   const randomCard = themeSheetGrid.querySelector('.theme-item-random');
   const wornLine = randomCard && randomCard.querySelector('.theme-item-random-worn');
@@ -22395,6 +22489,9 @@ function bringTabIntoView(tab) {
 const stripRightGroup = document.getElementById('stripBeside');
 const stripLeftGroup = document.getElementById('stripKeys');
 
+const tabNewButton = document.getElementById('tabNewButton');
+if (tabNewButton) tabNewButton.addEventListener('click', () => send({ command: 'newDocument' }));
+
 function columnStripUnder(clientX, clientY, from) {
   if (!splitOpen() || !(currentState && currentState.beside)) return null;
   for (const [element, side] of [
@@ -22464,7 +22561,6 @@ function renderTabs(state) {
   tabArrivalLeave();
   const tabs = state.tabs || [];
   if (window.leafConsolePrune) window.leafConsolePrune(tabs);
-  pruneWebTabPalettes(state);
   const active = state.active;
   
   tabs.forEach((tab) => {
@@ -22486,14 +22582,14 @@ function renderTabs(state) {
     }
     
     if (tab.kind === 'web' && !tab.site) {
-      return `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""${webTabPaletteStyle(tab, index === active)}><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.url || '')}">${escapeText(tab.title || tab.url || '')}</button>${tabCloseMarkup(index)}</span>`;
+      return `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.url || '')}">${escapeText(tab.title || tab.url || '')}</button>${webZoomBadge(tab)}${tabCloseMarkup(index)}</span>`;
     }
     const favorite = isFavoritePath(tab.path);
     const mark = favorite ? 'Unfavorite' : 'Favorite';
     const name = documentFileName(tab.path || tab.title || '');
     
     const front = index === active || index === besideTabIndex();
-    return `<span class="tab${front ? ' tab-active' : ''}${index === besideTabIndex() ? ' tab-beside' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"${tab.kind === 'web' ? webTabPaletteStyle(tab, index === active) : ''}><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(name)}</button><span class="tab-dirty-dot" aria-hidden="true"></span>${tabCloseMarkup(index)}</span>`;
+    return `<span class="tab${front ? ' tab-active' : ''}${index === besideTabIndex() ? ' tab-beside' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(name)}</button>${tab.kind === 'web' ? webZoomBadge(tab) : ''}<span class="tab-dirty-dot" aria-hidden="true"></span>${tabCloseMarkup(index)}</span>`;
   }).join('');
   
   if (markup === lastTabsMarkup) return;
@@ -23623,7 +23719,7 @@ function watchMinimapSlider() {
 function monacoEditorPadding() {
   const px = (value) => Number.parseFloat(value) || 0;
   const root = getComputedStyle(document.documentElement);
-  const barHeight = px(root.getPropertyValue('--app-bar-height'));
+  const barHeight = appBarHeightPx();
   const contentPad = px(root.getPropertyValue('--reader-content-pad'));
   const toolbarSpace = px(
     getComputedStyle(readerToolbar).getPropertyValue('--reader-toolbar-space')
@@ -34737,7 +34833,7 @@ function positionSelectionToolbar(range) {
   const layoutRect = layout.getBoundingClientRect();
   const height = selectionToolbar.offsetHeight;
   
-  const strip = parseFloat(getComputedStyle(document.body).getPropertyValue('--app-bar-height')) || 0;
+  const strip = appBarHeightPx();
   
   const ceiling = app.getBoundingClientRect().top + strip;
   
@@ -36531,9 +36627,7 @@ function revealRenderedMatch() {
   revealReadingPast(matchElement?.closest('[data-src-start]') || matchElement);
   const rect = range.getBoundingClientRect();
   const view = app.getBoundingClientRect();
-  
-  const barHeight =
-    Number.parseFloat(getComputedStyle(document.body).getPropertyValue('--app-bar-height')) || 0;
+  const barHeight = appBarHeightPx();
   const top = view.top + barHeight;
   if (rect.top >= top && rect.bottom <= view.bottom) return;
   writeReaderPlaceStoppingGlide(() => {
@@ -40381,61 +40475,6 @@ function containedPageSelectionHtml(page) {
   return html;
 }
 
-function containedPageCanvasReadings(page) {
-  const view = page.defaultView;
-  if (!view || !view.getComputedStyle || !page.documentElement || !page.body || !page.createElement) return null;
-  const probe = page.createElement('i');
-  probe.style.setProperty('position', 'fixed', 'important');
-  probe.style.setProperty('width', '1px', 'important');
-  probe.style.setProperty('height', '1px', 'important');
-  probe.style.setProperty('background', 'Canvas', 'important');
-  page.body.appendChild(probe);
-  let readings;
-  try {
-    readings = [page.documentElement, page.body, probe].map((element) => {
-      const style = view.getComputedStyle(element);
-      return {color: style.backgroundColor || '', image: !!style.backgroundImage && style.backgroundImage !== 'none'};
-    });
-  } finally {
-    probe.remove();
-  }
-  return readings;
-}
-
-function pageCanvasColor(readings) {
-  if (!Array.isArray(readings) || readings.length !== 3) return null;
-  if (readings[0]?.image || readings[1]?.image) return null;
-  let painted = [0, 0, 0, 0];
-  for (let index = readings.length - 1; index >= 0; index -= 1) {
-    const reading = readings[index];
-    if (!reading || typeof reading.color !== 'string' || reading.color.length > 256 || typeof reading.image !== 'boolean') return null;
-    const layer = reading.image ? null : colorRgb(reading.color);
-    if (!layer || layer[3] <= 0) continue;
-    const alpha = layer[3] + painted[3] * (1 - layer[3]);
-    painted = [
-      (layer[0] * layer[3] + painted[0] * painted[3] * (1 - layer[3])) / alpha,
-      (layer[1] * layer[3] + painted[1] * painted[3] * (1 - layer[3])) / alpha,
-      (layer[2] * layer[3] + painted[2] * painted[3] * (1 - layer[3])) / alpha,
-      alpha,
-    ];
-  }
-  if (painted[3] < 1) return null;
-  return `rgb(${painted.slice(0, 3).map(Math.round).join(', ')})`;
-}
-
-function containedPageCanvasColor(page) {
-  return pageCanvasColor(containedPageCanvasReadings(page));
-}
-
-function applyContainedPageTabPalette(page) {
-  const fill = containedPageCanvasColor(page);
-  if (!fill) return;
-  const root = document.documentElement;
-  const ink = colorContrast(fill, '#000') >= colorContrast(fill, '#fff') ? '#000' : '#fff';
-  root.style.setProperty('--tab-page-fill', fill);
-  root.style.setProperty('--tab-page-ink', ink);
-}
-
 
 function siteFramePointOnPage(event) {
   const frame = documentSiteFrame();
@@ -40525,7 +40564,6 @@ function bindContainedPageMenu(page) {
 function siteFrameReady() {
   const page = siteFrameDocument();
   if (!page || !page.body) return;
-  applyContainedPageTabPalette(page);
   if (siteFrameListening !== page) {
     siteFrameListening = page;
     bindContainedPageLinks(page);
@@ -40567,8 +40605,6 @@ function fillContainedPageBase(frame) {
 function bindDocumentSiteFrame(path) {
   containedPageMermaidGeneration += 1;
   containedPageMermaidPage = null;
-  document.documentElement.style.removeProperty('--tab-page-fill');
-  document.documentElement.style.removeProperty('--tab-page-ink');
   const frame = documentSiteFrame();
   if (!frame) {
     siteFrameListening = null;
@@ -41167,10 +41203,12 @@ function homeRowParts(path) {
 
 
 
-function homeRowMarkup(path, kind, vaultId) {
+
+
+function homeRowMarkup(path, kind, vaultId, compact = false) {
   const { base, folder } = homeRowParts(path);
   const attr = escapeAttr(String(path == null ? '' : path));
-  const under = folder ? `<span class="home-row-folder">${escapeText(folder)}</span>` : '';
+  const under = folder && !compact ? `<span class="home-row-folder">${escapeText(folder)}</span>` : '';
   
   const folderAttr = kind === 'folder' ? ` data-folder-path="${attr}"` : '';
   
@@ -41178,9 +41216,9 @@ function homeRowMarkup(path, kind, vaultId) {
   const mark = going ? 'Favorite it again' : 'Unfavorite';
   
   const said = going ? 'Unfavorited. This goes in a moment — press the heart to put it back.' : `Open ${attr}`;
-  const open = `<button type="button" class="home-row-open" title="${going ? escapeAttr(said) : said}" data-path="${attr}"><span class="home-row-name">${documentNameMarkup(base)}</span>${under}</button>`;
+  const open = `<button type="button" class="home-row-open${compact ? ' home-row-open-compact' : ''}" title="${going ? escapeAttr(said) : said}" data-path="${attr}">${compact ? `<span class="home-row-name home-row-name-compact"><span class="lt-icon lt-icon-${kind === 'folder' ? 'folder' : 'document'}" aria-hidden="true"></span><span class="home-row-word">${escapeText(base)}</span></span>` : `<span class="home-row-name">${documentNameMarkup(base)}</span>`}${under}</button>`;
   const heart = kind
-    ? `<button type="button" class="home-row-heart" data-home-unfavorite="${attr}" data-home-kind="${escapeAttr(kind)}" aria-label="${mark}" title="${going ? escapeAttr(said) : mark}"><span class="lt-icon lt-icon-favorite-${going ? 'off' : 'on'}"></span></button>`
+    ? `<button type="button" class="home-row-heart${compact ? ' home-row-heart-compact' : ''}" data-home-unfavorite="${attr}" data-home-kind="${escapeAttr(kind)}" aria-label="${mark}" title="${going ? escapeAttr(said) : mark}"><span class="lt-icon lt-icon-favorite-${going ? 'off' : 'on'}"></span></button>`
     : '';
   
   const repair =
@@ -41190,7 +41228,7 @@ function homeRowMarkup(path, kind, vaultId) {
   
   const favorite = kind ? ` data-home-favorite="${attr}"` : '';
   const vault = kind && vaultId != null ? ` data-home-vault="${escapeAttr(String(vaultId))}"` : '';
-  return `<span class="home-row${going ? ' is-going' : ''}" data-reveal-path="${attr}"${folderAttr}${favorite}${vault}>${heart}${open}${repair}</span>`;
+  return `<span class="home-row${compact ? ' home-row-compact' : ''}${going ? ' is-going' : ''}" data-reveal-path="${attr}"${folderAttr}${favorite}${vault}>${heart}${open}${repair}</span>`;
 }
 
 function homeGroupMarkup(group) {
@@ -41451,7 +41489,7 @@ function homeListCounts(which, state) {
   return { groups, count, drawn: count };
 }
 
-function homeList(which, state) {
+function homeList(which, state, compact = false) {
   const { groups, count, drawn } = homeListCounts(which, state);
   if (which === 'scheduled') {
     return { title: 'Scheduled tasks', count, drawn, rows: scheduledTaskRows() };
@@ -41461,19 +41499,22 @@ function homeList(which, state) {
       title: 'Favorites',
       count,
       drawn,
-      rows: homeGroupedRows(groups, (favorite) => homeRowMarkup(favorite.path, favorite.kind, favorite.vaultId)),
+      rows: homeGroupedRows(groups, (favorite) => homeRowMarkup(favorite.path, favorite.kind, favorite.vaultId, compact)),
     };
   }
   return {
     title: 'Recent',
     count,
     drawn,
-    rows: homeGroupedRows(groups, (path) => homeRowMarkup(path)),
+    rows: homeGroupedRows(groups, (path) => homeRowMarkup(path, undefined, undefined, compact)),
     help: homeRecentHelp(),
   };
 }
 
-function homeListBox(rows) {
+
+
+function homeListBox(rows, pane = false) {
+  if (pane) return `<div class="home-list-box"><div class="home-list-scroll home-list-scroll-pane"><ol>${rows}</ol></div></div>`;
   return `<div class="home-list-box"><div class="home-list-scroll leaf-scroll"><ol>${rows}</ol></div><div class="home-list-fade" aria-hidden="true"></div></div>`;
 }
 
@@ -42676,6 +42717,8 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   bindHomeShowAll(app);
   
   if (homeSheetShowing) refreshHomeSheet();
+  
+  drawPaneDocuments();
   refreshPaneFoot();
   sayStartupDrawn(false);
 }
@@ -42874,6 +42917,8 @@ var libraryFootPanel = document.getElementById('libraryFootPanel');
 
 var paneFootActions = [];
 
+var MORE_EVERY_CONTEXT = ['document', 'agent', 'web'];
+
 var PANE_FOOT_BUTTON = 32;
 var PANE_FOOT_GAP = 4;
 
@@ -42881,9 +42926,14 @@ var paneFootRailWidth = null;
 var paneFootChevronUp = false;
 
 var paneRows = document.getElementById('libraryNav');
-function registerPaneFootAction({ id, label, icon, has, press }) {
-  const row = !!paneRows;
-  if (!row && !libraryFootRail) return null;
+function registerPaneFootAction({ id, label, icon, has, press, contexts, title }) {
+  
+  if (paneRows) {
+    paneFootActions.push({ id, label, icon, has, press, title, contexts: contexts || MORE_EVERY_CONTEXT, row: true, more: true, button: null });
+    return null;
+  }
+  const row = false;
+  if (!libraryFootRail) return null;
   const button = document.createElement('button');
   button.type = 'button';
   button.id = id;
@@ -42912,13 +42962,17 @@ function refitPaneRows() {
   for (const child of Array.from(paneRows.children)) if (!child.hidden) standing += 1;
   if (standing === paneRowsStanding) return;
   paneRowsStanding = standing;
-  libraryPane.style.setProperty('--library-crumbs-height', `${10 + standing * 26 + Math.max(standing - 1, 0) * 2}px`);
+  
+  libraryPane.style.setProperty('--library-crumbs-height', standing ? `${10 + standing * 26 + Math.max(standing - 1, 0) * 2}px` : '0px');
 }
 
 function refreshPaneFoot() {
   if (!libraryFoot) return;
+  
+  drawPaneDocuments();
   let drawn = 0;
   for (const action of paneFootActions) {
+    if (action.more) continue;
     const present = !!action.has();
     action.button.hidden = !present;
     if (present && !action.row) drawn += 1;
@@ -42999,6 +43053,7 @@ themeSheetOpen = registerPaneFootAction({
   id: 'themeSheetOpen',
   label: 'Themes',
   icon: 'theme',
+  title: themeTooltip,
   has: () => true,
   press: () => openThemeSheet(),
 });
@@ -43010,23 +43065,27 @@ registerPaneFootAction({
   id: 'paneFootTasks',
   label: 'Scheduled tasks',
   icon: 'check-circle',
+  contexts: ['agent'],
   has: () => leafScheduledTasks.length > 0,
   press: () => openHomeSheet('scheduled'),
 });
-registerPaneFootAction({
-  id: 'paneFootFavorites',
-  label: 'Favorites',
-  icon: 'favorite-on',
-  has: () => homeListCounts('favorites', currentState || {}).count > 0,
-  press: () => openHomeSheet('favorites'),
-});
-registerPaneFootAction({
-  id: 'paneFootRecent',
-  label: 'Recent',
-  icon: 'recent',
-  has: () => homeListCounts('recent', currentState || {}).count > 0,
-  press: () => openHomeSheet('recent'),
-});
+
+if (!paneRows) {
+  registerPaneFootAction({
+    id: 'paneFootFavorites',
+    label: 'Favorites',
+    icon: 'favorite-on',
+    has: () => homeListCounts('favorites', currentState || {}).count > 0,
+    press: () => openHomeSheet('favorites'),
+  });
+  registerPaneFootAction({
+    id: 'paneFootRecent',
+    label: 'Recent',
+    icon: 'recent',
+    has: () => homeListCounts('recent', currentState || {}).count > 0,
+    press: () => openHomeSheet('recent'),
+  });
+}
 
 if (!paneRows) {
   registerPaneFootAction({
@@ -43470,13 +43529,15 @@ if (calendarSheet) {
     if (cell) pickCalendarDay(Number(cell.getAttribute('data-calendar-at')));
   });
   calendarVaultId = activeVaultId;
+  
   calendarFootButton = registerPaneFootAction({
     id: 'paneFootCalendar',
     label: 'Calendar',
     icon: 'calendar',
+    contexts: ['document'],
     has: calendarAvailable,
     press: openCalendarSheet,
-  });
+  }) || document.getElementById('readerMore');
 }
 
 const consoleLayers = new Map();
@@ -44324,6 +44385,14 @@ function drawConsoleRow(line, row, cols) {
   if (spacing) ctx.letterSpacing = '0px';
 }
 
+
+function consoleFolderOf(id) {
+  const entry = consoleLayers.get(id);
+  if (entry?.statusRecord?.folderPath) return String(entry.statusRecord.folderPath);
+  const tab = (currentState?.tabs || []).find(tab => tab.kind === 'console' && Number(tab.webId) === Number(id));
+  return tab?.folder ? String(tab.folder) : '';
+}
+
 function makeConsoleLayer(id) {
   const layer = document.createElement('div');
   layer.className = unlocksShowing().has('console-scanlines') ? `console-layer ${CONSOLE_SCANLINES}` : 'console-layer';
@@ -44855,6 +44924,8 @@ window.leafConsoleFront = id => {
   hintTargetsMoved();
   if (changed && consoleAgentRows.length) drawConsoleRecents();
   if (changed) savedChatFollowsFront();
+  if (changed) pickerFollowsChat();
+  if (changed) paneFollowsFront();
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
   placeConsoleLayers();
   syncConsoleViewsBar();
@@ -45608,6 +45679,8 @@ window.leafConsoleStatus = (id, record) => {
   const entry = consoleLayers.get(id) || (record ? makeConsoleLayer(id) : null);
   if (!entry) return;
   entry.statusRecord = record && typeof record === 'object' ? record : null;
+  
+  if (id === consoleFrontId) pickerFollowsChat();
   const session = entry.statusRecord?.agent === 'codex' && typeof entry.statusRecord.nativeSession === 'string' && entry.statusRecord.nativeSession ? entry.statusRecord.nativeSession : null;
   const fresh = session && session !== entry.nativeSession && entry.statusRecord.nativeFresh === true;
   entry.nativeSession = session;
@@ -46503,13 +46576,29 @@ function newMenuMainRows() {
   return rows;
 }
 
+let newMenuBrowsedSinceFront = false;
+function noteFolderBrowsed() {
+  newMenuBrowsedSinceFront = true;
+}
+function noteFrontItemChanged() {
+  newMenuBrowsedSinceFront = false;
+}
+
+function newMenuDefaultFolder() {
+  if (!newMenuBrowsedSinceFront) {
+    const chat = chatFolderInFront();
+    if (chat) return chat;
+  }
+  return libraryFolderHere();
+}
+
 function toggleNewMenu() {
   if (crumbMenuOwner === newMenuButton && !crumbMenu.hidden) {
     hideCrumbMenu();
     return;
   }
   agentLaunchReset();
-  newMenuFolder.path = libraryFolderHere();
+  newMenuFolder.path = newMenuDefaultFolder();
   newMenuFolder.view = false;
   showCrumbMenu(newMenuButton, newMenuMainRows());
 }
@@ -47148,7 +47237,8 @@ function drawConsoleRecents() {
 
 function fillConsoleRecents(html) {
   const menuHere = !crumbMenu.hidden && Boolean(crumbMenuOwner?.classList?.contains('console-recents-filter'));
-  consoleRecentsBand.innerHTML = html;
+  
+  consoleRecentsBand.innerHTML = '<div class="sidebar-pane-head"><span class="sidebar-pane-title">Conversations</span></div>' + html;
   const button = consoleRecentsBand.querySelector('.console-recents-filter');
   if (menuHere && button) showCrumbMenu(button, consoleChatFilterRows());
 }
@@ -47211,6 +47301,14 @@ function consoleChatListItems(shown, archived, custom = false) {
 }
 
 
+function consoleChatFolderName(path) {
+  return String(path || '').split(/[\\/]/).filter(Boolean).pop() || '';
+}
+function consoleChatFolderHtml(path) {
+  const name = consoleChatFolderName(path);
+  return name ? `<span class="console-agent-folder">${escapeText(name)}</span>` : '';
+}
+
 function consoleRunningRowHtml(row) {
   const id = Number(row.id);
   const title = String(row.title ?? '');
@@ -47218,7 +47316,7 @@ function consoleRunningRowHtml(row) {
   const icon = consoleIconClass(row.agent);
   const marks = (id === consoleFrontId ? ' console-agent-front' : '') + (row.state === 'working' ? ' console-agent-working' : '');
   const needs = row.state === 'needs' ? ' console-agent-needs' : '';
-  return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running${marks}" data-console-id="${id}" title="${escapeAttr(tip)}"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="${icon}"></span></span><span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state${needs}">${escapeText(consoleAgentWords[row.state] || '')}</span></button><button type="button" class="console-recent-more" data-console-id="${id}" aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
+  return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running${marks}" data-console-id="${id}" title="${escapeAttr(tip)}"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="${icon}"></span></span><span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span>${consoleChatFolderHtml(consoleFolderOf(id))}<span class="console-agent-state${needs}">${escapeText(consoleAgentWords[row.state] || '')}</span></button><button type="button" class="console-recent-more" data-console-id="${id}" aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
 }
 
 
@@ -47371,18 +47469,22 @@ function consoleChatKey(chat) {
 function consoleRecentRowHtml(row, now, where, live = null) {
   const agent = String(row.agent || '');
   const title = String(row.title || 'Untitled conversation');
-  const folder = row.folder ? `\n${row.folder}` : '';
+  
+  const folderPath = row.folder || (live ? consoleFolderOf(live.id) : '');
+  const folder = folderPath ? `\n${folderPath}` : '';
   const ids = `data-recent-agent="${escapeAttr(agent)}" data-recent-id="${escapeAttr(String(row.id || ''))}"`;
   const working = live?.state === 'working';
   
   const gone = row.gone && !live;
-  const marks = (row.unread ? ' console-recent-unread' : '') + (gone ? ' console-pin-gone' : '') + (working ? ' console-agent-working' : '');
+  
+  const front = live ? Number(live.id) === Number(consoleFrontId) : savedChatShowing() && savedChat.agent === agent && savedChat.conversation === String(row.id || '');
+  const marks = (front ? ' console-agent-front' : '') + (row.unread ? ' console-recent-unread' : '') + (gone ? ' console-pin-gone' : '') + (working ? ' console-agent-working' : '');
   const icon = consoleIconClass(agent);
   const glow = working ? `<span class="console-agent-glow"><span class="${icon}"></span></span>` : '';
   const drop = where ? ` data-pin-drop="${where}"` : ' data-pin-drop="recents"';
   const state = live ? (consoleAgentWords[live.state] || '') : gone ? 'gone' : consoleRecentAge(row.time, now);
   const needs = live?.state === 'needs' ? ' console-agent-needs' : '';
-  return `<div class="console-recent-row" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}"><span class="console-agent-icon" aria-hidden="true">${glow}<span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state${needs}">${escapeText(live || row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
+  return `<div class="console-recent-row" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}"><span class="console-agent-icon" aria-hidden="true">${glow}<span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span>${consoleChatFolderHtml(folderPath)}<span class="console-agent-state${needs}">${escapeText(live || row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
 }
 
 function consoleRecentPinsHtml(now) {
@@ -47847,16 +47949,24 @@ var libraryRow = document.getElementById('libraryRow');
 var libraryRowWord = document.getElementById('libraryRowWord');
 var sidebarLists = document.getElementById('sidebarLists');
 var sidebarOutline = document.getElementById('sidebarOutline');
-var sidebarOutlineFold = document.getElementById('sidebarOutlineFold');
 var sidebarOutlineCount = document.getElementById('sidebarOutlineCount');
 
-const LIBRARY_MENU_ROWS = 400;
-
+function libraryRowWords() {
+  const root = libraryRootLabel();
+  const last = libraryChain[libraryChain.length - 1];
+  const folder = last ? last.name : '';
+  if (activeVaultId) return { word: folder ? `${root} · ${folder}` : root, short: folder || root, where: folder ? `${root} › ${libraryChain.map((link) => link.name).join(' › ')}` : root };
+  const path = libraryFolderHere();
+  return { word: folder || root, short: folder || root, where: path || root };
+}
 function drawLibraryRowWord() {
+  
+  drawPageHead();
   if (!libraryRow || !libraryRowWord) return;
-  const name = libraryRootLabel();
-  libraryRowWord.textContent = name;
-  libraryRow.title = `Browse ${name}`;
+  const { word, short, where } = libraryRowWords();
+  
+  libraryRowWord.textContent = narrowWindowQuery && narrowWindowQuery.matches ? short : word;
+  libraryRow.title = `Browse ${where}`;
 }
 
 function libraryMenuPath() {
@@ -47870,58 +47980,202 @@ function libraryMenuPath() {
       run: () => setLibraryFolder(step.path),
     })),
   }];
-  const parent = steps[steps.length - 2];
-  if (parent) rows.push({ label: `↑ ${parent.name}`, title: parent.path || parent.name, keepOpen: true, run: () => setLibraryFolder(parent.path) });
   
   if (libraryFolderView) {
     const view = libraryFolderView;
     rows.push({ label: libraryViewWords(view), title: 'Sort and view this folder', icon: `<span class="lt-icon lt-icon-${view.descending ? 'sort-descending' : 'sort-ascending'}" aria-hidden="true"></span>`, keepOpen: true, run: () => showCrumbMenu(libraryRow, libraryViewMenuItems()) });
   }
+  
+  const sync = librarySyncButton && !librarySyncButton.hidden && librarySyncButton.querySelector('.library-sync-count');
+  if (sync) rows.push({ label: `Sync${sync.textContent ? ` · ${sync.textContent}` : ''}`, title: librarySyncButton.title, icon: SYNC_ICON_SVG, keepOpen: true, run: () => librarySyncButton.click() });
   return rows;
 }
 
-function libraryMenuEntries() {
-  const entries = libraryEntries.filter(Boolean);
-  const rows = entries.slice(0, LIBRARY_MENU_ROWS).map((node) => node.kind === 'folder'
-    ? { label: node.name, title: node.path, icon: FOLDER_ICON_SVG, keepOpen: true, run: () => setLibraryFolder(node.path) }
-    : { label: node.name, title: node.path, icon: LEAF_FILE_ICON, run: () => send({ command: 'openRecent', path: node.path }) });
-  if (!entries.length) rows.push({ note: libraryNotice || 'Nothing in this folder.' });
-  if (entries.length > LIBRARY_MENU_ROWS) rows.push({ note: `This folder holds ${entries.length} items; the first ${LIBRARY_MENU_ROWS} are listed. Search reaches the rest.` });
-  return rows;
+var pickerChatFolder = '';
+
+function chatFolderInFront() {
+  if (consoleFrontId !== null) {
+    return consoleFolderOf(consoleFrontId);
+  }
+  if (savedChatShowing() && savedChat.entry && savedChat.entry.statusRecord) return String(savedChat.entry.statusRecord.folderPath || '');
+  return '';
 }
 
-function libraryMenuRows() {
-  return [{ heading: 'Vaults' }, ...vaultMenuItems(), 'separator', ...libraryMenuPath(), ...libraryMenuEntries()];
+function pickerFollowsChat() {
+  const path = chatFolderInFront();
+  if (path === pickerChatFolder) return;
+  pickerChatFolder = path;
+  noteFrontItemChanged();
+  if (path) send({ command: 'revealInLibrary', path, folder: true });
+}
+var railChats = document.getElementById('railChats');
+var railDocuments = document.getElementById('railDocuments');
+var railOutline = document.getElementById('railOutline');
+var paneDocuments = document.getElementById('paneDocuments');
+var paneDocumentsPinned = document.getElementById('paneDocumentsPinned');
+var paneDocumentsRecent = document.getElementById('paneDocumentsRecent');
+
+var paneDocumentsOpen = document.getElementById('paneDocumentsOpen');
+if (paneDocumentsOpen) {
+  paneDocumentsOpen.addEventListener('click', () => {
+    const folder = libraryFolderHere();
+    send(folder ? { command: 'open', folder } : { command: 'open' });
+  });
+}
+var sidebarOutlineBack = document.getElementById('sidebarOutlineBack');
+
+var paneView = 'chats';
+function paneShows(view) {
+  paneView = view;
+  drawPaneView();
+}
+
+function paneViewDrawn() {
+  if (paneView === 'outline' && !(sidebarOutlineFront() && readDocumentOutlineRows().length)) return 'documents';
+  return paneView;
+}
+function drawPaneView() {
+  if (!libraryNav) return;
+  const drawn = paneViewDrawn();
+  consoleRecentsShown(drawn === 'chats');
+  if (paneDocuments) paneDocuments.hidden = drawn !== 'documents';
+  if (drawn === 'documents') drawPaneDocuments();
+  drawSidebarOutline();
+  drawRailPressed();
+}
+
+function drawPaneDocuments() {
+  if (!paneDocuments || paneDocuments.hidden) return;
+  const state = currentState || {};
+  const pinned = homeList('favorites', state, true);
+  const recent = homeList('recent', state, true);
+  paneDocumentsPinned.innerHTML = pinned.count ? homeListBox(pinned.rows, true) : '<p class="console-recents-note">Pin a document with its heart and it stands here.</p>';
+  paneDocumentsRecent.innerHTML = recent.count ? homeListBox(recent.rows, true) : '<p class="console-recents-note">Documents you open stand here.</p>';
+  for (const box of [paneDocumentsPinned, paneDocumentsRecent]) {
+    bindHomeRows(box);
+    watchHomeLists(box);
+    markHomeFavorites(box);
+  }
+}
+
+function paneFollowsFront() {
+  paneShows(consoleFrontId === null && !savedChatShowing() && (activeDocumentPath() || activeWebTab()) ? 'outline' : 'chats');
+}
+
+function showChatsInPane() {
+  window.leafShowLibraryPane();
+  paneShows('chats');
+}
+
+function showDocumentsInPane() {
+  window.leafShowLibraryPane();
+  paneShows('documents');
+}
+
+function showOutlineInPane() {
+  window.leafShowLibraryPane();
+  paneShows('outline');
+}
+
+function drawRailPressed() {
+  if (!railChats) return;
+  
+  const paneShowing = libraryShell.classList.contains('library-narrow') ? librarySheetOpen : !libraryShell.classList.contains('library-closed');
+  const drawn = paneViewDrawn();
+  railChats.setAttribute('aria-pressed', String(paneShowing && drawn === 'chats'));
+  if (railDocuments) railDocuments.setAttribute('aria-pressed', String(paneShowing && drawn === 'documents'));
+  
+  if (railOutline) {
+    railOutline.hidden = !sidebarOutlineFront();
+    railOutline.setAttribute('aria-pressed', String(paneShowing && drawn === 'outline'));
+  }
+}
+var libraryBrowse = document.getElementById('libraryBrowse');
+var libraryBrowseVaults = document.getElementById('libraryBrowseVaults');
+var libraryBrowseHead = document.getElementById('libraryBrowseHead');
+
+function viaPicker(run) {
+  return run && (() => {
+    setCrumbMenuOwner(libraryRow);
+    run();
+  });
+}
+function libraryBrowseOpen() {
+  return !!libraryBrowse && !libraryBrowse.hidden;
+}
+
+function drawLibraryBrowse() {
+  if (!libraryBrowse) return;
+  libraryBrowseVaults.textContent = '';
+  const vaults = [{ heading: 'Vaults' }, ...vaultMenuItems().map((entry) => (entry && typeof entry === 'object' && entry.run ? { ...entry, keepOpen: true, run: viaPicker(entry.run), edit: viaPicker(entry.edit) } : entry))];
+  drawCrumbEntries(libraryBrowseVaults, vaults, null, closeLibraryBrowse);
+  libraryBrowseHead.textContent = '';
+  drawCrumbEntries(libraryBrowseHead, libraryMenuPath(), null, closeLibraryBrowse);
+}
+function placeLibraryBrowse() {
+  const anchor = libraryRow.getBoundingClientRect();
+  const room = window.innerHeight - anchor.bottom;
+  libraryBrowse.style.maxHeight = `${Math.max(0, room - CRUMB_MENU_DROP - LEAF_FLOAT_MARGIN)}px`;
+  leafPlaceFloating(libraryBrowse, anchor.left, anchor.bottom + CRUMB_MENU_DROP);
+}
+function openLibraryBrowse() {
+  if (!libraryBrowse || !libraryRow) return;
+  hideCrumbMenu();
+  drawLibraryBrowse();
+  libraryRow.setAttribute('aria-expanded', 'true');
+  placeLibraryBrowse();
+  scheduleLibraryRowWindow();
+  const first = libraryBrowse.querySelector('.library-file, .library-nav-folder');
+  if (first) leafFocusForKeyboard(first);
+}
+function closeLibraryBrowse() {
+  if (!libraryBrowseOpen()) return;
+  const returnFocus = libraryBrowse.contains(document.activeElement);
+  libraryBrowse.hidden = true;
+  coverWebSurface(false, libraryBrowse);
+  libraryRow.setAttribute('aria-expanded', 'false');
+  if (returnFocus) leafFocusForKeyboard(libraryRow);
+}
+function toggleLibraryBrowse() {
+  if (libraryBrowseOpen()) closeLibraryBrowse();
+  else openLibraryBrowse();
 }
 function libraryMenuOpen() {
-  return !!libraryRow && crumbMenuOwner === libraryRow && !crumbMenu.hidden;
+  return libraryBrowseOpen();
 }
 
 function redrawLibraryMenu() {
-  if (libraryMenuOpen()) showCrumbMenu(libraryRow, libraryMenuRows());
+  if (libraryBrowseOpen()) drawLibraryBrowse();
 }
 
 function drawSidebarOutline() {
   if (!sidebarOutline || !libraryNav) return;
   const headings = sidebarOutlineFront() ? readDocumentOutlineRows().length : 0;
-  sidebarOutline.hidden = !headings;
-  if (sidebarOutlineCount) sidebarOutlineCount.textContent = headings ? formatCountLabel(headings, 'heading', 'headings') : '';
-  if (sidebarOutlineFold) {
-    sidebarOutlineFold.setAttribute('aria-expanded', String(!sidebarFolds.outline));
-    sidebarOutlineFold.title = sidebarFolds.outline ? 'Open the outline' : 'Fold the outline';
+  sidebarOutline.hidden = !headings || paneView !== 'outline';
+  
+  if (paneView === 'outline' && paneDocuments && paneDocuments.hidden === !headings) {
+    paneDocuments.hidden = !!headings;
+    drawPaneDocuments();
+    drawRailPressed();
   }
-}
-function toggleSidebarOutline() {
-  setSidebarFold('outline', !sidebarFolds.outline);
-  drawSidebarOutline();
-  scheduleLibraryOutline();
+  if (sidebarOutlineCount) sidebarOutlineCount.textContent = headings ? formatCountLabel(headings, 'heading', 'headings') : '';
 }
 
 function openLibrarySearch() {
   openFindBar();
   if (allFilesSearchAvailable()) setFindScope('vault');
 }
-if (librarySearchRow) librarySearchRow.addEventListener('click', () => openLibrarySearch());
+
+function pressRailSearch() {
+  if (consoleFrontId !== null || savedChatShowing()) {
+    showChatsInPane();
+    const filter = consoleRecentsBand && consoleRecentsBand.querySelector('.console-recents-filter');
+    if (filter) leafFocusForKeyboard(filter);
+    return;
+  }
+  openLibrarySearch();
+}
+if (librarySearchRow) librarySearchRow.addEventListener('click', () => pressRailSearch());
 if (libraryRow) {
   
   libraryRow.addEventListener('pointerdown', (event) => {
@@ -47930,14 +48184,30 @@ if (libraryRow) {
     event.preventDefault();
     retireHint('libraryVault');
     retireLibraryIntro();
-    openCrumbList(libraryRow, libraryMenuRows());
+    toggleLibraryBrowse();
   });
   
   libraryRow.addEventListener('click', (event) => {
-    if (event.detail === 0) openCrumbList(libraryRow, libraryMenuRows());
+    if (event.detail === 0) toggleLibraryBrowse();
   });
 }
-if (sidebarOutlineFold) sidebarOutlineFold.addEventListener('click', () => toggleSidebarOutline());
+if (libraryBrowse) {
+  
+  window.addEventListener('pointerdown', (event) => {
+    if (!libraryBrowseOpen()) return;
+    const target = event.target;
+    if (libraryBrowse.contains(target) || crumbMenu.contains(target) || contextMenu.contains(target)) return;
+    closeLibraryBrowse();
+  });
+  leafOnEscape(closeLibraryBrowse);
+  window.addEventListener('resize', () => {
+    if (libraryBrowseOpen()) placeLibraryBrowse();
+  });
+}
+if (railChats) railChats.addEventListener('click', () => showChatsInPane());
+if (railDocuments) railDocuments.addEventListener('click', () => showDocumentsInPane());
+if (railOutline) railOutline.addEventListener('click', () => showOutlineInPane());
+if (sidebarOutlineBack) sidebarOutlineBack.addEventListener('click', () => paneShows('documents'));
 if (libraryNav) {
   
   try {
@@ -47946,17 +48216,115 @@ if (libraryNav) {
     
   }
   libraryPane?.classList.add('is-console-sidebar');
-  consoleRecentsShown(true);
+  paneFollowsFront();
   if (sidebarLists) sidebarLists.hidden = false;
   
   const lists = libraryPane?.querySelector('.library-scroll');
-  if (lists) lists.hidden = true;
+  if (lists && libraryBrowse) document.getElementById('libraryBrowseFolder').append(lists);
   if (sidebarOutline && libraryOutline.parentElement !== sidebarOutline) {
     sidebarOutline.append(libraryOutline);
     setLibraryOutlineScroller(sidebarLists);
   }
   drawLibraryRowWord();
   drawSidebarOutline();
+  if (narrowWindowQuery && narrowWindowQuery.addEventListener) narrowWindowQuery.addEventListener('change', drawLibraryRowWord);
+}
+
+var readerMore = document.getElementById('readerMore');
+
+var webZoomLevels = new Map();
+function webZoomOf(webId) {
+  return (webZoomLevels && webZoomLevels.get(webId)) || 100;
+}
+
+function webZoomBadge(tab) {
+  const level = tab && tab.webId != null ? webZoomOf(tab.webId) : 100;
+  return level === 100 ? '' : `<span class="tab-zoom" title="Zoomed to ${level}%">${level}%</span>`;
+}
+
+window.leafWebZoom = (webId, percent) => {
+  if (percent === 100) webZoomLevels.delete(webId);
+  else webZoomLevels.set(webId, percent);
+  if (currentState) renderTabs(currentState);
+  if (crumbMenuOwner === readerMore && !crumbMenu.hidden) showReaderMore();
+};
+function zoomWebTab(step) {
+  const tab = activeWebTab();
+  if (tab) send({ command: 'webZoom', id: tab.webId, step });
+}
+
+function moreContext() {
+  if (consoleFrontId !== null || savedChatShowing()) return 'agent';
+  if (activeWebTab()) return 'web';
+  return 'document';
+}
+function moreIcon(name) {
+  return `<span class="lt-icon lt-icon-${name}" aria-hidden="true"></span>`;
+}
+function moreMenuRows() {
+  const context = moreContext();
+  const rows = [];
+  for (const action of paneFootActions) {
+    if (!action.more || !action.contexts.includes(context) || !action.has()) continue;
+    rows.push({ label: action.label, title: action.title ? action.title() : undefined, icon: moreIcon(action.icon), run: () => action.press() });
+  }
+  
+  if (context === 'web' && window.__leafHostAnswers?.('webZoom') !== false) {
+    const tab = activeWebTab();
+    rows.push({ heading: 'Zoom' }, { barClass: 'more-zoom', buttons: [
+      { label: '−', keepOpen: true, run: () => zoomWebTab('out') },
+      { label: `${webZoomOf(tab && tab.webId)}%`, primary: true, keepOpen: true, run: () => zoomWebTab('reset') },
+      { label: '+', keepOpen: true, run: () => zoomWebTab('in') },
+    ] }, 'separator');
+  }
+  
+  if (libraryProfile && !libraryProfile.hidden) rows.push({ element: libraryProfile });
+  rows.push('separator');
+  rows.push({ label: 'New window', key: isMacPlatform ? '⌘N' : 'Ctrl+N', icon: moreIcon('window-restore'), run: () => send({ command: 'newWindow' }) });
+  
+  rows.push({ label: 'Full screen', key: isMacPlatform ? '' : 'F11', icon: moreIcon('expand'), run: () => send({ command: 'windowToggleFullscreen' }) });
+  rows.push('separator', { label: 'About Leaftext', icon: moreIcon('leaf'), value: LEAF_VERSION ? `v${LEAF_VERSION}` : '', keepOpen: true, run: () => showAboutLeaftext() });
+  return rows;
+}
+
+function aboutLeaftextRows() {
+  const rows = [{ heading: 'About Leaftext' }, { note: LEAF_VERSION ? `Version ${LEAF_VERSION}` : 'Version unknown' }];
+  if (updateState.status === 'staged') rows.push({ label: 'Restart to update', icon: moreIcon('update'), title: `Restart to install v${updateState.version}`, run: () => send({ command: 'applyUpdate' }) });
+  rows.push({ label: 'Licenses', icon: moreIcon('document'), run: () => send({ command: 'openNotices' }) });
+  if (window.__leafHostAnswers?.('openJournal') !== false) rows.push({ label: 'Open the journal', icon: moreIcon('text'), title: 'What the app has printed, read-only, for a bug report', run: () => send({ command: 'openJournal' }) });
+  rows.push('separator', { label: 'Back', icon: moreIcon('back'), keepOpen: true, run: () => showReaderMore() });
+  return rows;
+}
+function showAboutLeaftext() {
+  showCrumbMenu(readerMore, aboutLeaftextRows(), 'Licenses');
+  const anchor = readerMore.getBoundingClientRect();
+  leafPlaceFloating(crumbMenu, anchor.right - crumbMenu.offsetWidth, anchor.top - crumbMenu.offsetHeight - CRUMB_MENU_DROP);
+}
+
+function toggleReaderMore() {
+  if (crumbMenuOwner === readerMore && !crumbMenu.hidden) {
+    hideCrumbMenu();
+    return;
+  }
+  showReaderMore();
+}
+
+function showReaderMore() {
+  showCrumbMenu(readerMore, moreMenuRows());
+  const anchor = readerMore.getBoundingClientRect();
+  leafPlaceFloating(crumbMenu, anchor.right - crumbMenu.offsetWidth, anchor.top - crumbMenu.offsetHeight - CRUMB_MENU_DROP);
+}
+if (readerMore) {
+  readerMore.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    event.preventDefault();
+    toggleReaderMore();
+  });
+  
+  readerMore.addEventListener('click', (event) => {
+    if (event.detail === 0) toggleReaderMore();
+  });
 }
 
 
@@ -51047,14 +51415,24 @@ function savedChatFollowsFront() {
   noteConsoleAnswersSeen();
   const tab = savedChatTab();
   if (tab) showSavedChat(tab);
+  pickerFollowsChat();
   const shown = !!tab || savedChatBridging();
-  if (savedChatPage.hidden === !shown) return;
-  savedChatPage.hidden = !shown;
+  if (savedChatPage.hidden !== !shown) {
+    savedChatPage.hidden = !shown;
+    
+    paneFollowsFront();
+    
+    if (!shown) savedChat.key = '';
+    coverSavedChatFront();
+    coverWebSurface(shown, savedChatPage);
+  }
   
-  if (!shown) savedChat.key = '';
-  coverSavedChatFront();
-  coverWebSurface(shown, savedChatPage);
+  const lit = shown ? `${savedChat.agent}:${savedChat.conversation}` : '';
+  if (lit === savedChatLit) return;
+  savedChatLit = lit;
+  drawConsoleRecents();
 }
+let savedChatLit = '';
 
 function coverSavedChatFront() {
   const chat = savedChatShowing();
@@ -51225,14 +51603,25 @@ function handSavedChatToPrompt(hand, now = Date.now()) {
   savedChatHandOver = null;
   if (entry.composer && entry.chat) {
     const field = entry.composer.field;
+    
+    const typing = Boolean(savedChat.field) && document.activeElement === savedChat.field;
+    const draft = savedChat.field ? savedChat.field.value : hand.draft;
     if (hand.held) {
       field.value = hand.held;
       sendConsoleComposer(hand.console, entry);
     }
-    if (hand.draft && !field.value) {
-      field.value = hand.draft;
+    if (draft && !field.value) {
+      field.value = draft;
       fitConsoleComposerField(field);
     }
+    savedChatFollowsFront();
+    
+    if (entry.chatView?.log) entry.chatView.log.scrollTop = entry.chatView.log.scrollHeight;
+    if (typing) {
+      field.focus();
+      field.setSelectionRange?.(field.value.length, field.value.length);
+    }
+    return true;
   } else {
     const text = hand.held || hand.draft;
     if (text) {
@@ -51476,8 +51865,9 @@ function consoleFolderButton(id, entry, field) {
   
   item.innerHTML = '<span class="lt-icon lt-icon-folder" aria-hidden="true"></span>';
   const claude = consoleControlRecord(entry)?.agent === 'claude';
-  item.title = field.path || field.text;
-  item.setAttribute('aria-label', `${claude ? 'Change folder' : 'New conversation in another folder'}: ${field.path || (field.text === 'Folder' ? 'the folder this console opened in' : field.text)}`);
+  const path = field.path || consoleFolderOf(id);
+  item.title = path || field.text;
+  item.setAttribute('aria-label', `${claude ? 'Change folder' : 'New conversation in another folder'}: ${path || (field.text === 'Folder' ? 'the folder this console opened in' : field.text)}`);
   item.setAttribute('aria-haspopup', 'menu');
   item.setAttribute('aria-expanded', 'false');
   const open = event => {

@@ -31,7 +31,7 @@ Both are saved (`reading_unlocked`, `code_unlocked`), so the answer you gave las
 
 ## Open
 
-There is nothing to open. Every control changes the app the moment you use it and saves straight away. The version you are running is at the foot of the home screen ([Updates](#updates)), and **Licenses** beside it opens every third-party notice the app carries — the icon packs, the libraries behind math, diagrams, the source editor and the graph, and the licenses of all 179 Rust packages compiled into the binary — as a document in the reader, with no network needed.
+There is nothing to open. Every control changes the app the moment you use it and saves straight away. The version you are running is at the foot of the home screen ([Updates](#updates)) and in **About Leaftext**, the last row of [More](02-navigation.md#more) on the floating bar, and **Licenses** beside it in both opens every third-party notice the app carries — the icon packs, the libraries behind math, diagrams, the source editor and the graph, and the licenses of all 179 Rust packages compiled into the binary — as a document in the reader, with no network needed.
 
 ## Files
 
@@ -129,7 +129,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 ### Theme
 
-- The palette button at the foot of the [library](03-library.md#browsing) pane opens the [theme picker](06-themes.md#choose); its tooltip names the family and appearance you are on
+- The **Themes** row of [More](02-navigation.md#more) opens the [theme picker](06-themes.md#choose); its tooltip names the family and appearance you are on
 - Saved as `theme_family` (family or `random`) and `theme_mode` (appearance) for the first window; every other window keeps its own, as `theme_family` and `theme_mode` on its entry in `more_windows`, and an entry without them wears the first window's
 - New installs default to `random` and `daylight`; once you pick a theme your choice is saved and used from then on
 - Choosing [Random](06-themes.md#random) draws a fresh family at each launch; `theme_random_used` records the families already shown in the current no-repeat cycle so the rotation survives restarts
@@ -225,7 +225,7 @@ Move or close a Home box from the quiet controls on its heading; the small plus 
 - **The updater speaks only where there is something to do.** A check that found nothing, one that could not reach GitHub, one GitHub refused, and one that found a release with no file this copy can install yet all pass in silence — there is nothing for you to do about any of them, and the next check or launch takes a release once its file is there. What it shows is the download in progress, *Restart to update*, and the message above
 - **The bell is only in the app bar while there is news.** No update, no bell — its presence is the message, and there is no control sitting there saying nothing
 - **A published site never checks.** leaftext.com and Emptyguru have no installer to hand you, so their pages ask GitHub nothing
-- The running version is printed at the foot of the home screen, so after a relaunch you can confirm which build is installed; **Licenses** beside it opens the notices of everything the app redistributes
+- The running version is printed at the foot of the home screen and in **About Leaftext**, the last row of [More](02-navigation.md#more), so after a relaunch you can confirm which build is installed; **Licenses** beside it opens the notices of everything the app redistributes, and About Leaftext carries **Restart to update** while an update is waiting
 - Saved as `update_last_checked`, `update_staged_version`, and `update_auto_applied`
 
 > [!NOTE]
@@ -253,7 +253,7 @@ Move or close a Home box from the quiet controls on its heading; the small plus 
 
 ### First-launch bubble
 
-- The [bubble that points at the library row](03-library.md#the-bubble-on-your-first-launch) shows once and then never again, so what has already been met is remembered here
+- The [bubble that points at the vault picker](03-library.md#the-bubble-on-your-first-launch) shows once and then never again, so what has already been met is remembered here
 - Saved as `hints_seen` (the ones you have met), `hint_launches` (launches that had one to show) and `hint_last_launch` (the launch the last bubble showed at, which is what puts a quiet launch between two of them)
 - The [pane's vault introduction](03-library.md#your-first-vault) is remembered in the same `hints_seen` list, though it is a box in the pane rather than a bubble
 - A launch with nothing to point at — the pane shut — is not counted, so it costs you nothing
@@ -274,7 +274,7 @@ With it off, a panel arriving slows as it lands and one leaving is gone quicker,
 
 ## Journal
 
-Leaftext keeps a plain text note of what it did, at `{data_dir}/journal.log`. It is written for bug reports: if something goes wrong, that file is what to attach.
+Leaftext keeps a plain text note of what it did, at `{data_dir}/journal.log`. It is written for bug reports: if something goes wrong, that file is what to attach. **Open the journal** in About Leaftext, the last row of [More](02-navigation.md#more), opens it read-only in a tab, so you can read it without finding the folder; nothing you type there is saved over it.
 
 - It holds what the app printed, the details of a crash, a missed window or page response, and a line for each [GitHub sync](03-library.md#syncing) that failed
 - **Every line says when and which run.** It opens with the date and time to the second and the run's number — `[11 October 2026, 8:30:41am, run 12345]` — which is the same number Task Manager shows for that copy, so two launches' lines are never mixed up

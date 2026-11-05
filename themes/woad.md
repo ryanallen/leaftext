@@ -85,7 +85,7 @@ One hue, blue: every surface, border, heading and accent is a shade of it, and d
 | navigation-recent-border                | `#dbe0eb`                  |
 | navigation-recent-item-foreground       | `#1b222f`                  |
 | navigation-recent-item-hover-foreground | `#2068e3`                  |
-| focus-ring                              | `#598feb`                  |
+| focus-ring                              | `#5486dd`                  |
 | focus-selection-background              | `#dfe9fb`                  |
 | focus-selection-foreground              | `#1b222f`                  |
 | syntax-background                       | `#f4f6f9`                  |

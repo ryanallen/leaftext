@@ -5,7 +5,7 @@
 
 Every theme in Leaftext is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-15 families ship free and 6 more are earned with seeds in the Grove, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 96-color contract inside its file.
+18 families ship free and 6 more are earned with seeds in the Grove, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 96-color contract inside its file.
 
 14 of the 96 are optional, and a family that says nothing about one gets another of its own colors copied in: `hover-tint`, the ink every fill under the pointer is mixed from, takes the quiet-text color; `primary-ink` and `accent-ink`, the inks printed on those two fills, take the primary and the accent themselves; and `markdown-table-row-background`, the band every other table row wears, takes the sunken surface; the ten diff-card colors, `diff-added` and `diff-removed` with their backgrounds, changed words and the ink on those words, and `diff-moved` with its background, take the matching inserted, deleted and changed syntax colors. Set `hover-tint`, as Goldenrod does, and every menu row, toolbar button and file in the pane washes in that hue instead.
 
@@ -51,6 +51,25 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Danger     | `#c0392b` | `#e8917f` |
 | Border     | `#dbcab4` | `#3a2d23` |
 
+### Artemisia
+
+[`artemisia.md`](artemisia.md) · Heading **IBM Plex Sans** · Body **IBM Plex Sans** · Code **IBM Plex Mono** · Google Fonts
+
+![Artemisia — the same document in the light and dark variants](../imgs/themes/artemisia.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#f8faf9` | `#1b2024` |
+| Foreground | `#29333a` | `#e3e8eb` |
+| Heading    | `#29333a` | `#e3e8eb` |
+| Primary    | `#435d6b` | `#9fb4c2` |
+| Accent     | `#3d5866` | `#9fb4c2` |
+| Link       | `#3d5866` | `#9fb4c2` |
+| Success    | `#1a7f37` | `#3fb950` |
+| Warning    | `#9a6700` | `#d29922` |
+| Danger     | `#d1242f` | `#ff7b72` |
+| Border     | `#c6d1d4` | `#39434a` |
+
 ### Birch
 
 Earned with seeds in the Grove, under Foraging: its card joins the picker once Birch mode is bought.
@@ -91,6 +110,25 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 | Danger     | `#b81420` | `#ff5f63` |
 | Border     | `#dde5ec` | `#28323d` |
 
+### Bluebell
+
+[`bluebell.md`](bluebell.md) · Heading **Manrope** · Body **Sora** · Code **Source Code Pro** · Google Fonts
+
+![Bluebell — the same document in the light and dark variants](../imgs/themes/bluebell.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#f7f8fd` | `#101525` |
+| Foreground | `#18296b` | `#eff2ff` |
+| Heading    | `#11111a` | `#ffffff` |
+| Primary    | `#3f55c4` | `#7491ff` |
+| Accent     | `#3f55c4` | `#7491ff` |
+| Link       | `#3a4fb8` | `#93a9ff` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb5d62` |
+| Border     | `#cfd6ec` | `#384966` |
+
 ### Camellia
 
 [`camellia.md`](camellia.md) · Heading **Cormorant Garamond** · Body **Karla** · Code **IBM Plex Mono** · Google Fonts
@@ -109,6 +147,25 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 | Warning    | `#7a5200` | `#e8c872` |
 | Danger     | `#b42318` | `#ff8a7a` |
 | Border     | `#e3c2d1` | `#43293a` |
+
+### Copperleaf
+
+[`copperleaf.md`](copperleaf.md) · Heading **Fraunces** · Body **Work Sans** · Code **IBM Plex Mono** · Google Fonts
+
+![Copperleaf — the same document in the light and dark variants](../imgs/themes/copperleaf.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#fbf6f1` | `#171313` |
+| Foreground | `#2e231f` | `#f2e6d8` |
+| Heading    | `#9b4e1d` | `#f1af70` |
+| Primary    | `#9b4e1d` | `#f1af70` |
+| Accent     | `#9b4e1d` | `#f1af70` |
+| Link       | `#9a4c1c` | `#f1a770` |
+| Success    | `#46671f` | `#b7d38a` |
+| Warning    | `#8a5a12` | `#e8c07a` |
+| Danger     | `#c0392b` | `#e8917f` |
+| Border     | `#dbc6b4` | `#4e3931` |
 
 ### Eucalyptus
 
@@ -147,25 +204,6 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 | Warning    | `#8a6d00` | `#e0de71` |
 | Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#e0e0e0` | `#363636` |
-
-### Foxglove
-
-[`foxglove.md`](foxglove.md) · Heading **Instrument Serif** · Body **IBM Plex Sans** · Code **IBM Plex Mono** · Google Fonts
-
-![Foxglove — the same document in the light and dark variants](../imgs/themes/foxglove.png)
-
-| Role       | Light     | Dark      |
-| ---------- | --------- | --------- |
-| Background | `#f1f2ef` | `#0d0d12` |
-| Foreground | `#191b19` | `#e9e8ee` |
-| Heading    | `#191b19` | `#ffffff` |
-| Primary    | `#5d00e0` | `#a883ff` |
-| Accent     | `#5d00e0` | `#a883ff` |
-| Link       | `#5d00e0` | `#a883ff` |
-| Success    | `#1b7236` | `#5fd38a` |
-| Warning    | `#805f00` | `#e6c35c` |
-| Danger     | `#c0233a` | `#ff6b7a` |
-| Border     | `#dcded7` | `#2a2b37` |
 
 ### Ginger
 
@@ -381,6 +419,25 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once S
 | Warning    | `#8a6d00` | `#e0de71` |
 | Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#dcdad5` | `#363636` |
+
+### Spearmint
+
+[`spearmint.md`](spearmint.md) · Heading **Inter** · Body **Lexend** · Code **Fira Code** · Google Fonts
+
+![Spearmint — the same document in the light and dark variants](../imgs/themes/spearmint.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#f6faf9` | `#0c1114` |
+| Foreground | `#17302b` | `#e7f0ed` |
+| Heading    | `#0d2a2b` | `#eefaf9` |
+| Primary    | `#196253` | `#9ce6d4` |
+| Accent     | `#2f6b45` | `#9ad08a` |
+| Link       | `#1a6a5a` | `#9ce6d4` |
+| Success    | `#2d6e31` | `#8fdc8a` |
+| Warning    | `#765300` | `#e8c872` |
+| Danger     | `#b3261e` | `#ff8a80` |
+| Border     | `#c4d6d2` | `#2b4142` |
 
 ### Sumac
 

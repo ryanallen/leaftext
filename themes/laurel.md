@@ -85,7 +85,7 @@ One hue, green: every surface, border, heading and accent is a shade of it, and 
 | navigation-recent-border                | `#d1e5d7`                 |
 | navigation-recent-item-foreground       | `#15261a`                 |
 | navigation-recent-item-hover-foreground | `#108031`                 |
-| focus-ring                              | `#14a640`                 |
+| focus-ring                              | `#139e3d`                 |
 | focus-selection-background              | `#bbf7cd`                 |
 | focus-selection-foreground              | `#15261a`                 |
 | syntax-background                       | `#f2f8f3`                 |

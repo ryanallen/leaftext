@@ -84,7 +84,7 @@
 | navigation-recent-border                | `#e6ddc6`                          |
 | navigation-recent-item-foreground       | `#1c1a15`                          |
 | navigation-recent-item-hover-foreground | `#9a6800`                          |
-| focus-ring                              | `#e0a400`                          |
+| focus-ring                              | `#a87b00`                          |
 | focus-selection-background              | `#fbe9b0`                          |
 | focus-selection-foreground              | `#1c1a15`                          |
 | syntax-background                       | `#f7f3e8`                          |
@@ -113,7 +113,7 @@
 | foreground                              | `#eceae2`                        |
 | surface                                 | `#0e0d0b`                        |
 | surface-elevated                        | `#201e18`                        |
-| surface-muted                           | `#0e0d0b`                        |
+| surface-muted                           | `#1c1a16`                        |
 | surface-sunken                          | `#090805`                        |
 | border                                  | `#2b2820`                        |
 | border-strong                           | `#4a4536`                        |

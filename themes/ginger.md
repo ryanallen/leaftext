@@ -83,7 +83,7 @@
 | navigation-recent-border                | `#e6dac6`                          |
 | navigation-recent-item-foreground       | `#43382e`                          |
 | navigation-recent-item-hover-foreground | `#b5461a`                          |
-| focus-ring                              | `#f0662e`                          |
+| focus-ring                              | `#d15928`                          |
 | focus-selection-background              | `#fbdcc4`                          |
 | focus-selection-foreground              | `#43382e`                          |
 | syntax-background                       | `#f5ece0`                          |

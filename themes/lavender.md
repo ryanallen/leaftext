@@ -85,7 +85,7 @@ One hue, violet: every surface, border, heading and accent is a shade of it, and
 | navigation-recent-border                | `#e4ddec`                  |
 | navigation-recent-item-foreground       | `#281d34`                  |
 | navigation-recent-item-hover-foreground | `#9043e8`                  |
-| focus-ring                              | `#ad74ee`                  |
+| focus-ring                              | `#a46ee2`                  |
 | focus-selection-background              | `#efe5fc`                  |
 | focus-selection-foreground              | `#281d34`                  |
 | syntax-background                       | `#f7f5fa`                  |

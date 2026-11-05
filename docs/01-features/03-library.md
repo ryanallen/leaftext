@@ -2,27 +2,35 @@
 
 > Point Leaftext at a folder and it becomes a vault: a browsable file tree, a searchable body of text, and a map of how those documents link to each other. Opening a vault adds no files to your folder. Edits and confirmed tag renames write only the notes you chose to change, and a vault can sync itself to GitHub.
 
-The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for it.
+The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in the one vault picker at the top of the window and in the side pane beside the icon rail, and everything it shows is read from disk when you ask for it.
 
-![The library row named Dropbox with its dropdown open under it: the vaults Library and Dropbox, ticked, then New vault and Books online, then the path Dropbox › reading-room › docs on one line, the folder above, and the folder's subfolders and files; the document stays in front under its own tab](../../imgs/library-v4.png)
+![The vault picker in the app bar with its browse sheet open under it: the vaults down the left, then the path to the folder and the row saying how it is sorted, and the folder's rows; the document stays in front under its own tab](../../imgs/library-v5.png)
 
-## The pane's rows
+## The icon rail and the side pane
 
-The pane opens on three rows, each an icon and then its word:
+A narrow rail runs down the window's left edge whether the pane is open or shut, each press an icon:
 
-- **New** opens the menu for a new page, a console or an agent, the same one the tab strip's plus used to open.
-- **Search** opens the find bar on the whole vault, or on the document when there is no vault.
-- **The library row** is named after the [vault](#vaults) you are in — **Library** for the whole library — and opens a dropdown under it, with no tab and nothing over the page you are reading. At its top are your vaults, the one you are in ticked; under them the path to the folder you are in, on one line, each step a press that goes there; then the folder above, [how the folder is sorted](#sorting-and-drawing-a-folder), and the folder's subfolders and files. A folder steps in right there, the dropdown staying open; a file opens in a tab and the dropdown closes. A folder of more than 400 items lists the first 400 and says so, and Search reaches the rest. Press the row again, press Escape or press anywhere else to close it; the row is lit while it is open. The [Sync button](#github-sync) stands at the row's right end while there is work to send.
+- **New** opens the menu for a new page, a console or an agent. Its **Starts in** row names the folder the new chat starts in — the folder of the document or chat in front, or a folder you browsed to in the [vault picker](#the-vault-picker) since — and pressing it picks another before you start.
+- **Search** opens the find bar on the whole vault, or on the document when there is no vault, and with an agent in front it puts the keyboard in the chat list's own filter. There is no search field standing in the pane.
+- **Conversations**, a speech bubble, opens the pane on your chats: [pinned chats](#past-conversations-in-the-sidebar) and then **All chats**, with the agents running now at the top and each chat's folder beside its name. Press a chat to bring it forward or pick a saved one up again; agents have no tabs.
+- **Documents** opens the pane on the document in front's **Outline** — [its headings](#the-open-documents-headings) — whose Back shows **Pinned** and **Recent**: your favorite documents and folders, and what you opened last, the same rows as the home screen's.
 
-Under them, while a document is in front, comes its **Outline** — [the document's headings](#the-open-documents-headings) — then your [pinned chats](#past-conversations-in-the-sidebar) and then **All chats**, with the agents running now at the top. The chats never leave the sidebar. Press the **Outline** or **All chats** heading to fold that section away and again to open it; Leaftext remembers each one.
+The pane holds one list at a time. A document opens it on its Outline, a page with no headings on Pinned and Recent, and a chat on the chats. The rail, the pane and the page are three different tones in every [theme](06-themes.md#families).
+
+### The vault picker
+
+The one vault control stands in the app bar after Forward. It names the folder of whatever is in front — `vault · folder` inside a vault, the folder's own name outside one, with its whole place on disk in its tooltip — and moves as you switch between documents and chats in different folders, without moving any of them. While work has not reached GitHub, the closed picker wears its count.
+
+Press it and the **browse sheet** hangs under the bar. Down its left are your vaults, the one you are in ticked, each with its settings, then **New vault**, which offers a folder, Clone and Google Drive, and Books online. Across the top are the path to the folder you are in, each step a press, then the row saying [how the folder is sorted](#sorting-and-drawing-a-folder), which opens its view menu, and **Sync** with its count while there is work to send; under them the folder's own rows, with every [file action](#file-actions), picking several files, cut, copy and paste, dragging out and walking with the keys. A folder steps in right there, the sheet staying open, and New then starts in it; a file opens in a tab and the sheet closes. A folder of more than 400 items is drawn a window at a time, every row reachable. Press the picker again, press Escape or press anywhere else to close it.
 
 ## Summary
 
 | Feature | What you get |
 | --- | --- |
-| [The pane's rows](#the-panes-rows) | **New**, **Search** and **Library** head the pane, over the open document's outline, your pinned chats and **All chats**; the library row, named after your vault, opens a dropdown that browses the folder right there, and the chats never leave |
-| [Vaults](#vaults) | A folder you name as a library root. The library row's dropdown creates, edits and moves between them |
-| [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the library row the first time you open the pane, and goes for good the moment you point at it. A sheet takes it down, unmet, and it returns once the last one closes |
+| [The icon rail and the side pane](#the-icon-rail-and-the-side-pane) | **New**, **Search**, **Conversations** and **Documents** stand in a rail down the left edge; the pane beside it holds the document's Outline, your Pinned and Recent documents, or your chats, one list at a time |
+| [The vault picker](#the-vault-picker) | One control in the app bar names the folder of whatever is in front and opens a browse sheet holding your vaults, the folder's trail, View and Sync, and its rows |
+| [Vaults](#vaults) | A folder you name as a library root. The vault picker's browse sheet creates, edits and moves between them |
+| [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the vault picker the first time you open the pane, and goes for good the moment you point at it. A sheet takes it down, unmet, and it returns once the last one closes |
 | [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
 | [File tree](#file-tree) | One folder at a time, with a row that steps back out; every folder you open appears at once |
 | [The open document's headings](#the-open-documents-headings) | Open a document and the sidebar holds its outline above the chats, the page's own title first and the heading you are reading lit; its heading folds it away |
@@ -41,7 +49,7 @@ Under them, while a document is in front, comes its **Outline** — [the documen
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
 | [Folder actions](#folders-and-the-space-around-them) | Right-click a folder on this computer — or the empty space in its pane — to make a file or a folder in it, paste, export it as a site, reveal it, or see its properties. A Books online category offers Open folder only |
 | [Calendar](#calendar) | A month, week or day of the vault's documents by when they were changed, made or dated; pick a day and its documents are listed under the month |
-| [Launchers under the library row](#launchers-under-the-library-row) | Themes, Scheduled tasks, Favorites, Recent, Calendar and your Grove, each a row under New, Search and the library row |
+| [Where the launchers went](#where-the-launchers-went) | Themes, Scheduled tasks, Calendar and your Grove are rows of More on the floating bar; Favorites and Recent are the pane's Pinned and Recent |
 | [Console](#console) | A command line for the folder shown in the library, opened from the + menu above the tabs |
 | [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
 
@@ -51,7 +59,7 @@ Under them, while a document is in front, comes its **Outline** — [the documen
 
 A **vault** is a folder you have told Leaftext to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
 
-Press the library row, which carries the name of the vault you are in, to open its dropdown; the vaults stand at its top. Press the row again to close it; moving the pointer past it or away from the open list leaves the list as it is. A switch button appears over the start screen whenever a vault exists, so switching to Library never leaves you there. What that button wears says what you are in: **this machine** for the whole library, a **box** for a vault whose files only live here, and a **cloud** when saving in that vault also reaches somewhere else — [GitHub](#github-sync), or a [cloud folder](#your-cloud-is-already-a-folder). Its mark stays the regular weight and sits apart from its name.
+Press the [vault picker](#the-vault-picker), which names the folder you are in and its vault, to open its browse sheet; the vaults stand down its left. Press the picker again to close it; moving the pointer past it or away from the open sheet leaves the sheet as it is. A switch button appears over the start screen whenever a vault exists, so switching to Library never leaves you there. What that button wears says what you are in: **this machine** for the whole library, a **box** for a vault whose files only live here, and a **cloud** when saving in that vault also reaches somewhere else — [GitHub](#github-sync), or a [cloud folder](#your-cloud-is-already-a-folder). Its mark stays the regular weight and sits apart from its name.
 
 While the list is open, the button stays lit. Vaults read A to Z, ignoring capitals.
 
@@ -68,7 +76,7 @@ Each Leaftext window opens its own vault. Picking one in a window changes that w
 
 ### The bubble on your first launch
 
-A name and a caret is not much to go on, so the first time you open Leaftext with the pane showing, a small bubble floats over the window with a chevron aimed at the library row, saying **"Choose a vault and browse its folders here."**
+A name and a caret is not much to go on, so the first time you open Leaftext with the pane showing, a small bubble floats over the window with a chevron aimed at the vault picker, saying **"Choose a vault and browse its folders here."**
 
 It goes the moment you point at the row, and it never comes back — pressing the row does the same. The bubble itself ignores the pointer, so moving across it on the way somewhere else neither takes the words away nor gets in the way of what is under it, and a [menu](#file-actions) opened into the space it is standing in is drawn over it rather than under. There is no close button and no timer.
 
@@ -123,7 +131,7 @@ Books online is the app's own, so it cannot be renamed, removed or put on GitHub
 
 ### File tree
 
-The pane lists one folder at a time — the folder you are in, not a whole hierarchy.
+The browse sheet lists one folder at a time — the folder you are in, not a whole hierarchy.
 
 - Click a folder row — or its `›` chevron — to go into it. The folder you open is on screen in one frame, with nothing fading and nothing sliding.
 - The row above the list steps back out one level.
@@ -132,8 +140,8 @@ The pane lists one folder at a time — the folder you are in, not a whole hiera
 - A folder starts with one line a row, the name and nothing else. With **Show details** on, each file sits in a softly filled card that says what the file is: its name on disk and when it last changed, then its title — a `title` in its [field block](07-editing.md#the-fields-at-the-top-of-a-note) — where that says more than the name, then two lines describing it — a `description` or `summary` in its field block, else its opening lines, with buttons, badges and alert markers read as their words. A folder row says how many documents sit directly inside it. A folder of more than five hundred files reads the first five hundred and draws the rest as one line each. On a slow disk, such as a network share or a synced drive, the names come up first as one line each and the titles and prose fill in once they are read; a folder hiding notes by a field waits for them, since the fields decide which names show. A note kept only online — OneDrive's Files On-Demand on Windows, iCloud's Optimize Mac Storage on a Mac — shows its name, time and size on one line and is never read to draw its row, so browsing a synced folder downloads nothing; a folder kept only online shows no count. Opening the note downloads it as usual, and a rule hiding notes by a field cannot hide one whose fields were never read. Search, the map, including a single note's map, field names, typing help's note names and Home's tasks leave such a note out until it has been downloaded, so arriving in a synced vault downloads nothing either. A file with no ending kept only online is not listed until it is downloaded, since Leaftext cannot tell whether its contents are text without opening it.
 - A favorite that lives in the folder you are in comes first, under a **Favorites** heading, with **Files** over the rest.
 - Pointing at a row washes it and nothing else — no shadow, no change of shape, nothing sliding — [what a control does under the pointer](02-navigation.md#what-a-control-does-under-the-pointer). The row you have open keeps its own tint instead, so what is open still reads as open.
-- Opening a file moves the pane to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.
-- The folder you are in is saved, so a restart reopens it. If the folder has gone, the pane falls back to the top of the vault.
+- Opening a file moves the picker to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.
+- The folder you are in is saved, so a restart reopens it. If the folder has gone, the sheet falls back to the top of the vault.
 
 On a published site, a **breadcrumb** heads the pane in place of the rows and follows the open page, including when a link opens a page in another folder: `Fieldwork › docs › features`. Folder crumbs open their folders; the current page ends the trail. It shows as much of the path as fits the band, and whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders. The site has no vault switcher or Sync button.
 
@@ -151,7 +159,7 @@ Tab into the list and a ring marks the row you are on — separate from the tint
 
 ### Sorting and drawing a folder
 
-The library row's dropdown says how the folder you are in is drawn, on the row under its path — "Sorted by name, a to z" — and pressing that row turns the dropdown into the view menu for the folder. On a published site the same menu is the button at the end of the breadcrumb, lit whenever the folder is drawn any way but the default.
+The browse sheet says how the folder you are in is drawn, on the row under its path — "Sorted by name, a to z" — and pressing that row opens the view menu for the folder. On a published site the same menu is the button at the end of the breadcrumb, lit whenever the folder is drawn any way but the default.
 
 - **Sort by** name, date modified, date created or size, either way round. Folders stay above files in every order.
 - **Group by date** puts headings between the files — Today, Yesterday, Previous 7 days, Previous 30 days, then a month at a time — while the folder is sorted by a date.
@@ -402,7 +410,7 @@ A colon only starts a field when what is in front of it looks like a field name 
 
 A checkbox in a note can carry [a date](01-rendering.md#task-lists). Every one of them that is still open shows up in one box on the home screen, above Recent and Favorites, with the nearest due at the top.
 
-With a document open, the Scheduled tasks row [under the library row](#launchers-under-the-library-row) opens the same list over it.
+With an agent in front, the Scheduled tasks row of [More](02-navigation.md#more) opens the same list over it.
 
 The box is about the vault you are in, the same as Recent and Favorites. Leave the vault and its rows go with it; the new vault's own arrive once its text has been read.
 
@@ -418,7 +426,7 @@ A ticked box is not in the list, and neither is a checkbox with no date on it �
 
 ## Calendar
 
-Inside a vault, the Calendar row [under the library row](#launchers-under-the-library-row) opens a month of the vault's documents in a sheet from the bottom of the window. Each day wears up to three marks for the documents dated to it, and its full date and count are read out to a screen reader.
+Inside a vault, the Calendar row of [More](02-navigation.md#more), with a document in front, opens a month of the vault's documents in a sheet from the bottom of the window. Each day wears up to three marks for the documents dated to it, and its full date and count are read out to a screen reader.
 
 | Control | What it does |
 | --- | --- |
@@ -612,20 +620,9 @@ The pane keeps up with changes on disk, so a file you just created shows up with
 - A [graph of one document](#graph) rather than a vault holds nothing in memory to patch, so it is simply read again — a folder listing and a file per link, which is cheap enough not to cache. It cannot go stale, and a redraw that produces the same picture never reaches the screen.
 - The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault — and again whenever the window is focused, which is what catches a commit you made in a terminal: that writes nothing but the repository's own bookkeeping, which the watcher ignores.
 
-## Launchers under the library row
+## Where the launchers went
 
-Under New, Search and the library row, the pane carries a row for each place you can go without leaving the document, so the lists on the home screen are one press away while a document is open:
-
-| Row | What it opens |
-| --- | --- |
-| Themes | The [theme](06-themes.md) picker, over the document. Always there; hover it for the theme in use |
-| Scheduled tasks | The [Scheduled tasks](#scheduled-tasks) list, over the document. Shown only while a dated checkbox is still open |
-| Favorites | The home screen's Favorites list, over the document. Shown only while something is a favorite |
-| Recent | The home screen's Recent list, over the document. Shown only while something has been opened |
-| Calendar | The [Calendar](#calendar) month, over the document. Shown only inside a vault |
-| Grove | [Your Grove](09-progress.md), the record of how you use Leaftext. Shown only while Leaftext keeps a record |
-
-Each row is an icon and its word, like the rows above it. A row with nothing to open is left out, and the outline and the chats under the rows move up into its place. Opening a list never leaves the document: close the list and you are where you were. Close the pane and the rows go with it.
+Themes, Scheduled tasks, the Calendar and the Grove are rows of [More](02-navigation.md#more), at the right end of the floating bar, sorted by what is in front: the Calendar beside a document inside a vault, Scheduled tasks beside an agent while a dated checkbox is still open, and Themes and the Grove everywhere. Favorites and Recent are the side pane's **Pinned** and **Recent**, behind the Outline's Back. Opening any of them never leaves the document: close it and you are where you were.
 
 ### On a published site
 
@@ -699,7 +696,7 @@ Send Claude Code, Codex or another chat that fills the console a prompt, and onc
 | Opening width | 240 px, or the width of the buttons at the left end of the app bar where those come to more — the leaf, the panel button and the history arrows, and on macOS the window's own three dots beside them. That group is sized to the pane so the tab strip begins at the pane's edge, and a pane opening inside it would leave the first tab over the page. A width you dragged to is restored exactly as you left it, at any size |
 | Snap shut | Drag narrower than 40 px to close the pane; press just left of the page and drag right to open it again |
 | Reader minimum | Reader stays at least 360 px wide |
-| Small window | Too tight for a pane beside the page, so the library becomes a full-width sheet over it — see [Narrow windows](#narrow-windows) |
+| Small window | At 720 pixels wide and under the pane stops taking room — see [Narrow windows](#narrow-windows) |
 
 Saved library state includes:
 
@@ -713,9 +710,9 @@ The active vault is saved in `manifest.db` beside the vault list, not in [settin
 
 ### Narrow windows
 
-![A narrow Leaftext window with the library open as a full-width sheet over the document: New, Search and the Library row at its top, then the Themes, Recent and Grove 1 rows under them, then the open page's Outline with its headings](../../imgs/library-sheet-v4.png)
+![A Leaftext window 700 pixels wide: the app bar with the picker naming the folder alone, the icon rail down the left edge, and the document beside it with the pane closed](../../imgs/library-narrow-v5.png)
 
-Below the point where a pane at the width it opens at and a usable reader both fit, the library stops being a column beside the page and becomes a sheet over it. The same panel button opens it: it slides in from the left at full width, covering the document, with New, Search and the library row at the top and the open document's outline and the chats under them — or arrives in place, with no slide, under [Reduce Motion](05-settings.md#reduce-motion). Picking a document dismisses it, since the page you just opened is behind it. The app bar stays above the sheet, so the button that opened it also closes it. On a phone or tablet the button goes back to rest the moment your finger lifts, so it never looks lit after the library has shut; a mouse still lights it while the pointer is over it. Every other button in the app works the same way.
+At 720 pixels wide and under — the same edge where the [minimap](04-minimap.md) gives way to scrollbars — the side pane closes to the icon rail, and the picker names the folder alone, its whole place in its tooltip. A press in the rail or on the pane button opens the pane over the page, and the next press anywhere else puts it away; picking a document dismisses it too, since the page you just opened is behind it. It slides in, or arrives in place under [Reduce Motion](05-settings.md#reduce-motion). The app bar stays above it, so the button that opened it also closes it.
 
 The sheet is not saved. It describes the current view rather than a preference, so widening the window puts the pane back beside the page and there is no sheet to restore.
 

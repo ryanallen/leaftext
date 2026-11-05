@@ -28,6 +28,8 @@ export const COMMANDS = {
   openWebAddress: [REFUSED, 'this page is already in a browser; its address bar opens the live web'],
   webSurfaceBounds: [REFUSED, 'this page is already in a browser and has no native child surface'],
   webScroll: [REFUSED, 'this page is already in a browser and has no native child surface'],
+  openJournal: [REFUSED, 'a browser keeps no journal: the page prints to the browser console'],
+  webZoom: [REFUSED, 'a page in a browser is not a zoomed child view: the browser zooms the whole page itself'],
   webHeading: [REFUSED, 'this page is already in a browser and has no native child surface'],
   open: [REFUSED, 'a file dialog needs a disk to pick from'],
   openRecent: [ANSWERED],
@@ -1312,7 +1314,7 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
         loadCorpus();
       }
     },
-    revealInLibrary: ({ path }) => showFolder(String(path || open || '').split('/').slice(0, -1).join('/')),
+    revealInLibrary: ({ path, folder }) => showFolder(folder ? String(path || '') : String(path || open || '').split('/').slice(0, -1).join('/')),
     openLink: (command) => {
       const href = String(command.href || '');
       // A heading inside the document already open is the page's own scroll, not a document to resolve. Put through the resolver it matched nothing and became a console line.

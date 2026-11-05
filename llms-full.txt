@@ -20,7 +20,7 @@
 ## Library
 - Page: https://leaftext.com/docs/01-features/03-library.html
 - Markdown: https://leaftext.com/docs/01-features/03-library.md
-- Summary: The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for...
+- Summary: The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in the one vault picker at the top of the window and in the side pane beside th...
 
 ## Minimap
 - Page: https://leaftext.com/docs/01-features/04-minimap.html

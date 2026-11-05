@@ -4,7 +4,7 @@ Read, understand and edit the files other readers leave closed.
 
 **Your thoughts, secure and free.** Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own. Have an AI tool write a glossary for a hard book or a team's notes, and every term in it is linked as you read.
 
-![The Leaftext window with a Markdown document open: the library pane at left holding the document's headings, the rendered page in the middle, and the minimap rail down the right edge](imgs/leaftext.png)
+![The Leaftext window with a Markdown document open: the app bar with the vault picker in the middle, the document's tab and the page header naming where it sits, the icon rail and the side pane holding the document's headings at left, the rendered page in the middle with the floating bar over its foot, and the minimap rail down the right edge](imgs/leaftext-v2.png)
 
 {{{icon:windows[Download for Windows](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)}}} {{{icon:apple[Download for macOS](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)}}}
 

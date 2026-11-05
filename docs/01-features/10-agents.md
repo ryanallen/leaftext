@@ -2,7 +2,7 @@
 
 > Connect an agent on your computer to the document open in Leaftext.
 
-![Leaftext with a document open in the reading window](../../imgs/leaftext.png)
+![Leaftext with a document open in the reading window](../../imgs/leaftext-v2.png)
 
 Leaftext's installed app can answer an agent through MCP. Keep Leaftext open, add the app as a tool server in your agent's settings, and the agent can read the document, edit and save it, tick tasks, search the active vault, inspect links, export the page, and use the other tools the app offers.
 

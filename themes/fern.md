@@ -112,7 +112,7 @@
 | done                                    | `#1a7f37`                 |
 | link                                    | `#1a7f37`                 |
 | link-hover                              | `#0f5a27`                 |
-| focus-ring                              | `#2da44e`                 |
+| focus-ring                              | `#2b9c4a`                 |
 | focus-selection-background              | `#d6efdd`                 |
 | markdown-link                           | `#1a7f37`                 |
 | markdown-blockquote-border              | `#2da44e`                 |

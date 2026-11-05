@@ -15,8 +15,8 @@ Links inside note and glossary sheets follow the same route as links in the docu
 | [Web tabs](#web-tabs) | Browse a live web page beside your documents |
 | [Console tabs](03-library.md#console) | Run a command line in the folder shown by the library |
 | [Two documents side by side](#two-documents-side-by-side) | Stand a second tab beside the one you are reading, each column scrolling on its own with its own rail |
-| [New document](07-editing.md#new-document) | **New** at the top of the library pane starts a blank page, ready to type |
-| [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with how many headings it holds |
+| [New document](07-editing.md#new-document) | **New** at the top of the icon rail starts a blank page, ready to type |
+| [Outline](#outline) | The open document's headings, which the side pane opens on whenever a document is in front, with the one you are reading lit and its Back leading to your pinned and recent documents |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you arrive at on screen at once |
 | [Refresh](#history) | Draw the open file and its current glossary again, dropping page-only state such as a folded block or dragged table column |
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
@@ -29,18 +29,19 @@ Links inside note and glossary sheets follow the same route as links in the docu
 | [Export the page](#export-the-page) | Save the page you are reading as one continuous PDF, as a picture of the whole document, as a web page with its stylesheet, its pictures and its [minimap](04-minimap.md#on-an-exported-page) in a folder beside it — every one of them in the theme on screen — as the Markdown note itself with its pictures in a folder beside it, or as an EPUB book with its pictures inside, for a phone or an e-reader |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, the opening of a linked note, and a glossary term's whole entry |
-| [The pointer](#the-pointer) | The hand means this goes somewhere — a link, a button written into a document, and the controls that carry you between documents; the arrow stays over the reader's view buttons, the library row and the start screen's vault switch, every menu and popup row, the icons the app bar draws for itself, and anything you cannot press right now |
+| [The pointer](#the-pointer) | The hand means this goes somewhere — a link, a button written into a document, and the controls that carry you between documents; the arrow stays over the reader's view buttons, the vault picker and the start screen's vault switch, every menu and popup row, the icons the app bar draws for itself, and anything you cannot press right now |
 | [What a control does under the pointer](#what-a-control-does-under-the-pointer) | The buttons at either end of the bar, the file rows in the pane and a button written into a document answer with their color over the same beat, and with nothing else — none of them lifts, changes shape or moves. The [Previous / Next](#pager) card answers with its color and a dotted shadow around it, and is the one control that adds anything |
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the theme's color under the pointer and throwing a dotted shadow around themselves |
 | [Single window](#tabs) | One running Leaftext holding as many windows as you like: Control N, or Command N on a Mac, opens a new one, and so does launching Leaftext again with no file on Windows; opening a file from outside still adds it as a tab to the window you were last in |
 | [When another app is in front](#when-another-app-is-in-front) | The whole window settles together the moment it falls behind another app — chrome, document, pictures and the little picture of the page all keep some color at half strength, with black text going less dark, faded in and out over the same beat |
+| [More](#more) | The last press on the floating bar: Themes, the Grove, New window, Full screen and About Leaftext wherever you are, the Calendar beside a document, Scheduled tasks beside an agent, and Zoom on a web page |
 | [When the bar runs out of room](#when-the-bar-runs-out-of-room) | On a window too narrow for the whole app bar, its buttons fold into a chevron menu one at a time — and the window's own close, minimize and maximize stay on the bar |
 | [Code view](07-editing.md) | Toggle any document to its raw, editable source |
 
 ## Web tabs
 
-Press **New** at the top of the [library pane](03-library.md#layout), choose **New page**, and enter an address in the field in the middle of the empty page. A bare host such as `ryanallen.com` opens over HTTPS; words open a Google search. **Browse free books** under it opens [Books online](03-library.md#books-online). Typing the first character of a note removes the field and the button.
+Press **New** at the top of the icon rail down the window's left edge, choose **New page**, and enter an address in the field in the middle of the empty page. A bare host such as `ryanallen.com` opens over HTTPS; words open a Google search. **Browse free books** under it opens [Books online](03-library.md#books-online). Typing the first character of a note removes the field and the button.
 
 On [Home](#recent-files), add the **Web address** box with the small plus below the boxes. Type an address or search words and press **Enter** or **Go** to open a new selected web tab. Tabs already open stay available.
 
@@ -48,7 +49,7 @@ A web tab takes its name from the page's title. Move the pointer onto the app ba
 
 Back, Forward and Refresh control the live page. Refresh keeps your place as the page loads, even when its own script adds content later. Closing, switching and dragging work as they do on document tabs. A saved web tab reopens at its last address when you bring it forward. Links asking for a new window open in another web tab. A link that hands off to another app on the computer — a Linear issue, a Slack channel, a `mailto:` address — asks first: a message names the app, and **Open** starts it. The [minimap](04-minimap.md#web-pages) shows a picture of the page and follows its scroll position.
 
-Zoom a web tab the way a browser does. On Windows, hold **Ctrl** and roll the wheel, or press **Ctrl+Plus**, **Ctrl+Minus** or **Ctrl+0** to go back to actual size. On a Mac, press **Command+Plus**, **Command+Minus** or **Command+0**. A pinch on the touchpad zooms on either. The zoom stays through the tab's own links until the tab closes, and the minimap redraws the zoomed page.
+Zoom a web tab the way a browser does. On Windows, hold **Ctrl** and roll the wheel, or press **Ctrl+Plus**, **Ctrl+Minus** or **Ctrl+0** to go back to actual size. On a Mac, press **Command+Plus**, **Command+Minus** or **Command+0**. A pinch on the touchpad zooms on either. Or open [More](#more) while the page is in front: its first row is **Zoom**, with minus, the level and plus, and pressing the level puts the page back at actual size. A tab that is not at actual size wears its level beside its name, however it got there. The zoom stays through the tab's own links until the tab closes, and the minimap redraws the zoomed page.
 
 The live page fits inside the reading card's thin border and all four of its rounded corners, so its top turns down on the same curve the bar draws over a document; the address bar lies over its top while the page holds still. Its main scroll bar is hidden because the minimap shows the page's place; scrolling inside a page element still uses that element's own bar. The active web tab takes a solid page background when one is available and chooses readable light or dark letters for it.
 
@@ -74,7 +75,7 @@ flowchart LR
 | Action | Windows | macOS |
 | --- | --- | --- |
 | Open file | `Ctrl+O` | `Cmd+O` |
-| [New window](#tabs) | `Ctrl+N` | `Cmd+N` |
+| [New window](#tabs), also a row in [More](#more) | `Ctrl+N` | `Cmd+N` |
 | Close tab | `Ctrl+W` | `Cmd+W` |
 | Quit, keeping your tabs and unsaved edits for next time | `Ctrl+Q` | `Cmd+Q` |
 | Back | `Alt+Left` | `Cmd+Left` |
@@ -82,7 +83,7 @@ flowchart LR
 | Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
 | [Stand the next tab beside this one](#two-documents-side-by-side), and close the split | `Ctrl+\` | `Cmd+\` |
-| [Full screen](06-themes.md#windows) | `F11` | Green dot at the top left |
+| [Full screen](06-themes.md#windows), also a row in [More](#more) | `F11` | Green dot at the top left |
 | Save (with [unsaved edits](07-editing.md#save), your own typing included) | `Ctrl+S` | `Cmd+S` |
 | [Undo](07-editing.md#undo) — a word of your typing, then the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
 | [Redo](07-editing.md#undo) a word of typing, or a whole edit, you took back | `Ctrl+Y` or `Ctrl+Shift+Z` | `Cmd+Shift+Z` |
@@ -106,11 +107,11 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 ### The app bar
 
-![The Leaftext app bar: the leaf mark, the pane button, Back, Refresh and Forward, then the tab strip, then Open and Export at the right](../../imgs/navigation-v2.png)
+![Leaftext reading a document: the app bar with the leaf mark and the word leaftext, the pane button, Back, Refresh and Forward, and the vault picker in the middle; the tabs on the page under it; the page header naming app / README.md, with Open and Export at the right; the icon rail down the left edge with New, Search, Conversations, Documents and Outline; the Outline in the side pane; and the floating bar over the foot of the page with Read, Source, Graph and More](../../imgs/navigation-v4.png)
 
-**New** ([new document](07-editing.md#new-document), a [console](03-library.md#console) or an agent) is the first row of the [library pane](03-library.md#the-panes-rows) rather than a button in the tab strip. At the right Open and [Export](#export-a-pdf). The palette that opens the [theme picker](06-themes.md#choose) stands with the other launchers at the foot of the [library pane](03-library.md#browsing).
+**New** ([new document](07-editing.md#new-document), a [console](03-library.md#console) or an agent) is the first press in the icon rail down the window's left edge rather than a button in the tab strip. The page header under the tabs names where the document sits, and at its right Open and [Export](#export-a-pdf). The [theme picker](06-themes.md#choose), the Grove and the rest of what used to stand at the foot of the pane are rows of [More](#more), at the right end of the floating bar.
 
-The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back, Refresh and Forward, then the tab strip. Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
+The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the pane button, Back, Refresh and Forward, and in the middle of the bar the one [vault picker](03-library.md#the-vault-picker), which names the folder of whatever is in front. Those are about the app rather than the document, which is why they are up here and not on the floating toolbar. The tabs stand on the page under them, and the page header under the tabs names the vault, the folders down to the document and the document itself.
 
 **Open reaches any file, on either platform.** On Windows the dialog carries a list of the [formats the reader opens](03-library.md#file-types), with **All files** at the end for anything else. A Mac dialog has no such list, so it simply shows everything — which is the same answer, since a file whose ending Leaftext does not know is [read as Markdown](01-rendering.md) rather than refused.
 
@@ -146,7 +147,7 @@ The app bar doubles as the title bar on both platforms, and Leaftext draws the w
 
 ### When another app is in front
 
-Click into another app and the whole window steps back at once: the leaf, the window buttons, the tabs and their names, the [library pane](03-library.md), the [floating toolbar](#the-floating-toolbar), the [find bar](#find-in-this-document), the [minimap](04-minimap.md) and its little picture of the page, and the document under all of them — its words, its code, its diagrams and any picture inside it — all keep half their color and come a little closer together in contrast, so black text goes less dark and the paper comes down to meet it. It is not gray: a red is still plainly red, and a tinted theme stays tinted. Click back and every part of it returns together.
+Click into another app and the whole window steps back at once: the leaf, the window buttons, the tabs and their names, the icon rail and the [side pane](03-library.md), the [floating toolbar](#the-floating-toolbar), the [find bar](#find-in-this-document), the [minimap](04-minimap.md) and its little picture of the page, and the document under all of them — its words, its code, its diagrams and any picture inside it — all keep half their color and come a little closer together in contrast, so black text goes less dark and the paper comes down to meet it. It is not gray: a red is still plainly red, and a tinted theme stays tinted. Click back and every part of it returns together.
 
 The documents on screen keep [live-reloading](#reload) while you work in another app. Vault status and the library's search index and map catch up once when you return. The theme picker's [Random preview](06-themes.md#random) rests while away, and a due [update check](05-settings.md#updates) runs on return.
 
@@ -163,6 +164,23 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 | Views | [Reading](01-rendering.md), the [source](07-editing.md#code-view), and the [graph](03-library.md#graph). One pill in the accent color sits behind them, and it slides to the button you press with a small bounce at the end. It moves at the press rather than when the new view lands, so the bar answers straight away; a source view that will not open puts it back |
 | View tools | A nub stands proud of the bar over the button of the view you are in, and grows upward into a small tray when you point at that button or at the nub, or when the keyboard reaches what is inside. On a touchscreen, tap that button or the nub: the tray stays out after your finger lifts, so its tools can be tapped in turn, and tapping the button again, tapping anywhere else or pressing Escape puts it away. The recess in it carries the tools of the view you are in: the [padlock](07-editing.md#the-padlock) in both editable views, the [speed reader](05-settings.md#speed-reader) Off/On button, [Flash words](05-settings.md#flash-words) and the [Read aloud](05-settings.md#read-aloud) speaker in the reading view, the [typing help](07-editing.md#typing-help) wand in the source, and how big a graph to draw on the [graph](03-library.md#graph). Move away and it comes home the way the library pane does: down onto the bar, one small bounce back off it, and it parks as the nub again. Every view has one. A view left with none of them loses the tray and the nub with it — the reading view of a [page drawn in its own frame](01-rendering.md#html-files), which has neither |
 | Edits | [Undo](07-editing.md#undo) and [Save](07-editing.md#save), each appearing only when there is something to undo or save |
+
+### More
+
+The last press on the floating bar, at its right end, opens **More**: what you reach for now and then, sorted by what is in front of you. Every row is a press, and the keyboard walks them.
+
+| Row | When it stands | What it does |
+| --- | --- | --- |
+| **Zoom** | A web page is in front | Minus, the level and plus; pressing the level goes back to actual size |
+| **Calendar** | A document is in front, inside a vault that has dated notes | Opens the [calendar](03-library.md#calendar) |
+| **Scheduled tasks** | An agent is in front and there are tasks | Opens the [scheduled tasks](03-library.md#scheduled-tasks) list |
+| **Themes** | Always | Opens the [theme picker](06-themes.md#choose); its tooltip names the family and appearance you are on |
+| **Grove** | Always | Opens [the Grove](09-progress.md), with your level bar in the row |
+| **New window** | Always | Opens a second window, and shows its key, `Ctrl+N` or `Cmd+N` |
+| **Full screen** | Always | Fills the screen, and shows its key |
+| **About Leaftext** | Always | Shows the version you are running, **Restart to update** while an update is waiting, **Licenses**, which opens every third-party notice as a document, and **Open the journal**, which opens the app's [journal](05-settings.md#journal) read-only in a tab, the file a bug report attaches |
+
+There is no Settings row, because there is no settings panel. On a published site the bar carries no More.
 
 Over a console holding Claude Code, Codex or Antigravity the bar carries **Chat** and **Console** in place of the views, with the same sliding pill and nothing else: Chat shows the agent's conversation, and Console shows its own terminal with the keys in it until you press Chat again. See [the conversation as a chat](10-agents.md#the-conversation-as-a-chat).
 
@@ -203,7 +221,7 @@ Press outside a right-click menu to close it. The control you press keeps its ac
 Any second tab can stand beside the one you are reading, in a column of its own, so two documents are on screen at once and each scrolls on its own. A [console](03-library.md#console) or a [web page tab](#web-tabs) stands in either half the same way, beside a note or beside another console or page, and pressing into its card hands it the keys. The console button never splits anything on its own: it opens its console in a tab of its own, and you put that tab beside a note when you want it there.
 
 - Press `Ctrl+\` (`Cmd+\` on a Mac) to stand the next tab beside the one in front. Right-click a tab and choose **Open beside** to stand that tab on the right. When it is the tab you are reading, it takes the keys to the right and the next tab fills the left. The row is there where there is another tab for it to stand beside, so a window with one document open does not offer it. The same menu row reads **Close beside** while a split is open, and the same key closes it. The page standing beside also carries a **Close beside** press in its top corner, which is how a split holding an agent's chat is closed, since a chat has no tab; closing it leaves the agent running in **All chats**.
-- Right-click a file in the [library pane](03-library.md#file-actions) and choose **Open beside** to stand that file in the second column, with the document you are reading keeping the keys.
+- Right-click a file in the [browse sheet](03-library.md#file-actions) and choose **Open beside** to stand that file in the second column, with the document you are reading keeping the keys.
 - Dragging a tab onto the right half of the page opens that tab on the right. When it is the tab you are reading, it takes the keys and keeps your reading place while the next tab fills the left. The tab rides above everything at your hand, and while it is over the half the second page is drawn as a see-through ghost carrying its name, at the share the split will take; carry it back out and the ghost goes and nothing opens. Along the strip itself the tab still reorders; carried past the last tab, anywhere up to the window’s right edge — over the plus, the buttons at the end of the bar or the minimap rail — it counts as the half, and the other tabs stay where they are.
 - Each column keeps its own place, its own Back list, its own unsaved edits and its own [minimap](04-minimap.md) rail, because each is a tab and a tab already carries all of those.
 - Each page wears its own tabs. The strip is cut into a group per card, each taking that card's share of the window, so the tab of the document you are reading sits over the page it opens; a press in a card's own strip draws into that card, and a tab dragged from the other card's strip into this one hands that document to this card. The second page's own tab carried onto the other page or its strip closes that side: the page it would close fades while the tab is over, and carried back, both pages stay up.
@@ -217,7 +235,7 @@ One document can stand beside itself as well: **Open source beside** on a tab pu
 
 #### When the bar runs out of room
 
-Tabs are never squeezed to make space for the toolbar, and a strip that has run out of room folds nothing: the tabs scroll instead. What folds is the bar itself running wider than the window — its buttons go into a chevron menu one at a time, right to left: the trailing actions first, then Back, Refresh and Forward, then the window controls. Two never fold — the leaf, which is the way home, and the [library](03-library.md#layout) button, which on a narrow window is the only way to reach the library at all. Once a group has gone entirely — Open and Export, or Back, Refresh and Forward — the row closes up over it rather than holding a gap where it stood. The tabs are never folded away; [New](03-library.md#layout), which used to stand at their end, is the first row of the library pane. Widening the window puts each one back where it came from. A button you reached with Tab keeps the keyboard while the window changes width, whether it stands on the bar or inside the open chevron menu, and follows the button when it crosses between the two.
+Tabs are never squeezed to make space for the toolbar, and a strip that has run out of room folds nothing: the tabs scroll instead. What folds is the bar itself running wider than the window — its buttons go into a chevron menu one at a time, right to left: the trailing actions first, then Back, Refresh and Forward, then the window controls. Two never fold — the leaf, which is the way home, and the [library](03-library.md#layout) button, which on a narrow window is the only way to reach the library at all. Once a group has gone entirely — Open and Export, or Back, Refresh and Forward — the row closes up over it rather than holding a gap where it stood. The tabs are never folded away; [New](03-library.md#layout), which used to stand at their end, is the first press in the icon rail. Widening the window puts each one back where it came from. A button you reached with Tab keeps the keyboard while the window changes width, whether it stands on the bar or inside the open chevron menu, and follows the button when it crosses between the two.
 
 That matters most on a small window with nothing open, where the window's own close, minimize and maximize buttons would otherwise run off the right edge: the bar is measured on its own account, so the chevron holds whatever will not fit beside them.
 
@@ -353,7 +371,7 @@ In the rendered view a replace is written to the file's source, not to the page.
 
 ![The sidebar holding the open document's outline above the chats: the Outline heading with its fold and the count of twenty-one headings, the page's own title as the first row, and the sections indented under it and stepping down in size](../../imgs/outline-v2.png)
 
-Open a document and the [sidebar](03-library.md#the-panes-rows) shows that document's **Outline** above the chats — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit. The lit row moves as you scroll, so the sidebar says where you are as well as what is there.
+Open a document and the [sidebar](03-library.md#the-icon-rail-and-the-side-pane) shows that document's **Outline** above the chats — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit. The lit row moves as you scroll, so the sidebar says where you are as well as what is there.
 
 - The **Outline** heading counts the headings at its right — **23 headings** — counted off the rows drawn below, so the number and the list can never disagree. Press it to fold the list away and again to open it; it stays the way you left it.
 - On a published site the outline stands in the pane in place of the files instead, with a back row wearing the folder's name that puts the files back.
@@ -415,13 +433,13 @@ A link naming something your machine would **run** rather than open — a progra
 
 The shape under the pointer says one thing: the hand means this goes somewhere. You get it over a link in the document you are reading, over a [button written into one](01-rendering.md#buttons-leaf-extension), and over the controls that carry you between documents — the leaf, Back, Forward, a tab, a file or folder row in the [library](03-library.md#browsing) pane, a step of the folder path and the find bar's controls.
 
-The arrow says the opposite: nothing here leaves the page. It stays over any control you cannot press right now — Back on the first document of a session is the one you meet most — over the folder you are already standing in, over the reader's view buttons, the library row and the start screen's vault switch, over every menu and popup row, over the icons the app bar draws for itself (the library toggle, themes, open, new document, export, and the window's own minimize, maximize and close), and over the two controls a document offers that are not links: a fold's summary line and a task checkbox. The [minimap](04-minimap.md) rail keeps it too, because it is dragged rather than followed.
+The arrow says the opposite: nothing here leaves the page. It stays over any control you cannot press right now — Back on the first document of a session is the one you meet most — over the folder you are already standing in, over the reader's view buttons, the vault picker and the start screen's vault switch, over every menu and popup row, over the icons the app bar and the icon rail draw for themselves (the pane toggle, new document, search, open, export, and the window's own minimize, maximize and close), and over the two controls a document offers that are not links: a fold's summary line and a task checkbox. The [minimap](04-minimap.md) rail keeps it too, because it is dragged rather than followed.
 
 Every other shape still does its own work, because it describes a gesture rather than a promise — the caret over words you can [type in](07-editing.md#inline-editing-the-reading-view), the open hand over a block you can drag, the double arrow over the [library](03-library.md#browsing) pane's own edge and over the bar that splits a [diagram sheet](01-rendering.md#mermaid-diagrams), and the cross while you draw a connection in one.
 
 ### What a control does under the pointer
 
-Point at one of the icon buttons along the bar — [Back and Forward](#history) at the left, Open and Export at the right — at a launcher at the foot of the [library](03-library.md#browsing) pane — at a file row in the [library](03-library.md#browsing) pane, or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The fill goes to the theme's own color, the glyph reverses out of it, and the ink and the edge arrive over the same beat, as they do on every control in the app.
+Point at one of the icon buttons along the bar — [Back and Forward](#history) at the left, Open and Export at the right — at a press in the icon rail — at a file row in the [browse sheet](03-library.md#the-vault-picker), or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The fill goes to the theme's own color, the glyph reverses out of it, and the ink and the edge arrive over the same beat, as they do on every control in the app.
 
 That is the whole answer. Nothing changes shape, nothing slides: the control stays exactly the box, the corner and the place it rests at, so the thing you aimed at is the thing under the pointer and no row changes height. The color reverses the moment the pointer leaves, and with [Reduce Motion](05-settings.md#reduce-motion) on it arrives in one frame.
 

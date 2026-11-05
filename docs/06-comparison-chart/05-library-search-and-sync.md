@@ -488,7 +488,7 @@
 [l-syncing]: ../01-features/03-library.md#syncing
 [l-nested]: ../01-features/03-library.md#repositories-inside-repositories
 [l-live]: ../01-features/03-library.md#live-updates
-[l-launchers]: ../01-features/03-library.md#launchers-under-the-library-row
+[l-launchers]: ../01-features/03-library.md#where-the-launchers-went
 [l-console]: ../01-features/03-library.md#console
 [l-console-done]: ../01-features/03-library.md#a-finished-console-says-so
 [l-console-agents]: ../01-features/03-library.md#every-agent-in-one-list
