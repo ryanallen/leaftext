@@ -1,6 +1,6 @@
 # Bluebell
 
-![Bluebell — the same document in the light and dark variants](../imgs/themes/bluebell.png)
+![Bluebell — the same document in the light and dark variants](../imgs/themes/bluebell-v2.png)
 
 **Family ID:** `bluebell`
 

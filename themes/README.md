@@ -17,7 +17,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 
 [`amaranth.md`](amaranth.md) · Heading **Source Serif 4** · Body **Source Sans 3** · Reading **Source Serif 4** · Code **Source Code Pro** · Google Fonts
 
-![Amaranth — the same document in the light and dark variants](../imgs/themes/amaranth.png)
+![Amaranth — the same document in the light and dark variants](../imgs/themes/amaranth-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -36,7 +36,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 
 [`arabica.md`](arabica.md) · Heading **Rubik** · Body **Rubik** · Code **JetBrains Mono** · Google Fonts
 
-![Arabica — the same document in the light and dark variants](../imgs/themes/arabica.png)
+![Arabica — the same document in the light and dark variants](../imgs/themes/arabica-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -55,7 +55,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 
 [`artemisia.md`](artemisia.md) · Heading **IBM Plex Sans** · Body **IBM Plex Sans** · Code **IBM Plex Mono** · Google Fonts
 
-![Artemisia — the same document in the light and dark variants](../imgs/themes/artemisia.png)
+![Artemisia — the same document in the light and dark variants](../imgs/themes/artemisia-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -76,7 +76,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`birch.md`](birch.md) · Heading **Public Sans** · Body **Public Sans** · Code **Noto Sans Mono** · Google Fonts
 
-![Birch — the same document in the light and dark variants](../imgs/themes/birch.png)
+![Birch — the same document in the light and dark variants](../imgs/themes/birch-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -95,7 +95,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`bloodleaf.md`](bloodleaf.md) · Heading **Archivo** · Body **Archivo** · Code **Roboto Mono** · Google Fonts
 
-![Bloodleaf — the same document in the light and dark variants](../imgs/themes/bloodleaf.png)
+![Bloodleaf — the same document in the light and dark variants](../imgs/themes/bloodleaf-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -114,7 +114,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`bluebell.md`](bluebell.md) · Heading **Manrope** · Body **Sora** · Code **Source Code Pro** · Google Fonts
 
-![Bluebell — the same document in the light and dark variants](../imgs/themes/bluebell.png)
+![Bluebell — the same document in the light and dark variants](../imgs/themes/bluebell-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -133,7 +133,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`camellia.md`](camellia.md) · Heading **Cormorant Garamond** · Body **Karla** · Code **IBM Plex Mono** · Google Fonts
 
-![Camellia — the same document in the light and dark variants](../imgs/themes/camellia.png)
+![Camellia — the same document in the light and dark variants](../imgs/themes/camellia-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -152,7 +152,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`copperleaf.md`](copperleaf.md) · Heading **Fraunces** · Body **Work Sans** · Code **IBM Plex Mono** · Google Fonts
 
-![Copperleaf — the same document in the light and dark variants](../imgs/themes/copperleaf.png)
+![Copperleaf — the same document in the light and dark variants](../imgs/themes/copperleaf-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -171,7 +171,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`eucalyptus.md`](eucalyptus.md) · Heading **Lato** · Body **Lato** · Code **IBM Plex Mono** · Google Fonts
 
-![Eucalyptus — the same document in the light and dark variants](../imgs/themes/eucalyptus.png)
+![Eucalyptus — the same document in the light and dark variants](../imgs/themes/eucalyptus-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -190,7 +190,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`fern.md`](fern.md) · Heading **Noto Serif** · Body **Noto Sans** · Code **Noto Sans Mono** · Google Fonts
 
-![Fern — the same document in the light and dark variants](../imgs/themes/fern.png)
+![Fern — the same document in the light and dark variants](../imgs/themes/fern-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -209,7 +209,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`ginger.md`](ginger.md) · Heading **Nunito** · Body **Nunito** · Code **Inconsolata** · Google Fonts
 
-![Ginger — the same document in the light and dark variants](../imgs/themes/ginger.png)
+![Ginger — the same document in the light and dark variants](../imgs/themes/ginger-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -228,7 +228,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`github.md`](github.md) · Heading **-apple-system** · Body **-apple-system** · Code **ui-monospace** · System fonts
 
-![GitHub — the same document in the light and dark variants](../imgs/themes/github.png)
+![GitHub — the same document in the light and dark variants](../imgs/themes/github-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -247,7 +247,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`goldenrod.md`](goldenrod.md) · Heading **Space Grotesk** · Body **Space Grotesk** · Code **Space Mono** · Google Fonts
 
-![Goldenrod — the same document in the light and dark variants](../imgs/themes/goldenrod.png)
+![Goldenrod — the same document in the light and dark variants](../imgs/themes/goldenrod-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -266,7 +266,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`halcyon.md`](halcyon.md) · Heading **IBM Plex Sans** · Body **IBM Plex Sans** · Code **IBM Plex Mono** · Google Fonts
 
-![Halcyon — the same document in the light and dark variants](../imgs/themes/halcyon.png)
+![Halcyon — the same document in the light and dark variants](../imgs/themes/halcyon-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -285,7 +285,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once B
 
 [`ivy.md`](ivy.md) · Heading **IBM Plex Mono** · Body **IBM Plex Mono** · Code **IBM Plex Mono** · Google Fonts
 
-![Ivy — the same document in the light and dark variants](../imgs/themes/ivy.png)
+![Ivy — the same document in the light and dark variants](../imgs/themes/ivy-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -306,7 +306,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once L
 
 [`laurel.md`](laurel.md) · Heading **Figtree** · Body **Figtree** · Code **Noto Sans Mono** · Google Fonts
 
-![Laurel — the same document in the light and dark variants](../imgs/themes/laurel.png)
+![Laurel — the same document in the light and dark variants](../imgs/themes/laurel-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -327,7 +327,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once L
 
 [`lavender.md`](lavender.md) · Heading **Outfit** · Body **Outfit** · Code **Noto Sans Mono** · Google Fonts
 
-![Lavender — the same document in the light and dark variants](../imgs/themes/lavender.png)
+![Lavender — the same document in the light and dark variants](../imgs/themes/lavender-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -346,7 +346,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once L
 
 [`nightshade.md`](nightshade.md) · Heading **Fraunces** · Body **Inter** · Code **Fira Code** · Google Fonts
 
-![Nightshade — the same document in the light and dark variants](../imgs/themes/nightshade.png)
+![Nightshade — the same document in the light and dark variants](../imgs/themes/nightshade-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -365,7 +365,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once L
 
 [`pippin.md`](pippin.md) · Heading **DM Sans** · Body **DM Sans** · Code **DM Mono** · Google Fonts
 
-![Pippin — the same document in the light and dark variants](../imgs/themes/pippin.png)
+![Pippin — the same document in the light and dark variants](../imgs/themes/pippin-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -386,7 +386,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once S
 
 [`saffron.md`](saffron.md) · Heading **Libre Franklin** · Body **Libre Franklin** · Code **Noto Sans Mono** · Google Fonts
 
-![Saffron — the same document in the light and dark variants](../imgs/themes/saffron.png)
+![Saffron — the same document in the light and dark variants](../imgs/themes/saffron-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -405,7 +405,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once S
 
 [`sage.md`](sage.md) · Heading **Inter** · Body **Inter** · Code **JetBrains Mono** · Google Fonts
 
-![Sage — the same document in the light and dark variants](../imgs/themes/sage.png)
+![Sage — the same document in the light and dark variants](../imgs/themes/sage-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -424,7 +424,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once S
 
 [`spearmint.md`](spearmint.md) · Heading **Inter** · Body **Lexend** · Code **Fira Code** · Google Fonts
 
-![Spearmint — the same document in the light and dark variants](../imgs/themes/spearmint.png)
+![Spearmint — the same document in the light and dark variants](../imgs/themes/spearmint-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -445,7 +445,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once S
 
 [`sumac.md`](sumac.md) · Heading **Karla** · Body **Karla** · Code **Noto Sans Mono** · Google Fonts
 
-![Sumac — the same document in the light and dark variants](../imgs/themes/sumac.png)
+![Sumac — the same document in the light and dark variants](../imgs/themes/sumac-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -466,7 +466,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once W
 
 [`woad.md`](woad.md) · Heading **Manrope** · Body **Manrope** · Code **Noto Sans Mono** · Google Fonts
 
-![Woad — the same document in the light and dark variants](../imgs/themes/woad.png)
+![Woad — the same document in the light and dark variants](../imgs/themes/woad-v2.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |

@@ -1,6 +1,6 @@
 # Birch
 
-![Birch — the same document in the light and dark variants](../imgs/themes/birch.png)
+![Birch — the same document in the light and dark variants](../imgs/themes/birch-v2.png)
 
 **Family ID:** `birch`
 

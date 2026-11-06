@@ -1,6 +1,6 @@
 # Ivy
 
-![Ivy — the same document in the light and dark variants](../imgs/themes/ivy.png)
+![Ivy — the same document in the light and dark variants](../imgs/themes/ivy-v2.png)
 
 **Family ID:** `ivy`
 

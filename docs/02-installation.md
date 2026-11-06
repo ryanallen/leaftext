@@ -21,7 +21,7 @@ Every file on the release page is an installer you can run — no checksums, not
 
 ### macOS
 
-![The mounted Leaftext disk image in the Finder: the leaf app icon on the left with an arrow pointing to the Applications folder shortcut on the right](../imgs/install-mac.png)
+![The mounted Leaftext disk image in the Finder: the leaf app icon on the left with an arrow pointing to the Applications folder shortcut on the right](../imgs/install-mac-v2.png)
 
 **1. Download** the file ending in `-macos-universal.dmg` — **[the disk image →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)**. One file covers both Apple Silicon and Intel Macs.
 
@@ -63,11 +63,11 @@ Let it through once and it opens normally forever after. Either route works.
 2. Open **System Settings** → **Privacy & Security**.
 3. Scroll to the **Security** section near the bottom. A line names Leaftext as blocked, with an **Open Anyway** button. Click it.
 
-![The macOS confirmation box titled Open “Leaftext”?, saying Apple is not able to verify it is free from malware, with a blue Open Anyway button above a Done button](../imgs/install-mac-open-confirm.png)
+![The macOS confirmation box titled Open “Leaftext”?, saying Apple is not able to verify it is free from malware, with a blue Open Anyway button above a Done button](../imgs/install-mac-open-confirm-v2.png)
 
 4. A box asks **Open "Leaftext"?** and repeats the warning. Click **Open Anyway**.
 
-![The macOS Privacy & Security authorization box asking for an administrator username and password to allow the app to open, with the username filled in, an empty Password field, and OK beside a Passwords... button](../imgs/install-mac-password.png)
+![The macOS Privacy & Security authorization box asking for an administrator username and password to allow the app to open, with the username filled in, an empty Password field, and OK beside a Passwords... button](../imgs/install-mac-password-v2.png)
 
 5. Enter an administrator name and password — or use Touch ID if your Mac offers it — and click **OK**.
 
@@ -91,7 +91,7 @@ That removes the "downloaded from the internet" tag macOS attaches to the file. 
 
 ### Windows warns before it runs
 
-![The Windows protected your PC dialog with More info already expanded: leaftext beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](../imgs/install-windows.png)
+![The Windows protected your PC dialog with More info already expanded: leaftext beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](../imgs/install-windows-v2.png)
 
 Windows may show a full-screen **Windows protected your PC** box the first time you run the installer, because it is not signed with a paid certificate. Click **More info**, then **Run anyway**. Your browser may also make you keep the download — choose **Keep** if it asks; browsers press hard on an unsigned `.exe`, so expect one more click there.
 

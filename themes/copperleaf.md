@@ -1,6 +1,6 @@
 # Copperleaf
 
-![Copperleaf — the same document in the light and dark variants](../imgs/themes/copperleaf.png)
+![Copperleaf — the same document in the light and dark variants](../imgs/themes/copperleaf-v2.png)
 
 **Family ID:** `copperleaf`
 

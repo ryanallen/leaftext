@@ -1,6 +1,6 @@
 # Sumac
 
-![Sumac — the same document in the light and dark variants](../imgs/themes/sumac.png)
+![Sumac — the same document in the light and dark variants](../imgs/themes/sumac-v2.png)
 
 **Family ID:** `sumac`
 

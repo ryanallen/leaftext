@@ -1,6 +1,6 @@
 # Sage
 
-![Sage — the same document in the light and dark variants](../imgs/themes/sage.png)
+![Sage — the same document in the light and dark variants](../imgs/themes/sage-v2.png)
 
 **Family ID:** `sage`
 

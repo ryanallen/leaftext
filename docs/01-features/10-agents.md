@@ -2,7 +2,7 @@
 
 > Connect an agent on your computer to the document open in Leaftext.
 
-![Leaftext with a document open in the reading window](../../imgs/leaftext-v2.png)
+![Leaftext with a document open in the reading window](../../imgs/leaftext-v3.png)
 
 Leaftext's installed app can answer an agent through MCP. Keep Leaftext open, add the app as a tool server in your agent's settings, and the agent can read the document, edit and save it, tick tasks, search the active vault, inspect links, export the page, and use the other tools the app offers.
 
@@ -17,7 +17,7 @@ Or press **New** at the top of the library pane. Every account is its own row th
 - **Launch settings** belong to that one account: how it signs in, the terminal whose setup is read, an optional launch command of your own, and an optional **key command** — a command run before each start that prints the account's connection settings as JSON, such as a key and an HTTPS address. Only the settings that agent reads for its connection are taken from the answer, and the answer is never shown or saved.
 - **Remove from list** leaves the folder, its sign-in and any console using it as they are.
 
-**+ Add account** sits at the foot of the list. Pick the agent, name the account, and for Claude or Codex Leaftext makes a new, empty account folder and opens the agent's own sign-in in a new console; **Use existing account folder…** adds a folder you already sign in with, copying nothing out of it. Every Claude or Codex sign-in already in your home folder is listed for you under the email it signs in as, and one you remove stays off the list. Each account keeps its own sign-in and history, so two can run side by side. An Antigravity account is a profile: its own folder of history, settings, plugins and tool servers. On Windows Antigravity keeps one Google sign-in for the whole computer, so every profile shares it; on a Mac each profile signs in to Google on its own the first time it starts, and its view opens that profile's sign-in.
+**Add account** sits at the foot of the list. Pick the agent, name the account, and for Claude or Codex Leaftext makes a new, empty account folder and opens the agent's own sign-in in a new console; **Use existing account folder…** adds a folder you already sign in with, copying nothing out of it. Every Claude or Codex sign-in already in your home folder is listed for you under the email it signs in as, and one you remove stays off the list. Each account keeps its own sign-in and history, so two can run side by side. An Antigravity account is a profile: its own folder of history, settings, plugins and tool servers. On Windows Antigravity keeps one Google sign-in for the whole computer, so every profile shares it; on a Mac each profile signs in to Google on its own the first time it starts, and its view opens that profile's sign-in.
 
 Drag a file, picture or folder from the library, Explorer or Finder onto the console to type its full path into the line you are writing. Pick several library rows to insert their paths together. The console lights while it can take the drop, quotes the paths and adds a space so you can keep typing. Dropping a path never sends the line or moves the file. This also works in a console's own window.
 
@@ -73,7 +73,7 @@ The model drops its brand and leads with its named word, so **gpt-6-sol** reads 
 
 Press **Effort** beside the model to open the agent's reasoning choices in one press. Claude Code and Antigravity open their effort pickers; Codex opens its model picker, where confirming the current model reaches its reasoning levels. The agent shows which levels your current model supports and which is selected, and handles saving or canceling the choice. The button shows the reported level as one letter — **L**, **M**, **H**, **X** for extra high, **Mn** for minimal and **Mx** for max — with the full word when you point at it, once the native session supplies it; until then it reads **Effort**. If the button has yielded on a narrow console, the model's full picker also offers effort choices.
 
-![A Codex console in its chat view, with Chat lit beside Console in the floating toolbar, and the row under it reading the Codex logo, the folder icon, Default account, sol-6 and M on the left and the usage rings on the right](../../imgs/console-chat-and-console-v1.png)
+![A Codex console in its chat view, with Chat lit beside Console in the floating toolbar, and the row under it reading the Codex logo, the folder icon, Default account, sol-6 and M on the left and the usage rings on the right](../../imgs/console-chat-and-console-v2.png)
 
 Press the context ring for **Compact the conversation** or **Start a new conversation**. The new conversation keeps the old one on disk for the agent's own resume. For Claude Code and Codex the same menu has **Resume a conversation**, which opens the agent's own list of past conversations. Under a rule it has **Ask a side question**, which puts `/btw ` where you type, the same as the [Side question button](#the-conversation-as-a-chat) in the message box. These actions work even before the agent reports its context usage.
 

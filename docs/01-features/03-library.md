@@ -4,7 +4,7 @@
 
 The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in the one vault picker at the top of the window and in the side pane beside the icon rail, and everything it shows is read from disk when you ask for it.
 
-![The vault picker in the app bar with its browse sheet open under it: the vaults down the left, then the path to the folder and the row saying how it is sorted, and the folder's rows; the document stays in front under its own tab](../../imgs/library-v5.png)
+![The vault picker in the app bar with its browse sheet open under it: the vaults down the left, then the path to the folder and the row saying how it is sorted, and the folder's rows; the document stays in front under its own tab](../../imgs/library-v7.png)
 
 ## The icon rail and the side pane
 
@@ -55,7 +55,7 @@ Press it and the **browse sheet** hangs under the bar. Down its left are your va
 
 ## Vaults
 
-![The vault switcher open, with Library and vaults above one New vault row](../../imgs/vault-switcher-v3.png)
+![The vault switcher open, with Library and vaults above one New vault row](../../imgs/vault-switcher-v4.png)
 
 A **vault** is a folder you have told Leaftext to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
 
@@ -337,7 +337,7 @@ Copying a whole folder is not supported; a folder can be pasted only as a move (
 
 ## Search
 
-![All-files search results hanging under the find bar: a filename match ranked at the top, then content matches showing the document name and highlighted terms, with the pane's outline still behind them](../../imgs/search.png)
+![All-files search results hanging under the find bar: a filename match ranked at the top, then content matches showing the document name and highlighted terms, with the pane's outline still behind them](../../imgs/search-v2.png)
 
 Search covers the active vault, and it is one of the two things the [find bar](02-navigation.md#find-in-this-document) searches. Press `Ctrl+F` anywhere and pick **All files** from the menu at the left end of the field; on the start screen, where there is no document, the bar comes up on All files already. The results hang under the bar, so the pane goes on showing your files or your [outline](02-navigation.md#the-documents-outline) while you read them. With no vault, All files searches the folder the pane is showing, and the field says which — **Search all files in scholar** — with the cursor already in it. That folder is read again each time the bar opens, so a note changed since is found by its new words. Your home folder, a folder holding it and the top of a drive are too wide to read, so there the bar asks for a folder inside your home folder; at the very top of the library, where the pane lists drives, the field says to open a folder.
 
@@ -467,23 +467,23 @@ It works outside a vault too: for a document in a plain folder, Leaftext reads t
 
 ## Tags
 
-![Tags in a note's field block and prose, with All files showing the two notes carrying the renamed parent tag; the code span and link words still carry their original hashtag](../../imgs/tags-search-after-rename-2.png)
+![Tags in a note's field block and prose, with All files showing the two notes carrying the renamed parent tag; the code span and link words still carry their original hashtag](../../imgs/tags-search-after-rename-2-v2.png)
 
 A [tag](../GLOSSARY.md#tag) such as `#work` or `#work/reports` draws as a small pill in a Markdown note's prose and in its `tags` field. Press it to search the active vault through the [find bar](02-navigation.md#find-in-this-document)'s **All files**. A parent tag finds its children: `#work` finds `#work/reports`, while `#workshop` is a different subject. Matching ignores capitals.
 
 Tags in prose and the field block belong to the same set. A field value may include its leading `#` or leave it out. Tags inside code, link words, addresses, brace syntax and heading-only wiki references stay text. A tag needs a letter: a number on its own, or held together by slashes or dashes as in `#2/` or `#2-`, is not a tag, and a slash at the end of a tag is not part of it. Outside a vault, tags still draw as tags.
 
-![Searching for a parent tag finds both the note with that tag and a note with a nested tag](../../imgs/tags-search-after-rename.png)
+![Searching for a parent tag finds both the note with that tag and a note with a nested tag](../../imgs/tags-search-after-rename-v2.png)
 
 In the desktop app, right-click a tag for **Search for this tag** or **Rename everywhere…**. Enter the new name and choose whether to include nested tags. Leaftext counts the files before asking you to confirm. A rename keeps each note's encoding, line endings, quotes and other words. Save or discard unsaved edits in affected notes first. A read-only file or a file changed since confirmation stops the run; a stopped run lists the files changed and the files left unchanged.
 
-![Confirming a tag rename in two files, including nested tags](../../imgs/tags-rename-confirmation.png)
+![Confirming a tag rename in two files, including nested tags](../../imgs/tags-rename-confirmation-v2.png)
 
 The browser readers offer tag search where their host has a vault; they cannot rename files on your disk.
 
 ## Graph
 
-![The graph view filling the page: dozens of document nodes joined by arrowed lines, the open document highlighted larger in the accent color, names floating in dim gray beneath the nodes](../../imgs/graph.png)
+![The graph view filling the page: dozens of document nodes joined by arrowed lines, the open document highlighted larger in the accent color, names floating in dim gray beneath the nodes](../../imgs/graph-v2.png)
 
 A force-directed relationship map. Each **node** is one of your documents or a [web address](#web-addresses) one of them links to; each **edge** is a link that resolves — a Markdown link, an `<a href>`, a `[[wiki]]` link matched by file name or by one of the note's [other names](#other-names), a TEI `target=`, or a bare URL in the text.
 
@@ -710,7 +710,7 @@ The active vault is saved in `manifest.db` beside the vault list, not in [settin
 
 ### Narrow windows
 
-![A Leaftext window 700 pixels wide: the app bar with the picker naming the folder alone, the icon rail down the left edge, and the document beside it with the pane closed](../../imgs/library-narrow-v5.png)
+![A Leaftext window 700 pixels wide: the app bar with the picker naming the folder alone, the icon rail down the left edge, and the document beside it with the pane closed](../../imgs/library-narrow-v6.png)
 
 At 720 pixels wide and under — the same edge where the [minimap](04-minimap.md) gives way to scrollbars — the side pane closes to the icon rail, and the picker names the folder alone, its whole place in its tooltip. A press in the rail or on the pane button opens the pane over the page, and the next press anywhere else puts it away; picking a document dismisses it too, since the page you just opened is behind it. It slides in, or arrives in place under [Reduce Motion](05-settings.md#reduce-motion). The app bar stays above it, so the button that opened it also closes it.
 

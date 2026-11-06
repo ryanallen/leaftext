@@ -27,7 +27,7 @@ flowchart LR
 
 ## 1. Open a file
 
-![The Leaftext home screen with a dotted leaf above the heading, the Choose file, New document and Add your notes folder buttons, and an empty recent files area below](../imgs/dotted-leaf-app-round4-rest-v1.png)
+![The Leaftext home screen with a dotted leaf above the heading, the Choose file, New document and Add your notes folder buttons, and an empty recent files area below](../imgs/dotted-leaf-app-round4-rest-v2.png)
 
 | Method | How |
 | --- | --- |
@@ -43,7 +43,7 @@ flowchart LR
 
 ## 2. Know what you are looking at
 
-![The whole Leaftext window at once: the app bar with its tab strip across the top, the library pane at left holding the document's headings, the rendered page in the middle, the minimap rail at right, and the floating toolbar over the foot of the page](../imgs/ui-tour.png)
+![The whole Leaftext window at once: the app bar with its tab strip across the top, the library pane at left holding the document's headings, the rendered page in the middle, the minimap rail at right, and the floating toolbar over the foot of the page](../imgs/ui-tour-v2.png)
 
 ### The app bar, across the top
 

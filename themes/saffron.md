@@ -1,6 +1,6 @@
 # Saffron
 
-![Saffron — the same document in the light and dark variants](../imgs/themes/saffron.png)
+![Saffron — the same document in the light and dark variants](../imgs/themes/saffron-v2.png)
 
 **Family ID:** `saffron`
 

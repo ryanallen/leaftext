@@ -1,6 +1,6 @@
 # Bloodleaf
 
-![Bloodleaf — the same document in the light and dark variants](../imgs/themes/bloodleaf.png)
+![Bloodleaf — the same document in the light and dark variants](../imgs/themes/bloodleaf-v2.png)
 
 **Family ID:** `bloodleaf`
 

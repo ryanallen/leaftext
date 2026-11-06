@@ -274,7 +274,7 @@ The bars button asks the same way. Press it and the row swaps for the same tones
 
 ### Editing a table
 
-![A table in the page with its right-click menu open over the mug total; Math opens a submenu for row and column totals, calculations with cells, and picked ranges](../../imgs/table-formula-menu-built-v5.png)
+![A table in the page with its right-click menu open over the mug total; Math opens a submenu for row and column totals, calculations with cells, and picked ranges](../../imgs/table-formula-menu-built-v6.png)
 
 A safe Markdown table — one the app can write back out whole — is more than a block you can type in. Point at it and its own controls appear, so a table in a note can be restructured without typing a pipe.
 
@@ -295,7 +295,7 @@ A number in a table that is the sum of the numbers above it stops being true the
 - **Calculate with cells.** Choose **Math → Calculate with cells**, pick an operation, then press two body cells in the table. The panel names the inputs and shows the rule before **Use formula** writes it to the destination. A first-row total can multiply quantity 2 by price 9.00 to make 18.00 without typing a reference. Arrow keys and Enter can pick a cell from either input button; Escape leaves the selection.
 - **Choose a range.** Choose **Math → Choose a range**, pick one of the five functions and press its first and last cells. The range includes both ends and can run across one row or down one column. It cannot include the destination. This lets a total skip a text label and read only numeric cells.
 
-![The formula panel beside the mug total, with quantity 2 and price 9.00 picked for multiplication and Use formula ready](../../imgs/table-formula-menu-built-v10.png)
+![The formula panel beside the mug total, with quantity 2 and price 9.00 picked for multiplication and Use formula ready](../../imgs/table-formula-menu-built-v11.png)
 - **The number and the rule are written together.** One press writes the answer into the cell and a [formula line](../GLOSSARY.md#formula-line) under the table saying what that cell is, as a single edit: one press of undo takes both back. The line is an ordinary [HTML comment](01-rendering.md#inline-html), so the file stays a plain Markdown file that any other program can read, and asking the same cell again replaces the rule rather than adding a second one.
 - **It stays right as you edit.** Change a quantity and the totals that read it are rewritten in the same edit, so the table is never half updated and one press of undo takes the change and its totals back together. Only the cells the rule names are written; every other byte of the table, its spacing and its divider row included, is left exactly as you wrote it. Opening a document whose totals are already right writes nothing at all.
 - **A kept number wears a quiet mark.** A cell the app is keeping right carries a thin bar on its leading edge — the edge a right-aligned number never reaches — so it reads as a number the file is answering for rather than one somebody typed.
@@ -375,7 +375,7 @@ Reading-view edits are undoable, step by step.
 
 ## The flowchart editor
 
-![The flowchart editor open as a full-window sheet: the diagram on the canvas at left, the matching Mermaid text in the pane at right, and the Flow direction control along the top](../../imgs/flowchart-editor.png)
+![The flowchart editor open as a full-window sheet: the diagram on the canvas at left, the matching Mermaid text in the pane at right, and the Flow direction control along the top](../../imgs/flowchart-editor-v2.png)
 
 A flowchart is a [Mermaid](01-rendering.md#mermaid-diagrams) block like any other, and it can always be written as text. It can also be drawn. There are two ways in:
 
@@ -484,7 +484,7 @@ In a Gantt chart a start is a date, `after` and the ids it waits on, or empty to
 
 A radar written `radar` rather than `radar-beta`, a packet whose fields leave a gap, a Gantt chart whose `dateFormat` is anything but `YYYY-MM-DD`, or a line the rows cannot read keeps the diagram in the text alone, and the sheet names the line.
 
-![The diagram sheet open on a user journey: the title field and the step rows beside the picture](../../imgs/chart-rows-journey.png)
+![The diagram sheet open on a user journey: the title field and the step rows beside the picture](../../imgs/chart-rows-journey-v2.png)
 
 The sheet is named for what it holds — **Sankey**, **Pie chart**, **Quadrant chart** and so on, or **Diagram** for a kind it has no name for — and the name follows the text if you retype its first line. The **Flow** picker stands in the bar only while the canvas holds a flowchart it can draw on. Export works on all of them.
 
@@ -509,7 +509,7 @@ The switch beside the padlock opens the source and its rendered page together. M
 
 ### Code view
 
-![The code view showing a Markdown file as raw source: line numbers down the left, headings and list markers colored in the theme's own syntax colors, and the editor's minimap rail standing on the window chrome at the right](../../imgs/code-view.png)
+![The code view showing a Markdown file as raw source: line numbers down the left, headings and list markers colored in the theme's own syntax colors, and the editor's minimap rail standing on the window chrome at the right](../../imgs/code-view-v2.png)
 
 The toggle is the code-brackets button on the [floating toolbar](02-navigation.md#the-floating-toolbar) under the page, beside reading and the [graph](03-library.md#graph). Click it and the rendered page is replaced by the file's raw source; click the reading button to come back.
 
@@ -551,7 +551,7 @@ Scroll a Markdown file in the [code view](#code-view) and the heading you are un
 
 ### Typing help
 
-![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link higher up the file](../../imgs/typing-help.png)
+![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link higher up the file](../../imgs/typing-help-v2.png)
 
 While you type Markdown in the code view, the editor can offer what Leaftext already knows — the same knowledge the [graph](03-library.md#graph) and [search](03-library.md#search) run on, so it only ever sees what you pointed it at: the active [vault](03-library.md#vaults), or the document's own folder when no vault holds it.
 
@@ -616,7 +616,7 @@ The [live reload](02-navigation.md#reload) watcher keeps working alongside editi
 
 The [code view](#code-view) edits every format Leaftext opens, as the whole-file source editor: Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`), [HTML](01-rendering.md#html-files) (`.html`, `.htm`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), [plain text](01-rendering.md#plain-text-files) (`.txt`), [INI](01-rendering.md#ini-files) (`.ini`), [CSS](01-rendering.md#css-files) (`.css`), [CSV](01-rendering.md#csv-files) (`.csv`, `.tsv`), [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`), and every [source file](01-rendering.md#source-files). A [Word, Excel, PowerPoint or OpenDocument file](01-rendering.md#office-and-opendocument-files) (`.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`) is the one exception to *whole-file*: it is a zip rather than one text file. The code view names the XML part above the editor. A workbook or deck lists its readable sheets or slides there in the order the file presents them; a workbook's selected sheet is also the one you can type into in the reading view, where its blocks wear a thin accent bar while the padlock is open, and a deck is typed into on whichever slide you press. A slide's build is set in the reading view with the padlock open, from the list under the slide, and written into the slide where PowerPoint reads it, so PowerPoint plays it; Save or undo an edit before choosing another part. A refused choice leaves the source and selection where they were. Each save rewrites the selected part and carries the rest of the package forward. A Word or OpenDocument file shows its one source part without a picker. An [EPUB book](01-rendering.md#epub-books) (`.epub`) is made of a source file per chapter, so the code view opens the chapter at the top of the reading view, named above the editor, and leaving it returns to the same place in that chapter; move to another chapter and press the button again to open that one. A [Kindle book](01-rendering.md#kindle-books) (`.azw`, `.mobi`, `.azw3`) is stored as compressed records rather than text anybody typed, so the code view does not open it. A Google Drive app shortcut ending `.gsheet`, `.gdoc` or `.gslides` is a link to a document in Google's browser apps, so the code view does not edit it.
 
-![The code view over a deck names slide 2 above its XML, with its own words in the source](../../imgs/the-code-view-over-a-deck-shows-one-slide-doc-v1.png)
+![The code view over a deck names slide 2 above its XML, with its own words in the source](../../imgs/the-code-view-over-a-deck-shows-one-slide-doc-v2.png)
 
 What the *reading view* offers differs by format, because a block can only be edited in place when the app knows the exact bytes it came from:
 

@@ -1,6 +1,6 @@
 # Woad
 
-![Woad — the same document in the light and dark variants](../imgs/themes/woad.png)
+![Woad — the same document in the light and dark variants](../imgs/themes/woad-v2.png)
 
 **Family ID:** `woad`
 

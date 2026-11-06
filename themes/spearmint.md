@@ -1,6 +1,6 @@
 # Spearmint
 
-![Spearmint — the same document in the light and dark variants](../imgs/themes/spearmint.png)
+![Spearmint — the same document in the light and dark variants](../imgs/themes/spearmint-v2.png)
 
 **Family ID:** `spearmint`
 

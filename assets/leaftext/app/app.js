@@ -11214,9 +11214,14 @@ function hintTarget(hint) {
 
 
 function hintPlacement(target, size, view) {
+  
+  const sideTop = Math.max(HINT_EDGE, Math.min(target.top + target.height / 2 - size.height / 2, view.height - HINT_EDGE - size.height));
+  const sideReach = target.top + target.height / 2 - sideTop;
+  const sideInset = Math.min(HINT_TAIL_INSET, size.height / 2);
+  const reaches = sideReach >= sideInset && sideReach <= size.height - sideInset;
   const room = {
-    right: view.width - HINT_EDGE - (target.right + HINT_GAP) >= size.width,
-    left: target.left - HINT_GAP - size.width >= HINT_EDGE,
+    right: reaches && view.width - HINT_EDGE - (target.right + HINT_GAP) >= size.width,
+    left: reaches && target.left - HINT_GAP - size.width >= HINT_EDGE,
     above: target.top - HINT_GAP - size.height >= HINT_EDGE,
     below: view.height - HINT_EDGE - (target.bottom + HINT_GAP) >= size.height,
   };
@@ -15913,6 +15918,9 @@ function openCrumbList(button, items) {
 }
 
 function drawCrumbEntries(box, items, focusLabel, close) {
+  
+  const drawn = items.some((entry) => entry && typeof entry === 'object' && entry.icon && entry.label !== undefined && !entry.buttons);
+  const slot = '<span class="crumb-menu-icon-slot" aria-hidden="true"></span>';
   let firstFocusable = null;
   let requestedFocus = null;
   for (const entry of items) {
@@ -15933,7 +15941,7 @@ function drawCrumbEntries(box, items, focusLabel, close) {
     
     if (entry.note) {
       const note = document.createElement('div');
-      note.className = entry.danger ? 'crumb-menu-note is-danger' : 'crumb-menu-note';
+      note.className = (entry.danger ? 'crumb-menu-note is-danger' : 'crumb-menu-note') + (drawn ? ' is-under-label' : '');
       note.textContent = entry.note;
       box.appendChild(note);
       continue;
@@ -16036,7 +16044,7 @@ function drawCrumbEntries(box, items, focusLabel, close) {
     
     const holds = entry.value !== undefined ? '<span class="crumb-menu-value"></span><span class="lt-icon lt-icon-chevron-down crumb-menu-more" aria-hidden="true"></span>' : '';
     
-    item.innerHTML = `${entry.icon || ''}<span class="crumb-menu-label"></span>${holds || (entry.switch ? '<span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span>' : (entry.selected ? MENU_CHECK_SVG : ''))}`;
+    item.innerHTML = `${entry.icon || (drawn ? slot : '')}<span class="crumb-menu-label"></span>${holds || (entry.switch ? '<span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span>' : (entry.selected ? MENU_CHECK_SVG : ''))}`;
     item.querySelector('.crumb-menu-label').textContent = entry.label;
     
     if (entry.key) {
@@ -18422,7 +18430,8 @@ function outsideDropRoute(place, files, drop, format) {
   return { action: 'open', paths: readable.map((file) => file.path), words };
 }
 function outsideDropBlockAt(y) {
-  const blocks = blockGutterOccupants().filter((block) => hasRangeOf(block, 'block'));
+  
+  const blocks = blockGutterOccupantsAround(y).filter((block) => hasRangeOf(block, 'block'));
   if (!blocks.length) return null;
   let above = blocks[0];
   for (const block of blocks) {
@@ -30736,6 +30745,40 @@ function blockGutterOccupants() {
 }
 
 
+const BLOCK_GUTTER_REACH = 16;
+
+
+function blockGutterOccupantsAround(place) {
+  const body = app.querySelector('.document-body');
+  if (!body) return [];
+  const blocks = documentBlocks(body);
+  if (!blocks.length) return [];
+  let at;
+  if (typeof place === 'number') {
+    let low = 0;
+    let high = blocks.length - 1;
+    while (low < high) {
+      const middle = (low + high + 1) >> 1;
+      if (blocks[middle].getBoundingClientRect().top <= place) low = middle;
+      else high = middle - 1;
+    }
+    at = low;
+  } else {
+    let top = place;
+    while (top && !isDocumentBlock(top)) top = top.parentElement;
+    at = top ? blocks.indexOf(top) : -1;
+    if (at < 0) return blockGutterOccupants();
+  }
+  return blocks.slice(Math.max(0, at - BLOCK_GUTTER_REACH), at + BLOCK_GUTTER_REACH + 1)
+    .flatMap(unwrapTableBay)
+    .flatMap(unwrapEmailBody)
+    .filter((el) => {
+      const rect = el.getBoundingClientRect();
+      return rect.bottom > rect.top;
+    });
+}
+
+
 function unwrapEmailBody(el) {
   const wraps = el.classList && el.classList.contains('email-body') && !blockHasRange(el);
   return wraps ? Array.from(el.children) : [el];
@@ -30793,7 +30836,7 @@ function aimBlockGutterAtGap(clientY, fromMargin) {
     else hideBlockGutter();
     return;
   }
-  const occupants = blockGutterOccupants();
+  const occupants = blockGutterOccupantsAround(clientY);
   let aboveIndex = -1;
   for (let i = 0; i < occupants.length; i += 1) {
     const rect = occupants[i].getBoundingClientRect();
@@ -30829,7 +30872,7 @@ function aimBlockGutterAtGap(clientY, fromMargin) {
 
 function aimBlockGutterBelow(el) {
   
-  const occupants = blockGutterOccupants();
+  const occupants = blockGutterOccupantsAround(el);
   const at = occupants.indexOf(el);
   if (at >= 0) {
     aimBlockGutterAtSpace({
@@ -31221,7 +31264,7 @@ async function pastePicture(file, write, place) {
 
 
 function pastePictureGap(block) {
-  const occupants = blockGutterOccupants();
+  const occupants = blockGutterOccupantsAround(block);
   const at = occupants.findIndex((one) => one === block || one.contains(block));
   if (at < 0) return { after: block, before: null };
   return { after: occupants[at], before: nearestSourceBlock(occupants, at + 1, 1) };
@@ -46744,7 +46787,7 @@ function agentLaunchRows() {
   });
   rows.push('separator',
     { label: 'Past conversations', icon: '<span class="lt-icon lt-icon-recent" aria-hidden="true"></span>', keepOpen: true, run: () => agentLaunchShow('history') },
-    { label: '+ Add account', keepOpen: true, run: () => { agentLaunch.draft = null; agentLaunchShow('pick'); } });
+    { label: 'Add account', icon: '<span class="lt-icon lt-icon-new" aria-hidden="true"></span>', keepOpen: true, run: () => { agentLaunch.draft = null; agentLaunchShow('pick'); } });
   return rows;
 }
 
@@ -48007,7 +48050,9 @@ function libraryMenuPath() {
   const rows = [{
     barClass: 'is-path',
     buttons: steps.map((step, at) => ({
-      label: at ? `› ${step.name}` : step.name,
+      
+      icon: at ? '<span class="crumb-menu-step" aria-hidden="true">› </span>' : '',
+      label: step.name,
       primary: at === steps.length - 1,
       keepOpen: true,
       run: () => setLibraryFolder(step.path),

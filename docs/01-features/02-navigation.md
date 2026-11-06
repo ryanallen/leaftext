@@ -107,7 +107,7 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 ### The app bar
 
-![Leaftext reading a document: the app bar with the leaf mark and the word leaftext, the pane button, Back, Refresh and Forward, and the vault picker in the middle; the tabs on the page under it; the page header naming app / README.md, with Open and Export at the right; the icon rail down the left edge with New, Search, Conversations, Documents and Outline; the Outline in the side pane; and the floating bar over the foot of the page with Read, Source, Graph and More](../../imgs/navigation-v4.png)
+![Leaftext reading a document: the app bar with the leaf mark and the word leaftext, the pane button, Back, Refresh and Forward, and the vault picker in the middle; the tabs on the page under it; the page header naming app / README.md, with Open and Export at the right; the icon rail down the left edge with New, Search, Conversations, Documents and Outline; the Outline in the side pane; and the floating bar over the foot of the page with Read, Source, Graph and More](../../imgs/navigation-v5.png)
 
 **New** ([new document](07-editing.md#new-document), a [console](03-library.md#console) or an agent) is the first press in the icon rail down the window's left edge rather than a button in the tab strip. The page header under the tabs names where the document sits, and at its right Open and [Export](#export-a-pdf). The [theme picker](06-themes.md#choose), the Grove and the rest of what used to stand at the foot of the pane are rows of [More](#more), at the right end of the floating bar.
 
@@ -289,7 +289,7 @@ A re-pin reads your place at the moment it runs, never the moment it was queued.
 
 ### Recent files
 
-![The Leaftext home screen with no document open: the Choose file, New document and Add your notes folder buttons with a line under them, above two boxes side by side, Recent on the left and Favorites on the right, each row a file name over the folder it sits in and each favorite carrying a heart](../../imgs/home.png)
+![The Leaftext home screen with no document open: the Choose file, New document and Add your notes folder buttons with a line under them, above two boxes side by side, Recent on the left and Favorites on the right, each row a file name over the folder it sits in and each favorite carrying a heart](../../imgs/home-v2.png)
 
 The no-file home screen lists the files you opened most recently, under the **Choose file** and **New document** buttons — plus **Add your notes folder** until you have a [vault](03-library.md#your-first-vault); the last 50 are kept. Every row shows the file's clean name with its type as a badge and the folder underneath, so you read the name rather than the path. With any [favorites](#favorites) it becomes two boxes side by side, Recent on the left and Favorites on the right. Hover or focus a box to reveal its heading's grip and close controls; on touch they stay visible. Drag a box by its grip and a copy of it follows the pointer while a space opens where it will land and the other boxes ease aside; let go to keep that order, or press `Esc` or let go off Home to put everything back. The small plus below the boxes adds one back or adds a **Web address** box. Changes save immediately for the next launch. The whole path is still the row's tooltip either way, and a right-click gives the same menu it always did.
 
@@ -304,7 +304,7 @@ The no-file home screen lists the files you opened most recently, under the **Ch
 
 Where the window is too narrow for two columns, each list shows its first five rows with a **Show all** button under it, which opens that list in a sheet from the bottom of the window — drag it down or press Escape to close it.
 
-![Home with a small plus below the boxes and compact move and close controls revealed on Favorites](../../imgs/home-box-controls-v1.png)
+![Home with a small plus below the boxes and compact move and close controls revealed on Favorites](../../imgs/home-box-controls-v2.png)
 
 ### Favorites
 
@@ -369,7 +369,7 @@ In the rendered view a replace is written to the file's source, not to the page.
 
 ### Outline
 
-![The sidebar holding the open document's outline above the chats: the Outline heading with its fold and the count of twenty-one headings, the page's own title as the first row, and the sections indented under it and stepping down in size](../../imgs/outline-v2.png)
+![The sidebar holding the open document's outline above the chats: the Outline heading with its fold and the count of twenty-one headings, the page's own title as the first row, and the sections indented under it and stepping down in size](../../imgs/outline-v3.png)
 
 Open a document and the [sidebar](03-library.md#the-icon-rail-and-the-side-pane) shows that document's **Outline** above the chats — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit. The lit row moves as you scroll, so the sidebar says where you are as well as what is there.
 

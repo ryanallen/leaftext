@@ -1,6 +1,6 @@
 # Nightshade
 
-![Nightshade — the same document in the light and dark variants](../imgs/themes/nightshade.png)
+![Nightshade — the same document in the light and dark variants](../imgs/themes/nightshade-v2.png)
 
 **Family ID:** `nightshade`
 

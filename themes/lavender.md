@@ -1,6 +1,6 @@
 # Lavender
 
-![Lavender — the same document in the light and dark variants](../imgs/themes/lavender.png)
+![Lavender — the same document in the light and dark variants](../imgs/themes/lavender-v2.png)
 
 **Family ID:** `lavender`
 

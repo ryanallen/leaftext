@@ -1,6 +1,6 @@
 # Ginger
 
-![Ginger — the same document in the light and dark variants](../imgs/themes/ginger.png)
+![Ginger — the same document in the light and dark variants](../imgs/themes/ginger-v2.png)
 
 **Family ID:** `ginger`
 

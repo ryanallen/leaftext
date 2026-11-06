@@ -1,6 +1,6 @@
 # Artemisia
 
-![Artemisia — the same document in the light and dark variants](../imgs/themes/artemisia.png)
+![Artemisia — the same document in the light and dark variants](../imgs/themes/artemisia-v2.png)
 
 **Family ID:** `artemisia`
 

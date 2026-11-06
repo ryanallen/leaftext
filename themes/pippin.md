@@ -1,6 +1,6 @@
 # Pippin
 
-![Pippin — the same document in the light and dark variants](../imgs/themes/pippin.png)
+![Pippin — the same document in the light and dark variants](../imgs/themes/pippin-v2.png)
 
 **Family ID:** `pippin`
 

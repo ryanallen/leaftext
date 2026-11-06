@@ -1,6 +1,6 @@
 # Laurel
 
-![Laurel — the same document in the light and dark variants](../imgs/themes/laurel.png)
+![Laurel — the same document in the light and dark variants](../imgs/themes/laurel-v2.png)
 
 **Family ID:** `laurel`
 

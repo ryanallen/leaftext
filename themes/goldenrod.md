@@ -1,6 +1,6 @@
 # Goldenrod
 
-![Goldenrod — the same document in the light and dark variants](../imgs/themes/goldenrod.png)
+![Goldenrod — the same document in the light and dark variants](../imgs/themes/goldenrod-v2.png)
 
 **Family ID:** `goldenrod`
 

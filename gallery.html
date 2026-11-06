@@ -8044,6 +8044,9 @@ body.is-embedded .reader-toolbar {
   display: grid;
   /* The console's top inset, here rather than on the console layer so the top fade beside that layer can start under the console's first row from the same number. */
   --console-inset-top: calc(var(--app-bar-height) + var(--lt-space-12));
+  /* Its side insets, the page header's own, so a terminal's first column and a chat's stand under the header's path and their last under its buttons — read by the console layer, a saved chat and everything laid over either. */
+  --console-inset-left: var(--lt-space-24);
+  --console-inset-right: var(--lt-space-12);
   /* A trailing column and a bottom row hold the reader off the window frame; the rail spans both so only the page is inset. */
   /* The first track is the pane's width — 0px closed. The default here stands only until the front end writes this whole track on the shell and the same width on the app bar, never on the root, and the motion classes below transition this one property. Never an @property registration for the rail: animating a registered inherited length off :root crashed the whole app in this web view (library-sidebar-motion, phase 0). */
   grid-template-columns: var(--library-rail-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
@@ -9344,6 +9347,20 @@ body.library-resizing button {
   gap: var(--lt-space-6);
   font-weight: var(--lt-weight-500);
 }
+/* The Grove moved into More: one more row of the menu, its leaf on the icon column and its words on the label column, and its level bar between the dividers rather than past them. */
+.crumb-menu .library-profile.is-row {
+  height: auto;
+  gap: var(--lt-space-6);
+  padding: var(--lt-space-8) var(--lt-space-12);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-500);
+}
+.crumb-menu .library-profile.is-row .library-profile-bar {
+  left: var(--lt-space-6);
+  right: var(--lt-space-6);
+}
 .crumb-menu-item .library-action-icon {
   flex: none;
   width: 15px;
@@ -9354,6 +9371,21 @@ body.library-resizing button {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* The › between two steps of the sheet's path: the gap after it made up to the room before it, which is two button insets and the row's gap. */
+.crumb-menu-step {
+  margin-inline-end: var(--lt-space-4);
+  color: var(--lt-muted-foreground);
+}
+/* The place a drawing would stand, on a row with none in a menu whose other rows have one: the row's words start on the menu's one label edge. */
+.crumb-menu-icon-slot {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+/* A switch row says what it turns on, so its words wrap onto a second line rather than being cut off beside the switch. */
+.crumb-menu-item[role="switch"] .crumb-menu-label {
+  white-space: normal;
 }
 .crumb-menu-switch {
   flex: none;
@@ -9784,7 +9816,7 @@ body.library-resizing button {
   border-bottom: var(--lt-stroke-1) solid transparent;
   border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
   box-sizing: border-box;
-  padding: var(--console-inset-top) var(--lt-space-8) var(--lt-space-8);
+  padding: var(--console-inset-top) var(--console-inset-right) var(--lt-space-8) var(--console-inset-left);
 }
 .console-layer[hidden] { display: none; }
 
@@ -9796,7 +9828,7 @@ body.library-resizing button {
 .console-layer.is-right-card { grid-column: 5; }
 /* Two cards are two whole cards, the same as a page's. */
 .console-layer.is-split { border-top: var(--lt-stroke-1) solid transparent; border-radius: var(--reader-card-radius); }
-.console-side-close { position: absolute; top: var(--console-inset-top); right: var(--lt-space-8); z-index: 4; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); background: var(--lt-surface-elevated); color: var(--lt-foreground); }
+.console-side-close { position: absolute; top: var(--console-inset-top); right: var(--console-inset-right); z-index: 4; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); background: var(--lt-surface-elevated); color: var(--lt-foreground); }
 .console-side-close[hidden] { display: none; }
 .console-terminal { width: 100%; height: 100%; }
 /* The agent's own status, one row at the foot of the layer; the terminal gives up that row's height. */
@@ -9846,9 +9878,9 @@ body.library-resizing button {
 .tab-label.has-console-scanlines::after, .console-layer.has-console-scanlines::after { content: ""; position: absolute; pointer-events: none; background-image: repeating-linear-gradient(to bottom, var(--lt-console-scanline-red) 0 1px, var(--lt-console-scanline-green) 1px 2px, var(--lt-console-scanline-blue) 2px 3px, transparent 3px 4px); }
 .tab-label.has-console-scanlines::after { inset: 0; border-radius: inherit; }
 /* Its own layer, so a printing terminal's redraw never repaints the rows: without it a ten-second print dropped three frames. */
-.console-layer.has-console-scanlines::after { top: var(--console-inset-top); left: var(--lt-space-8); right: var(--lt-space-8); bottom: var(--lt-space-8); z-index: 1; will-change: transform; }
+.console-layer.has-console-scanlines::after { top: var(--console-inset-top); left: var(--console-inset-left); right: var(--console-inset-right); bottom: var(--lt-space-8); z-index: 1; will-change: transform; }
 /* The band: one pass of a soft red, green and blue stripe, the screen's moved by transform so the terminal under it is not repainted, the tab's as a second background on its rows. */
-.console-layer.has-console-scanlines.is-console-band::before { content: ""; position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); right: var(--lt-space-8); bottom: var(--lt-space-8); z-index: 1; pointer-events: none; background-image: linear-gradient(to bottom, transparent, var(--lt-console-band-red), var(--lt-console-band-green), var(--lt-console-band-blue), transparent); background-size: 100% 48px; background-repeat: no-repeat; transform: translateY(-48px); animation: console-band-screen var(--lt-duration-1250) var(--lt-ease-in-out) 1; }
+.console-layer.has-console-scanlines.is-console-band::before { content: ""; position: absolute; top: var(--console-inset-top); left: var(--console-inset-left); right: var(--console-inset-right); bottom: var(--lt-space-8); z-index: 1; pointer-events: none; background-image: linear-gradient(to bottom, transparent, var(--lt-console-band-red), var(--lt-console-band-green), var(--lt-console-band-blue), transparent); background-size: 100% 48px; background-repeat: no-repeat; transform: translateY(-48px); animation: console-band-screen var(--lt-duration-1250) var(--lt-ease-in-out) 1; }
 @keyframes console-band-screen { from { transform: translateY(-48px); } to { transform: translateY(100%); } }
 .tab-label.has-console-scanlines.is-console-band::after { background-image: linear-gradient(to bottom, transparent, var(--lt-console-band-red), var(--lt-console-band-green), var(--lt-console-band-blue), transparent), repeating-linear-gradient(to bottom, var(--lt-console-scanline-red) 0 1px, var(--lt-console-scanline-green) 1px 2px, var(--lt-console-scanline-blue) 2px 3px, transparent 3px 4px); background-size: 100% 36px, auto; background-repeat: no-repeat, repeat; animation: console-band-tab var(--lt-duration-1250) var(--lt-ease-in-out) 1; }
 @keyframes console-band-tab { from { background-position: 0 -36px, 0 0; } to { background-position: 0 calc(100% + 36px), 0 0; } }
@@ -9920,7 +9952,7 @@ body.library-resizing button {
 /* The name box stands where the row stood, at the row's height and size of type. */
 .console-recent-rename { height: 26px; padding: 0 var(--lt-space-6); font-size: var(--lt-text-12-5); font-weight: var(--lt-weight-400); }
 /* The pinned command: one row over the terminal's top edge, at layer 5 so it paints above the terminal. Its height, width and face are the terminal's, written by console-sticky.js. */
-.console-pin { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); z-index: 5; height: 0; }
+.console-pin { position: absolute; top: var(--console-inset-top); left: var(--console-inset-left); z-index: 5; height: 0; }
 .console-pin[hidden] { display: none; }
 /* Isolated so the wash layer below stops at the row rather than dropping behind the console. */
 .console-pin-row { position: absolute; inset: 0; isolation: isolate; display: flex; align-items: center; overflow: hidden; white-space: pre; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); cursor: default; }
@@ -10051,7 +10083,7 @@ button.diff-card-fold:disabled { cursor: default; }
 .diff-card-moves:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .diff-card-move:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: calc(-1 * var(--lt-stroke-2)); }
 /* Scholar's composer at the foot of the chat, over the agent's own input rows: a bordered field 20 pixels round, its chips, the words, then attach, `/` and the mode on the left and the round send on the right. */
-.console-composer { position: relative; flex: none; display: flex; flex-direction: column; gap: var(--lt-space-8); margin: 0 var(--lt-space-12) var(--lt-space-12); padding: var(--lt-space-10) var(--lt-space-10) var(--lt-space-8) var(--lt-space-14); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-4xl); background: var(--lt-surface-elevated); cursor: text; transition: border-color var(--lt-duration-150) var(--lt-ease); }
+.console-composer { position: relative; flex: none; display: flex; flex-direction: column; gap: var(--lt-space-8); margin: 0 var(--lt-space-16) var(--lt-space-12); padding: var(--lt-space-10) var(--lt-space-10) var(--lt-space-8) var(--lt-space-14); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-4xl); background: var(--lt-surface-elevated); cursor: text; transition: border-color var(--lt-duration-150) var(--lt-ease); }
 @media (hover: hover) { .console-composer:hover { border-color: var(--lt-border-strong); } }
 .console-composer:focus-within { border-color: var(--lt-focus-ring); }
 .console-composer[hidden] { display: none; }
@@ -10312,6 +10344,10 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   justify-content: flex-start;
   padding-left: var(--lt-space-4);
   padding-right: var(--lt-space-4);
+}
+/* In a menu whose rows carry drawings, a line of explanation starts on the rows' label edge: the row's inset, the drawing and the gap after it. */
+.crumb-menu-note.is-under-label {
+  padding-inline-start: calc(var(--lt-space-12) + var(--lt-space-16) + var(--lt-space-6));
 }
 .crumb-menu-note.is-danger {
   color: var(--lt-danger);
@@ -11726,6 +11762,14 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body table,
 .document-body pre {
   margin: 0 0 var(--type-spacing);
+}
+/* Set the way a printed page is: no paragraph or list item ends on a line of one word, and no link's closing arrow stands alone. Measured on a 7.2 MB note: in the Windows web view the fill takes the same time either way, and the minimap's copy, which wraps the same way so its lines stay the page's, about 20 ms more an open. */
+.document-body :is(p, li) {
+  text-wrap: pretty;
+}
+/* Not in the Mac's web view, where the same note's whole layout took 4.3 seconds pretty against 1.4 greedy: a reader there keeps the greedy break rather than paying three times over for every layout. */
+.mac-frame .document-body :is(p, li) {
+  text-wrap: wrap;
 }
 .document-body [align="left"] {
   text-align: left;
@@ -14841,6 +14885,11 @@ body.mac-frame .table-lane::after {
   font-family: var(--app-font);
   font-weight: var(--lt-weight-700);
 }
+/* A plain folded heading that runs onto a second line keeps its words on one edge: the arrow hangs in the margin beside them, about its own width, rather than each wrapped line starting under it. The outline's and the TEI front matter's draw an arrow of their own and carry a class. */
+.document-body summary:not([class]) {
+  list-style-position: outside;
+  margin-inline-start: 1.1em;
+}
 /* The slot the field block's top sheet hangs in: as tall as the resting handle, so the document starts one line down and never moves when the sheet drops over it. Above the runs that follow, which are positioned too and would otherwise paint over the drop. */
 .document-body .frontmatter-sheet {
   --top-sheet-rest: calc(var(--lt-text-12) * var(--lt-leading-1-5) + var(--lt-space-8) * 2);
@@ -16029,7 +16078,9 @@ body.mac-frame .document-minimap-frame {
 .empty-state .dotted-leaf {
   width: 180px;
   height: 180px;
-  margin: 0 auto var(--lt-space-20);
+  /* On the words' left edge, so the hero reads down one line; the drawing sits 13 of its 180 units inside the box, which the pull back takes up at either size. */
+  margin: 0 0 var(--lt-space-20);
+  translate: -7.2% 0;
 }
 @container home (max-width: 720px) {
   .empty-state .dotted-leaf { width: 140px; height: 140px; }
@@ -16747,12 +16798,17 @@ p.front-hero-line {
   font-size: var(--type-h5-size);
   line-height: var(--lt-leading-1-35);
 }
+/* The two downloads are one width: a grid as wide as the wider button, its columns equal shares, side by side and stacked alike. */
 p.front-downloads {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: var(--lt-space-12);
-  margin: 0;
+  width: fit-content;
+  margin: 0 auto;
+}
+@container (max-width: 520px) {
+  p.front-downloads { grid-auto-flow: row; }
 }
 p.front-small {
   margin: var(--lt-space-16) 0 0;
@@ -16763,6 +16819,13 @@ p.front-small {
 /* The comparison keeps the column's measure; the chart's own tables scroll inside themselves on a narrow column. */
 .front-compare {
   padding: var(--lt-space-32) 0;
+}
+/* Where the column has room, the At a glance table runs its whole measure, edge to edge with the words above and below it, rather than stopping two-thirds across. On a narrow column it stays the scrolling table every document's is. */
+@container (min-width: 600px) {
+  .front-compare table.compare-glance {
+    display: table;
+    width: 100%;
+  }
 }
 
 /* The picture of the app: one wide frame. It throws no shadow of its own, because the app's one light casts none under a box in the page. */
@@ -19241,11 +19304,11 @@ p.shelf-foot {
 .grove-day-shade-4 {
   background: var(--lt-accent);
 }
-/* The areas beside the Landmarks where the sheet has room, the Landmarks under them where it has not. A wrap on the sheet's own width rather than a window query: the sheet is a share of the window, and a column squeezed to a sliver is what a window query let through. */
+/* The areas beside the Landmarks where the sheet has room, the Landmarks under them where it has not. A wrap on the sheet's own width rather than a window query: the sheet is a share of the window, and a column squeezed to a sliver is what a window query let through. The cards' own gap, beside and under, so the side list stands as one more card of the grid. */
 .grove-columns {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--lt-space-16) var(--lt-space-20);
+  gap: var(--lt-space-8);
   align-items: flex-start;
 }
 /* What Foraging has found, under the areas: why it stops where it does, then a chip for every kind of file. */
@@ -21217,18 +21280,18 @@ p.shelf-foot {
     margin-left: 0;
   }
 }
-/* Every match, washed in the accent — the color a matched search hit already takes in the library pane. The one you are on is the primary, so stepping through is a moving mark rather than a wall of identical washes. Both are drawn with the CSS Custom Highlight API in the reading view (no DOM mutation, no reflow) and as Monaco decorations in the source view, which is why each name appears twice. */
+/* Every match, washed lightly in the accent — the color a matched search hit already takes in the library pane. The one you are on is the primary at more than twice the strength, so stepping through is a moving mark rather than a wall of identical washes: told apart by strength and not by hue alone, because half the theme variants give the primary and the accent one color. Both are drawn with the CSS Custom Highlight API in the reading view (no DOM mutation, no reflow) and as Monaco decorations in the source view, which is why each name appears twice. */
 ::highlight(leaf-find-match),
 .leaf-find-match {
-  background-color: color-mix(in srgb, var(--lt-accent) 45%, transparent);
+  background-color: color-mix(in srgb, var(--lt-accent) 22%, transparent);
 }
 ::highlight(leaf-find-current),
 .leaf-find-current {
-  background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);
+  background-color: color-mix(in srgb, var(--lt-primary) 55%, transparent);
 }
 /* A set of cursors in the reading view: what each place covers, washed the way the match you are on is, and a cursor at the end of each drawn as a bar in a layer of its own inside the reader. The layer scrolls with the page and stands outside every block, so no commit reads a mark back into the file. The layer blinks every bar at once on the pace a caret does and rests, still and hidden, while the window is behind another — the page's own caret does both. */
 ::highlight(leaf-cursor-selection) {
-  background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);
+  background-color: color-mix(in srgb, var(--lt-primary) 55%, transparent);
 }
 .reading-cursor-layer {
   position: absolute;

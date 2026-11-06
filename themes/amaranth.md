@@ -1,6 +1,6 @@
 # Amaranth
 
-![Amaranth — the same document in the light and dark variants](../imgs/themes/amaranth.png)
+![Amaranth — the same document in the light and dark variants](../imgs/themes/amaranth-v2.png)
 
 **Family ID:** `amaranth`
 

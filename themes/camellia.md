@@ -1,6 +1,6 @@
 # Camellia
 
-![Camellia — the same document in the light and dark variants](../imgs/themes/camellia.png)
+![Camellia — the same document in the light and dark variants](../imgs/themes/camellia-v2.png)
 
 **Family ID:** `camellia`
 

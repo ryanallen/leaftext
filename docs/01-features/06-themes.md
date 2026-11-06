@@ -41,75 +41,75 @@ Every family rendering the same reference document, split diagonally so the ligh
 
 ### Amaranth
 
-![Amaranth — the same document in the light and dark variants](../../imgs/themes/amaranth.png)
+![Amaranth — the same document in the light and dark variants](../../imgs/themes/amaranth-v2.png)
 
 ### Arabica
 
-![Arabica — the same document in the light and dark variants](../../imgs/themes/arabica.png)
+![Arabica — the same document in the light and dark variants](../../imgs/themes/arabica-v2.png)
 
 ### Artemisia
 
-![Artemisia — the same document in the light and dark variants](../../imgs/themes/artemisia.png)
+![Artemisia — the same document in the light and dark variants](../../imgs/themes/artemisia-v2.png)
 
 ### Bloodleaf
 
-![Bloodleaf — the same document in the light and dark variants](../../imgs/themes/bloodleaf.png)
+![Bloodleaf — the same document in the light and dark variants](../../imgs/themes/bloodleaf-v2.png)
 
 ### Bluebell
 
-![Bluebell — the same document in the light and dark variants](../../imgs/themes/bluebell.png)
+![Bluebell — the same document in the light and dark variants](../../imgs/themes/bluebell-v2.png)
 
 ### Camellia
 
-![Camellia — the same document in the light and dark variants](../../imgs/themes/camellia.png)
+![Camellia — the same document in the light and dark variants](../../imgs/themes/camellia-v2.png)
 
 ### Copperleaf
 
-![Copperleaf — the same document in the light and dark variants](../../imgs/themes/copperleaf.png)
+![Copperleaf — the same document in the light and dark variants](../../imgs/themes/copperleaf-v2.png)
 
 ### Eucalyptus
 
-![Eucalyptus — the same document in the light and dark variants](../../imgs/themes/eucalyptus.png)
+![Eucalyptus — the same document in the light and dark variants](../../imgs/themes/eucalyptus-v2.png)
 
 ### Fern
 
-![Fern — the same document in the light and dark variants](../../imgs/themes/fern.png)
+![Fern — the same document in the light and dark variants](../../imgs/themes/fern-v2.png)
 
 ### Ginger
 
-![Ginger — the same document in the light and dark variants](../../imgs/themes/ginger.png)
+![Ginger — the same document in the light and dark variants](../../imgs/themes/ginger-v2.png)
 
 ### GitHub
 
-![GitHub — the same document in the light and dark variants](../../imgs/themes/github.png)
+![GitHub — the same document in the light and dark variants](../../imgs/themes/github-v2.png)
 
 ### Goldenrod
 
-![Goldenrod — the same document in the light and dark variants](../../imgs/themes/goldenrod.png)
+![Goldenrod — the same document in the light and dark variants](../../imgs/themes/goldenrod-v2.png)
 
 ### Halcyon
 
-![Halcyon — the same document in the light and dark variants](../../imgs/themes/halcyon.png)
+![Halcyon — the same document in the light and dark variants](../../imgs/themes/halcyon-v2.png)
 
 ### Ivy
 
-![Ivy — the same document in the light and dark variants](../../imgs/themes/ivy.png)
+![Ivy — the same document in the light and dark variants](../../imgs/themes/ivy-v2.png)
 
 ### Nightshade
 
-![Nightshade — the same document in the light and dark variants](../../imgs/themes/nightshade.png)
+![Nightshade — the same document in the light and dark variants](../../imgs/themes/nightshade-v2.png)
 
 ### Pippin
 
-![Pippin — the same document in the light and dark variants](../../imgs/themes/pippin.png)
+![Pippin — the same document in the light and dark variants](../../imgs/themes/pippin-v2.png)
 
 ### Sage
 
-![Sage — the same document in the light and dark variants](../../imgs/themes/sage.png)
+![Sage — the same document in the light and dark variants](../../imgs/themes/sage-v2.png)
 
 ### Spearmint
 
-![Spearmint — the same document in the light and dark variants](../../imgs/themes/spearmint.png)
+![Spearmint — the same document in the light and dark variants](../../imgs/themes/spearmint-v2.png)
 
 ### Earned families
 
@@ -117,27 +117,27 @@ The six one-color families are bought with seeds in the Grove's Foraging area. U
 
 ### Birch
 
-![Birch — the same document in the light and dark variants](../../imgs/themes/birch.png)
+![Birch — the same document in the light and dark variants](../../imgs/themes/birch-v2.png)
 
 ### Laurel
 
-![Laurel — the same document in the light and dark variants](../../imgs/themes/laurel.png)
+![Laurel — the same document in the light and dark variants](../../imgs/themes/laurel-v2.png)
 
 ### Lavender
 
-![Lavender — the same document in the light and dark variants](../../imgs/themes/lavender.png)
+![Lavender — the same document in the light and dark variants](../../imgs/themes/lavender-v2.png)
 
 ### Saffron
 
-![Saffron — the same document in the light and dark variants](../../imgs/themes/saffron.png)
+![Saffron — the same document in the light and dark variants](../../imgs/themes/saffron-v2.png)
 
 ### Sumac
 
-![Sumac — the same document in the light and dark variants](../../imgs/themes/sumac.png)
+![Sumac — the same document in the light and dark variants](../../imgs/themes/sumac-v2.png)
 
 ### Woad
 
-![Woad — the same document in the light and dark variants](../../imgs/themes/woad.png)
+![Woad — the same document in the light and dark variants](../../imgs/themes/woad-v2.png)
 
 ## Random
 
@@ -169,7 +169,7 @@ flowchart LR
 
 ## Choose
 
-![The theme picker open as a bottom sheet: the appearance control across the top, then a scrolling grid of family cards, each wearing its own paper, ink, five-swatch strip and heading font, with the current family ringed and ticked](../../imgs/theme-picker.png)
+![The theme picker open as a bottom sheet: the appearance control across the top, then a scrolling grid of family cards, each wearing its own paper, ink, five-swatch strip and heading font, with the current family ringed and ticked](../../imgs/theme-picker-v2.png)
 
 Press **More** at the foot of the icon rail and choose **Themes** to slide up the theme picker, whatever is in front: a document, a chat, a web page or nothing at all. It lists every family as a preview card — plus [Random](#random) at the end — with an Appearance control (System / Light / Dark / Daylight) at the top. Each card wears its own theme: the theme's paper and ink, a strip of five swatches (background, text, brand, and two code colors), and the theme's heading font, all following the current appearance. Changes apply immediately, to the window the picker was opened in and no other, so two windows can wear two themes and be told apart at a glance — family and appearance both. A tab pulled out into its own window opens wearing what its window wore, Random's draw included, and every window comes back in its own theme after a restart. The first window's is saved as `theme_family` and `theme_mode` in `settings.json`, and every other window's beside its tabs (see [Settings](05-settings.md#theme)). Close the picker with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards — the same [bottom sheet](../GLOSSARY.md#bottom-sheet) the glossary uses.
 
@@ -225,7 +225,7 @@ Every fill under the pointer — a menu row, a toolbar button, a file in the lib
 
 ## Diagrams
 
-![One page of diagrams shown twice under two different themes: the same flowchart and pie chart, each drawn in that theme's own surfaces, ink and categorical color scale](../../imgs/theme-diagrams.png)
+![One page of diagrams shown twice under two different themes: the same flowchart and pie chart, each drawn in that theme's own surfaces, ink and categorical color scale](../../imgs/theme-diagrams-v2.png)
 
 [Mermaid diagrams](01-rendering.md#mermaid-diagrams) are drawn in the theme's own colors, so every family themes every kind of diagram without saying anything about diagrams at all:
 

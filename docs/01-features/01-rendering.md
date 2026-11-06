@@ -111,7 +111,7 @@ Leaftext opens a Kindle book that carries no protection as **one document**, the
 
 ## Plain text files
 
-![A .txt file of release notes opened in Leaftext: the file name as the page heading, then the whole file as one block with its indented lists, its ruled headings and a box drawn in plus and minus signs all still lined up](../../imgs/plain-text.png)
+![A .txt file of release notes opened in Leaftext: the file name as the page heading, then the whole file as one block with its indented lists, its ruled headings and a box drawn in plus and minus signs all still lined up](../../imgs/plain-text-v2.png)
 
 Leaftext opens a `.txt` file as **one block, kept exactly as typed** — every space, every line break, every column of an ASCII banner. Nothing is reflowed, nothing is parsed, and nothing is guessed at, because the app was never told what shape the file holds. An indented list stays indented, a hand-drawn table stays lined up, and a hand-wrapped paragraph keeps the width somebody chose for it.
 
@@ -123,7 +123,7 @@ Installing Leaftext offers it under **Open with** for `.txt` without replacing N
 
 ## INI files
 
-![An .ini settings file opened in Leaftext: the file name as the page heading, the keys written before the first section as an aligned label and value list, then a heading per section with its own keys under it and the two web addresses drawn as links](../../imgs/ini.png)
+![An .ini settings file opened in Leaftext: the file name as the page heading, the keys written before the first section as an aligned label and value list, then a heading per section with its own keys under it and the two web addresses drawn as links](../../imgs/ini-v2.png)
 
 Leaftext opens an `.ini` file as the page a JSON file already draws: each `[section]` is a heading, and the keys under it are a label-and-value list, with a value that looks like a link drawn as one.
 
@@ -187,7 +187,7 @@ Installing Leaftext offers it under **Open with** for `.csv` and `.tsv` without 
 
 ## Source files
 
-![A Rust file opened in Leaftext: the file name as the page heading, then the whole source as one block colored in the theme, with the language named in the block corner beside a Copy button](../../imgs/source-file.png)
+![A Rust file opened in Leaftext: the file name as the page heading, then the whole source as one block colored in the theme, with the language named in the block corner beside a Copy button](../../imgs/source-file-v2.png)
 
 Leaftext opens source and configuration files as a file-name heading above one highlighted source block. It recognizes TypeScript, TSX, JavaScript, JSX, JSONC, SCSS, shell, TOML, Rust, Python, SQL, diff, dotenv, GraphQL, and Dockerfile files. A `.diff` or `.patch` file holding a unified diff reads instead as one diff card per file it names — the same card an agent's edit is drawn with in a console, each hunk numbered from its `@@` line, a changed line shown twice with only its changed words marked, and a copy press putting the diff on the clipboard as plain text; a `diff` code block in a note holding one reads the same way. A diff that does not read as a unified diff stays highlighted source. A dotenv file opens under its variant names too — `.env.local`, `.env.example`, `.env.production` and any other `.env.` name — unless its last ending already names a format, so `.env.json` still opens as JSON. JSON, HTML, XML, YAML, INI, CSS, plain text, and Markdown keep their dedicated reading views. Source files open when you choose one or follow a link, and stay out of vault search, graphs, and Previous/Next pages. Folder listings leave them out too, except the two known by their whole name — `.env` and `Dockerfile` — which the [library pane](03-library.md#file-types) lists beside a `.gitignore`.
 
@@ -713,7 +713,7 @@ A page you want to read.
 
 <div class="note-card-media">
 
-![Leaftext](../../imgs/leaftext.png)
+![Leaftext](../../imgs/leaftext-v4.png)
 
 </div>
 
@@ -733,7 +733,7 @@ Click into the page and type. A longer description makes this card taller, and t
 
 <div class="note-card-media">
 
-![Leaftext](../../imgs/leaftext.png)
+![Leaftext](../../imgs/leaftext-v4.png)
 
 </div>
 
@@ -882,7 +882,7 @@ Rest the pointer on a footnote marker to read its note in the link card without 
 
 The `tags` field's items draw as the same [tags](03-library.md#tags) as hashtags in prose. The field keeps its original values when you [add or remove an item](07-editing.md#the-fields-at-the-top-of-a-note).
 
-![A note's tags drawn as pills in its field block and prose, with code and link words kept as written](../../imgs/tags-reading.png)
+![A note's tags drawn as pills in its field block and prose, with code and link words kept as written](../../imgs/tags-reading-v2.png)
 
 A leading `--- … ---` block becomes a metadata table at the top of the page, and **each field is drawn as the thing it is**:
 
@@ -1009,7 +1009,7 @@ Editing is anchored to byte offsets in the file, so a multi-byte character above
 
 ## XML
 
-![An XML sitemap opened in Leaftext, rendered as a table of URL records with columns for URL, last modified and priority, instead of raw tags](../../imgs/xml.png)
+![An XML sitemap opened in Leaftext, rendered as a table of URL records with columns for URL, last modified and priority, instead of raw tags](../../imgs/xml-v2.png)
 
 Leaftext opens `.xml` files alongside `.md` files — the same "Open Document" dialog accepts both, and the [library](03-library.md) indexes both. Which XML renderer runs is decided by the file itself, not by its name: a document with a `<TEI>` root or a `<teiHeader>` goes to the [TEI renderer](#tei-xml); everything else goes to the generic one.
 
@@ -1017,7 +1017,7 @@ Doctypes are read and ignored, so plists, XHTML, and DocBook open normally. A fi
 
 ### Any XML
 
-![An RSS feed opened in Leaftext: the channel title as the page heading, the channel fields as an aligned label and value list, then one section per item](../../imgs/xml-feed.png)
+![An RSS feed opened in Leaftext: the channel title as the page heading, the channel fields as an aligned label and value list, then one section per item](../../imgs/xml-feed-v2.png)
 
 Most XML carries no reading conventions to follow, so the generic renderer works from the shape of the tree:
 
@@ -1037,7 +1037,7 @@ A sitemap, for example, renders as a table of its `<url>` records; an RSS or Ato
 
 ### TEI XML
 
-![A TEI field-notes document open in Leaftext: the main title as the page heading with the long title in muted text beneath it, the front matter collapsed into a disclosure, a numbered end note in the prose, and a verse stanza rendered as a quoted block](../../imgs/xml-tei.png)
+![A TEI field-notes document open in Leaftext: the main title as the page heading with the long title in muted text beneath it, the front matter collapsed into a disclosure, a numbered end note in the prose, and a verse stanza rendered as a quoted block](../../imgs/xml-tei-v2.png)
 
 TEI documents have conventions worth following, so they get their own renderer.
 
@@ -1065,7 +1065,7 @@ This site draws its own pages through the same renderer, fetched as a module, so
 
 ## Data files (JSON and YAML)
 
-![A GitHub Actions workflow YAML file opened in Leaftext, rendered as headed sections per job with aligned label and value fields and a table of steps, rather than indented punctuation](../../imgs/data.png)
+![A GitHub Actions workflow YAML file opened in Leaftext, rendered as headed sections per job with aligned label and value fields and a table of steps, rather than indented punctuation](../../imgs/data-v2.png)
 
 Leaftext opens `.json`, `.yaml`, and `.yml` as pages. A data file is a tree of mappings, lists, and values rather than prose, so it is read by the same shape rules as [any XML](#any-xml) — and shares that renderer's labels, so a sitemap and the JSON next to it name the same field the same way.
 
@@ -1113,7 +1113,7 @@ Installing Leaftext offers it under **Open with** for HTML without replacing the
 
 ## Email (.eml)
 
-![An .eml file opened in Leaftext: the subject as the page heading, From, To and Date as a field list of mailto links, the message body below with an inline image, and a list of attachments at the foot](../../imgs/email.png)
+![An .eml file opened in Leaftext: the subject as the page heading, From, To and Date as a field list of mailto links, the message body below with an inline image, and a list of attachments at the foot](../../imgs/email-v2.png)
 
 Leaftext opens `.eml` files — the message format Gmail, Outlook, and Apple Mail export — as the email they carry. `.mht` and `.mhtml` web archives are the same envelope, so the one reader opens those too.
 

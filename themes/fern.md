@@ -1,6 +1,6 @@
 # Fern
 
-![Fern — the same document in the light and dark variants](../imgs/themes/fern.png)
+![Fern — the same document in the light and dark variants](../imgs/themes/fern-v2.png)
 
 **Family ID:** `fern`
 

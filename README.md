@@ -4,7 +4,7 @@ Read, understand and edit the files other readers leave closed.
 
 **Your thoughts, secure and free.** Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own. Have an AI tool write a glossary for a hard book or a team's notes, and every term in it is linked as you read.
 
-![The Leaftext window with a Markdown document open: the app bar with the vault picker in the middle, the document's tab and the page header naming where it sits, the icon rail and the side pane holding the document's headings at left, the rendered page in the middle with the floating bar over its foot, and the minimap rail down the right edge](imgs/leaftext-v2.png)
+![The Leaftext window with a Markdown document open: the app bar with the vault picker in the middle, the document's tab and the page header naming where it sits, the icon rail and the side pane holding the document's headings at left, the rendered page in the middle with the floating bar over its foot, and the minimap rail down the right edge](imgs/leaftext-v3.png)
 
 {{{icon:windows[Download for Windows](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)}}} {{{icon:apple[Download for macOS](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)}}}
 
@@ -51,31 +51,31 @@ Markdown, web pages, data, email, Word, Excel, PowerPoint and EPUB books each op
 
 ### Markdown, rendered the way GitHub renders it
 
-![Leaftext reading view rendering a Markdown document](imgs/rendering-2x.png)
+![Leaftext reading view rendering a Markdown document](imgs/rendering-2x-v2.png)
 
 Open a `.md` file and it renders the way you'd expect, with the extras people actually use: [highlighted code](docs/01-features/01-rendering.md#code), [math](docs/01-features/01-rendering.md#math), [callouts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), [task lists](docs/01-features/01-rendering.md#task-lists), [tables](docs/01-features/01-rendering.md#tables), [collapsible sections](docs/01-features/01-rendering.md#collapsible-sections), [frontmatter](docs/01-features/01-rendering.md#frontmatter), [wiki links](docs/01-features/01-rendering.md#wiki-links) to your other notes, and [your own images](docs/01-features/01-rendering.md#images). **[Rendering →](docs/01-features/01-rendering.md)**
 
 ### Diagrams that take your theme's colors
 
-![A Mermaid flowchart and a pie chart rendered inside a document, drawn in the current theme's colors and reading face rather than Mermaid's defaults](imgs/mermaid.png)
+![A Mermaid flowchart and a pie chart rendered inside a document, drawn in the current theme's colors and reading face rather than Mermaid's defaults](imgs/mermaid-v2.png)
 
 Write a `mermaid` code fence and get a diagram — flowchart, sequence, gantt, mindmap, pie — drawn offline in your theme's own colors and font. Switch theme and the diagrams on the page are redrawn to match. A page of sixty opens as fast as a page of three: only the ones near what you are reading are drawn, and the rest fill in as you scroll to them. Drag one to move it, `Ctrl` and the wheel to zoom, without the page around it shifting. **[Diagrams →](docs/01-features/01-rendering.md#mermaid-diagrams)**
 
 ### XML, sitemaps, feeds, and TEI
 
-![An XML sitemap opened in Leaftext, rendered as a table of URL records with columns for URL, last modified and priority, instead of raw tags](imgs/xml.png)
+![An XML sitemap opened in Leaftext, rendered as a table of URL records with columns for URL, last modified and priority, instead of raw tags](imgs/xml-v2.png)
 
 [Any XML](docs/01-features/01-rendering.md#any-xml) reads as sections, fields, and tables instead of tags — a sitemap, a feed, a `pom.xml`. And [TEI](docs/01-features/01-rendering.md#tei-xml), the markup scholarly editions and archives are written in, gets a reader that understands its conventions: titles, front matter, nested divisions, verse, endnotes. **[XML →](docs/01-features/01-rendering.md#xml)**
 
 ### JSON and YAML as pages
 
-![A GitHub Actions workflow YAML file opened in Leaftext, rendered as headed sections and aligned label/value fields rather than indented punctuation](imgs/data.png)
+![A GitHub Actions workflow YAML file opened in Leaftext, rendered as headed sections and aligned label/value fields rather than indented punctuation](imgs/data-v2.png)
 
 A lock file, a CI workflow, or a Kubernetes manifest as headed sections, aligned fields, and record tables instead of punctuation — read by the same shape rules as XML, so the same field is named the same way in both. **[JSON and YAML →](docs/01-features/01-rendering.md#data-files-json-and-yaml)**
 
 ### Saved email
 
-![An .eml file opened in Leaftext, showing the subject as the page heading, From/To/Date as a field list, and the message body with an inline image](imgs/email.png)
+![An .eml file opened in Leaftext, showing the subject as the page heading, From/To/Date as a field list, and the message body with an inline image](imgs/email-v2.png)
 
 An `.eml` from Gmail, Outlook, or Apple Mail opens as the message it carries: headers, body, inline images, attachments — instead of a wall of base64. Nothing in the message reaches the network. **[Email →](docs/01-features/01-rendering.md#email-eml)**
 
@@ -93,7 +93,7 @@ An `.ini` opens as sections with their keys and values under each, every value r
 
 ### Word, Excel and PowerPoint files
 
-![A Word file open in Leaftext: the title Quarterly report, a What happened heading, a paragraph with a tracked change under it, a bulleted point, a numbered point, and a two-column table, with the minimap at the right and the Previous and Next cards under the document](imgs/office-documents.png)
+![A Word file open in Leaftext: the title Quarterly report, a What happened heading, a paragraph with a tracked change under it, a bulleted point, a numbered point, and a two-column table, with the minimap at the right and the Previous and Next cards under the document](imgs/office-documents-v2.png)
 
 A `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` or `.odp` opens as the document it is — headings, paragraphs, lists and tables, a sheet as a table of records, a deck as its slides, each box where the file puts it, with its pictures, its charts drawn from the numbers saved with them, and its speaker notes underneath. Type into a paragraph, a cell or a box on a slide, move a box, or reorder, duplicate and delete slides, save, and everything Leaftext never read — your styles, themes, comments, tracked changes, charts and macros — is byte for byte what it was. A macro is read past and never run; Leaftext has no way to run one. No network, no account, no sign-in. **[Word, Excel, PowerPoint and OpenDocument →](docs/01-features/01-rendering.md#office-and-opendocument-files)**
 
@@ -137,7 +137,7 @@ Take the handle and a block lifts off the page; drop it where its neighbors have
 
 ### Restructure a table without typing a pipe
 
-![A reading list table in the page, with a grip standing above the Author column and another beside the Arctic Dreams row, and the right-click menu open over a cell offering Add row above, Add row below, Delete row, the three column actions, the three alignments, both sorts and the five totals](imgs/table-controls.png)
+![A reading list table in the page, with a grip standing above the Author column and another beside the Arctic Dreams row, and the right-click menu open over a cell offering Add row above, Add row below, Delete row, the three column actions, the three alignments, both sorts and the five totals](imgs/table-controls-v2.png)
 
 Point at a table and a grip appears beside the row and above the column: take either and drag it to reorder. Right-click a cell to add a row or a column, delete one, align a column left, center or right, or sort by it — numbers and dates by value, everything else as text. `Tab` and `Enter` walk the cells, and `Tab` at the last one writes the next row. The corner copies the whole table as CSV. **[Editing a table →](docs/01-features/07-editing.md#editing-a-table)**
 
@@ -153,19 +153,19 @@ Point at a table with a header row and a few body rows and a quiet bar appears a
 
 ### Draw a flowchart instead of typing one
 
-![The flowchart editor open as a full-window sheet: a diagram on the canvas at left, and the matching Mermaid text in the pane at right](imgs/flowchart-editor.png)
+![The flowchart editor open as a full-window sheet: a diagram on the canvas at left, and the matching Mermaid text in the pane at right](imgs/flowchart-editor-v2.png)
 
 A canvas beside the Mermaid text, each following the other. Double-click to add a box and name it, pick from [forty-seven shapes](docs/01-features/07-editing.md#what-it-can-draw) grouped by what they are for, drag a handle onto another box to connect them or back onto the box it came from for a step that loops on itself, and group boxes together. Color a box, a line or a group, Shift-click to change several at once, and set the diagram's title, curve and hand-drawn look from a right-click on the canvas. A box can also carry a link, one of the app's own icons, or a picture. A [sequence diagram](docs/01-features/07-editing.md#the-sequence-diagram-editor) opens a timeline whose participants and messages you can press to edit; other kinds open the same sheet as a live preview. Open it on any diagram already in a page, and [export](docs/01-features/01-rendering.md#mermaid-diagrams) any diagram as its own Markdown file, picture or PDF from the button in its corner. **[The flowchart editor →](docs/01-features/07-editing.md#the-flowchart-editor)**
 
 ### Or work in the raw source
 
-![A Markdown file as raw source in the code view, line numbers down the left and the editor’s minimap rail at the right](imgs/code-view.png)
+![A Markdown file as raw source in the code view, line numbers down the left and the editor’s minimap rail at the right](imgs/code-view-v2.png)
 
 Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, a raw email, or the XML of a Word or OpenDocument file; for a deck or workbook, choose the slide or sheet above the editor. A book opens the chapter you are reading. The editor has line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML, JSON and the XML inside an Office file come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
 
 ### Typing help drawn from your own notes
 
-![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link higher up the file](imgs/typing-help.png)
+![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link higher up the file](imgs/typing-help-v2.png)
 
 Type `[[` and your notes are listed, by file name and by any [other name](docs/01-features/03-library.md#other-names) they answer to. Type `#` for a heading. Hover a wikilink for a preview, and a link that answers to nothing gets a wavy underline. It knows only what you pointed it at. **[Typing help →](docs/01-features/07-editing.md#typing-help)**
 
@@ -175,7 +175,7 @@ Search notes, follow links, and find free books from Internet Archive, Open Libr
 
 ### Point it at a folder and it becomes a vault
 
-![The library row named Dropbox with its dropdown open under it: the vaults, the path Dropbox › reading-room › docs on one line, and the folder's subfolders and files; the document stays in front under its own tab](imgs/library-v4.png)
+![The library row named Dropbox with its dropdown open under it: the vaults, the path Dropbox › reading-room › docs on one line, and the folder's subfolders and files; the document stays in front under its own tab](imgs/library-v6.png)
 
 A side pane that browses one folder at a time, with a breadcrumb that always says where you are. Name a folder a **vault** and it becomes the thing search and syncing work over; the same switcher over the start screen takes you back from Library. Nothing is crawled, and nothing is written into your folder. **[Library →](docs/01-features/03-library.md#vaults)**
 
@@ -189,13 +189,13 @@ Open the calendar at the foot of the library and a month of the vault shows whic
 
 ### Browse Project Gutenberg
 
-![The library pane on Books online, opened into Project Gutenberg's Classics of Literature category: a list of free books, each with its title, author and an EPUB mark](imgs/browse-project-gutenberg.png)
+![The library pane on Books online, opened into Project Gutenberg's Classics of Literature category: a list of free books, each with its title, author and an EPUB mark](imgs/browse-project-gutenberg-v2.png)
 
 Choose **Books online** in the vault switcher, then **Internet Archive** for its most popular texts, **Open Library** for its most read free works, **Project Gutenberg** for its categories, or **Standard Ebooks** to browse its books. Search all four libraries from the same vault. An Internet Archive or Open Library row checks its item for a public EPUB when pressed, and says in Leaftext when there is none to read. Downloaded books open offline. All four libraries answer under the find bar in one place. **[Books online →](docs/01-features/03-library.md#books-online)**
 
 ### Search everything you've written
 
-![All-files search results under the find bar: a filename match at the top, then content matches with highlighted terms, while the pane keeps showing the open document's outline behind them](imgs/search.png)
+![All-files search results under the find bar: a filename match at the top, then content matches with highlighted terms, while the pane keeps showing the open document's outline behind them](imgs/search-v2.png)
 
 Name matches first — the whole name beats the start of it, which beats a word inside it — then content matches ranked for the document's size, so a long file cannot win by being long. Up to three rows per file, one per place the word is, and clicking one lands on that line. There's no index on disk: the text is read once and held in memory, so nothing can go stale against your files, and nothing is uploaded to search it. A folder a machine filled — build output, a package cache — is left out of that read, and the line above the results says when one was. **[Search →](docs/01-features/03-library.md#search)**
 
@@ -205,7 +205,7 @@ Press a [tag](docs/01-features/03-library.md#tags) in a note's prose or fields t
 
 ### See how your ideas connect
 
-![The graph view filling the page: document nodes joined by arrowed lines, the open document highlighted larger in the accent color, names floating beneath the nodes](imgs/graph.png)
+![The graph view filling the page: document nodes joined by arrowed lines, the open document highlighted larger in the accent color, names floating beneath the nodes](imgs/graph-v2.png)
 
 The [graph view](docs/01-features/03-library.md#graph) maps the links between your documents, so you can see the shape of what you've written instead of scrolling a list. Notes you'd forgotten turn out to be next door to the one you're reading. Web addresses are nodes too, so two notes citing one page share it. **[Graph →](docs/01-features/03-library.md#graph)**
 
@@ -299,7 +299,7 @@ Leaftext is free. **[Download for Windows](https://github.com/ryanallen/leaftext
 
 ### macOS
 
-![The mounted Leaftext disk image in the Finder: the leaf app icon on the left with an arrow pointing to the Applications folder shortcut on the right](imgs/install-mac.png)
+![The mounted Leaftext disk image in the Finder: the leaf app icon on the left with an arrow pointing to the Applications folder shortcut on the right](imgs/install-mac-v2.png)
 
 1. Download the file ending in **`-macos-universal.dmg`**. One file covers Apple Silicon and Intel.
 2. Open it. Drag the leaf app onto the **Applications** folder beside it.
@@ -320,7 +320,7 @@ Every launch after that is an ordinary double-click. On macOS 12 and earlier it'
 
 ### Windows
 
-![The Windows protected your PC dialog with More info already expanded: leaftext beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](imgs/install-windows.png)
+![The Windows protected your PC dialog with More info already expanded: leaftext beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](imgs/install-windows-v2.png)
 
 Grab the 64-bit installer and run it. If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — the installer isn't signed with a paid certificate. It installs just for you, with no admin prompt. Here by default, though **Change...** puts it anywhere you like and updates keep it there:
 

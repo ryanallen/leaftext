@@ -1,6 +1,6 @@
 # Arabica
 
-![Arabica — the same document in the light and dark variants](../imgs/themes/arabica.png)
+![Arabica — the same document in the light and dark variants](../imgs/themes/arabica-v2.png)
 
 **Family ID:** `arabica`
 
