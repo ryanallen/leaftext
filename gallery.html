@@ -6877,6 +6877,25 @@ body.frameless.is-fullscreen .startup-card {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-12);
 }
+/* Over a running agent's chat each folder in the trail is a press that opens the chat's folder menu on it; the words stay the trail's own. */
+.page-head-step {
+  padding: var(--lt-space-1) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+@media (hover: hover) {
+  .page-head-step:hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-foreground);
+  }
+}
+.page-head-step[aria-expanded="true"] {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
 .page-head-actions {
   display: flex;
   align-items: center;
@@ -9187,6 +9206,15 @@ body.library-resizing button {
 .crumb-menu-row .crumb-menu-item {
   flex: 1 1 auto;
   min-width: 0;
+}
+/* An agent row being dragged into a new place keeps the pointed-at fill wherever it goes, so the eye can follow it. */
+.crumb-menu-row.is-lifted {
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-wash-hover);
+}
+.crumb-menu.is-reordering {
+  cursor: grabbing;
+  user-select: none;
 }
 .crumb-menu-edit {
   /* A menu control acts here without going anywhere, so the pointer stays an arrow. */
@@ -22804,8 +22832,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="reader-status" style="position:static;width:420px"><span class="reader-status-view">Reading view</span><span class="reader-status-name">field.md</span></div></div>
 </section>
 <section class="part">
-<header><h3>Page header</h3><code class="built">.page-head</code><span class="built">app-shell.html, drawn by graph.js: the row under the tabs, where the page in front sits on the left (page-head-path) — the vault, its folders and the document, or a web page's address — and the page's own buttons on the right (page-head-actions), Open and Export</span></header>
-<div class="stage"><div class="page-head" style="position:static;width:420px"><span class="page-head-path">alpha / notes / field.md</span><div class="page-head-actions"><button type="button" class="icon-button"><span class="lt-icon lt-icon-open"></span></button></div></div></div>
+<header><h3>Page header</h3><code class="built">.page-head</code><span class="built">app-shell.html, drawn by graph.js: the row under the tabs, where the page in front sits on the left (page-head-path) — the vault, its folders and the document, or a web page's address; over a running agent's chat each folder is a step (page-head-step) whose press opens the chat's folder menu on it — and the page's own buttons on the right (page-head-actions), Open, gone over a chat or console, and Export</span></header>
+<div class="stage"><div class="page-head" style="position:static;width:420px"><span class="page-head-path">alpha / notes / field.md</span><div class="page-head-actions"><button type="button" class="icon-button"><span class="lt-icon lt-icon-open"></span></button></div></div><div class="page-head" style="position:static;width:420px"><span class="page-head-path"><button type="button" class="page-head-step">work</button> / <button type="button" class="page-head-step">app</button></span></div></div>
 </section>
 <section class="part">
 <header><h3>Window controls</h3><code class="built">.window-control</code><span class="built">app-shell.html, one set of markup for both platforms — squares at the bar's right end on Windows, the app's own three dots at its left end on a Mac, where Apple's are turned off</span></header>

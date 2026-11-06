@@ -6869,6 +6869,25 @@ body.frameless.is-fullscreen .startup-card {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-12);
 }
+
+.page-head-step {
+  padding: var(--lt-space-1) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+@media (hover: hover) {
+  .page-head-step:hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-foreground);
+  }
+}
+.page-head-step[aria-expanded="true"] {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
 .page-head-actions {
   display: flex;
   align-items: center;
@@ -9171,6 +9190,15 @@ body.library-resizing button {
 .crumb-menu-row .crumb-menu-item {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.crumb-menu-row.is-lifted {
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-wash-hover);
+}
+.crumb-menu.is-reordering {
+  cursor: grabbing;
+  user-select: none;
 }
 .crumb-menu-edit {
   

@@ -16033,6 +16033,7 @@ function drawCrumbEntries(box, items, focusLabel, close) {
     }
     const row = document.createElement('div');
     row.className = 'crumb-menu-row';
+    if (entry.reorderKey !== undefined) row.dataset.reorderKey = entry.reorderKey;
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'context-menu-item crumb-menu-item'
@@ -16069,7 +16070,9 @@ function drawCrumbEntries(box, items, focusLabel, close) {
       if (event.button !== 0) return;
       event.stopPropagation();
       event.preventDefault();
-      runEntry();
+      
+      if (entry.press) entry.press(event, row, runEntry);
+      else runEntry();
     });
     item.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -18704,6 +18707,14 @@ function renderExportPdfAction(hasDocument) {
   exportPdfButton.hidden = !hasDocument || codeViewActive || graphViewOpen;
   if (wasHidden !== exportPdfButton.hidden) refitAppBar();
 }
+
+function renderOpenAction(chatInFront) {
+  
+  const open = document.getElementById('openButton');
+  if (!open || open.hidden === chatInFront) return;
+  open.hidden = chatInFront;
+  refitAppBar();
+}
 var readerStatus = document.getElementById('readerStatus');
 var readerStatusView = document.getElementById('readerStatusView');
 var readerStatusName = document.getElementById('readerStatusName');
@@ -18730,10 +18741,47 @@ function drawPageHead() {
     }
   } else if (typeof libraryRowWords === 'function') {
     words = activeVaultId ? [libraryRootLabel(), ...libraryChain.map((link) => link.name)] : [libraryRowWords().short];
+    
+    const steps = !web ? pageHeadChatSteps() : null;
+    if (steps) {
+      drawPageHeadSteps(path, steps);
+      return;
+    }
   }
   const line = words.filter(Boolean).join(' / ');
-  if (path.textContent !== line) path.textContent = line;
+  if (pageHeadStepsKey) {
+    pageHeadStepsKey = '';
+    if (crumbMenuOwner && path.contains(crumbMenuOwner)) hideCrumbMenu();
+  }
+  if (path.textContent !== line || path.children.length) path.textContent = line;
   path.title = file || line;
+}
+
+var pageHeadStepsKey = '';
+
+function pageHeadChatSteps() {
+  if (consoleFrontId === null || !activeConsoleTab(currentState)) return null;
+  const entry = consoleLayers.get(consoleFrontId);
+  if (!entry || !CONSOLE_FOLDER_AGENTS[consoleControlRecord(entry)?.agent]) return null;
+  const steps = activeVaultId
+    ? [{ name: libraryRootLabel(), folder: realFolderPath('') }, ...libraryChain.map((link) => ({ name: link.name, folder: link.path }))]
+    : [{ name: libraryRowWords().short, folder: libraryFolderHere() }];
+  const kept = steps.filter((step) => step.name && step.folder);
+  return kept.length ? { id: consoleFrontId, entry, steps: kept } : null;
+}
+function drawPageHeadSteps(path, { id, entry, steps }) {
+  const key = JSON.stringify([id, steps]);
+  if (key === pageHeadStepsKey) return;
+  const holding = crumbMenuOwner && path.contains(crumbMenuOwner);
+  pageHeadStepsKey = key;
+  path.textContent = '';
+  steps.forEach((step, at) => {
+    if (at) path.append(' / ');
+    path.append(consoleTrailStep(id, entry, step.name, step.folder));
+  });
+  path.title = steps[steps.length - 1].folder;
+  
+  if (holding) hideCrumbMenu();
 }
 
 function drawReaderStatus(view) {
@@ -18753,6 +18801,8 @@ function renderReaderToolbar(viewsStand) {
   const savedFront = Boolean(viewsStand && !consoleEntry && savedChatTab());
   
   renderExportPdfAction(viewsStand && !activeWebTab() && !consoleEntry && !savedFront);
+  
+  renderOpenAction(Boolean(activeConsoleTab(currentState) || savedChatTab()));
   if (!readerToolbar) return;
   readerToolbar.hidden = !viewsStand;
   document.body.classList.toggle('has-reader-toolbar', Boolean(viewsStand));
@@ -45731,9 +45781,12 @@ function fitConsoleStatus(entry) {
 window.leafConsoleStatus = (id, record) => {
   const entry = consoleLayers.get(id) || (record ? makeConsoleLayer(id) : null);
   if (!entry) return;
+  const folderWas = consoleFolderOf(id);
   entry.statusRecord = record && typeof record === 'object' ? record : null;
   
   if (id === consoleFrontId) pickerFollowsChat();
+  
+  if (consoleFolderOf(id) !== folderWas && consoleAgentRows.length) drawConsoleRecents();
   const session = entry.statusRecord?.agent === 'codex' && typeof entry.statusRecord.nativeSession === 'string' && entry.statusRecord.nativeSession ? entry.statusRecord.nativeSession : null;
   const fresh = session && session !== entry.nativeSession && entry.statusRecord.nativeFresh === true;
   entry.nativeSession = session;
@@ -46740,7 +46793,7 @@ window.leafAgentLaunchAnswer = (request, answer) => {
   agentLaunch.waiting.delete(request);
   if (waiting) waiting(answer);
   
-  if (answer.state && agentLaunchOpen() && !agentLaunch.view) agentLaunchShow('main');
+  if (answer.state && agentLaunchOpen() && !agentLaunch.view && !agentLaunchHeld()) agentLaunchShow('main');
   
   if (answer.refresh) agentLaunchAsk('state').then(() => agentLaunchRedraw());
 };
@@ -46748,7 +46801,7 @@ function agentLaunchOpen() {
   return crumbMenuOwner === newMenuButton && !crumbMenu.hidden;
 }
 function agentLaunchRedraw() {
-  if (agentLaunchOpen() && agentLaunch.view) agentLaunchShow(agentLaunch.view);
+  if (agentLaunchOpen() && agentLaunch.view && !agentLaunchHeld()) agentLaunchShow(agentLaunch.view);
 }
 function agentLaunchOf(agent) {
   return agentLaunch.state?.agents?.[agent] || { accounts: [], label: '', defaultShown: true };
@@ -46775,6 +46828,8 @@ function agentLaunchRows() {
       title: `Start ${AGENT_LAUNCH_NAMES[agent]} as ${label}`,
       keepOpen: true,
       editShown: true,
+      reorderKey: `${agent}:${id}`,
+      press: agentLaunchRowPress,
       run: () => agentLaunchStart(agent, id),
       edit: () => agentLaunchOpenAccount(agent, id),
     };
@@ -46785,11 +46840,105 @@ function agentLaunchRows() {
   return rows;
 }
 
+let agentLaunchPress = null;
+function agentLaunchReorderRows() {
+  return Array.from(crumbMenu.querySelectorAll('.crumb-menu-row')).filter((line) => line.dataset.reorderKey !== undefined);
+}
+function agentLaunchRowPress(event, row, start) {
+  agentLaunchPress = { row, start, startY: event.clientY, moved: false, before: agentLaunchReorderRows().map((line) => line.dataset.reorderKey), redrawOwed: false };
+  
+  try { event.target?.setPointerCapture?.(event.pointerId); } catch (_) {}
+  window.addEventListener('pointermove', agentLaunchPressMove, true);
+  window.addEventListener('pointerup', agentLaunchPressUp, true);
+  window.addEventListener('pointercancel', agentLaunchPressCancel, true);
+  window.addEventListener('keydown', agentLaunchPressKey, true);
+}
+function agentLaunchPressMove(event) {
+  const press = agentLaunchPress;
+  if (!press) return;
+  if (!press.moved) {
+    if (Math.abs(event.clientY - press.startY) < HOME_DRAG_THRESHOLD) return;
+    press.moved = true;
+    press.row.classList.add('is-lifted');
+    crumbMenu.classList.add('is-reordering');
+  }
+  
+  const others = agentLaunchReorderRows().filter((line) => line !== press.row);
+  if (!others.length) return;
+  const under = others.find((line) => { const box = line.getBoundingClientRect(); return event.clientY < box.top + box.height / 2; });
+  if (under) under.insertAdjacentElement('beforebegin', press.row);
+  else others[others.length - 1].insertAdjacentElement('afterend', press.row);
+}
+function agentLaunchPressUp(event) {
+  const press = agentLaunchPress;
+  if (!press) return;
+  if (!press.moved) {
+    agentLaunchPressEnd();
+    press.start();
+    return;
+  }
+  const box = crumbMenu.getBoundingClientRect();
+  const onList = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
+  if (!onList) {
+    agentLaunchPressCancel();
+    return;
+  }
+  const order = agentLaunchReorderRows().map((line) => line.dataset.reorderKey);
+  const moved = order.join('\n') !== press.before.join('\n');
+  
+  if (moved && agentLaunch.state) agentLaunch.state = { ...agentLaunch.state, order };
+  agentLaunchPressEnd();
+  if (moved) agentLaunchAsk('setOrder', { order });
+}
+
+function agentLaunchPressCancel() {
+  const press = agentLaunchPress;
+  if (!press) return;
+  const rows = new Map(agentLaunchReorderRows().map((line) => [line.dataset.reorderKey, line]));
+  let previous = null;
+  for (const key of press.before) {
+    const line = rows.get(key);
+    if (!line) continue;
+    if (previous) previous.insertAdjacentElement('afterend', line);
+    else agentLaunchReorderRows()[0].insertAdjacentElement('beforebegin', line);
+    previous = line;
+  }
+  agentLaunchPressEnd();
+}
+function agentLaunchPressKey(event) {
+  if (event.key !== 'Escape' || !agentLaunchPress) return;
+  event.stopPropagation();
+  event.preventDefault();
+  agentLaunchPressCancel();
+}
+function agentLaunchPressEnd() {
+  const press = agentLaunchPress;
+  agentLaunchPress = null;
+  window.removeEventListener('pointermove', agentLaunchPressMove, true);
+  window.removeEventListener('pointerup', agentLaunchPressUp, true);
+  window.removeEventListener('pointercancel', agentLaunchPressCancel, true);
+  window.removeEventListener('keydown', agentLaunchPressKey, true);
+  if (!press) return;
+  press.row.classList.remove('is-lifted');
+  crumbMenu.classList.remove('is-reordering');
+  if (press.redrawOwed && agentLaunchOpen()) agentLaunchShow(agentLaunch.view || 'main');
+}
+
+function agentLaunchHeld() {
+  if (!agentLaunchPress) return false;
+  agentLaunchPress.redrawOwed = true;
+  return true;
+}
+
 function agentLaunchAccounts() {
-  return AGENT_LAUNCH_AGENTS.flatMap((agent) => {
+  const listed = AGENT_LAUNCH_AGENTS.flatMap((agent) => {
     const held = agentLaunchOf(agent);
     return [...(held.defaultShown === false ? [] : ['']), ...held.accounts.map((row) => row.id)].map((id) => [agent, id]);
   });
+  const at = new Map((agentLaunch.state?.order || []).map((key, index) => [key, index]));
+  const rank = ([agent, id]) => at.get(`${agent}:${id}`) ?? Infinity;
+  
+  return listed.map((pair, index) => ({ pair, index })).sort((a, b) => (rank(a.pair) - rank(b.pair)) || (a.index - b.index)).map(({ pair }) => pair);
 }
 
 function agentLaunchHistoryRows() {
@@ -47540,7 +47689,7 @@ function consoleRecentRowHtml(row, now, where, live = null) {
   const agent = String(row.agent || '');
   const title = String(row.title || 'Untitled conversation');
   
-  const folderPath = row.folder || (live ? consoleFolderOf(live.id) : '');
+  const folderPath = (live && consoleFolderOf(live.id)) || row.folder || '';
   const folder = folderPath ? `\n${folderPath}` : '';
   const ids = `data-recent-agent="${escapeAttr(agent)}" data-recent-id="${escapeAttr(String(row.id || ''))}"`;
   const working = live?.state === 'working';
@@ -52136,24 +52285,22 @@ function openConsoleFolder(id, entry, anchor, path = '', above = true) {
   });
 }
 
-function consoleFolderButton(id, entry, field) {
+
+function consoleTrailStep(id, entry, name, folder) {
   const item = document.createElement('button');
   item.type = 'button';
-  item.className = 'console-status-field console-status-folder';
-  item.dataset.field = 'folder';
-  
-  item.innerHTML = '<span class="lt-icon lt-icon-folder" aria-hidden="true"></span>';
+  item.className = 'page-head-step';
+  item.textContent = name;
   const claude = consoleControlRecord(entry)?.agent === 'claude';
-  const path = field.path || consoleFolderOf(id);
-  item.title = path || field.text;
-  item.setAttribute('aria-label', `${claude ? 'Change folder' : 'New conversation in another folder'}: ${path || (field.text === 'Folder' ? 'the folder this console opened in' : field.text)}`);
+  item.title = folder;
+  item.setAttribute('aria-label', `${claude ? 'Change folder' : 'New conversation in another folder'}: ${folder}`);
   item.setAttribute('aria-haspopup', 'menu');
   item.setAttribute('aria-expanded', 'false');
   const open = event => {
     event.preventDefault();
     event.stopPropagation();
     if (consoleFolderMenuOpen(entry) && entry.folderMenu.anchor === item) hideCrumbMenu();
-    else openConsoleFolder(id, entry, item);
+    else openConsoleFolder(id, entry, item, folder, false);
   };
   item.addEventListener('pointerdown', event => { if (event.button === 0) open(event); });
   item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') open(event); });
