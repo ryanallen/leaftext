@@ -8213,7 +8213,7 @@ body.is-embedded .reader-toolbar {
 .app-surface.has-library-overlay .tab-bar {
   visibility: hidden;
 }
-/* The toggle's motion: open springs past its width on the overshoot curve; close slams to the reader's padding, bounces off it, and seats — three chained legs, because one curve cannot come back out of its target. The front end writes the width on the track and on the app bar, whose lead and divider line read --library-rail-width, so one write per leg moves the three in step; the transitions live only on these classes (library.js holds one per leg), so a drag or resize stays immediate and Reduce Motion's blanket rule zeroes every leg. */
+/* The toggle's motion: open springs past its width on the overshoot curve; close slams to the reader's padding, bounces off it, and seats — three chained legs, because one curve cannot come back out of its target. The front end writes the width on the track and on the app bar, whose lead, tab strip, divider line and page header read --library-rail-width, so one write per leg moves them all in step; the transitions live only on these classes (library.js holds one per leg), so a drag or resize stays immediate and Reduce Motion's blanket rule zeroes every leg. */
 body.is-library-opening .library-shell {
   transition: grid-template-columns var(--lt-duration-220) var(--lt-ease-overshoot);
 }
@@ -8232,13 +8232,16 @@ body.is-library-closing .app-bar-lead {
 body.is-library-settling .app-bar-lead {
   transition: width var(--lt-duration-120) var(--lt-ease-decelerate);
 }
-body.is-library-opening .tab-bar {
+body.is-library-opening .tab-bar,
+body.is-library-opening .page-head {
   transition: left var(--lt-duration-220) var(--lt-ease-overshoot);
 }
-body.is-library-closing .tab-bar {
+body.is-library-closing .tab-bar,
+body.is-library-closing .page-head {
   transition: left var(--lt-duration-160) var(--lt-ease-accelerate);
 }
-body.is-library-settling .tab-bar {
+body.is-library-settling .tab-bar,
+body.is-library-settling .page-head {
   transition: left var(--lt-duration-120) var(--lt-ease-decelerate);
 }
 body.is-library-opening .app-bar::after {
@@ -8454,10 +8457,12 @@ body.is-library-closing .library-crumbs,
 body.is-library-closing .library-nav,
 body.is-library-closing .library-foot,
 body.is-library-closing .library-pane .library-scroll,
+body.is-library-closing .sidebar-lists,
 body.is-library-settling .library-crumbs,
 body.is-library-settling .library-nav,
 body.is-library-settling .library-foot,
-body.is-library-settling .library-pane .library-scroll {
+body.is-library-settling .library-pane .library-scroll,
+body.is-library-settling .sidebar-lists {
   opacity: 0;
   transition: opacity var(--lt-duration-260) var(--lt-ease);
 }
@@ -8465,7 +8470,8 @@ body.is-library-settling .library-pane .library-scroll {
 body.is-library-opening .library-crumbs,
 body.is-library-opening .library-nav,
 body.is-library-opening .library-foot,
-body.is-library-opening .library-pane .library-scroll {
+body.is-library-opening .library-pane .library-scroll,
+body.is-library-opening .sidebar-lists {
   animation: leaf-library-open-arrive var(--lt-duration-260) var(--lt-ease);
 }
 @keyframes leaf-library-open-arrive {
