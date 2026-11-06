@@ -6902,10 +6902,6 @@ body.frameless.is-fullscreen .startup-card {
   display: none;
 }
 
-.strip-part-away {
-  display: none;
-}
-
 body.has-split .strip-part {
   flex: 0 1 auto;
 }
@@ -10092,6 +10088,11 @@ button.diff-card-fold:disabled { cursor: default; }
 .console-composer-tool .lt-icon { width: 16px; height: 16px; }
 .console-composer-mode { height: 24px; padding: 0 var(--lt-space-10); border-radius: var(--lt-radius-pill); font-size: var(--lt-text-12); white-space: nowrap; }
 .console-composer-mode[hidden] { display: none; }
+.console-composer-repeat { appearance: none; display: inline-flex; align-items: center; gap: var(--lt-space-4); flex: none; height: 24px; padding: 0 var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-accent); border-radius: var(--lt-radius-pill); background: transparent; color: var(--lt-foreground); font: inherit; font-size: var(--lt-text-12); white-space: nowrap; cursor: pointer; }
+.console-composer-repeat .lt-icon { width: 12px; height: 12px; color: var(--lt-accent); }
+.console-composer-repeat[hidden] { display: none; }
+@media (hover: hover) { .console-composer-repeat:hover { background: var(--lt-wash-hover); } }
+.console-composer-repeat:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: var(--lt-stroke-1); }
 
 .console-composer-notes { display: inline-flex; align-items: center; gap: var(--lt-space-4); min-width: 0; overflow: hidden; }
 .console-composer-notes[hidden] { display: none; }

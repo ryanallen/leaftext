@@ -22572,11 +22572,6 @@ function writeTabGroups(markup) {
 function tabCloseMarkup(index) {
   return `<button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button>`;
 }
-
-function stripFollowsFront() {
-  if (!stripLeftGroup) return;
-  stripLeftGroup.classList.toggle('strip-part-away', consoleFrontId !== null || savedChatShowing());
-}
 function renderTabs(state) {
   
   if (window.__leafSite) {
@@ -22585,7 +22580,6 @@ function renderTabs(state) {
   }
   
   savedChatFollowsFront();
-  stripFollowsFront();
   
   tabArrivalLeave();
   const tabs = state.tabs || [];
@@ -48129,7 +48123,6 @@ function drawPaneDocuments() {
 
 function paneFollowsFront() {
   paneShows(consoleFrontId === null && !savedChatShowing() && (activeDocumentPath() || activeWebTab()) ? 'outline' : 'chats');
-  stripFollowsFront();
 }
 
 function showChatsInPane() {
@@ -50311,10 +50304,14 @@ function makeConsoleComposer(id, entry, frame) {
   const more = consoleComposerButton('console-composer-tool console-composer-more', 'More', 'more');
   const mode = consoleComposerButton('console-composer-mode', 'Change the permission mode');
   mode.hidden = true;
+  
+  const repeat = consoleComposerButton('console-composer-repeat', 'Repeat', 'refresh');
+  repeat.appendChild(document.createElement('span'));
+  repeat.hidden = true;
   const notes = document.createElement('div');
   notes.className = 'console-composer-notes';
   notes.hidden = true;
-  tools.append(attach, slash, dictate, more, mode, notes);
+  tools.append(attach, slash, dictate, more, repeat, mode, notes);
   const submit = consoleComposerButton('console-composer-send', 'Send', 'forward-long');
   row.append(tools, submit);
   const list = document.createElement('div');
@@ -50324,7 +50321,7 @@ function makeConsoleComposer(id, entry, frame) {
   list.hidden = true;
   box.append(list, chips, words, row);
   frame.appendChild(box);
-  const state = { box, chips, field, attach, slash, more, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
+  const state = { box, chips, field, attach, slash, more, repeat, mode, notes, submit, list, attached: [], history: [], back: -1, kept: '', files: null, request: 0, hold: 0, holdTimer: 0 };
   entry.composer = state;
   
   state.width = 0;
@@ -50376,6 +50373,7 @@ function makeConsoleComposer(id, entry, frame) {
     leafPlaceFloating(contextMenu, at.left, at.top - contextMenu.offsetHeight - CONSOLE_COMPOSER_MENU_GAP);
   });
   mode.addEventListener('click', () => consoleComposerMode(id, entry));
+  repeat.addEventListener('click', () => stopConsoleRepeat(entry));
   notes.addEventListener('click', event => {
     if (event.target.closest?.('.console-composer-note.is-warning')) consoleComposerToTerminal(entry);
   });
@@ -50412,6 +50410,7 @@ function consoleComposerMenuRows(id, entry) {
     { label: 'Tools', icon: 'package', run: toField(() => openConsoleToolServers(id, entry)) },
     { label: 'History', icon: 'recent', run: () => openConsolePastPrompts(id, entry) },
     { label: 'Saved', icon: 'favorite-off', run: toField(() => openConsoleSavedPrompts(id, entry)) },
+    { label: 'Repeat', icon: 'refresh', run: toField(() => openConsoleRepeat(id, entry)) },
   ];
   const branches = [];
   if (CONSOLE_COMPOSER_FORKS.has(agent)) branches.push({ label: 'Fork', icon: 'duplicate', run: toField(() => consoleComposerFork(id, entry)) });
@@ -50853,7 +50852,7 @@ function consoleComposerHolding(entry) {
 function consoleComposerMention(id, entry) {
   const state = entry.composer;
   
-  if (state.savedList || state.pastList || state.serverList || state.rulesList) return;
+  if (state.savedList || state.repeatList || state.pastList || state.serverList || state.rulesList) return;
   const command = consoleComposerCommandWord(entry);
   if (command) {
     state.files = null;
@@ -50946,6 +50945,7 @@ function closeConsoleFileList(entry) {
   const state = entry.composer;
   if (!state) return;
   state.savedList = null;
+  state.repeatList = null;
   state.pastList = null;
   state.serverList = null;
   state.rulesList = null;
@@ -50958,6 +50958,7 @@ function closeConsoleFileList(entry) {
 
 function consoleFileListKey(id, entry, event) {
   if (entry.composer.savedList) return consoleSavedListKey(id, entry, event);
+  if (entry.composer.repeatList) return consoleRepeatListKey(id, entry, event);
   if (entry.composer.pastList) return consolePastListKey(id, entry, event);
   if (entry.composer.rulesList) return consoleRulesListKey(id, entry, event);
   if (entry.composer.serverList) {
@@ -50994,6 +50995,10 @@ function chooseConsoleFile(id, entry, index) {
   const state = entry.composer;
   if (state.savedList) {
     chooseConsoleSavedPrompt(id, entry, index);
+    return;
+  }
+  if (state.repeatList) {
+    chooseConsoleRepeat(id, entry, index);
     return;
   }
   if (state.pastList) {
@@ -51525,6 +51530,112 @@ function chooseConsoleRules(id, entry, index) {
   }
   closeConsoleFileList(entry);
   send({ command: 'openRecent', path: row.path });
+}
+
+const CONSOLE_REPEAT_EVERY = [
+  { label: '5 minutes', loop: '5m', ms: 5 * 60000 },
+  { label: '10 minutes', loop: '10m', ms: 10 * 60000 },
+  { label: '30 minutes', loop: '30m', ms: 30 * 60000 },
+  { label: 'Hour', loop: '1h', ms: 60 * 60000 },
+];
+
+function consoleRepeatRows(entry) {
+  return entry.chat?.agent === 'claude' ? [...CONSOLE_REPEAT_EVERY, { label: 'Let Claude pick the pace', loop: '', detail: 'Claude Code only' }] : CONSOLE_REPEAT_EVERY;
+}
+
+function openConsoleRepeat(id, entry) {
+  const state = entry.composer;
+  
+  if (state.repeatList && !(state.repeatList.empty && state.field.value.trim())) {
+    closeConsoleFileList(entry);
+    return;
+  }
+  closeConsoleFileList(entry);
+  state.repeatList = { at: 1, empty: false };
+  drawConsoleRepeatList(entry);
+}
+
+function drawConsoleRepeatList(entry) {
+  const state = entry.composer;
+  const list = state.repeatList;
+  state.list.hidden = false;
+  state.list.setAttribute('aria-label', 'Repeat the prompt');
+  list.empty = !state.field.value.trim();
+  if (list.empty) {
+    state.list.replaceChildren(consoleFileListNote('Type the prompt in the box first, then choose Repeat.'));
+    return;
+  }
+  const rows = consoleRepeatRows(entry);
+  list.at = Math.min(list.at, rows.length - 1);
+  state.list.replaceChildren(consoleFileListNote('Send what is in the box again, every…'), ...rows.map((row, index) => {
+    if (!row.detail) return consoleListOption(index, list.at, row.label);
+    const detail = document.createElement('span');
+    detail.className = 'console-file-list-detail';
+    detail.textContent = row.detail;
+    return consoleListOption(index, list.at, row.label, detail);
+  }));
+}
+
+function consoleRepeatListKey(id, entry, event) {
+  const list = entry.composer.repeatList;
+  const count = entry.composer.field.value.trim() ? consoleRepeatRows(entry).length : 0;
+  return consoleListKey(entry, list, count, drawConsoleRepeatList, index => chooseConsoleRepeat(id, entry, index), event);
+}
+
+function chooseConsoleRepeat(id, entry, index) {
+  const state = entry.composer;
+  const row = consoleRepeatRows(entry)[index];
+  const prompt = state.field.value.trim();
+  if (!row || !prompt) return;
+  closeConsoleFileList(entry);
+  stopConsoleRepeat(entry);
+  if (entry.chat?.agent === 'claude') {
+    state.field.value = `/loop ${row.loop ? `${row.loop} ` : ''}${prompt}`;
+    sendConsoleComposer(id, entry);
+    return;
+  }
+  entry.repeat = { agent: entry.chat?.agent, prompt, row, next: 0, timer: 0 };
+  sendConsoleComposer(id, entry);
+  armConsoleRepeat(id, entry);
+}
+
+function armConsoleRepeat(id, entry) {
+  const repeat = entry.repeat;
+  repeat.next = Date.now() + repeat.row.ms;
+  repeat.timer = setTimeout(() => {
+    if (entry.repeat !== repeat) return;
+    if (consoleLayers.get(id) !== entry || entry.chat?.agent !== repeat.agent || !entry.composer) {
+      entry.repeat = null;
+      return;
+    }
+    
+    if (!consoleComposerWorking(entry) && !consoleComposerHasMessage(entry) && consoleModelPrompt(entry, repeat.agent).kind === 'empty') {
+      entry.composer.field.value = repeat.prompt;
+      sendConsoleComposer(id, entry);
+    }
+    armConsoleRepeat(id, entry);
+  }, repeat.row.ms);
+  drawConsoleRepeat(entry);
+}
+
+function stopConsoleRepeat(entry) {
+  if (entry.repeat) clearTimeout(entry.repeat.timer);
+  entry.repeat = null;
+  drawConsoleRepeat(entry);
+}
+
+function drawConsoleRepeat(entry) {
+  const press = entry.composer?.repeat;
+  if (!press) return;
+  const repeat = entry.repeat;
+  press.hidden = !repeat;
+  if (!repeat) return;
+  const next = new Date(repeat.next).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s/g, '').toLowerCase();
+  const every = repeat.row.label === 'Hour' ? 'hour' : repeat.row.label;
+  press.lastChild.textContent = `Every ${every} · next ${next}`;
+  const label = `Repeating every ${every}. Press to stop.`;
+  press.title = label;
+  press.setAttribute('aria-label', label);
 }
 
 
