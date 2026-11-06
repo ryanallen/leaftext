@@ -9975,6 +9975,11 @@ if (window.__leafSite) {
   
   document.getElementById('libraryNav')?.remove();
   document.getElementById('appRail')?.remove();
+  
+  document.body.classList.add('is-site');
+  const download = document.getElementById('exportPdfButton');
+  if (download) document.getElementById('appActionsItems')?.append(download);
+  document.getElementById('pageHead')?.remove();
 } else {
   
   document.getElementById('libraryCrumbs')?.remove();
@@ -16584,6 +16589,7 @@ function syncOutcomeText(state) {
       const saved = failure.localCommitFinished ? 'Saved on this computer. ' : '';
       const step = failure.operation === 'git fetch' ? 'checking for changes' : failure.operation === 'git push' ? 'sending your commits' : failure.operation;
       if (failure.category === 'signin') return `${saved}GitHub refused authentication while ${step}. Open this vault’s GitHub settings for sign-in help, then Sync again.`;
+      if (failure.category === 'stalled') return `${saved}Nothing arrived for ${failure.quietSeconds} seconds while ${step}, so the app stopped the sync. Press Sync to try again.`;
       if (failure.category === 'ssh') return `${saved}GitHub refused the SSH key while ${step}. Check this vault’s GitHub settings, then Sync again.`;
       if (message !== 'failed:identity') return `${saved}${message}`;
     }
@@ -17139,6 +17145,7 @@ function drawLibraryOutlineWindow(rows, force) {
   windowBox.innerHTML = rows.slice(start, end).map((row, at) => outlineRowHtml(row, libraryOutlineShallowest, row.id === current).replace(' data-outline-section=', ` data-outline-index="${start + at}" data-outline-section=`)).join('');
   windowBox.style.setProperty('padding-top', `${libraryOutlineOffsets[start]}px`);
   windowBox.style.setProperty('padding-bottom', `${libraryOutlineOffsets[rows.length] - libraryOutlineOffsets[end]}px`);
+  outlineShows(current);
   bindLibraryOutlineRows(force);
 }
 function renderLibraryOutline() {
@@ -22556,6 +22563,11 @@ function writeTabGroups(markup) {
 function tabCloseMarkup(index) {
   return `<button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button>`;
 }
+
+function stripFollowsFront() {
+  if (!stripLeftGroup) return;
+  stripLeftGroup.classList.toggle('strip-part-away', consoleFrontId !== null || savedChatShowing());
+}
 function renderTabs(state) {
   
   if (window.__leafSite) {
@@ -22564,6 +22576,7 @@ function renderTabs(state) {
   }
   
   savedChatFollowsFront();
+  stripFollowsFront();
   
   tabArrivalLeave();
   const tabs = state.tabs || [];
@@ -46576,7 +46589,24 @@ function newMenuMainRows() {
   }
   if (newMenuHostAnswers('agentLaunch')) rows.push('separator', ...agentLaunchRows());
   if (newMenuHostAnswers('consoleCompare')) rows.push({ label: 'Compare agents', title: 'Send one prompt to two agents side by side', icon: '<span class="lt-icon lt-icon-split" aria-hidden="true"></span>', keepOpen: true, run: () => agentLaunchShow('compare') });
+  if (newMenuHostAnswers('setAgentNotices')) rows.push(newMenuNoticeRow());
   return rows;
+}
+
+let agentNoticesOn = LEAF_SETTINGS.agentNotices !== false;
+function newMenuNoticeRow() {
+  return {
+    label: 'Tell me when an agent is done or asking',
+    switch: true,
+    checked: agentNoticesOn,
+    keepOpen: true,
+    title: 'A system notice when an agent finishes or asks while its window is behind another',
+    run: () => {
+      agentNoticesOn = !agentNoticesOn;
+      send({ command: 'setAgentNotices', enabled: agentNoticesOn });
+      showCrumbMenu(newMenuButton, newMenuMainRows(), 'New page');
+    },
+  };
 }
 
 let newMenuBrowsedSinceFront = false;
@@ -48054,6 +48084,7 @@ function drawPaneDocuments() {
 
 function paneFollowsFront() {
   paneShows(consoleFrontId === null && !savedChatShowing() && (activeDocumentPath() || activeWebTab()) ? 'outline' : 'chats');
+  stripFollowsFront();
 }
 
 function showChatsInPane() {
@@ -48362,6 +48393,7 @@ function readConsoleChat(entry) {
     if (agent === 'antigravity') {
       
       if (rows.slice(0, top).some(row => /^\s*┃.*Enter\/Esc to dismiss/.test(row))) return null;
+      chat.queued = consoleAntigravityQueued(rows.slice(0, top));
       chat.from = 0;
       return chat;
     }
@@ -48605,7 +48637,8 @@ function refreshConsoleChat(id, entry) {
   clearTimeout(entry.chatRecord.trail);
   entry.chatRecord.trail = setTimeout(() => askConsoleRecord(id, entry), CONSOLE_RECORD_TRAIL_MS);
   const was = entry.chat?.shown;
-  entry.chat = { ...read, opening, turns, waiting, shown: true };
+  
+  entry.chat = { ...read, opening, turns, waiting: waiting.length ? waiting : read.queued?.texts || [], shown: true };
   entry.layer?.classList.add('console-chatting');
   const moved = drawConsoleChat(id, entry);
   liftConsoleChatOffPanel(entry);
@@ -49201,7 +49234,10 @@ function drawConsoleChat(id, entry) {
     answered(at);
   });
   answered(-1);
-  if (chat.waiting?.length) wanted.push({ key: 'waiting', sig: JSON.stringify(chat.waiting), make: () => consoleChatWaiting(chat.waiting) });
+  if (chat.waiting?.length) {
+    const ready = consoleSendNowReady(entry);
+    wanted.push({ key: 'waiting', sig: JSON.stringify([chat.waiting, ready]), make: () => consoleChatWaiting(chat.waiting, ready ? () => consoleSendNow(id, entry) : null) });
+  }
   const nodes = new Map();
   let moved = false;
   let at = view.list.firstChild;
@@ -49391,7 +49427,54 @@ function consoleChatOpening(rows) {
 }
 
 
-function consoleChatWaiting(waiting) {
+const CONSOLE_ANTIGRAVITY_SEND_HINT = / \(alt\+m to send immediately\)$/;
+
+
+function consoleAntigravityQueued(above) {
+  let frame = above.length - 1;
+  while (frame >= 0 && !above[frame].trim()) frame -= 1;
+  if (frame < 0 || !/^─+$/.test(above[frame].trim())) return { texts: [], sendable: false };
+  let first = -1;
+  for (let at = frame - 1; at >= 0; at -= 1) {
+    const row = above[at];
+    if (/^▸ /.test(row)) first = at;
+    
+    else if (!/^\s+\S/.test(row)) break;
+  }
+  if (first < 0) return { texts: [], sendable: false };
+  const texts = [];
+  let sending = false;
+  for (const row of above.slice(first, frame)) {
+    if (/^▸ /.test(row)) texts.push(row.slice(2).trim());
+    else if (/^\s+⎿/.test(row)) sending = true;
+    else texts[texts.length - 1] += ' ' + row.trim();
+  }
+  const sendable = !sending && CONSOLE_ANTIGRAVITY_SEND_HINT.test(texts[texts.length - 1]);
+  return { texts: texts.map(text => text.replace(CONSOLE_ANTIGRAVITY_SEND_HINT, '')), sendable };
+}
+
+
+const CONSOLE_SEND_NOW = { claude: '', antigravity: 'm' };
+
+
+function consoleSendNowReady(entry) {
+  const chat = entry.chat;
+  if (!chat?.waiting?.length || !CONSOLE_SEND_NOW[chat.agent]) return false;
+  if (chat.agent === 'antigravity' && !chat.queued?.sendable) return false;
+  return entry.sentNowFor !== JSON.stringify(chat.waiting);
+}
+
+
+function consoleSendNow(id, entry) {
+  if (!consoleSendNowReady(entry)) return;
+  entry.sentNowFor = JSON.stringify(entry.chat.waiting);
+  consoleKeyTyped(id);
+  send({ command: 'consoleInput', id, data: CONSOLE_SEND_NOW[entry.chat.agent] });
+  drawConsoleChat(id, entry);
+}
+
+
+function consoleChatWaiting(waiting, sendNow) {
   const node = document.createElement('div');
   node.className = 'console-waiting';
   for (const text of waiting) {
@@ -49400,10 +49483,24 @@ function consoleChatWaiting(waiting) {
     bubble.appendChild(consoleChatText(text));
     node.appendChild(bubble);
   }
+  const row = document.createElement('div');
+  row.className = 'console-waiting-row';
   const note = document.createElement('div');
   note.className = 'console-waiting-note';
   note.textContent = 'Waiting';
-  node.appendChild(note);
+  row.appendChild(note);
+  if (sendNow) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'console-waiting-send';
+    button.textContent = 'Send now';
+    button.addEventListener('click', sendNow);
+    const key = document.createElement('span');
+    key.className = 'console-waiting-key';
+    key.textContent = isMacPlatform ? '⌘S' : 'Ctrl+S';
+    row.append(button, key);
+  }
+  node.appendChild(row);
   return node;
 }
 
@@ -50445,6 +50542,13 @@ function onConsoleComposerKey(id, entry, event) {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault();
     sendConsoleComposer(id, entry);
+    return;
+  }
+  
+  if (isSaveKey(event) && entry.chat?.waiting?.length && CONSOLE_SEND_NOW[entry.chat.agent]) {
+    event.preventDefault();
+    event.stopPropagation();
+    consoleSendNow(id, entry);
     return;
   }
   if (event.key === 'Tab' && event.shiftKey) {
@@ -59082,6 +59186,10 @@ function announceReaderSection() {
   readerSectionSaid = section;
   lightLibraryOutlineSection(section);
 }
+
+function outlineShows(section) {
+  readerSectionSaid = section;
+}
 function captureReaderScrollAnchor() {
   const source = app.querySelector('.document-body');
   
@@ -59235,9 +59343,11 @@ function scheduleReaderLayoutUpdate(holdAnchor = false) {
     
     restoreReaderScrollAnchor(readerScrollAnchor || captureReaderScrollAnchor());
     
-    if (!holding && !validReaderAnchorPoint(readerScrollAnchor?.point)) {
+    if (!readerScrollAnchor || (!holding && !validReaderAnchorPoint(readerScrollAnchor.point))) {
       readerScrollAnchor = captureReaderScrollAnchor() || readerScrollAnchor;
     }
+    
+    announceReaderSection();
     updateMinimapViewport();
   });
 }

@@ -6902,6 +6902,10 @@ body.frameless.is-fullscreen .startup-card {
   display: none;
 }
 
+.strip-part-away {
+  display: none;
+}
+
 body.has-split .strip-part {
   flex: 0 1 auto;
 }
@@ -8011,6 +8015,15 @@ body.is-embedded {
   --app-page-head: 0px;
   --app-bar-height: 0px;
 }
+
+body.is-site {
+  --app-tab-row: 0px;
+  --app-page-head: 0px;
+  --app-bar-height: var(--app-bar-row);
+}
+body.is-site .tab-bar {
+  display: none;
+}
 body.is-embedded .app-bar,
 body.is-embedded .library-pane,
 body.is-embedded .library-divider,
@@ -8147,6 +8160,8 @@ body.is-embedded .reader-toolbar {
 }
 
 .library-shell.library-narrow .library-pane {
+  
+  --library-app-bar: var(--app-bar-height);
   position: absolute;
   inset: 0;
   width: 100%;
@@ -9936,6 +9951,12 @@ body.library-resizing button {
 .console-waiting { display: flex; flex-direction: column; gap: var(--lt-space-8); min-width: 0; }
 .console-bubble.is-waiting { border: var(--lt-stroke-1) dashed var(--lt-border-strong); background: transparent; color: var(--lt-muted-foreground); }
 .console-waiting-note { align-self: flex-end; color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+
+.console-waiting-row { align-self: flex-end; display: flex; align-items: center; gap: var(--lt-space-8); }
+.console-waiting-send { appearance: none; border: var(--lt-stroke-1) solid var(--lt-border-strong); border-radius: var(--lt-radius-sm); padding: 0 var(--lt-space-8); background: transparent; color: var(--lt-foreground); font: inherit; font-size: var(--lt-text-12); cursor: pointer; }
+@media (hover: hover) { .console-waiting-send:hover { background: var(--lt-wash-hover); } }
+.console-waiting-send:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
+.console-waiting-key { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 
 .console-answer { align-self: flex-start; display: flex; flex-direction: column; gap: var(--lt-space-8); max-width: 88%; min-width: 0; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border-radius: var(--lt-radius-3xl) var(--lt-radius-3xl) var(--lt-radius-3xl) 0; background: var(--lt-surface-muted); }
 .console-reply { display: flex; flex-direction: column; gap: var(--lt-space-8); align-self: stretch; min-width: 0; }

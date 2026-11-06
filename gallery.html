@@ -6909,6 +6909,10 @@ body.frameless.is-fullscreen .startup-card {
 .strip-part[hidden] {
   display: none;
 }
+/* The documents' tabs stand away while a chat is in front; render-state.js marks the group. */
+.strip-part-away {
+  display: none;
+}
 /* Two groups, placed on the cards below them. The left-hand group is pinned to the left card's own width, written on the strip in pixels because the cards and the strip divide two different boxes; the right-hand group takes whatever is left. Both may shrink: a pair that cannot give room back leaves the bar's own fold unable to reach a fit, and it folds every control at the bar's right end away instead. No stroke between them — the cards already draw the seam, and a third line in the middle is one the reader can see. */
 body.has-split .strip-part {
   flex: 0 1 auto;
@@ -8019,6 +8023,15 @@ body.is-embedded {
   --app-page-head: 0px;
   --app-bar-height: 0px;
 }
+/* A published site has no tabs and no path a visitor needs, so the bar is its main row alone. The height is written with its parts because the sum is resolved on :root and inherited. */
+body.is-site {
+  --app-tab-row: 0px;
+  --app-page-head: 0px;
+  --app-bar-height: var(--app-bar-row);
+}
+body.is-site .tab-bar {
+  display: none;
+}
 body.is-embedded .app-bar,
 body.is-embedded .library-pane,
 body.is-embedded .library-divider,
@@ -8155,6 +8168,8 @@ body.is-embedded .reader-toolbar {
 }
 /* Too narrow for a pane beside the page, so the library becomes a sheet over it: full width, parked off the left edge until the app bar's button pulls it in. Out of flow, so the grid still treats the library as closed and the page keeps the whole window. Over every layer the page lays over itself — the view bar and find bar at 7, the document wait at 6, the source view's pinned rows at 5 — or they sit across the sheet's foot; under the app bar's 10, which keeps the button that opened it reachable to close it again. */
 .library-shell.library-narrow .library-pane {
+  /* Under the bar's every row, since the strip and the page header are drawn over the sheet. */
+  --library-app-bar: var(--app-bar-height);
   position: absolute;
   inset: 0;
   width: 100%;
@@ -9954,6 +9969,12 @@ body.library-resizing button {
 .console-waiting { display: flex; flex-direction: column; gap: var(--lt-space-8); min-width: 0; }
 .console-bubble.is-waiting { border: var(--lt-stroke-1) dashed var(--lt-border-strong); background: transparent; color: var(--lt-muted-foreground); }
 .console-waiting-note { align-self: flex-end; color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+/* The note, the Send now button and its key, in one row under the last waiting bubble. */
+.console-waiting-row { align-self: flex-end; display: flex; align-items: center; gap: var(--lt-space-8); }
+.console-waiting-send { appearance: none; border: var(--lt-stroke-1) solid var(--lt-border-strong); border-radius: var(--lt-radius-sm); padding: 0 var(--lt-space-8); background: transparent; color: var(--lt-foreground); font: inherit; font-size: var(--lt-text-12); cursor: pointer; }
+@media (hover: hover) { .console-waiting-send:hover { background: var(--lt-wash-hover); } }
+.console-waiting-send:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
+.console-waiting-key { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 /* The agent's words, the mirror of the reader's bubble on the left. */
 .console-answer { align-self: flex-start; display: flex; flex-direction: column; gap: var(--lt-space-8); max-width: 88%; min-width: 0; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border-radius: var(--lt-radius-3xl) var(--lt-radius-3xl) var(--lt-radius-3xl) 0; background: var(--lt-surface-muted); }
 .console-reply { display: flex; flex-direction: column; gap: var(--lt-space-8); align-self: stretch; min-width: 0; }
@@ -22495,8 +22516,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="console-chat-pin"><div class="console-chat-pin-row"><button class="console-pin-step" aria-label="Previous prompt"><span class="lt-icon lt-icon-back-long"></span></button><span class="console-pin-words">reply with 90 numbered lines</span><span class="console-pin-place">2 of 3</span><button class="console-pin-step" aria-label="Next prompt"><span class="lt-icon lt-icon-forward-long"></span></button></div></div></div>
 </section>
 <section class="part">
-<header><h3>Console chat</h3><code class="built">.console-chat</code><span class="built">console-chat.js, over the terminal's area of a console running Claude Code or Codex while the page reads a whole conversation off its screen, and gone at once for any screen it cannot read: the turns 16 pixels apart in one scrolling log, held at its foot while the reader is there; the agent's opening rows first (console-chat-opening), words keeping their line breaks (console-chat-text), runs of box and block characters in the terminal's face (console-chat-mono), and web addresses that open through the app (console-chat-link); what was sent while the agent worked waiting under the running turn until the agent takes it, oldest first, with Waiting under the last (console-waiting, console-waiting-note); the rail mirrors it while it shows</span></header>
-<div class="stage"><div class="console-chat" role="log" aria-label="Conversation"><div class="console-chat-turns"><div class="console-reply console-chat-opening"><div class="console-chat-mono"> ▐▛███▛█   Claude Code v2.1.309</div></div><div class="console-turn"><div class="console-bubble">Run dir here.</div><div class="console-reply"><div class="console-chat-text">The directory has two files. See <a class="console-chat-link" href="https://example.com">https://example.com</a></div></div></div><div class="console-waiting"><div class="console-bubble is-waiting">/simplify Just say the word second.</div><div class="console-waiting-note">Waiting</div></div></div></div></div>
+<header><h3>Console chat</h3><code class="built">.console-chat</code><span class="built">console-chat.js, over the terminal's area of a console running Claude Code or Codex while the page reads a whole conversation off its screen, and gone at once for any screen it cannot read: the turns 16 pixels apart in one scrolling log, held at its foot while the reader is there; the agent's opening rows first (console-chat-opening), words keeping their line breaks (console-chat-text), runs of box and block characters in the terminal's face (console-chat-mono), and web addresses that open through the app (console-chat-link); what was sent while the agent worked waiting under the running turn until the agent takes it, oldest first, with Waiting under the last (console-waiting, console-waiting-note), and beside it in one row (console-waiting-row) a Send now button (console-waiting-send) and the key that does the same, Ctrl+S or ⌘S (console-waiting-key), where the agent has a send-now of its own; the rail mirrors it while it shows</span></header>
+<div class="stage"><div class="console-chat" role="log" aria-label="Conversation"><div class="console-chat-turns"><div class="console-reply console-chat-opening"><div class="console-chat-mono"> ▐▛███▛█   Claude Code v2.1.309</div></div><div class="console-turn"><div class="console-bubble">Run dir here.</div><div class="console-reply"><div class="console-chat-text">The directory has two files. See <a class="console-chat-link" href="https://example.com">https://example.com</a></div></div></div><div class="console-waiting"><div class="console-bubble is-waiting">/simplify Just say the word second.</div><div class="console-waiting-row"><div class="console-waiting-note">Waiting</div><button type="button" class="console-waiting-send">Send now</button><span class="console-waiting-key">Ctrl+S</span></div></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Console bubble</h3><code class="built">.console-bubble</code><span class="built">console-chat.js: the prompt that was sent, on the right, filled, its bottom-right corner square, at most 88% of the column, Scholar's user bubble; one still waiting for the agent to take it has no fill, a dashed line and muted words (is-waiting)</span></header>

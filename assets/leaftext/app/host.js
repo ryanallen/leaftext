@@ -36,6 +36,7 @@ export const COMMANDS = {
   newDocument: [REFUSED, 'a new document would have nowhere to be saved'],
   newConsole: [REFUSED, 'a published page cannot start a local command line'],
   agentLaunch: [REFUSED, 'a published page cannot start an agent or keep its accounts'],
+  setAgentNotices: [REFUSED, 'a published page holds no console, so no agent can finish or ask in it'],
   consoleCompare: [REFUSED, 'a published page has no agent session to start'],
   renameConsoleAccount: [REFUSED, 'this page has no console account to rename'],
   consoleFolderList: [REFUSED, 'a published page has no console whose folder could be listed'],
