@@ -1448,7 +1448,8 @@ function splitRoom(state = currentState) {
 
 function columnsRoom() {
   const pane = window.__leafEmbedded || libraryIsClosed() ? 0 : clampOpenPaneWidth(libraryWidth);
-  const chat = chatColumnOpen ? chatRailAllowance() + rootLengthPx('--reader-split-track') : 0;
+  const lead = chatSide === 'right' ? 0 : readerGutterPx();
+  const chat = chatColumnOpen ? chatRailAllowance() + rootLengthPx('--reader-split-track') + lead : 0;
   return leafShellWidth() - pane - readerGutterPx() - chat;
 }
 
@@ -1891,7 +1892,8 @@ function drawChatRail(state) {
   
   const given = state && typeof state === 'object' ? state : currentState;
   const on = chatColumnOpen && chatRailAllowance() > 0;
-  chatRail.hidden = !chatColumnOpen;
+  
+  chatRail.hidden = !on;
   const log = on ? chatRailLog(given) : null;
   bindChatRailLog(log);
   if (log) log.classList.add('has-rail');
@@ -1984,7 +1986,8 @@ function chatTracks() {
   const rail = `${chatRailAllowance()}px`;
   const card = `minmax(0, ${share}fr)`;
   if (chatSide === 'right') return { lead: '', trail: `var(--reader-split-track) ${card} ${rail}`, pages: 1 - share };
-  return { lead: `${card} ${rail} var(--reader-split-track)`, trail: '', pages: 1 - share };
+  
+  return { lead: `var(--reader-gutter) ${card} ${rail} var(--reader-split-track)`, trail: '', pages: 1 - share };
 }
 
 function writeChatBand() {
@@ -1992,13 +1995,18 @@ function writeChatBand() {
   if (!chatColumnOpen || !chatCard) {
     appBar.style.removeProperty('--app-chat-lead');
     appBar.style.removeProperty('--app-chat-trail');
+    if (libraryPane) libraryPane.style.removeProperty('--app-chat-lead');
     return;
   }
   const card = chatCard.getBoundingClientRect();
-  const line = chatSplitLine ? chatSplitLine.getBoundingClientRect() : { width: 0 };
+  
   const rail = chatRailAllowance();
-  const width = card.width + line.width + rail;
-  appBar.style.setProperty('--app-chat-lead', chatSide === 'right' ? '0px' : `${width}px`);
+  const width = card.width + rootLengthPx('--reader-split-track') + rail;
+  
+  const lead = libraryIsClosed() ? 0 : readerGutterPx();
+  appBar.style.setProperty('--app-chat-lead', chatSide === 'right' ? '0px' : `${width + lead}px`);
+  
+  if (libraryPane) libraryPane.style.setProperty('--app-chat-lead', chatSide === 'right' ? '0px' : `${width + lead}px`);
   appBar.style.setProperty('--app-chat-trail', chatSide === 'right' ? `${width}px` : '0px');
   if (chatHead) {
     
@@ -15449,7 +15457,7 @@ function shellTrack(paneWidth, minimapColumn, besideMinimapColumn) {
 }
 
 function shellAreas() {
-  const lead = chatColumnOpen && chatSide !== 'right' ? ['chat', 'chat-rail', 'chat-line'] : [];
+  const lead = chatColumnOpen && chatSide !== 'right' ? ['chat-gutter', 'chat', 'chat-rail', 'chat-line'] : [];
   const trail = chatColumnOpen && chatSide === 'right' ? ['chat-line', 'chat', 'chat-rail'] : [];
   const pages = splitColumnsOpen ? ['card-a', 'rail-a', 'split', 'card-b', 'rail-b'] : ['card-a', 'rail-a'];
   const names = ['pane', ...lead, ...pages, ...trail, 'gutter'];
@@ -22290,6 +22298,8 @@ window.leafMinimap.subscribe(() => {
   drawChatRail();
   
   drawPaneWidths(paneDrawingState(), libraryIsClosed() ? 0 : clampOpenPaneWidth(libraryWidth));
+  
+  if (libraryShell.classList.contains('library-narrow') !== libraryTooNarrow()) applyPaneLayout();
 });
 minimapListenerArmed = true;
 let composing = false;

@@ -6865,6 +6865,8 @@ body.frameless.is-fullscreen .startup-card {
   min-width: 0;
   background: var(--lt-markdown-background);
   color: var(--lt-foreground);
+  /* The hairline the page's tabs stand on, under the chat's own top row. */
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
 }
 .chat-head[hidden] {
   display: none;
@@ -8460,9 +8462,10 @@ body.is-library-settling .app-bar::after {
   border-left-width: var(--lt-stroke-1);
   border-top-left-radius: calc(var(--lt-radius-md) + 1px);
 }
+/* The page card's top always turns at the bar's first row, narrow pane or not, and past a chat standing before the page. */
 .reader-corner-tl {
-  top: calc(var(--library-app-bar) - 1px);
-  left: 100%;
+  top: calc(var(--app-bar-row) - 1px);
+  left: calc(100% + var(--app-chat-lead, 0px));
 }
 /* The seam's arc hangs off the strip at the right card's inner edge. */
 .reader-seam-corner-right {
@@ -8495,7 +8498,7 @@ body.is-library-settling .app-bar::after {
 }
 .library-shell.library-closed .reader-corner-tl {
   /* No rail to sit against: follow the card out to its left gutter. */
-  left: calc(100% + var(--reader-gutter));
+  left: calc(100% + var(--reader-gutter) + var(--app-chat-lead, 0px));
 }
 .library-shell.library-closed .reader-toolbar {
   /* The page takes a left inset only while the pane is shut, and the floating bar is centered on the page, so it has to count that inset too — kept as a variable here, beside the other closed-pane facts, the way --reader-toolbar-rail is declared where the rail is reasoned about. It sits on the bar rather than on the shell because a custom property inherits: declared on the box the document is rendered into, every element of a megabyte page is re-resolved to carry a value only the bar reads, which cost 61–71 ms of style on each close and open against 5 ms with it here. */
@@ -9960,7 +9963,11 @@ body.library-resizing button {
 .console-layer.is-right-card { grid-column: card-b; }
 /* The chat's console, in the chat's own column, over its card. */
 /* Over the chat column's card, the console starts where that card does, a page header higher than one over a page. */
-.console-layer.is-chat-card { grid-column: chat; --console-inset-top: calc(var(--chat-card-top) + var(--lt-space-12)); }
+/* No page header above it to line up under, so it is inset evenly, under its own name row's grip and close. */
+/* It starts with its card, at the bar's first row, and is cornered as its card is; its content starts under the name row. */
+.console-layer.is-chat-card { grid-column: chat; margin-top: var(--app-bar-row); border-radius: var(--lt-radius-md) var(--lt-radius-md) var(--reader-card-radius) var(--reader-card-radius); --console-inset-top: calc(var(--app-tab-row) + var(--lt-space-12)); --console-inset-left: var(--console-inset-right); }
+/* Its card already stands a gutter off the pane, so it takes no frame margin of its own. */
+.library-shell.library-closed .console-layer.is-chat-card { margin-left: 0; }
 /* Two cards are two whole cards, the same as a page's. */
 .console-layer.is-split { border-top: var(--lt-stroke-1) solid transparent; border-radius: var(--reader-card-radius); }
 .console-side-close { position: absolute; top: var(--console-inset-top); right: var(--console-inset-right); z-index: 4; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); background: var(--lt-surface-elevated); color: var(--lt-foreground); }
@@ -10122,9 +10129,9 @@ body.library-resizing button {
 .saved-chat { grid-column: card-a-start / rail-a-end; grid-row: 1; z-index: 5; position: relative; box-sizing: border-box; overflow: hidden; background: var(--lt-markdown-background); border-left: var(--lt-stroke-1) solid transparent; border-right: var(--lt-stroke-1) solid transparent; border-bottom: var(--lt-stroke-1) solid transparent; border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius); }
 .saved-chat[hidden] { display: none; }
 /* A saved conversation standing in the chat's own column rather than in front: a whole card there. */
-.saved-chat.is-chat-card { grid-column: chat; margin-top: var(--chat-card-top); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
-/* The card already starts under the bar, so its chat keeps only what the live chat keeps inside its own card: the inset less the bar, not the whole inset again. */
-.saved-chat.is-chat-card .console-chat { top: calc(var(--console-inset-top) - var(--app-bar-height)); }
+.saved-chat.is-chat-card { grid-column: chat; margin-top: var(--app-bar-row); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-md) var(--lt-radius-md) var(--reader-card-radius) var(--reader-card-radius); }
+/* The card starts at the bar's first row with the name row inside it, so its chat keeps what the live chat keeps: the name row and the inset under it, not the whole bar again. */
+.saved-chat.is-chat-card .console-chat { top: calc(var(--console-inset-top) - var(--app-bar-height) + var(--app-tab-row)); }
 /* Chat and Console stand over a saved chat too, so its box rises above the bar the way a live chat's does. */
 .saved-chat.has-console-views .console-chat { bottom: calc(var(--lt-space-8) + var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
 /* Only where it stands in for a page: in the chat column the card is the column's own, and the inset drew a second edge inside the column's border. */
@@ -10996,6 +11003,12 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   /* No rail to sit against, so the card is held off the left frame too. */
   margin-left: var(--reader-gutter);
 }
+/* Beside a chat on its left the card stands against the chat's line, which already holds its own gutter. */
+body.has-chat:not(.chat-on-the-right) .library-shell.library-closed .reader-shell,
+body.has-chat:not(.chat-on-the-right) .library-shell.library-closed .reader-loading,
+body.has-chat:not(.chat-on-the-right) .library-shell.library-closed .console-layer {
+  margin-left: 0;
+}
 /* Where the page's content ends. Both edges are hard cuts: the top slides under an opaque app bar, the bottom stops dead at the card's hairline, and a line of text sliced through its x-height reads as a rendering fault. These dissolve the last few pixels back to the page color instead.
 
    Top and bottom only. Nothing is cut at the sides: the one box that widens past the words is a table, and it stops 62px short and dissolves its own ends. A band there veils the first and last letter of every line instead, which is what v0.1.469 shipped.
@@ -11407,11 +11420,11 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   grid-column: chat;
   grid-row: 1;
   box-sizing: border-box;
-  /* Under the chat's own top row and no further: the band below the tabs is the page's header, which the chat has none of, and reserving it stood the chat's card a header lower than the page card beside it. */
-  margin-top: var(--chat-card-top);
+  /* The page card's shape: from the bar's first row, its name row inside it the way the page's tabs are, no outline, its top turned as the page's arcs turn and its foot as the page's foot. */
+  margin-top: var(--app-bar-row);
   background: var(--lt-markdown-background);
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--reader-card-radius);
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) var(--reader-card-radius) var(--reader-card-radius);
 }
 .chat-card[hidden] {
   display: none;
@@ -11420,8 +11433,11 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 .reader-minimap-chat {
   grid-column: chat-rail;
   /* Level with the chat's card and clipped there: the picture slides under the rail, and above the card it stood in the title band. */
-  margin-top: var(--chat-card-top);
+  margin-top: var(--app-bar-row);
   padding-top: 0;
+  /* Held off its card by the page rail's own gap; the rail always follows its card, so the gap is always at its start. */
+  padding-inline-start: var(--reader-minimap-gap);
+  box-sizing: border-box;
   position: relative;
   overflow: hidden;
   cursor: default;
@@ -11437,7 +11453,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 /* The page rail's own window, placed by a transform from the chat's scroll. */
 .chat-rail-window {
   position: absolute;
-  inset-inline: 0;
+  inset-inline: var(--reader-minimap-gap) 0;
   top: 0;
   min-height: 22px;
   border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);
@@ -11489,7 +11505,8 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   grid-row: 1;
   justify-self: center;
   width: var(--lt-stroke-1);
-  margin-top: var(--app-bar-height);
+  /* From the cards' own top, the bar's first row. */
+  margin-top: var(--app-bar-row);
   position: relative;
   cursor: col-resize;
   touch-action: none;
@@ -23146,7 +23163,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div style="display:grid;grid-template-columns:1fr 1fr;height:96px"><div></div><div class="reader-drop-beside" style="grid-column:auto;grid-row:auto;margin-top:0;width:auto"><span class="reader-drop-beside-name">PLAN.md</span></div></div></div>
 </section>
 <section class="part">
-<header><h3>Chat column</h3><code class="built">.chat-card</code><span class="built">app-shell.html, shown by columns.js while a chat stands in its own column beside the pages: the card the chat's console or saved conversation is laid over (is-chat-card on that layer), its rail (reader-minimap-chat) drawn as a picture of the conversation — chat-rail-picture — with chat-rail-window over the part on screen, which a press, a drag or the wheel moves, or as the console's screen while its terminal shows, and the line between it and the pages</span></header>
+<header><h3>Chat column</h3><code class="built">.chat-card</code><span class="built">app-shell.html, shown by columns.js while a chat stands in its own column beside the pages: the card the chat's console or saved conversation is laid over (is-chat-card on that layer), shaped as the page card is — from the bar's first row with the chat's name row inside it over a hairline, no outline, its top corners turned as the page's arcs turn — and held a gutter off the pane, its rail (reader-minimap-chat) drawn as a picture of the conversation — chat-rail-picture — with chat-rail-window over the part on screen, which a press, a drag or the wheel moves, or as the console's screen while its terminal shows, and the line between it and the pages</span></header>
 <div class="stage"><div style="display:grid;grid-template-columns:1fr auto 1fr;height:96px"><div class="chat-card" style="grid-column:auto;grid-row:auto;margin-top:0"></div><div class="chat-split" role="separator" aria-orientation="vertical" style="grid-column:auto;grid-row:auto;margin-top:0"></div><div class="reader-shell" style="grid-column:auto;grid-row:auto"></div></div></div>
 </section>
 <section class="part">
