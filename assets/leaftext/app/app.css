@@ -6240,6 +6240,8 @@
   --app-page-head: 32px;
   
   --app-bar-height: calc(var(--app-bar-row) + var(--app-tab-row) + var(--app-page-head));
+  
+  --chat-card-top: calc(var(--app-bar-row) + var(--app-tab-row));
   --reader-content-pad: 32px;
   
   --reader-lane-inset: 62px;
@@ -7061,10 +7063,21 @@ body.has-split .tab-bar.has-two-groups > .strip-part.is-closable:not(.strip-part
   border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-markdown-background);
   opacity: var(--lt-opacity-92);
+  
+  outline: var(--lt-stroke-1) solid var(--lt-border-strong);
   pointer-events: none;
 }
 .tab-drag-ghost .tab {
   flex: 1 1 auto;
+}
+
+.tab-drag-ghost.lands-nowhere {
+  opacity: var(--lt-opacity-60);
+}
+body.tab-lands-nowhere,
+body.tab-lands-nowhere .console-chat,
+body.tab-lands-nowhere .console-terminal {
+  cursor: no-drop;
 }
 
 .tab-drag-ghost.tears-out {
@@ -8283,7 +8296,9 @@ body.is-embedded .reader-toolbar {
 .app-surface.has-library-overlay .app-bar::after {
   display: none;
 }
-.app-surface.has-library-overlay .tab-bar {
+.app-surface.has-library-overlay .tab-bar,
+.app-surface.has-library-overlay .page-head,
+.app-surface.has-library-overlay .chat-head {
   visibility: hidden;
 }
 
@@ -9926,7 +9941,8 @@ body.library-resizing button {
 
 .console-layer.is-right-card { grid-column: card-b; }
 
-.console-layer.is-chat-card { grid-column: chat; }
+
+.console-layer.is-chat-card { grid-column: chat; --console-inset-top: calc(var(--chat-card-top) + var(--lt-space-12)); }
 
 .console-layer.is-split { border-top: var(--lt-stroke-1) solid transparent; border-radius: var(--reader-card-radius); }
 .console-side-close { position: absolute; top: var(--console-inset-top); right: var(--console-inset-right); z-index: 4; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); background: var(--lt-surface-elevated); color: var(--lt-foreground); }
@@ -10065,11 +10081,14 @@ body.library-resizing button {
 @media (hover: hover) { .console-pin-row:hover::before { background: var(--lt-wash-hover); } }
 
 .console-chat { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); right: var(--lt-space-8); bottom: var(--lt-space-8); z-index: 5; display: flex; flex-direction: column; overflow: hidden; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-5); }
-.console-chat-log { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; user-select: text; }
+
+.console-chat-log { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; user-select: text; -webkit-mask-image: linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-space-12), var(--lt-mask-opaque) calc(100% - var(--lt-space-24)), transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-space-12), var(--lt-mask-opaque) calc(100% - var(--lt-space-24)), transparent 100%); }
 .console-chat[hidden] { display: none; }
 
 .console-chat-pin { position: absolute; top: 0; left: 0; right: 0; }
 .console-chat-pin[hidden] { display: none; }
+
+.console-chat-pin::after { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: var(--lt-space-12); background: linear-gradient(to bottom, var(--lt-markdown-background), transparent); pointer-events: none; }
 .console-chat-pin-row { position: relative; isolation: isolate; display: flex; align-items: center; gap: var(--lt-space-8); overflow: hidden; padding: var(--lt-space-4) var(--lt-space-16); white-space: nowrap; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); cursor: default; }
 
 .console-pin-words { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -10085,10 +10104,13 @@ body.library-resizing button {
 .saved-chat { grid-column: card-a-start / rail-a-end; grid-row: 1; z-index: 5; position: relative; box-sizing: border-box; overflow: hidden; background: var(--lt-markdown-background); border-left: var(--lt-stroke-1) solid transparent; border-right: var(--lt-stroke-1) solid transparent; border-bottom: var(--lt-stroke-1) solid transparent; border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius); }
 .saved-chat[hidden] { display: none; }
 
-.saved-chat.is-chat-card { grid-column: chat; margin-top: var(--app-bar-height); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
+.saved-chat.is-chat-card { grid-column: chat; margin-top: var(--chat-card-top); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
+
+.saved-chat.is-chat-card .console-chat { top: calc(var(--console-inset-top) - var(--app-bar-height)); }
 
 .saved-chat.has-console-views .console-chat { bottom: calc(var(--lt-space-8) + var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
-.library-shell.library-closed .saved-chat { margin-left: var(--reader-gutter); }
+
+.library-shell.library-closed .saved-chat:not(.is-chat-card) { margin-left: var(--reader-gutter); }
 .console-chat.is-above-status { bottom: calc(var(--lt-space-8) + var(--lt-space-24)); }
 
 .console-layer.has-console-views .console-status { height: calc(var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
@@ -10111,11 +10133,16 @@ body.library-resizing button {
 .console-waiting-send:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .console-waiting-key { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 
-.console-answer { align-self: flex-start; display: flex; flex-direction: column; gap: var(--lt-space-8); max-width: 88%; min-width: 0; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border-radius: var(--lt-radius-3xl) var(--lt-radius-3xl) var(--lt-radius-3xl) 0; background: var(--lt-surface-muted); }
+
+.console-answer { align-self: stretch; display: flex; flex-direction: column; gap: var(--lt-space-8); min-width: 0; box-sizing: border-box; padding: 0 var(--lt-space-4); }
 .console-reply { display: flex; flex-direction: column; gap: var(--lt-space-8); align-self: stretch; min-width: 0; }
 .console-chat-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .console-chat-mono { white-space: pre; overflow-x: auto; font-family: monospace; font-size: var(--lt-text-13); line-height: var(--lt-leading-1-35); }
+
+.console-chat-code { padding: var(--lt-space-8) var(--lt-space-12); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-md); background: var(--lt-surface-muted); }
+.console-chat-code.is-diff { padding-inline: 0; }
+.console-chat-code .diff-card-line { padding-inline: var(--lt-space-12); }
 .console-chat-link { color: var(--lt-link); text-decoration: underline; cursor: pointer; }
 @media (hover: hover) { .console-chat-link:hover { color: var(--lt-link-hover); } }
 .console-note { align-self: flex-start; max-width: 100%; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -10160,7 +10187,8 @@ body.library-resizing button {
 .diff-card-line { display: flex; color: var(--lt-muted-foreground); }
 .diff-card-line.is-added { background: var(--lt-diff-added-background); color: var(--lt-diff-added); }
 .diff-card-line.is-removed { background: var(--lt-diff-removed-background); color: var(--lt-diff-removed); }
-.diff-card-number { flex: none; width: 4ch; padding-right: var(--lt-space-6); text-align: right; opacity: var(--lt-opacity-60); user-select: none; }
+
+.diff-card-number { flex: none; box-sizing: content-box; width: 5ch; padding-right: var(--lt-space-6); text-align: right; opacity: var(--lt-opacity-60); user-select: none; }
 .diff-card-marker { flex: none; width: 2ch; text-align: center; user-select: none; }
 .diff-card-text { flex: 1 1 auto; min-width: 0; padding-right: var(--lt-space-10); white-space: pre-wrap; overflow-wrap: anywhere; }
 .diff-card-word { border-radius: var(--lt-radius-xs); }
@@ -11349,7 +11377,8 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   grid-column: chat;
   grid-row: 1;
   box-sizing: border-box;
-  margin-top: var(--app-bar-height);
+  
+  margin-top: var(--chat-card-top);
   background: var(--lt-markdown-background);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--reader-card-radius);
@@ -11360,6 +11389,13 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 
 .reader-minimap-chat {
   grid-column: chat-rail;
+  
+  margin-top: var(--chat-card-top);
+  padding-top: 0;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  touch-action: none;
 }
 .reader-minimap-chat[hidden] {
   display: none;
@@ -11369,6 +11405,55 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   width: 100%;
 }
 
+.chat-rail-window {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  min-height: 22px;
+  border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-minimap-viewport-background);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .reader-minimap-chat:hover .chat-rail-window {
+    border-color: var(--lt-border-strong);
+  }
+}
+.reader-minimap-chat.is-dragging .chat-rail-window {
+  border-color: var(--lt-focus-ring);
+}
+
+.chat-landing {
+  position: fixed;
+  z-index: var(--lt-z-20);
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  border: var(--lt-stroke-2) dashed var(--lt-border-strong);
+  border-radius: var(--reader-card-radius);
+  background: var(--lt-markdown-background);
+  opacity: var(--lt-opacity-60);
+  pointer-events: none;
+  transition: opacity var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease);
+}
+.chat-landing[hidden] {
+  display: none;
+}
+.chat-landing.is-past {
+  border-color: var(--lt-accent);
+  opacity: 1;
+}
+.chat-landing-name {
+  margin-top: var(--lt-space-24);
+  padding: var(--lt-space-4) var(--lt-space-12);
+  border: var(--lt-stroke-1) dashed var(--lt-accent);
+  border-radius: var(--lt-radius-md);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+}
 .chat-split {
   grid-column: chat-line;
   grid-row: 1;
@@ -18087,6 +18172,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar,
 .library-scroll::-webkit-scrollbar,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar,
 .table-lane > table::-webkit-scrollbar,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar {
   
@@ -18096,6 +18182,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar-track,
 .library-scroll::-webkit-scrollbar-track,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-track,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-track,
 .table-lane > table::-webkit-scrollbar-track,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-track {
   
@@ -18117,6 +18204,7 @@ p.shelf-foot {
 .leaf-scroll,
 .library-scroll,
 .reader-shell:not(.has-minimap),
+.console-chat-log:not(.has-rail),
 .table-lane > table,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
   --lt-scroll-thumb: transparent;
@@ -18127,6 +18215,7 @@ p.shelf-foot {
 .leaf-scroll.is-scrolling,
 .library-scroll.is-scrolling,
 .reader-shell:not(.has-minimap).is-scrolling,
+.console-chat-log:not(.has-rail).is-scrolling,
 .table-lane > table.is-scrolling,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-scrolling {
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
@@ -18136,6 +18225,7 @@ p.shelf-foot {
 .leaf-scroll.is-pointing,
 .library-scroll.is-pointing,
 .reader-shell:not(.has-minimap).is-pointing,
+.console-chat-log:not(.has-rail).is-pointing,
 .table-lane > table.is-pointing,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-pointing {
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
@@ -18146,6 +18236,7 @@ p.shelf-foot {
 .app-surface.is-scrollbars-always .leaf-scroll,
 .app-surface.is-scrollbars-always .library-scroll,
 .app-surface.is-scrollbars-always .reader-shell:not(.has-minimap),
+.app-surface.is-scrollbars-always .console-chat-log:not(.has-rail),
 .app-surface.is-scrollbars-always .table-lane > table,
 .app-surface.is-scrollbars-always .document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
@@ -18154,6 +18245,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar-thumb,
 .library-scroll::-webkit-scrollbar-thumb,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb,
 .table-lane > table::-webkit-scrollbar-thumb,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb {
   
@@ -18166,6 +18258,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar-thumb:vertical,
 .library-scroll::-webkit-scrollbar-thumb:vertical,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:vertical,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb:vertical,
 .table-lane > table::-webkit-scrollbar-thumb:vertical,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:vertical {
   min-height: 56px;
@@ -18173,6 +18266,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar-thumb:horizontal,
 .library-scroll::-webkit-scrollbar-thumb:horizontal,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:horizontal,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb:horizontal,
 .table-lane > table::-webkit-scrollbar-thumb:horizontal,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:horizontal {
   min-width: 56px;
@@ -18181,6 +18275,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar-corner,
 .library-scroll::-webkit-scrollbar-corner,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-corner,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-corner,
 .table-lane > table::-webkit-scrollbar-corner,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-corner {
   background: transparent;

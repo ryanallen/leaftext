@@ -1695,6 +1695,8 @@ let chatRailFrame = 0;
 let chatHoldsScreen = false;
 let chatRailDrawnAt = 0;
 
+let chatShownKey = '';
+
 function chatTabIndex(state = currentState) {
   const tabs = (state && state.tabs) || [];
   const index = tabs.findIndex((tab) => tab && tab.chat);
@@ -1717,7 +1719,7 @@ function chatSavedTab(state = currentState) {
 
 function chatRailAllowance() {
   if (!(window.leafMinimap && window.leafMinimap.getEnabled())) return 0;
-  if (!chatHoldsScreen) return 0;
+  if (!chatHoldsScreen && !chatSavedTab()) return 0;
   return monacoMinimapWidth() + readerMinimapGapPx();
 }
 
@@ -1737,6 +1739,24 @@ function pagesFixedWidth() {
   return keyedRail + (Number.parseFloat(drawnBesideMinimapColumn) || 0) + rootLengthPx('--reader-split-track');
 }
 
+function chatHeadName(tab) {
+  const recents = (consoleRecents && consoleRecents.rows) || [];
+  if (tab.kind === 'chat') {
+    const [agent, id] = String(tab.url || '').split('/');
+    const row = recents.find((each) => each.agent === agent && String(each.id) === id);
+    if (row && row.title) return String(row.title);
+  } else if (tab.kind === 'console') {
+    const running = consoleRunningChat(tab.webId);
+    if (running && running.title) return String(running.title);
+  }
+  return String(tab.title || '');
+}
+
+function renameChatHead() {
+  const tab = chatColumnOpen ? chatTab() : null;
+  if (chatHeadTitle && tab) chatHeadTitle.textContent = chatHeadName(tab);
+}
+
 function applyChat(state) {
   const index = chatTabIndex(state);
   const wanted = index !== null;
@@ -1754,7 +1774,11 @@ function applyChat(state) {
   document.body.classList.toggle('has-chat', open);
   document.body.classList.toggle('chat-on-the-right', open && chatSide === 'right');
   const tab = open ? state.tabs[index] : null;
-  if (chatHeadTitle) chatHeadTitle.textContent = tab ? String(tab.title || '') : '';
+  if (chatHeadTitle) chatHeadTitle.textContent = tab ? chatHeadName(tab) : '';
+  
+  const chatKey = tab ? `${tab.kind}:${tab.webId ?? tab.url ?? ''}` : '';
+  if (chatKey && chatKey !== chatShownKey && librarySheetOpen) queueMicrotask(closeLibrarySheet);
+  chatShownKey = chatKey;
   if (chatDrawnTab !== (tab ? index : null)) {
     chatDrawnTab = tab ? index : null;
     chatFocusOwed = tab && tab.kind === 'console' ? tab.webId : null;
@@ -1768,41 +1792,188 @@ function applyChat(state) {
   }
 }
 
+function chatRailLog(state = currentState) {
+  const id = chatConsoleId(state);
+  if (id !== null) {
+    const entry = consoleLayers.get(id);
+    return entry && entry.chat && entry.chat.shown && entry.chatView ? entry.chatView.log : null;
+  }
+  return chatSavedTab(state) && savedChat.view ? savedChat.view.log : null;
+}
+
+let chatRailBound = null;
+function bindChatRailLog(log) {
+  if (chatRailBound === log) return;
+  if (chatRailBound) {
+    chatRailBound.removeEventListener('scroll', placeChatRailWindowSoon);
+    
+    if (savedChat.view && chatRailBound === savedChat.view.log) chatRailBound.classList.remove('has-rail');
+  }
+  chatRailBound = log;
+  if (log) log.addEventListener('scroll', placeChatRailWindowSoon, { passive: true });
+  
+  if (chatRailSizeWatch) chatRailSizeWatch.disconnect();
+  chatRailSizeWatch = null;
+  if (log && typeof ResizeObserver === 'function') {
+    chatRailSizeWatch = new ResizeObserver(() => {
+      if (!chatRailFrame) chatRailFrame = requestAnimationFrame(drawChatRail);
+    });
+    chatRailSizeWatch.observe(log);
+  }
+}
+let chatRailSizeWatch = null;
+
+function chatRailGeometry(log) {
+  const width = Math.max(1, Math.round(monacoMinimapWidth()));
+  const drawn = chatRail.querySelector('.chat-rail-picture');
+  const top = drawn ? drawn.offsetTop || 0 : 0;
+  const railTop = chatRail.getBoundingClientRect().top;
+  const foot = chatCard ? chatCard.getBoundingClientRect().bottom : 0;
+  const railHeight = foot > railTop ? foot - railTop - top : Math.max(0, (chatRail.clientHeight || 0) - top);
+  const scale = log.clientWidth > 0 ? width / log.clientWidth : 0;
+  const picture = log.scrollHeight * scale;
+  const range = Math.max(0, log.scrollHeight - log.clientHeight);
+  const travel = Math.max(0, picture - railHeight);
+  const offset = range > 0 ? (log.scrollTop / range) * travel : 0;
+  return { width, top, railHeight, scale, picture, offset, range };
+}
+
+function placeChatRailWindow() {
+  chatRailWindowFrame = 0;
+  const log = chatRailBound;
+  const shown = chatRail && chatRail.querySelector('.chat-rail-window');
+  if (!log || !shown) return;
+  const { top, scale, offset } = chatRailGeometry(log);
+  
+  shown.style.transform = `translateY(${Math.round(top + log.scrollTop * scale - offset)}px)`;
+  shown.style.height = `${Math.max(1, Math.round(log.clientHeight * scale))}px`;
+  const picture = chatRail.querySelector('.chat-rail-picture');
+  if (picture) picture.style.transform = `translateY(${-Math.round(offset)}px)`;
+}
+let chatRailWindowFrame = 0;
+function placeChatRailWindowSoon() {
+  if (chatRailWindowFrame) return;
+  chatRailWindowFrame = requestAnimationFrame(placeChatRailWindow);
+}
+
+function paintChatConversation(context, log, scale) {
+  const top = log.getBoundingClientRect();
+  const origin = { x: top.left, y: top.top - log.scrollTop };
+  const fill = (rect, color) => {
+    if (!color || color === 'transparent' || color === 'rgba(0, 0, 0, 0)') return;
+    context.fillStyle = color;
+    context.fillRect((rect.left - origin.x) * scale, (rect.top - origin.y) * scale, Math.max(1, rect.width * scale), Math.max(1, rect.height * scale));
+  };
+  for (const block of log.querySelectorAll('.console-bubble, .diff-card, .diff-card-line.is-added, .diff-card-line.is-removed, pre')) {
+    fill(block.getBoundingClientRect(), getComputedStyle(block).backgroundColor);
+  }
+  if (typeof document.createTreeWalker !== 'function' || typeof document.createRange !== 'function') return;
+  const walker = document.createTreeWalker(log, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  const colors = new Map();
+  context.globalAlpha = 0.55;
+  for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+    if (!text.nodeValue || !text.nodeValue.trim() || !text.parentElement) continue;
+    const parent = text.parentElement;
+    if (!colors.has(parent)) colors.set(parent, getComputedStyle(parent).color);
+    range.selectNodeContents(text);
+    for (const line of range.getClientRects()) {
+      
+      fill({ left: line.left, top: line.top + line.height / 3, width: line.width, height: line.height / 3 }, colors.get(parent));
+    }
+  }
+  context.globalAlpha = 1;
+}
+
 function drawChatRail(state) {
   chatRailFrame = 0;
   if (!chatRail) return;
   
-  const id = chatConsoleId(state && typeof state === 'object' ? state : currentState);
-  const entry = id === null ? null : consoleLayers.get(id);
-  const screen = entry && entry.terminal ? consoleScreen(entry.terminal) : null;
-  const on = !!screen && chatRailAllowance() > 0;
+  const given = state && typeof state === 'object' ? state : currentState;
+  const on = chatColumnOpen && chatRailAllowance() > 0;
   chatRail.hidden = !chatColumnOpen;
-  if (!on) {
+  const log = on ? chatRailLog(given) : null;
+  bindChatRailLog(log);
+  if (log) log.classList.add('has-rail');
+  const id = chatConsoleId(given);
+  const entry = id === null ? null : consoleLayers.get(id);
+  const screen = !log && entry && entry.terminal ? consoleScreen(entry.terminal) : null;
+  if (!on || (!log && !screen)) {
     chatRail.replaceChildren();
     return;
   }
-  let picture = chatRail.firstElementChild;
-  if (!picture || picture.tagName !== 'CANVAS') {
+  let picture = chatRail.querySelector('.chat-rail-picture');
+  if (!picture) {
     picture = document.createElement('canvas');
     picture.className = 'chat-rail-picture';
     chatRail.replaceChildren(picture);
   }
+  let shown = chatRail.querySelector('.chat-rail-window');
+  if (log && !shown) {
+    shown = document.createElement('div');
+    shown.className = 'chat-rail-window';
+    chatRail.appendChild(shown);
+  } else if (!log && shown) {
+    shown.remove();
+  }
   const width = Math.max(1, Math.round(monacoMinimapWidth()));
-  const scale = screen.width ? width / screen.width : 0;
-  const height = Math.max(1, Math.round(screen.height * scale));
+  const geometry = log ? chatRailGeometry(log) : null;
+  const scale = log ? geometry.scale : screen.width ? width / screen.width : 0;
+  const height = Math.max(1, Math.round(log ? geometry.picture : screen.height * scale));
   if (picture.width !== width) picture.width = width;
   if (picture.height !== height) picture.height = height;
+  if (!log) picture.style.transform = '';
   const context = picture.getContext && picture.getContext('2d');
-  if (!context) return;
-  context.clearRect(0, 0, width, height);
-  context.drawImage(screen, 0, 0, width, height);
+  if (context) {
+    context.clearRect(0, 0, width, height);
+    if (log) paintChatConversation(context, log, scale);
+    else context.drawImage(screen, 0, 0, width, height);
+  }
   chatRailDrawnAt = Date.now();
+  if (log) placeChatRailWindow();
 }
 
 function scheduleChatRail(id) {
-  if (!chatColumnOpen || id !== chatConsoleId() || chatRailFrame) return;
+  if (!chatColumnOpen || (id !== chatConsoleId() && id !== 'saved') || chatRailFrame) return;
   const wait = Math.max(0, 250 - (Date.now() - chatRailDrawnAt));
   chatRailFrame = setTimeout(() => requestAnimationFrame(drawChatRail), wait);
+}
+
+let chatRailDrag = null;
+function chatRailScrollTo(clientY) {
+  const log = chatRailBound;
+  if (!log) return;
+  const { top, scale, offset } = chatRailGeometry(log);
+  if (!(scale > 0)) return;
+  const y = clientY - chatRail.getBoundingClientRect().top - top + offset;
+  log.scrollTop = Math.max(0, y / scale - log.clientHeight / 2);
+  placeChatRailWindow();
+}
+function startChatRailDrag(event) {
+  if (event.button !== 0 || !chatRailBound) return;
+  event.preventDefault();
+  chatRailDrag = { pointerId: event.pointerId };
+  leafHoldPointer(chatRail, event.pointerId);
+  chatRail.classList.add('is-dragging');
+  chatRailScrollTo(event.clientY);
+}
+function moveChatRailDrag(event) {
+  if (!chatRailDrag || event.pointerId !== chatRailDrag.pointerId) return;
+  chatRailScrollTo(event.clientY);
+}
+function endChatRailDrag(event) {
+  if (!chatRailDrag || event.pointerId !== chatRailDrag.pointerId) return;
+  leafReleasePointer(chatRail, chatRailDrag.pointerId);
+  chatRailDrag = null;
+  chatRail.classList.remove('is-dragging');
+}
+function wheelChatRail(event) {
+  const log = chatRailBound;
+  if (!log) return;
+  event.preventDefault();
+  const step = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? log.clientHeight : 1;
+  log.scrollTop = Math.max(0, log.scrollTop + event.deltaY * step);
+  placeChatRailWindow();
 }
 
 function chatTracks() {
@@ -1901,12 +2072,30 @@ function pagesMiddle() {
   const last = (splitOpen() ? rightColumn : leftColumn).reader.getBoundingClientRect();
   return (first.left + last.right) / 2;
 }
+
+function placeChatLanding() {
+  if (!chatLanding || !chatCard) return;
+  const first = leftColumn.reader.getBoundingClientRect();
+  const last = (splitOpen() ? rightColumn : leftColumn).reader.getBoundingClientRect();
+  const card = chatCard.getBoundingClientRect();
+  const width = Math.min(card.width, Math.max(0, last.right - first.left));
+  const left = chatSide === 'right' ? first.left : last.right - width;
+  chatLanding.style.left = `${Math.round(left)}px`;
+  chatLanding.style.top = `${Math.round(card.top)}px`;
+  chatLanding.style.width = `${Math.round(width)}px`;
+  chatLanding.style.height = `${Math.round(card.height)}px`;
+}
 function startChatGrip(event) {
   if (!chatGrip || event.button !== 0 || !chatColumnOpen) return;
   event.preventDefault();
   chatGripDrag = { pointerId: event.pointerId, middle: pagesMiddle(), past: false };
   leafHoldPointer(chatGrip, event.pointerId);
   chatHead.classList.add('is-moving');
+  if (chatLanding) {
+    placeChatLanding();
+    chatLanding.classList.remove('is-past');
+    chatLanding.hidden = false;
+  }
 }
 function chatGripPast(clientX) {
   return chatSide === 'right' ? clientX < chatGripDrag.middle : clientX > chatGripDrag.middle;
@@ -1916,6 +2105,7 @@ function moveChatGrip(event) {
   const past = chatGripPast(event.clientX);
   chatGripDrag.past = past;
   chatHead.classList.toggle('is-past', past);
+  if (chatLanding) chatLanding.classList.toggle('is-past', past);
 }
 function releaseChatGrip(event) {
   if (!chatGripDrag || event.pointerId !== chatGripDrag.pointerId) return;
@@ -1924,6 +2114,10 @@ function releaseChatGrip(event) {
   leafReleasePointer(chatGrip, chatGripDrag.pointerId);
   chatGripDrag = null;
   chatHead.classList.remove('is-moving', 'is-past');
+  if (chatLanding) {
+    chatLanding.hidden = true;
+    chatLanding.classList.remove('is-past');
+  }
   if (!past) return;
   chatSide = chatSide === 'right' ? 'left' : 'right';
   applyChat(currentState);
@@ -1937,7 +2131,18 @@ function overSplitDropHalf(clientX, clientY) {
   if (splitOpen() || !keyedColumn || !keyedColumn.reader) return false;
   const box = keyedColumn.reader.getBoundingClientRect();
   if (box.width <= 0 || box.height <= 0) return false;
-  return clientY >= box.top && clientY <= box.bottom && clientX >= box.left + box.width / 2 && clientX <= Math.max(box.right, window.innerWidth);
+  
+  const end = chatColumnOpen && chatSide === 'right' && chatCard ? chatCard.getBoundingClientRect().left : Math.max(box.right, window.innerWidth);
+  return clientY >= box.top && clientY <= box.bottom && clientX >= box.left + box.width / 2 && clientX <= end;
+}
+
+function overChatColumn(clientX, clientY) {
+  if (!chatColumnOpen || !chatCard) return false;
+  const card = chatCard.getBoundingClientRect();
+  const parts = [card, chatRail && !chatRail.hidden ? chatRail.getBoundingClientRect() : null, chatSplitLine ? chatSplitLine.getBoundingClientRect() : null].filter((box) => box && box.width > 0);
+  const left = Math.min(...parts.map((box) => box.left));
+  const right = Math.max(...parts.map((box) => box.right));
+  return clientX >= left && clientX <= right && clientY >= card.top && clientY <= card.bottom;
 }
 
 function outsideEveryReader(element) {
@@ -1985,10 +2190,18 @@ const chatSplitLine = document.getElementById('chatSplit');
 const chatHead = document.getElementById('chatHead');
 const chatHeadTitle = document.getElementById('chatHeadTitle');
 const chatGrip = document.getElementById('chatGrip');
+const chatLanding = document.getElementById('chatLanding');
 const chatCloseButton = document.getElementById('chatClose');
 if (chatCloseButton) chatCloseButton.addEventListener('click', () => send({ command: 'closeChatColumn' }));
 if (chatSplitLine) chatSplitLine.addEventListener('pointerdown', startChatDrag);
 if (chatGrip) chatGrip.addEventListener('pointerdown', startChatGrip);
+if (chatRail) {
+  chatRail.addEventListener('pointerdown', startChatRailDrag);
+  chatRail.addEventListener('wheel', wheelChatRail, { passive: false });
+}
+document.addEventListener('pointermove', moveChatRailDrag);
+document.addEventListener('pointerup', endChatRailDrag);
+document.addEventListener('pointercancel', endChatRailDrag);
 document.addEventListener('pointermove', moveChatDrag);
 document.addEventListener('pointermove', moveChatGrip);
 document.addEventListener('pointerup', releaseChatDrag);
@@ -10579,6 +10792,13 @@ function tabIsAlone() {
   return ((currentState && currentState.tabs) || []).length < 2;
 }
 
+function markTabLandsNowhere(drag, nowhere) {
+  if (!!drag.nowhere === nowhere) return;
+  drag.nowhere = nowhere;
+  if (drag.ghost) drag.ghost.classList.toggle('lands-nowhere', nowhere);
+  document.body.classList.toggle('tab-lands-nowhere', nowhere);
+}
+
 function markTabTearing(drag, tearing) {
   if (!!drag.tearing === tearing) return;
   drag.tearing = tearing;
@@ -10651,6 +10871,7 @@ document.addEventListener('pointermove', (event) => {
     tabDrag.over = false;
     send({ command: 'tabDragOff' });
   }
+  markTabLandsNowhere(tabDrag, false);
   
   const pastStrip = event.clientY > tabDrag.stripBottom || event.clientX > tabDrag.stripRight;
   tabDrag.beside = pastStrip && overSplitDropHalf(event.clientX, event.clientY);
@@ -10661,6 +10882,14 @@ document.addEventListener('pointermove', (event) => {
   
   tabDrag.column = columnStripUnder(event.clientX, event.clientY, tabDrag.el);
   if (tabDrag.column) return;
+  
+  if (overChatColumn(event.clientX, event.clientY)) {
+    markTabTearing(tabDrag, false);
+    markTabLandsNowhere(tabDrag, true);
+    tabDrag.to = tabDrag.filteredFrom;
+    updateTabSlides();
+    return;
+  }
   
   if (event.clientY >= tabDrag.stripBottom + tabDrag.box.height && !tabStaysInItsWindow(tabDrag.index) && !tabIsAlone()) {
     markTabTearing(tabDrag, true);
@@ -10680,6 +10909,7 @@ function endTabDrag(commit, event) {
   }
   tabDrag = null;
   drawSplitDropZone(false);
+  markTabLandsNowhere(drag, false);
   if (drag.ghost) { coverWebSurface(false, drag.ghost); drag.ghost.remove(); }
   
   const tearingOut = drag.moved && commit && (drag.outside ? !tabStaysInItsWindow(drag.index) : !!drag.tearing);
@@ -11557,7 +11787,7 @@ function leafMarkScrolling(box) {
 
 document.addEventListener('scroll', (event) => leafMarkScrolling(event.target), { capture: true, passive: true });
 
-const LEAF_SCROLL_WEARERS = '.leaf-scroll, .library-scroll, .reader-shell:not(.has-minimap), .table-lane > table, .document-body :is(pre, pre > code, .math-display, .frontmatter, table)';
+const LEAF_SCROLL_WEARERS = '.leaf-scroll, .library-scroll, .reader-shell:not(.has-minimap), .console-chat-log:not(.has-rail), .table-lane > table, .document-body :is(pre, pre > code, .math-display, .frontmatter, table)';
 let leafPointedBox = null;
 
 function leafMarkPointing(event) {
@@ -15424,6 +15654,8 @@ function closeLibrarySheetOnPressElsewhere(event) {
   if (!librarySheetOpen) return;
   const target = event.target;
   if (libraryPane.contains(target) || libraryOpen.contains(target) || crumbMenu.contains(target) || contextMenu.contains(target)) return;
+  
+  if (target && target.closest && target.closest('#railChats, #railDocuments, #railOutline')) return;
   closeLibrarySheet();
 }
 window.addEventListener('pointerdown', closeLibrarySheetOnPressElsewhere);
@@ -47910,6 +48142,8 @@ function consoleRecentsOutOfDate() {
 
 function drawConsoleRecents() {
   
+  renameChatHead();
+  
   if (!consoleRecentsBand || consoleRecentsBand.hidden || consoleRecents.renaming) return;
   const now = Date.now() / 1000;
   
@@ -48764,18 +48998,24 @@ function paneFollowsFront() {
 }
 
 function showChatsInPane() {
-  window.leafShowLibraryPane();
-  paneShows('chats');
+  showViewInPane('chats');
 }
 
 function showDocumentsInPane() {
-  window.leafShowLibraryPane();
-  paneShows('documents');
+  showViewInPane('documents');
 }
 
 function showOutlineInPane() {
+  showViewInPane('outline');
+}
+
+function showViewInPane(view) {
+  if (libraryTooNarrow() && librarySheetOpen && paneViewDrawn() === view) {
+    closeLibrarySheet();
+    return;
+  }
   window.leafShowLibraryPane();
-  paneShows('outline');
+  paneShows(view);
 }
 
 function drawRailPressed() {
@@ -49828,7 +50068,7 @@ function consoleRecordItem(item) {
     return node;
   }
   
-  return consoleChatBlocks(String(item.text || '').replace(/\[([^\]\n]+)\]\(file:\/\/\/[^)\s]+\)/g, '$1').split('\n'));
+  return consoleChatBlocks(String(item.text || '').split('\n'));
 }
 
 function consoleChatShown(entry) {
@@ -49840,6 +50080,8 @@ function consoleChatRailChanged(id, entry) {
   entry.map = null;
   entry.scroll = null;
   if (consoleFrontId === id && typeof scheduleMinimapPreviewUpdate === 'function') scheduleMinimapPreviewUpdate();
+  
+  scheduleChatRail(id);
 }
 
 
@@ -50183,10 +50425,13 @@ function consoleChatWaiting(waiting, sendNow) {
 function consoleChatTurn(view, turn) {
   const node = document.createElement('div');
   node.className = 'console-turn';
-  const bubble = document.createElement('div');
-  bubble.className = 'console-bubble';
-  bubble.appendChild(consoleChatText(turn.cut ? `${turn.prompt}…` : turn.prompt));
-  node.appendChild(bubble);
+  
+  if (String(turn.prompt || '').trim()) {
+    const bubble = document.createElement('div');
+    bubble.className = 'console-bubble';
+    bubble.appendChild(consoleChatText(turn.cut ? `${turn.prompt}…` : turn.prompt));
+    node.appendChild(bubble);
+  }
   const reply = document.createElement('div');
   reply.className = 'console-reply';
   
@@ -50300,6 +50545,27 @@ function consoleChangedList(view, turn, changed) {
   return list;
 }
 
+const CONSOLE_CHAT_FENCE = /^\s*(```|~~~)\s*([\w+-]*)\s*$/;
+function consoleChatFencedBlock(language, rows) {
+  const block = document.createElement('div');
+  const diff = language === 'diff' || language === 'patch';
+  block.className = diff ? 'console-chat-mono console-chat-code is-diff' : 'console-chat-mono console-chat-code';
+  if (!diff) {
+    block.appendChild(consoleChatText(rows.join('\n')));
+    return block;
+  }
+  for (const row of rows) {
+    const line = document.createElement('div');
+    const kind = /^\+(?!\+\+ )/.test(row) ? ' is-added' : /^-(?!-- )/.test(row) ? ' is-removed' : '';
+    line.className = `diff-card-line${kind}`;
+    const text = document.createElement('span');
+    text.className = 'diff-card-text';
+    text.textContent = row;
+    line.appendChild(text);
+    block.appendChild(line);
+  }
+  return block;
+}
 
 function consoleChatBlocks(rows) {
   const out = document.createDocumentFragment();
@@ -50318,6 +50584,16 @@ function consoleChatBlocks(rows) {
   };
   for (let index = 0; index < rows.length; index += 1) {
     const row = rows[index];
+    
+    const fence = CONSOLE_CHAT_FENCE.exec(row);
+    if (fence) {
+      const close = rows.findIndex((each, at) => at > index && /^\s*(```|~~~)\s*$/.test(each));
+      const end = close > index ? close : rows.length;
+      flush();
+      out.appendChild(consoleChatFencedBlock(fence[2].toLowerCase(), rows.slice(index + 1, end)));
+      index = end;
+      continue;
+    }
     if (CONSOLE_CHAT_NOTE_TOP.test(row)) {
       const foot = rows.findIndex((each, at) => at > index && CONSOLE_CHAT_NOTE_FOOT.test(each));
       if (foot > index) {
@@ -50342,7 +50618,31 @@ function consoleChatBlocks(rows) {
 }
 
 
+const CONSOLE_CHAT_FILE_LINK = /\[([^\]\n]+)\]\(<?((?:file:\/\/\/|\/?[A-Za-z]:[\\/]|\/)[^)<>\n]*)>?\)/g;
+
+function consoleChatFileAddress(target) {
+  if (/^file:\/\/\//i.test(target)) return target;
+  const path = target.replace(/\\/g, '/').replace(/^\/(?=[A-Za-z]:\/)/, '');
+  return /^[A-Za-z]:\//.test(path) ? `file:///${encodeURI(path)}` : `file://${encodeURI(path)}`;
+}
+
 function consoleChatText(text) {
+  const out = document.createDocumentFragment();
+  let from = 0;
+  for (const match of text.matchAll(CONSOLE_CHAT_FILE_LINK)) {
+    if (match.index > from) out.appendChild(consoleChatWebText(text.slice(from, match.index)));
+    const link = document.createElement('a');
+    link.className = 'console-chat-link';
+    link.setAttribute('href', consoleChatFileAddress(match[2]));
+    link.title = match[2];
+    link.textContent = match[1];
+    out.appendChild(link);
+    from = match.index + match[0].length;
+  }
+  if (from < text.length) out.appendChild(consoleChatWebText(text.slice(from)));
+  return out;
+}
+function consoleChatWebText(text) {
   const out = document.createDocumentFragment();
   let from = 0;
   for (const match of text.matchAll(CONSOLE_CHAT_LINK)) {
@@ -52393,9 +52693,26 @@ function buildSavedChat() {
   const list = document.createElement('div');
   list.className = 'console-chat-turns';
   log.appendChild(list);
-  box.append(log, savedChatComposer());
+  
+  const entry = savedChat.entry;
+  const pin = document.createElement('div');
+  pin.className = 'console-chat-pin';
+  pin.hidden = true;
+  const pinRow = document.createElement('div');
+  pinRow.className = 'console-chat-pin-row';
+  const pinWords = document.createElement('span');
+  pinWords.className = 'console-pin-words';
+  const pinPlace = document.createElement('span');
+  pinPlace.className = 'console-pin-place';
+  const pinBack = consolePinStepButton('Previous prompt', 'back-long', () => stepConsoleChatPin(entry, -1));
+  const pinNext = consolePinStepButton('Next prompt', 'forward-long', () => stepConsoleChatPin(entry, 1));
+  pinRow.append(pinBack, pinWords, pinPlace, pinNext);
+  pin.appendChild(pinRow);
+  pin.addEventListener('mousedown', (event) => onConsoleChatPinPress(entry, event));
+  log.addEventListener('scroll', () => scheduleConsoleChatPin(entry), { passive: true });
+  box.append(log, pin, savedChatComposer());
   savedChatPage.appendChild(box);
-  savedChat.view = { box, log, list, nodes: new Map(), open: new Set() };
+  savedChat.view = { box, log, list, pin, pinRow, pinWords, pinPlace, pinBack, pinNext, held: null, pinFrame: 0, nodes: new Map(), open: new Set() };
   savedChat.entry.chatView = savedChat.view;
   
   log.addEventListener('click', (event) => onConsoleChatClick(0, savedChat.entry, event));
@@ -52592,6 +52909,20 @@ function readSavedChat() {
   });
 }
 
+
+function savedChatAtFoot(log) {
+  return log.scrollTop + log.clientHeight >= log.scrollHeight - 8;
+}
+function holdSavedChatAtFoot(view) {
+  view.atFoot = true;
+  if (view.footWatch || typeof ResizeObserver !== 'function') return;
+  view.log.addEventListener('scroll', () => { view.atFoot = savedChatAtFoot(view.log); }, { passive: true });
+  view.footWatch = new ResizeObserver(() => {
+    if (view.atFoot && !savedChatAtFoot(view.log)) view.log.scrollTop = view.log.scrollHeight;
+  });
+  view.footWatch.observe(view.log);
+  view.footWatch.observe(view.list);
+}
 function drawSavedChat() {
   const { view, record, entry } = savedChat;
   const turns = consoleRecordGroup(entry, record, entry.statusRecord.folderPath);
@@ -52600,7 +52931,12 @@ function drawSavedChat() {
   for (const turn of turns) nodes.push(consoleChatTurn(view, turn));
   view.list.replaceChildren(...nodes);
   
+  view.nodes = new Map(nodes.map((node, index) => [index, { node }]));
+  
   view.log.scrollTop = view.log.scrollHeight;
+  holdSavedChatAtFoot(view);
+  
+  if (savedChatInChatColumn()) drawChatRail();
 }
 
 

@@ -6248,6 +6248,8 @@
   --app-page-head: 32px;
   /* Where the page's content starts, under all three. Everything that offsets content below the fixed bar reads this one. */
   --app-bar-height: calc(var(--app-bar-row) + var(--app-tab-row) + var(--app-page-head));
+  /* Where the chat column's card starts: under the bar's row and the chat's own top row, which stands in the tab band. A chat has no page header, so it does not reserve one. */
+  --chat-card-top: calc(var(--app-bar-row) + var(--app-tab-row));
   --reader-content-pad: 32px;
   /* The strip anything widened past the measure keeps clear either side — a table, a picture, the start screen's lists: the block handle and plus, so it is BLOCK_TOOLS_WIDTH in block-controls.js and not a spacing choice. check-shell.mjs holds the two copies to one number. */
   --reader-lane-inset: 62px;
@@ -7069,10 +7071,21 @@ body.has-split .tab-bar.has-two-groups > .strip-part.is-closable:not(.strip-part
   border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-markdown-background);
   opacity: var(--lt-opacity-92);
+  /* An edge of its own, so the lifted copy reads as an object over a page or a chat in the same color as its fill. */
+  outline: var(--lt-stroke-1) solid var(--lt-border-strong);
   pointer-events: none;
 }
 .tab-drag-ghost .tab {
   flex: 1 1 auto;
+}
+/* Over the chat column a page has nowhere to land: the copy fades and the pointer says no drop. */
+.tab-drag-ghost.lands-nowhere {
+  opacity: var(--lt-opacity-60);
+}
+body.tab-lands-nowhere,
+body.tab-lands-nowhere .console-chat,
+body.tab-lands-nowhere .console-terminal {
+  cursor: no-drop;
 }
 /* Where a release stands the tab in a window of its own: the dashed accent edge the beside zone wears, drawn as an outline so the copy keeps its size. */
 .tab-drag-ghost.tears-out {
@@ -8291,7 +8304,9 @@ body.is-embedded .reader-toolbar {
 .app-surface.has-library-overlay .app-bar::after {
   display: none;
 }
-.app-surface.has-library-overlay .tab-bar {
+.app-surface.has-library-overlay .tab-bar,
+.app-surface.has-library-overlay .page-head,
+.app-surface.has-library-overlay .chat-head {
   visibility: hidden;
 }
 /* The toggle's motion: open springs past its width on the overshoot curve; close slams to the reader's padding, bounces off it, and seats — three chained legs, because one curve cannot come back out of its target. The front end writes the width on the track and on the app bar, whose lead, tab strip, divider line and page header read --library-rail-width, so one write per leg moves them all in step; the transitions live only on these classes (library.js holds one per leg), so a drag or resize stays immediate and Reduce Motion's blanket rule zeroes every leg. */
@@ -9944,7 +9959,8 @@ body.library-resizing button {
 /* A console standing in the right-hand card, in that card's track. */
 .console-layer.is-right-card { grid-column: card-b; }
 /* The chat's console, in the chat's own column, over its card. */
-.console-layer.is-chat-card { grid-column: chat; }
+/* Over the chat column's card, the console starts where that card does, a page header higher than one over a page. */
+.console-layer.is-chat-card { grid-column: chat; --console-inset-top: calc(var(--chat-card-top) + var(--lt-space-12)); }
 /* Two cards are two whole cards, the same as a page's. */
 .console-layer.is-split { border-top: var(--lt-stroke-1) solid transparent; border-radius: var(--reader-card-radius); }
 .console-side-close { position: absolute; top: var(--console-inset-top); right: var(--console-inset-right); z-index: 4; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); background: var(--lt-surface-elevated); color: var(--lt-foreground); }
@@ -10083,11 +10099,14 @@ body.library-resizing button {
 @media (hover: hover) { .console-pin-row:hover::before { background: var(--lt-wash-hover); } }
 /* The conversation drawn as Scholar's chat over the terminal's area, at the pinned command's layer; the terminal stays under it, live, for the screens the page cannot read. */
 .console-chat { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); right: var(--lt-space-8); bottom: var(--lt-space-8); z-index: 5; display: flex; flex-direction: column; overflow: hidden; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); font-family: var(--app-font); font-size: var(--lt-text-14); line-height: var(--lt-leading-1-5); }
-.console-chat-log { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; user-select: text; }
+/* The log's foot dissolves into the message box under it, so a line half scrolled past the edge fades rather than standing sliced in two against the box. */
+.console-chat-log { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; user-select: text; -webkit-mask-image: linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-space-12), var(--lt-mask-opaque) calc(100% - var(--lt-space-24)), transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-space-12), var(--lt-mask-opaque) calc(100% - var(--lt-space-24)), transparent 100%); }
 .console-chat[hidden] { display: none; }
 /* The prompt of the turn under the chat's top edge once its bubble has scrolled off: the pinned command's look in the chat's face, painted over the log because it is positioned and the log is not. */
 .console-chat-pin { position: absolute; top: 0; left: 0; right: 0; }
 .console-chat-pin[hidden] { display: none; }
+/* The words scrolling under the held row fade into it rather than standing sliced along its foot. */
+.console-chat-pin::after { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: var(--lt-space-12); background: linear-gradient(to bottom, var(--lt-markdown-background), transparent); pointer-events: none; }
 .console-chat-pin-row { position: relative; isolation: isolate; display: flex; align-items: center; gap: var(--lt-space-8); overflow: hidden; padding: var(--lt-space-4) var(--lt-space-16); white-space: nowrap; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); cursor: default; }
 /* The held prompt's words, between the arrows that step to the prompt before and after it and the place it holds among them. */
 .console-pin-words { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -10103,10 +10122,13 @@ body.library-resizing button {
 .saved-chat { grid-column: card-a-start / rail-a-end; grid-row: 1; z-index: 5; position: relative; box-sizing: border-box; overflow: hidden; background: var(--lt-markdown-background); border-left: var(--lt-stroke-1) solid transparent; border-right: var(--lt-stroke-1) solid transparent; border-bottom: var(--lt-stroke-1) solid transparent; border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius); }
 .saved-chat[hidden] { display: none; }
 /* A saved conversation standing in the chat's own column rather than in front: a whole card there. */
-.saved-chat.is-chat-card { grid-column: chat; margin-top: var(--app-bar-height); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
+.saved-chat.is-chat-card { grid-column: chat; margin-top: var(--chat-card-top); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
+/* The card already starts under the bar, so its chat keeps only what the live chat keeps inside its own card: the inset less the bar, not the whole inset again. */
+.saved-chat.is-chat-card .console-chat { top: calc(var(--console-inset-top) - var(--app-bar-height)); }
 /* Chat and Console stand over a saved chat too, so its box rises above the bar the way a live chat's does. */
 .saved-chat.has-console-views .console-chat { bottom: calc(var(--lt-space-8) + var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
-.library-shell.library-closed .saved-chat { margin-left: var(--reader-gutter); }
+/* Only where it stands in for a page: in the chat column the card is the column's own, and the inset drew a second edge inside the column's border. */
+.library-shell.library-closed .saved-chat:not(.is-chat-card) { margin-left: var(--reader-gutter); }
 .console-chat.is-above-status { bottom: calc(var(--lt-space-8) + var(--lt-space-24)); }
 /* While Chat and Console stand at a console's foot, the row is as tall as the bar, so the bar covers neither the terminal's last row nor the message box. */
 .console-layer.has-console-views .console-status { height: calc(var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
@@ -10129,11 +10151,16 @@ body.library-resizing button {
 .console-waiting-send:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .console-waiting-key { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 /* The agent's words, the mirror of the reader's bubble on the left. */
-.console-answer { align-self: flex-start; display: flex; flex-direction: column; gap: var(--lt-space-8); max-width: 88%; min-width: 0; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border-radius: var(--lt-radius-3xl) var(--lt-radius-3xl) var(--lt-radius-3xl) 0; background: var(--lt-surface-muted); }
+/* The answer is bare text across the column, as the view's own words say: the sent bubble is the one filled shape, so who said what reads at a glance and a long answer is not a gray wall. */
+.console-answer { align-self: stretch; display: flex; flex-direction: column; gap: var(--lt-space-8); min-width: 0; box-sizing: border-box; padding: 0 var(--lt-space-4); }
 .console-reply { display: flex; flex-direction: column; gap: var(--lt-space-8); align-self: stretch; min-width: 0; }
 .console-chat-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 /* The terminal's own face: a theme's code face borrows box characters from another font, and a table's right edge drifts. */
 .console-chat-mono { white-space: pre; overflow-x: auto; font-family: monospace; font-size: var(--lt-text-13); line-height: var(--lt-leading-1-35); }
+/* A block the agent fenced, framed as code the way a page draws one; a diff's colored lines run to the frame's edges and keep the text inset. */
+.console-chat-code { padding: var(--lt-space-8) var(--lt-space-12); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-md); background: var(--lt-surface-muted); }
+.console-chat-code.is-diff { padding-inline: 0; }
+.console-chat-code .diff-card-line { padding-inline: var(--lt-space-12); }
 .console-chat-link { color: var(--lt-link); text-decoration: underline; cursor: pointer; }
 @media (hover: hover) { .console-chat-link:hover { color: var(--lt-link-hover); } }
 .console-note { align-self: flex-start; max-width: 100%; box-sizing: border-box; padding: var(--lt-space-12) var(--lt-space-16); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -10178,7 +10205,8 @@ body.library-resizing button {
 .diff-card-line { display: flex; color: var(--lt-muted-foreground); }
 .diff-card-line.is-added { background: var(--lt-diff-added-background); color: var(--lt-diff-added); }
 .diff-card-line.is-removed { background: var(--lt-diff-removed-background); color: var(--lt-diff-removed); }
-.diff-card-number { flex: none; width: 4ch; padding-right: var(--lt-space-6); text-align: right; opacity: var(--lt-opacity-60); user-select: none; }
+/* Wide enough for a five-digit line with the gap outside it: inside a 4ch box a four-digit number filled it and ran into the next ("20352035"). */
+.diff-card-number { flex: none; box-sizing: content-box; width: 5ch; padding-right: var(--lt-space-6); text-align: right; opacity: var(--lt-opacity-60); user-select: none; }
 .diff-card-marker { flex: none; width: 2ch; text-align: center; user-select: none; }
 .diff-card-text { flex: 1 1 auto; min-width: 0; padding-right: var(--lt-space-10); white-space: pre-wrap; overflow-wrap: anywhere; }
 .diff-card-word { border-radius: var(--lt-radius-xs); }
@@ -11379,7 +11407,8 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   grid-column: chat;
   grid-row: 1;
   box-sizing: border-box;
-  margin-top: var(--app-bar-height);
+  /* Under the chat's own top row and no further: the band below the tabs is the page's header, which the chat has none of, and reserving it stood the chat's card a header lower than the page card beside it. */
+  margin-top: var(--chat-card-top);
   background: var(--lt-markdown-background);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--reader-card-radius);
@@ -11387,9 +11416,16 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 .chat-card[hidden] {
   display: none;
 }
-/* The chat's rail, in its own track beside its card, drawn as a picture of the console's screen. */
+/* The chat's rail, in its own track beside its card: a picture of the conversation with a window over the part on screen, or of the console's screen where its terminal shows. Pressed, dragged or wheeled, it scrolls the conversation. */
 .reader-minimap-chat {
   grid-column: chat-rail;
+  /* Level with the chat's card and clipped there: the picture slides under the rail, and above the card it stood in the title band. */
+  margin-top: var(--chat-card-top);
+  padding-top: 0;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  touch-action: none;
 }
 .reader-minimap-chat[hidden] {
   display: none;
@@ -11398,7 +11434,56 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   display: block;
   width: 100%;
 }
-/* The line between the chat and the pages, drawn and caught the way the split's own line is. */
+/* The page rail's own window, placed by a transform from the chat's scroll. */
+.chat-rail-window {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  min-height: 22px;
+  border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-minimap-viewport-background);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .reader-minimap-chat:hover .chat-rail-window {
+    border-color: var(--lt-border-strong);
+  }
+}
+.reader-minimap-chat.is-dragging .chat-rail-window {
+  border-color: var(--lt-focus-ring);
+}
+/* Where a carried chat will land: the drop mark the split uses for a tab, the chat's own size, faint until letting go would move the chat there. Placed by columns.js from the cards it stands between. */
+.chat-landing {
+  position: fixed;
+  z-index: var(--lt-z-20);
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  border: var(--lt-stroke-2) dashed var(--lt-border-strong);
+  border-radius: var(--reader-card-radius);
+  background: var(--lt-markdown-background);
+  opacity: var(--lt-opacity-60);
+  pointer-events: none;
+  transition: opacity var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease);
+}
+.chat-landing[hidden] {
+  display: none;
+}
+.chat-landing.is-past {
+  border-color: var(--lt-accent);
+  opacity: 1;
+}
+.chat-landing-name {
+  margin-top: var(--lt-space-24);
+  padding: var(--lt-space-4) var(--lt-space-12);
+  border: var(--lt-stroke-1) dashed var(--lt-accent);
+  border-radius: var(--lt-radius-md);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+}/* The line between the chat and the pages, drawn and caught the way the split's own line is. */
 .chat-split {
   grid-column: chat-line;
   grid-row: 1;
@@ -18147,6 +18232,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar,
 .library-scroll::-webkit-scrollbar,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar,
 .table-lane > table::-webkit-scrollbar,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar {
   /* 4px of inset each side plus the 6px the thumb actually shows. */
@@ -18156,6 +18242,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar-track,
 .library-scroll::-webkit-scrollbar-track,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-track,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-track,
 .table-lane > table::-webkit-scrollbar-track,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-track {
   /* Transparent, not the surface color: an opaque track masks the grain and leaves an ungrained strip down the edge it sits on. */
@@ -18177,6 +18264,7 @@ p.shelf-foot {
 .leaf-scroll,
 .library-scroll,
 .reader-shell:not(.has-minimap),
+.console-chat-log:not(.has-rail),
 .table-lane > table,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
   --lt-scroll-thumb: transparent;
@@ -18187,6 +18275,7 @@ p.shelf-foot {
 .leaf-scroll.is-scrolling,
 .library-scroll.is-scrolling,
 .reader-shell:not(.has-minimap).is-scrolling,
+.console-chat-log:not(.has-rail).is-scrolling,
 .table-lane > table.is-scrolling,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-scrolling {
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
@@ -18196,6 +18285,7 @@ p.shelf-foot {
 .leaf-scroll.is-pointing,
 .library-scroll.is-pointing,
 .reader-shell:not(.has-minimap).is-pointing,
+.console-chat-log:not(.has-rail).is-pointing,
 .table-lane > table.is-pointing,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-pointing {
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
@@ -18206,6 +18296,7 @@ p.shelf-foot {
 .app-surface.is-scrollbars-always .leaf-scroll,
 .app-surface.is-scrollbars-always .library-scroll,
 .app-surface.is-scrollbars-always .reader-shell:not(.has-minimap),
+.app-surface.is-scrollbars-always .console-chat-log:not(.has-rail),
 .app-surface.is-scrollbars-always .table-lane > table,
 .app-surface.is-scrollbars-always .document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
@@ -18214,6 +18305,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar-thumb,
 .library-scroll::-webkit-scrollbar-thumb,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb,
 .table-lane > table::-webkit-scrollbar-thumb,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb {
   /* A transparent border with the fill clipped inside it is the only way to inset a webkit thumb. */
@@ -18226,6 +18318,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar-thumb:vertical,
 .library-scroll::-webkit-scrollbar-thumb:vertical,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:vertical,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb:vertical,
 .table-lane > table::-webkit-scrollbar-thumb:vertical,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:vertical {
   min-height: 56px;
@@ -18233,6 +18326,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar-thumb:horizontal,
 .library-scroll::-webkit-scrollbar-thumb:horizontal,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:horizontal,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb:horizontal,
 .table-lane > table::-webkit-scrollbar-thumb:horizontal,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:horizontal {
   min-width: 56px;
@@ -18241,6 +18335,7 @@ p.shelf-foot {
 .leaf-scroll::-webkit-scrollbar-corner,
 .library-scroll::-webkit-scrollbar-corner,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-corner,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-corner,
 .table-lane > table::-webkit-scrollbar-corner,
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-corner {
   background: transparent;
@@ -21784,7 +21879,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 119 icons, and all 204 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 119 icons, and all 205 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -21819,7 +21914,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>119</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>204</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>205</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -22305,7 +22400,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">204 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">205 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -23051,12 +23146,16 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div style="display:grid;grid-template-columns:1fr 1fr;height:96px"><div></div><div class="reader-drop-beside" style="grid-column:auto;grid-row:auto;margin-top:0;width:auto"><span class="reader-drop-beside-name">PLAN.md</span></div></div></div>
 </section>
 <section class="part">
-<header><h3>Chat column</h3><code class="built">.chat-card</code><span class="built">app-shell.html, shown by columns.js while a chat stands in its own column beside the pages: the card the chat's console or saved conversation is laid over (is-chat-card on that layer), its rail drawn as a picture of the console's screen, and the line between it and the pages</span></header>
+<header><h3>Chat column</h3><code class="built">.chat-card</code><span class="built">app-shell.html, shown by columns.js while a chat stands in its own column beside the pages: the card the chat's console or saved conversation is laid over (is-chat-card on that layer), its rail (reader-minimap-chat) drawn as a picture of the conversation — chat-rail-picture — with chat-rail-window over the part on screen, which a press, a drag or the wheel moves, or as the console's screen while its terminal shows, and the line between it and the pages</span></header>
 <div class="stage"><div style="display:grid;grid-template-columns:1fr auto 1fr;height:96px"><div class="chat-card" style="grid-column:auto;grid-row:auto;margin-top:0"></div><div class="chat-split" role="separator" aria-orientation="vertical" style="grid-column:auto;grid-row:auto;margin-top:0"></div><div class="reader-shell" style="grid-column:auto;grid-row:auto"></div></div></div>
 </section>
 <section class="part">
 <header><h3>Chat head</h3><code class="built">.chat-head</code><span class="built">app-shell.html, in the bar's tab band over the chat column's card, placed by columns.js on the card below it: the grip that carries the chat to the other side of the pages (is-moving while carried, is-past once past the middle of the pages), the chat's name, and its close, which sends closeChatColumn</span></header>
 <div class="stage"><div class="chat-head" style="position:static;width:240px"><span class="chat-grip" role="button" tabindex="0" aria-label="Move the chat to the other side"><span class="lt-icon lt-icon-grip"></span></span><span class="chat-head-title">Claude — notes</span><button type="button" class="icon-button chat-close" aria-label="Close chat"><span class="lt-icon lt-icon-close"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Chat landing</h3><code class="built">.chat-landing</code><span class="built">app-shell.html, shown by columns.js only while the chat head's grip is carried: a dashed band the chat's own size against the far edge of the pages, faint short of their middle and lit (is-past) once letting go would move the chat there, with its words saying so</span></header>
+<div class="stage"><div class="chat-landing is-past" style="position:static;height:96px"><span class="chat-landing-name">Chat goes here</span></div></div>
 </section>
 <section class="part">
 <header><h3>Split close</h3><code class="built">.split-close</code><span class="built">app-shell.html, one per card, shown by columns.js at the end of that card's own tab row while two pages are up, never over what the card holds; is-left is the left card's, each sends closeSide with its side, and the card's tabs stop short of it (is-closable on the strip group)</span></header>
