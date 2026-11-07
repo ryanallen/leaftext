@@ -6741,8 +6741,8 @@ body.frameless.is-fullscreen .startup-card {
   border-top: var(--lt-stroke-1) solid var(--lt-border);
   font-family: var(--app-font);
   /* Where the page card's two side borders stand, for the strip and the line under it, which hang below the bar over the card's top. */
-  --app-page-left: var(--library-rail-width, 0px);
-  --app-page-right: calc(var(--reader-gutter) + var(--reader-minimap-column));
+  --app-page-left: calc(var(--library-rail-width, 0px) + var(--app-chat-lead, 0px));
+  --app-page-right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--app-chat-trail, 0px));
 }
 .frameless .app-bar {
   /* On frameless Windows the app bar IS the title bar, so the OS already draws the window's top edge. Our own border-top would stack on that native frame and read as a double-thick (~2px) stroke at the top only, while the other three sides show a single 1px frame. Drop it so all four edges match. */
@@ -6762,11 +6762,11 @@ body.frameless.is-fullscreen .startup-card {
 }
 .app-bar:not(.has-rail) {
   /* No rail: the card starts at the reader's gutter. This lands in the same layout pass as the pane's own closed corner rule, so the line and the arc jump to their resting closed places together. */
-  --app-page-left: var(--reader-gutter);
+  --app-page-left: calc(var(--reader-gutter) + var(--app-chat-lead, 0px));
 }
 /* The pane shut beside the icon rail: the card starts at the reader's gutter past the rail. */
 .app-surface.has-app-rail .app-bar:not(.has-rail) {
-  --app-page-left: calc(48px + var(--reader-gutter));
+  --app-page-left: calc(48px + var(--reader-gutter) + var(--app-chat-lead, 0px));
 }
 .app-bar-lead {
   /* The header's left zone, sized to the library rail so the tab strip begins at the library's right edge and is pushed when the pane is resized. No right border: the top bar reads as one continuous surface, with only the library pane below carrying the rail's vertical stroke. */
@@ -6845,6 +6845,62 @@ body.frameless.is-fullscreen .startup-card {
   scrollbar-width: none;
   /* The shoulder above the tabs and nothing at the sides: the 16px that keeps the first and last tab off the zones either side is the group's, because the group is the box that scrolls. No bottom inset — the tabs have to reach the divider. */
   padding: var(--lt-space-4) 0 0;
+  /* The color the band paints with two pages up, where it leaves the rail between the cards uncovered. */
+  --strip-band: var(--lt-markdown-background);
+}
+/* The chat column's own top row, in the band the tabs hang in, over the chat's card: the page writes where the card stands. */
+.chat-head {
+  position: absolute;
+  top: 100%;
+  left: calc(var(--chat-head-left, 0px) + var(--lt-stroke-1));
+  width: calc(var(--chat-head-width, 0px) - var(--lt-stroke-1) * 2);
+  height: var(--app-tab-row);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  padding: var(--lt-space-4) var(--lt-space-12) 0;
+  min-width: 0;
+  background: var(--lt-markdown-background);
+  color: var(--lt-foreground);
+}
+.chat-head[hidden] {
+  display: none;
+}
+/* The grip that carries the chat to the other side of the pages. */
+.chat-grip {
+  display: inline-flex;
+  align-items: center;
+  color: var(--lt-muted-foreground);
+  cursor: grab;
+  touch-action: none;
+}
+/* While carried, the row says it is moving; past the middle of the pages it says where it will land. */
+.chat-head.is-moving {
+  cursor: grabbing;
+  opacity: var(--lt-opacity-78);
+}
+.chat-head.is-past {
+  outline: var(--lt-stroke-2) dashed var(--lt-accent);
+  outline-offset: calc(var(--lt-stroke-2) * -1);
+}
+/* The chat's own close, at the end of its row. */
+.chat-close {
+  margin-left: auto;
+  color: var(--lt-muted-foreground);
+}
+/* A card's tabs stop short of that card's own close at the end of its row: the group itself ends before it, since room inside a scrolling group is room its tabs scroll under. */
+.strip-part.is-closable {
+  margin-right: var(--app-tab-row);
+}
+.chat-head-title {
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 /* The strip and the header paint the page's own color, so a page scrolled up under them never shows through; the source view's page is the editor's color. */
 .tab-bar,
@@ -6854,6 +6910,16 @@ body.frameless.is-fullscreen .startup-card {
 :root[data-code-view="true"] .tab-bar,
 :root[data-code-view="true"] .page-head {
   background: var(--lt-syntax-background);
+}
+:root[data-code-view="true"] .tab-bar {
+  --strip-band: var(--lt-syntax-background);
+}
+/* With two pages up the left page's rail and the line stand between the cards, under the band: the band leaves them uncovered, where the page writes their edges. */
+body.has-split .tab-bar {
+  background: linear-gradient(to right, var(--strip-band) var(--strip-rail-start, 0px), transparent var(--strip-rail-start, 0px) var(--strip-rail-end, 0px), var(--strip-band) var(--strip-rail-end, 0px));
+}
+body.has-split .app-bar::after {
+  background: linear-gradient(to right, var(--lt-border) calc(var(--strip-rail-start, 0px) + var(--lt-stroke-1)), transparent calc(var(--strip-rail-start, 0px) + var(--lt-stroke-1)) calc(var(--strip-rail-end, 0px) + var(--lt-stroke-1)), var(--lt-border) calc(var(--strip-rail-end, 0px) + var(--lt-stroke-1)));
 }
 /* The page's header, the third row: where the page in front sits on the left, its own buttons on the right. Hung under the strip across the card, inside its side borders. */
 .page-head {
@@ -6941,6 +7007,16 @@ body.has-split .tab-bar.has-two-groups > .strip-part {
 }
 body.has-split .tab-bar.has-two-groups > .strip-part-beside {
   width: auto;
+}
+/* The left group ends at its own card, short of that card's rail and the line, and gives that room back after it, so the right group still starts over its own card. */
+body.has-split .tab-bar.has-two-groups > .strip-part:not(.strip-part-beside) {
+  width: calc(var(--strip-part-left, 50%) - var(--strip-part-skip, 0px));
+  margin-right: var(--strip-part-skip, 0px);
+}
+/* It gives back the room it stops short by for its close as well. */
+body.has-split .tab-bar.has-two-groups > .strip-part.is-closable:not(.strip-part-beside) {
+  width: calc(var(--strip-part-left, 50%) - var(--strip-part-skip, 0px) - var(--app-tab-row));
+  margin-right: calc(var(--strip-part-skip, 0px) + var(--app-tab-row));
 }
 /* A published site carries the folder trail in this box rather than a strip of tabs. A tab hangs off the bar's bottom edge so its top corners have room to round; a trail is a line of text, so it sits in the middle of the band instead, and it takes the whole box because it shrinks itself to whatever room it is given. */
 /* A group scrolled past its start dissolves at its left end rather than cutting a tab in half there, right beside Back, Refresh and Forward. A mask, not a scrim: the bar's dot lattice is fixed to the window, so anything painted flat over it draws as a patch. A group at rest wears no mask at all and draws its first tab whole. */
@@ -7900,6 +7976,8 @@ button {
 /* Open, Export and the library foot's launchers — the theme palette among them — are the same button over and over: muted at rest, greening on hover like the other secondary toolbar icons. Said once, so they cannot drift apart — and none of them is ever the filled primary button, which is how the bar says which view you are in. A button added to this run without its name here rests filled, which reads as the one action already pressed. */
 .open-button,
 .export-button,
+.split-close,
+.chat-close,
 .library-foot-button {
   /* The app's own furniture, not something the document offers, so the pointer stays an arrow across the run. Beats the shared hand by being one class. */
   cursor: default;
@@ -7911,6 +7989,8 @@ button {
 @media (hover: hover) {
   .open-button:hover,
   .export-button:hover,
+  .split-close:hover,
+  .chat-close:hover,
   .library-foot-button:hover {
     background: var(--lt-navigation-button-hover-background);
     border-color: var(--lt-navigation-button-hover-background);
@@ -8051,7 +8131,6 @@ body.is-embedded .app-bar,
 body.is-embedded .library-pane,
 body.is-embedded .library-divider,
 body.is-embedded .rail-divider,
-body.has-split .rail-divider,
 body.is-embedded .reader-toolbar {
   display: none;
 }
@@ -8065,6 +8144,8 @@ body.is-embedded .reader-toolbar {
   /* A trailing column and a bottom row hold the reader off the window frame; the rail spans both so only the page is inset. */
   /* The first track is the pane's width — 0px closed. The default here stands only until the front end writes this whole track on the shell and the same width on the app bar, never on the root, and the motion classes below transition this one property. Never an @property registration for the rail: animating a registered inherited length off :root crashed the whole app in this web view (library-sidebar-motion, phase 0). */
   grid-template-columns: var(--library-rail-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
+  /* Every track's name, which is what a card, a rail and a line are placed by: the chat's own column stands before the pages or after them, so a number names a different track on each side. The front end writes these with the track. */
+  grid-template-areas: "pane card-a rail-a gutter" ". . . .";
   grid-template-rows: minmax(0, 1fr) var(--reader-gutter);
   /* The app surface's height, not the window's: the surface is the app, and past the inset the window has edge the app does not paint. */
   height: 100%;
@@ -8257,7 +8338,7 @@ body.is-library-settling .app-bar::after {
 
    It scrolls, and that is the whole of how a wheel over the rail moves the page: the column is a scroller the web view drives itself, so a notch here is the same gesture it is over the page, on the web view's own curve, with no step of ours between the hand and the document. The front end only writes the reader's position from this scroll. Its travel is a spacer minimap.js sizes to the reader's own range; the rail's contents are pinned to the top of the column, so nothing the reader points at moves with it. Sideways stays clipped — the thumbnail is the column's width and there is nothing beside it. */
 .reader-minimap {
-  grid-column: 3;
+  grid-column: rail-a;
   grid-row: 1;
   min-width: 0;
   padding-left: var(--reader-minimap-gap);
@@ -8307,24 +8388,20 @@ body.is-library-settling .app-bar::after {
   font-size: var(--lt-text-13);
   /* No right-edge hairline: the page's tone against the pane is the boundary. */
 }
-/* The middle of a split: the strip of the bar's own last pixel that runs between the two cards, from the left card's right edge to the right card's left edge. The bar's divider draws straight through there, which reads as one sheet scored down the middle rather than two pages, so this covers it with the same chrome surface and grain the bar shows, and carries an arc off each end to turn the two inner corners.
+/* The middle of a split: a strip at the cards' top edge from the left card's right edge to the right card's left edge, carrying an arc off each end to turn the two inner corners.
 
-   Placed by the shell's own grid, never by a number: the bar is not in the grid, so cutting the divider into a run per card could only be reached by the page writing each card's edge into the bar — the placement .reader-corner below records drifting a device pixel off the border. Hung on the grid instead, it follows a pane resize, the pane's three legs and a drag of the line with no work of its own. */
+   Placed by the shell's own grid, never by a number: the bar is not in the grid, so it follows a pane resize, the pane's three legs and a drag of the line with no work of its own. */
 .reader-seam {
-  grid-column: 3 / 5;
+  grid-column: rail-a-start / span 2;
   grid-row: 1;
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(var(--app-bar-height) - 1px);
+  /* The cards' top edge, where the outer corners are turned; the tab band and its underline leave the gap between the cards open themselves, so the strip paints nothing of its own over the left page's rail. */
+  top: calc(var(--app-bar-row) - 1px);
   height: var(--lt-stroke-1);
   /* Over the app bar (z-index 10), the layer the two arcs it holds already stand on. */
   z-index: 11;
-  background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
-  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
-  /* The same window-anchored lattice as every other grained surface, so the covered pixel stays in phase with the bar either side of it. */
-  background-attachment: fixed;
   pointer-events: none;
 }
 .reader-seam[hidden] {
@@ -8394,7 +8471,7 @@ body.is-library-settling .app-bar::after {
 }
 .reader-corner-tr {
   top: calc(100% - 1px);
-  right: calc(var(--reader-gutter) + var(--reader-minimap-column));
+  right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--app-chat-trail, 0px));
 }
 /* The seam's arc hangs off the strip at the left card's inner edge. */
 .reader-seam-corner-left {
@@ -8427,7 +8504,7 @@ body.is-library-settling .app-bar::after {
 }
 /* The rail's grip: an invisible strip over the gap between the page's right border and the rail, overhanging the page by the few pixels the library divider overhangs the reader. Hung on the rail's column and the gutter beyond it and measured from the window's side, so it lands on the gap whether the rail stands in its own column or the source view draws its map inside the card. rail-width.js writes the thumbnail's width on it. */
 .rail-divider {
-  grid-column: 3 / 5;
+  grid-column: rail-a-start / span 2;
   grid-row: 1;
   position: absolute;
   top: 0;
@@ -8440,6 +8517,16 @@ body.is-library-settling .app-bar::after {
 }
 :root[data-code-view="true"] .rail-divider {
   right: calc(var(--reader-gutter) + var(--rail-grip-thumb, 0px) + var(--cv-minimap-standoff));
+}
+/* With two pages up the grip stands in the right-hand card's gap, the one with the window's gutter behind it; with the chat on the right, in the chat's. A page beside the source has its rail in its own track, so the source view's standoff goes. */
+body.has-split .rail-divider {
+  grid-column: rail-b-start / span 2;
+}
+body.chat-on-the-right .rail-divider {
+  grid-column: chat-rail-start / span 2;
+}
+:root[data-code-view="true"] body.has-split:not(.beside-on-the-left) .rail-divider {
+  right: calc(var(--reader-gutter) + var(--rail-grip-thumb, 0px));
 }
 /* Shut, the rail has no gap, so the grip is the window's own right gutter. */
 .rail-divider.is-rail-shut,
@@ -9751,7 +9838,7 @@ body.library-resizing button {
 /* The graph, in the reader's own cell and wearing the page's frame, because it stands in for the page. The Pixi canvas owns pan and zoom, so this never scrolls. */
 /* Columns 2 and 3: the reading column and the minimap's track. The map has no minimap, and a reserved-but-empty strip down the right of a canvas reads as a rendering fault rather than a layout. The gutter (column 4) stays, so the map is held off the window frame like the page is. */
 .reader-graph {
-  grid-column: 2 / 4;
+  grid-column: card-a-start / rail-a-end;
   grid-row: 1;
   box-sizing: border-box;
   position: relative;
@@ -9774,7 +9861,7 @@ body.library-resizing button {
 }
 /* The wash over a slow load has to cover the same width the map draws on, or it stops a column short and leaves a lit strip down the right. The bar spans both columns in every view (see .reader-toolbar), so it needs nothing here. */
 :root[data-graph-view="true"] .reader-loading {
-  grid-column: 2 / 4;
+  grid-column: card-a-start / rail-a-end;
 }
 /* The map has no minimap, so in this view there is no minimap column — said once here rather than in each place measuring to a rail that is not there. The bar's divider and .reader-corner-tr are both positioned off it, so they stopped a column short of the map and turned the arc down in mid-air over the canvas. On the bar, which is the only thing that reads it and holds no document: on `body` it restyled every element in the open page, 82 to 100 ms on a megabyte note each time the map went up or came down. */
 :root[data-graph-view="true"] .app-bar {
@@ -9833,7 +9920,7 @@ body.library-resizing button {
   pointer-events: none;
 }
 .console-layer {
-  grid-column: 2;
+  grid-column: card-a;
   grid-row: 1;
   min-width: 0;
   min-height: 0;
@@ -9855,7 +9942,9 @@ body.library-resizing button {
   outline-offset: calc(var(--lt-stroke-2) * -1);
 }
 /* A console standing in the right-hand card, in that card's track. */
-.console-layer.is-right-card { grid-column: 5; }
+.console-layer.is-right-card { grid-column: card-b; }
+/* The chat's console, in the chat's own column, over its card. */
+.console-layer.is-chat-card { grid-column: chat; }
 /* Two cards are two whole cards, the same as a page's. */
 .console-layer.is-split { border-top: var(--lt-stroke-1) solid transparent; border-radius: var(--reader-card-radius); }
 .console-side-close { position: absolute; top: var(--console-inset-top); right: var(--console-inset-right); z-index: 4; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); background: var(--lt-surface-elevated); color: var(--lt-foreground); }
@@ -10011,8 +10100,10 @@ body.library-resizing button {
 .console-chat-pin-row::before { content: ""; position: absolute; inset: 0; z-index: var(--lt-z-below); pointer-events: none; background: transparent; transition: background-color var(--lt-duration-120) var(--lt-ease); }
 @media (hover: hover) { .console-chat-pin-row:hover::before { background: var(--lt-wash-hover); } }
 /* A saved chat: its conversation with no program behind it, standing where the Library page stands while its tab is in front, and drawn inside with the live chat's own frame. */
-.saved-chat { grid-column: 2 / 4; grid-row: 1; z-index: 5; position: relative; box-sizing: border-box; overflow: hidden; background: var(--lt-markdown-background); border-left: var(--lt-stroke-1) solid transparent; border-right: var(--lt-stroke-1) solid transparent; border-bottom: var(--lt-stroke-1) solid transparent; border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius); }
+.saved-chat { grid-column: card-a-start / rail-a-end; grid-row: 1; z-index: 5; position: relative; box-sizing: border-box; overflow: hidden; background: var(--lt-markdown-background); border-left: var(--lt-stroke-1) solid transparent; border-right: var(--lt-stroke-1) solid transparent; border-bottom: var(--lt-stroke-1) solid transparent; border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius); }
 .saved-chat[hidden] { display: none; }
+/* A saved conversation standing in the chat's own column rather than in front: a whole card there. */
+.saved-chat.is-chat-card { grid-column: chat; margin-top: var(--app-bar-height); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
 /* Chat and Console stand over a saved chat too, so its box rises above the bar the way a live chat's does. */
 .saved-chat.has-console-views .console-chat { bottom: calc(var(--lt-space-8) + var(--reader-toolbar-room) - var(--lt-shadow-spread)); }
 .library-shell.library-closed .saved-chat { margin-left: var(--reader-gutter); }
@@ -10139,6 +10230,8 @@ button.diff-card-fold:disabled { cursor: default; }
 .console-composer-tool { width: 32px; height: 32px; border-radius: var(--lt-radius-md); font-family: monospace; font-size: var(--lt-text-15); }
 .console-composer-tool .lt-icon { width: 16px; height: 16px; }
 .console-composer-mode { height: 24px; padding: 0 var(--lt-space-10); border-radius: var(--lt-radius-pill); font-size: var(--lt-text-12); white-space: nowrap; }
+/* In a narrow chat the permission label gives way before the send button does, ending in an ellipsis. */
+.console-composer-mode { display: inline-block; line-height: 24px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .console-composer-mode[hidden] { display: none; }
 .console-composer-repeat { appearance: none; display: inline-flex; align-items: center; gap: var(--lt-space-4); flex: none; height: 24px; padding: 0 var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-accent); border-radius: var(--lt-radius-pill); background: transparent; color: var(--lt-foreground); font: inherit; font-size: var(--lt-text-12); white-space: nowrap; cursor: pointer; }
 .console-composer-repeat .lt-icon { width: 12px; height: 12px; color: var(--lt-accent); }
@@ -10202,7 +10295,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 }
 .reader-toolbar {
   /* Page column plus the minimap's, in every view: only the reading view opens that second track, so centering on the page alone put the same bar 31px left of where the source view drew it and moved the button a reader goes back to most. The source view's own map strip is the editor's, drawn inside the page column, so it is already inside this measurement. */
-  grid-column: 2 / 4;
+  grid-column: card-a-start / rail-a-end;
   grid-row: 1;
   align-self: end;
   justify-self: center;
@@ -10697,12 +10790,12 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 
 /* The floating bar sits under the column with the keys, because every button on it acts on that document. Its own class rather than a track written from the front end: the two columns are two fixed tracks, so this is the same rule pointed at the other pair. */
 .reader-toolbar.is-keyed-right {
-  grid-column: 5 / 7;
+  grid-column: card-b-start / rail-b-end;
 }
 
 /* Flash words: a box over the middle of the reading column, the same grid cell the find bar takes, so the page scrolls under it while it stays put. */
 .flash-reader {
-  grid-column: 2;
+  grid-column: card-a;
   grid-row: 1;
   align-self: center;
   justify-self: center;
@@ -10808,13 +10901,17 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   box-shadow: var(--lt-shadow-spotlight);
 }
 
+/* Under the card with the keys, as the floating bar is. */
+.reader-status.is-keyed-right {
+  grid-column: card-b;
+}
 /* Lifted over the page's status line where one stands; a console's bar keeps its place. */
 .reader-toolbar.is-over-status {
   margin-bottom: calc(var(--lt-shadow-spread) + var(--lt-space-24));
 }
 /* The page's status line, as the redesign ends the page: the view on the left and the document on the right, quiet, under the floating bar and never in the way of a press. */
 .reader-status {
-  grid-column: 2;
+  grid-column: card-a;
   grid-row: 1;
   align-self: end;
   z-index: 6;
@@ -10848,7 +10945,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 .reader-shell {
   background: var(--lt-markdown-background);
   /* Pin the reader to its grid cell. Auto-placed, it gets evicted into the 0px library column when the .reader-loading overlay (which claims column 2, row 1) is unhidden — the document then reflows at zero width and every scroll computation made while the wait is up lands wrong. */
-  grid-column: 2;
+  grid-column: card-a;
   grid-row: 1;
   box-sizing: border-box;
   border-left: var(--lt-stroke-1) solid transparent;
@@ -10879,7 +10976,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 .reader-edge-fade {
   /* The surface being dissolved to. The code view repaints the card in the editor's code color, so the dots have to follow it or the last lines break up into the wrong page. */
   --reader-edge-fade-surface: var(--lt-markdown-background);
-  grid-column: 2;
+  grid-column: card-a;
   grid-row: 1;
   position: relative;
   pointer-events: none;
@@ -10987,7 +11084,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 }
 .reader-loading {
   /* Overlays the reader cell so the shape of the arriving page can show during a slow load. Pointer events pass through; sits below the app bar. */
-  grid-column: 2;
+  grid-column: card-a;
   grid-row: 1;
   align-self: stretch;
   justify-self: stretch;
@@ -11239,25 +11336,25 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 
    Out of the page entirely until a split opens: an element pinned to a track the shell has not written makes the grid grow one, which would open a column beside every document the app has ever shown. */
 .reader-column-right {
-  grid-column: 5;
+  grid-column: card-b;
 }
 .reader-column-right[hidden] {
   display: none;
 }
 /* The rail beside it, in the track after it, on the same rules as the rail with an id. */
 .reader-minimap-right {
-  grid-column: 6;
+  grid-column: rail-b;
 }
 .reader-minimap-right[hidden] {
   display: none;
 }
 /* Its waiting state, over its own card. */
 .reader-loading-right {
-  grid-column: 5;
+  grid-column: card-b;
 }
 /* The line you pull between the two documents, in a track of its own so neither page gives up width to it. It paints nothing: the two cards already draw their own edges either side of it, and a stroke here is a third gray line down the middle of the page. It is dragged the way the pane's divider is, so its track is a hairline and the grab strip around it is drawn out either side — a line one pixel wide is a line nobody can catch. */
 .reader-split {
-  grid-column: 4;
+  grid-column: split;
   grid-row: 1;
   justify-self: center;
   width: var(--lt-stroke-1);
@@ -11277,6 +11374,52 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 .reader-split[hidden] {
   display: none;
 }
+/* The chat's own column: a whole card in its own track, the same card a page stands on, with the chat's console or saved conversation laid over it. Out of the grid until a chat stands there. */
+.chat-card {
+  grid-column: chat;
+  grid-row: 1;
+  box-sizing: border-box;
+  margin-top: var(--app-bar-height);
+  background: var(--lt-markdown-background);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--reader-card-radius);
+}
+.chat-card[hidden] {
+  display: none;
+}
+/* The chat's rail, in its own track beside its card, drawn as a picture of the console's screen. */
+.reader-minimap-chat {
+  grid-column: chat-rail;
+}
+.reader-minimap-chat[hidden] {
+  display: none;
+}
+.chat-rail-picture {
+  display: block;
+  width: 100%;
+}
+/* The line between the chat and the pages, drawn and caught the way the split's own line is. */
+.chat-split {
+  grid-column: chat-line;
+  grid-row: 1;
+  justify-self: center;
+  width: var(--lt-stroke-1);
+  margin-top: var(--app-bar-height);
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+}
+.chat-split::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+}
+.chat-split[hidden] {
+  display: none;
+}
 /* Two cards standing side by side are two whole cards: each carries its own stroke in one color and rounds on all four corners, including the two either side of the middle. With one card the top corners are square because the card runs the width of the bar and the selected tab joins it; with two, both inner corners are in the middle of the page where a square edge reads as a card that was cut.
 
    No stroke says which card has the keys. The floating bar stands under that card and moves when the keys move, so the mark is already drawn; an accent on the card's edge said it a second time, in a color, on the one line of the card the reader is looking past. */
@@ -11291,7 +11434,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   position: relative;
   /* Over the card and its edge fade (4), under the loading wash (6). */
   z-index: 5;
-  grid-column: 2;
+  grid-column: card-a;
   grid-row: 1;
   justify-self: end;
   width: calc(var(--drop-beside-share) * 100%);
@@ -11310,27 +11453,25 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   width: auto;
 }
 .reader-drop-beside.closes-left {
-  grid-column: 2;
+  grid-column: card-a;
 }
 .reader-drop-beside.closes-right {
-  grid-column: 5;
+  grid-column: card-b;
 }
-/* Close beside: a press in the top corner of the card without the keys, over whatever that card holds — a console's chat included, which stands at layer 5. The page marks the element `is-left` when that card is the left one. */
+/* A page's own close, at the end of that page's tab row while two are up, in the band the tabs hang in and never over what the card holds. One per card: `is-left` is the left card's. Above the bar, which is the band it stands in. */
 .split-close {
   position: relative;
   z-index: var(--lt-z-20);
-  grid-column: 5;
+  grid-column: card-b;
   grid-row: 1;
   align-self: start;
   justify-self: end;
-  margin-top: calc(var(--app-bar-height) + var(--lt-space-12));
-  margin-right: var(--lt-space-12);
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  background: var(--lt-surface-elevated);
-  color: var(--lt-foreground);
+  margin-top: calc(var(--app-bar-row) + var(--lt-space-4));
+  margin-right: var(--lt-space-8);
+  color: var(--lt-muted-foreground);
 }
 .split-close.is-left {
-  grid-column: 2;
+  grid-column: card-a;
 }
 .reader-drop-beside-name:empty {
   display: none;
@@ -11363,10 +11504,10 @@ body.split-resizing button {
 
 /* The bar's bottom edge, and the arc that turns it down into the page, stop at the card on the right. In the source view that edge is the editor's own faked one, a minimap in from the card — which is right while the source card is the card on the right, and wrong the moment a page is standing there: it put the arc 24 px inside that page's rail. So where the card beside is the one on the right, both go back to measuring the shell's own rail column, which the page has already written as that card's. Above the source view's rules by one class each, and the card with the keys keeps the source view's answer whenever it is the card on the right. */
 body.has-split:not(.beside-on-the-left) .app-bar::after {
-  right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--lt-radius-md) - 1px);
+  right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--app-chat-trail, 0px) + var(--lt-radius-md) - 1px);
 }
 body.has-split:not(.beside-on-the-left) .reader-corner-tr {
-  right: calc(var(--reader-gutter) + var(--reader-minimap-column));
+  right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--app-chat-trail, 0px));
 }
 /* The seam ends on the left card's visible right edge, and two views draw that edge somewhere other than the track line.
 
@@ -11375,11 +11516,11 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   left: calc(-1 * (var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff)));
 }
 :root[data-graph-view="true"] body.has-split .reader-seam {
-  grid-column: 4 / 5;
+  grid-column: split;
 }
 /* The second card's own dissolve, in its own track. Named for the card rather than for a side: a band down the reader's left or right edge is a thing this tree refused, and the names for one are held out of the stylesheet. */
 .reader-edge-fade-second {
-  grid-column: 5;
+  grid-column: card-b;
 }
 .reader-edge-fade-second[hidden] {
   display: none;
@@ -14113,11 +14254,15 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 /* The tab strip and the hairline under it end at the faked right edge at the minimap stroke, measured from the window's right edge: the reader gutter to the shell, then the minimap and its stand-off. */
 :root[data-code-view="true"] .app-bar {
-  --app-page-right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
+  --app-page-right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + var(--app-chat-trail, 0px));
+}
+/* A source view in the card on the right has its close at the end of its tab row, which there ends a minimap and its stand-off in from the card. On the left the row runs to the card's own edge, and so does the close. */
+:root[data-code-view="true"] body.beside-on-the-left .split-close:not(.is-left) {
+  margin-right: calc(var(--lt-space-8) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
 }
 /* The top-right corner of the faked page: the same convex arc reader-corner-tr draws at the card's real right corner in the reading view, moved in to the minimap stroke. Only the offset changes — outside the corner is the shell's grain here as well, now that the page fill stops at the frame (the shell's ::before), so the chrome fill and the mask cutting the page's disc back out of it are both right as they stand. Its z-index 11 keeps it above Monaco, which is why the corner lives here and not on a shell pseudo (::before paints behind the editor). The right offset matches ::after's faked edge; the arc's own geometry (top: 100% - 1px, the radius+1 box, the top/right borders) is inherited from .reader-corner(-tr). */
 :root[data-code-view="true"] .reader-corner-tr {
-  right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
+  right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + var(--app-chat-trail, 0px));
 }
 /* The reading page while the editor stands over it: still inside the shell, still laid out at the width it was reading at, and out of the editor's way. Out of flow so the shell scrolls the editor rather than the page, clipped to the shell so a long document adds nothing to it, and out of sight, out of hit testing, out of the tab order and out of what a screen reader reads. Taken out of the shell and put back, the same page costs 260 to 284 ms — it loses its boxes the moment it leaves — where kept like this it comes back in 67 to 75. */
 .reader-layout.is-under-editor {
@@ -21121,7 +21266,7 @@ p.shelf-foot {
   display: none;
 }
 .find-bar {
-  grid-column: 2;
+  grid-column: card-a;
   grid-row: 1;
   align-self: start;
   justify-self: end;
@@ -21639,7 +21784,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 119 icons, and all 202 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 119 icons, and all 204 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -21674,7 +21819,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>119</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>202</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>204</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -22160,7 +22305,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">202 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">204 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -22514,7 +22659,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><aside class="document-minimap" style="height:120px"><div class="document-minimap-track"><div class="document-minimap-content"></div><div class="document-minimap-fade" data-edge="top"></div><div class="document-minimap-fade" data-edge="bottom"></div><div class="document-minimap-slides"><div class="document-minimap-slide" style="top:0;height:30px"><span class="document-minimap-slide-number">1</span></div><div class="document-minimap-slide is-divided" style="top:30px;height:44px"><span class="document-minimap-slide-number">2</span></div><div class="document-minimap-slide is-divided" style="top:74px;height:46px"><span class="document-minimap-slide-number">3</span></div></div><div class="document-minimap-viewport"></div><div class="document-minimap-ribbon" style="--ribbon-at:0.4"></div></div></aside></div>
 </section>
 <section class="part">
-<header><h3>Rail grip</h3><code class="built">.rail-divider</code><span class="built">rail-width.js, over the gap between the page's right border and the rail, or the window's right gutter once the rail is shut</span></header>
+<header><h3>Rail grip</h3><code class="built">.rail-divider</code><span class="built">rail-width.js, over the gap between the page's right border and the rail, or the window's right gutter once the rail is shut; with two pages up it stands in the right-hand card's gap and asks that card whether it wears a rail, and with the chat on the right it stands in the chat's, so one drag shuts or opens every rail</span></header>
 <div class="stage"><div class="rail-divider" style="position:static;height:64px;width:7px;background:var(--lt-primary);opacity:var(--lt-opacity-46)"></div></div>
 </section>
 <section class="part">
@@ -22906,7 +23051,15 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div style="display:grid;grid-template-columns:1fr 1fr;height:96px"><div></div><div class="reader-drop-beside" style="grid-column:auto;grid-row:auto;margin-top:0;width:auto"><span class="reader-drop-beside-name">PLAN.md</span></div></div></div>
 </section>
 <section class="part">
-<header><h3>Split close</h3><code class="built">.split-close</code><span class="built">app-shell.html, shown by columns.js in the top corner of the card without the keys while two are up, marked is-left when that card is the left one, and sending closeBeside when pressed</span></header>
+<header><h3>Chat column</h3><code class="built">.chat-card</code><span class="built">app-shell.html, shown by columns.js while a chat stands in its own column beside the pages: the card the chat's console or saved conversation is laid over (is-chat-card on that layer), its rail drawn as a picture of the console's screen, and the line between it and the pages</span></header>
+<div class="stage"><div style="display:grid;grid-template-columns:1fr auto 1fr;height:96px"><div class="chat-card" style="grid-column:auto;grid-row:auto;margin-top:0"></div><div class="chat-split" role="separator" aria-orientation="vertical" style="grid-column:auto;grid-row:auto;margin-top:0"></div><div class="reader-shell" style="grid-column:auto;grid-row:auto"></div></div></div>
+</section>
+<section class="part">
+<header><h3>Chat head</h3><code class="built">.chat-head</code><span class="built">app-shell.html, in the bar's tab band over the chat column's card, placed by columns.js on the card below it: the grip that carries the chat to the other side of the pages (is-moving while carried, is-past once past the middle of the pages), the chat's name, and its close, which sends closeChatColumn</span></header>
+<div class="stage"><div class="chat-head" style="position:static;width:240px"><span class="chat-grip" role="button" tabindex="0" aria-label="Move the chat to the other side"><span class="lt-icon lt-icon-grip"></span></span><span class="chat-head-title">Claude — notes</span><button type="button" class="icon-button chat-close" aria-label="Close chat"><span class="lt-icon lt-icon-close"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Split close</h3><code class="built">.split-close</code><span class="built">app-shell.html, one per card, shown by columns.js at the end of that card's own tab row while two pages are up, never over what the card holds; is-left is the left card's, each sends closeSide with its side, and the card's tabs stop short of it (is-closable on the strip group)</span></header>
 <div class="stage"><button type="button" class="icon-button split-close" title="Close beside" aria-label="Close beside" style="grid-column:auto;grid-row:auto;margin:0"><span class="lt-icon lt-icon-close"></span></button></div>
 </section>
 <section class="part">

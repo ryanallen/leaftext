@@ -129,6 +129,10 @@
 | Four rounded corners | [✅][l-split] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Split returns with tab | [✅][l-split] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Console beside a note | [✅][l-split] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Reopen a closed page | [✅][l-split] | ? | [❌][t-seen] | [❌][c-seen] |
+| Chat column beside pages | [✅][l-chat-column] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Chat column swaps sides | [✅][l-chat-column] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Chat beside two pages | [✅][l-chat-column] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## History
 
@@ -457,6 +461,7 @@
 [l-doc-tabs]: ../01-features/02-navigation.md#tabs-inside-a-document
 [l-web-tabs]: ../01-features/02-navigation.md#web-tabs
 [l-split]: ../01-features/02-navigation.md#two-documents-side-by-side
+[l-chat-column]: ../01-features/02-navigation.md#the-chat-column
 [l-source-pair]: ../01-features/07-editing.md#source-beside-the-page
 [l-history]: ../01-features/02-navigation.md#history
 [l-recent]: ../01-features/02-navigation.md#recent-files

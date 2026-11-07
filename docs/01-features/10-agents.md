@@ -88,7 +88,7 @@ Starting `codex` in a Leaftext console reports its selected model, effort, folde
 
 Starting `claude` in a Leaftext console automatically relays its native selected model, effort, context capacity, limits and cost to the row. Your own custom status line keeps its input and output, and your settings stay unchanged. The relay applies only to that launch. An explicit path to the native executable bypasses the console helper, and managed policy can prevent the callback; the row shows only reports it actually receives.
 
-To watch a note change while the agent works on it, put the console beside the note: choose **Open beside** on its row's menu in **All chats**, or press `Ctrl+\` (`Cmd+\` on a Mac). Press the **Close beside** in the corner of the column standing beside to put it away again; the agent keeps running. See [two documents side by side](02-navigation.md#two-documents-side-by-side).
+To watch a note change while the agent works on it, press the chat's row in **All chats** with the note in front: the chat stands in [the chat column](02-navigation.md#the-chat-column) beside the note, and a document the agent opens lands beside it. Press the close in the chat's top row to put it away again; the agent keeps running.
 
 A console moved into another window keeps its readable prompt and status. Choose **Move to a new window** on its row's menu in **All chats** to move it, then use Model or Effort on its status row without redrawing the terminal.
 

@@ -835,6 +835,8 @@ const COLUMN_STATE_NAMES = [
   
   'pendingChapterPress', 'pendingReadingChapter',
   
+  'railGripAsked', 'railGripPending',
+  
   'documentLinksBound',
   
   'mermaidColumnWidth', 'mermaidRecycleObserver', 'mermaidLeavingView', 'mermaidViewObserver', 'mermaidWatchedBody',
@@ -905,6 +907,8 @@ function saveColumnState(column) {
   held.pendingChapterPress = pendingChapterPress;
   held.pendingReadingChapter = pendingReadingChapter;
   
+  held.railGripAsked = railGripAsked;
+  held.railGripPending = railGripPending;
   held.documentLinksBound = documentLinksBound;
   
   held.mermaidColumnWidth = mermaidColumnWidth;
@@ -1034,6 +1038,8 @@ function loadColumnState(column) {
   pendingChapterPress = held.pendingChapterPress;
   pendingReadingChapter = held.pendingReadingChapter;
   
+  railGripAsked = held.railGripAsked;
+  railGripPending = held.railGripPending;
   documentLinksBound = held.documentLinksBound;
   
   mermaidColumnWidth = held.mermaidColumnWidth;
@@ -1135,6 +1141,9 @@ let rightColumn = null;
 let keyedColumn = null;
 
 const splitCloseButton = document.getElementById('splitClose');
+const splitCloseLeftButton = document.getElementById('splitCloseLeft');
+
+const splitStripGroups = [document.getElementById('stripKeys'), document.getElementById('stripBeside')].filter(Boolean);
 
 let freshColumnState = null;
 
@@ -1169,6 +1178,8 @@ function focusColumn(column) {
   
   if (readerToolbar) readerToolbar.classList.toggle('is-keyed-right', column === rightColumn);
   
+  if (readerStatus) readerStatus.classList.toggle('is-keyed-right', column === rightColumn);
+  
   writeViewFades();
   
   scheduleLibraryOutline();
@@ -1178,9 +1189,12 @@ function focusColumn(column) {
 
 function writeSplitClose() {
   if (!splitCloseButton) return;
-  const beside = besideColumn();
-  splitCloseButton.hidden = !beside;
-  splitCloseButton.classList.toggle('is-left', beside === leftColumn);
+  const open = !!besideColumn();
+  splitCloseButton.hidden = !open;
+  if (splitCloseLeftButton) splitCloseLeftButton.hidden = !open;
+  for (const group of splitStripGroups) {
+    if (group) group.classList.toggle('is-closable', open);
+  }
 }
 
 
@@ -1291,6 +1305,7 @@ function startColumns() {
   
   const saved = window.__leafSettings;
   splitFraction = clampSplitFraction(saved && Number(saved.splitFraction));
+  startChatColumn(saved);
   leftColumn = makeColumn('left', app, readerMinimap, readerLoading, readerLeftEdgeFade);
   rightColumn = makeColumn(
     'right',
@@ -1350,11 +1365,14 @@ function besideWaitingForPage() {
 function applySplit(beside, state) {
   if (!rightColumn || !rightColumn.reader) return;
   
+  applyChat(state || currentState);
+  
   if (!!beside !== besideInLastPayload) besideAwaitingPage = !!beside;
   besideInLastPayload = !!beside;
   const line = readerSplitLine;
   const seam = readerSeamBand;
-  const open = !!beside && !splitTooNarrow();
+  
+  const open = !!beside && !splitTooNarrow(state || currentState);
   rightColumn.reader.hidden = !open;
   if (rightColumn.rail) rightColumn.rail.hidden = !open;
   if (rightColumn.loading) rightColumn.loading.hidden = true;
@@ -1377,18 +1395,38 @@ function applySplit(beside, state) {
   }
   settleBesideTab(state || currentState);
   
+  drawRailGrip();
+  
   writeStripShares();
+  if (!beside) heldBesidePage = null;
+  else if (open && heldBesidePage && !state) {
+    
+    const held = heldBesidePage;
+    heldBesidePage = null;
+    drawBesideColumn(held.state, held.anchor);
+  }
 }
+
+let heldBesidePage = null;
 
 
 function settleBesideTab(state) {
   const beside = state && state.beside;
   const tab = beside && beside.tab !== state.active && state.tabs ? state.tabs[beside.tab] : null;
-  if (tab && (tab.kind === 'console' || tab.kind === 'web') && besideAwaitingPage) {
+  const pageless = tab && (tab.kind === 'console' || tab.kind === 'web');
+  
+  const card = pageless ? besideColumn() : null;
+  const heldRail = !!card && (card.reader.classList.contains('has-minimap') || !!(card.rail && card.rail.innerHTML));
+  if (heldRail) {
+    card.reader.classList.remove('has-minimap');
+    if (card.rail) card.rail.innerHTML = '';
+  }
+  
+  if (card) withColumn(card, () => { railGripAsked = false; railGripPending = false; });
+  if (pageless && (besideAwaitingPage || heldRail)) {
     besideAwaitingPage = false;
     if (splitColumnsOpen) writeSplitColumns(true);
-  }
-  placeConsoleLayers(state);
+  }  placeConsoleLayers(state);
   scheduleWebSurfaceBounds();
 }
 
@@ -1399,14 +1437,41 @@ function refitSplit() {
 }
 
 
-function splitTooNarrow() {
-  return leafShellWidth() < SNAP_SHUT + MIN_READER_WIDTH * 2;
+function splitTooNarrow(state = currentState) {
+  return splitRoom(state) < MIN_READER_WIDTH * 2;
+}
+
+function splitRoom(state = currentState) {
+  const room = columnsRoom() - (Number.parseFloat(drawnMinimapColumn) || 0) - besideRailAllowance(state) - rootLengthPx('--reader-split-track');
+  return chatColumnOpen ? room - chatWidth(columnsRoom(), state) : room;
+}
+
+function columnsRoom() {
+  const pane = window.__leafEmbedded || libraryIsClosed() ? 0 : clampOpenPaneWidth(libraryWidth);
+  const chat = chatColumnOpen ? chatRailAllowance() + rootLengthPx('--reader-split-track') : 0;
+  return leafShellWidth() - pane - readerGutterPx() - chat;
+}
+
+function besideRailAllowance(state = currentState) {
+  const beside = state && state.beside;
+  const tab = beside && state.tabs ? state.tabs[beside.tab] : null;
+  if (tab && (tab.kind === 'console' || tab.kind === 'web')) return 0;
+  if (!(window.leafMinimap && window.leafMinimap.getEnabled())) return 0;
+  return monacoMinimapWidth() + readerMinimapGapPx();
+}
+function rootLengthPx(name) {
+  return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
 }
 
 
 function drawBesideColumn(state, anchor) {
   const column = besideColumn();
-  if (!column) return;
+  
+  if (!column) {
+    heldBesidePage = state && state.beside ? { state, anchor: anchor || null } : null;
+    return;
+  }
+  heldBesidePage = null;
   withColumn(column, () => {
     
     currentState = Object.assign({}, state);
@@ -1425,6 +1490,24 @@ function drawBesideColumn(state, anchor) {
 }
 
 
+function redrawBesideForMinimap() {
+  const column = besideColumn();
+  const state = currentState;
+  const tab = state && state.beside && state.tabs ? state.tabs[state.beside.tab] : null;
+  if (!column || !tab || tab.kind === 'console' || tab.kind === 'web' || state.beside.tab === state.active) return;
+  withColumn(column, () => {
+    if (!currentState || !currentState.document) return;
+    
+    currentState = Object.assign({}, currentState, { tabs: state.tabs, active: state.active, beside: state.beside, recent: state.recent, favorites: state.favorites });
+    const anchor = readerScrollAnchor;
+    renderState(true, anchor || null);
+    if (anchor) restoreReaderScrollAnchor(anchor);
+    updateMinimapViewport();
+  });
+  if (splitColumnsOpen) writeSplitColumns(true);
+}
+
+
 window.addEventListener('keydown', (event) => {
   if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
   if (event.key !== '\\') return;
@@ -1434,7 +1517,7 @@ window.addEventListener('keydown', (event) => {
     return;
   }
   
-  if (currentState && typeof currentState.active === 'number' && currentState.tabs?.length) send({ command: 'openBeside', index: (currentState.active + 1) % currentState.tabs.length });
+  if (currentState && typeof currentState.active === 'number' && currentState.tabs?.length) send({ command: 'reopenSide' });
 });
 
 
@@ -1449,7 +1532,14 @@ function clampSplitFraction(value) {
 let splitFraction = 0.5;
 
 function splitShares() {
-  return { left: splitFraction, right: 1 - splitFraction };
+  
+  const room = splitColumnsOpen ? splitRoom() : 0;
+  let left = splitFraction;
+  if (room > 0) {
+    const floor = Math.min(0.5, MIN_READER_WIDTH / room);
+    left = Math.min(1 - floor, Math.max(floor, left));
+  }
+  return { left, right: 1 - left };
 }
 
 function drawSplitFraction(fraction) {
@@ -1468,8 +1558,21 @@ function writeStripShares() {
   document.body.classList.toggle('beside-on-the-left', splitColumnsOpen && keyedColumn === rightColumn);
   
   scheduleWebSurfaceBounds();
+  writeChatBand();
+  placePageHead();
+  
+  const sourceLeft = splitColumnsOpen && leftColumn && rightColumn && codeViewActive && keyedColumn === leftColumn;
+  if (sourceLeft) {
+    const bar = appBar.getBoundingClientRect();
+    tabBar.style.setProperty('right', `${bar.right - rightColumn.reader.getBoundingClientRect().right + rootLengthPx('--lt-stroke-1')}px`);
+  } else {
+    tabBar.style.removeProperty('right');
+  }
   if (!splitColumnsOpen || !leftColumn || !rightColumn) {
     tabBar.style.removeProperty('--strip-part-left');
+    tabBar.style.removeProperty('--strip-part-skip');
+    appBar.style.removeProperty('--strip-rail-start');
+    appBar.style.removeProperty('--strip-rail-end');
     return;
   }
   const box = tabBar.getBoundingClientRect();
@@ -1480,6 +1583,35 @@ function writeStripShares() {
   
   const width = Math.max(0, Math.min(box.width - inset * 2, second - (box.left + inset) - gap));
   tabBar.style.setProperty('--strip-part-left', `${width}px`);
+  
+  const firstEnd = Math.min(second, Math.max(box.left, leftColumn.reader.getBoundingClientRect().right));
+  
+  if (second <= box.left) {
+    tabBar.style.removeProperty('--strip-part-skip');
+    appBar.style.removeProperty('--strip-rail-start');
+    appBar.style.removeProperty('--strip-rail-end');
+    return;
+  }
+  tabBar.style.setProperty('--strip-part-skip', `${Math.max(0, second - firstEnd)}px`);
+  appBar.style.setProperty('--strip-rail-start', `${firstEnd - box.left}px`);
+  appBar.style.setProperty('--strip-rail-end', `${second - box.left}px`);
+}
+
+
+function placePageHead() {
+  const head = pageHead;
+  const bar = appBar;
+  if (!head || !bar) return;
+  if (!splitColumnsOpen || !keyedColumn || !keyedColumn.reader) {
+    head.style.removeProperty('left');
+    head.style.removeProperty('right');
+    return;
+  }
+  const stroke = rootLengthPx('--lt-stroke-1');
+  const box = bar.getBoundingClientRect();
+  const card = keyedColumn.reader.getBoundingClientRect();
+  head.style.setProperty('left', `${card.left - box.left + stroke}px`);
+  head.style.setProperty('right', `${box.right - card.right + stroke}px`);
 }
 
 
@@ -1513,20 +1645,290 @@ function startSplitDrag(event) {
 }
 function moveSplitDrag(event) {
   if (!splitDrag || event.pointerId !== splitDrag.pointerId) return;
-  const leftWidth = splitDrag.startLeft + (event.clientX - splitDrag.startX);
+  const room = splitDrag.room;
+  const pulled = splitDrag.startLeft + (event.clientX - splitDrag.startX);
   
-  if (leftWidth < MIN_READER_WIDTH || splitDrag.room - leftWidth < MIN_READER_WIDTH) {
+  if (pulled < MIN_READER_WIDTH - SNAP_SHUT || room - pulled < MIN_READER_WIDTH - SNAP_SHUT) {
     endSplitDrag(false);
     send({ command: 'closeBeside' });
     return;
   }
-  splitDrag.pending = leftWidth / splitDrag.room;
+  const floor = Math.min(MIN_READER_WIDTH, room / 2);
+  const leftWidth = Math.min(room - floor, Math.max(floor, pulled));
+  splitDrag.pending = leftWidth / room;
   if (!splitDrag.frame) splitDrag.frame = requestAnimationFrame(applyPendingSplitFraction);
 }
 function releaseSplitDrag(event) {
   if (!splitDrag || event.pointerId !== splitDrag.pointerId) return;
   endSplitDrag(true);
   send({ command: 'setSplitLayout', fraction: splitFraction });
+}
+
+
+
+const MIN_CHAT_WIDTH = 320;
+let chatFraction = 0.4;
+let chatSide = 'left';
+let chatColumnOpen = false;
+let chatDrawnTab = null;
+
+let chatFocusOwed = null;
+
+let chatWanted = false;
+
+function chatCrowdsPane() {
+  if (!chatWanted || libraryUserClosed || window.__leafEmbedded) return false;
+  
+  const rail = Number.parseFloat(drawnMinimapColumn) || 0;
+  const need = MIN_CHAT_WIDTH + MIN_READER_WIDTH + rail * 2 + rootLengthPx('--reader-split-track');
+  const without = leafShellWidth() - readerGutterPx();
+  return without - clampOpenPaneWidth(libraryWidth) < need && without >= need;
+}
+
+function takeChatFocus(id) {
+  if (chatFocusOwed !== id) return false;
+  chatFocusOwed = null;
+  return true;
+}
+let chatRailFrame = 0;
+
+let chatHoldsScreen = false;
+let chatRailDrawnAt = 0;
+
+function chatTabIndex(state = currentState) {
+  const tabs = (state && state.tabs) || [];
+  const index = tabs.findIndex((tab) => tab && tab.chat);
+  return index >= 0 ? index : null;
+}
+function chatTab(state = currentState) {
+  const index = chatTabIndex(state);
+  return index === null ? null : state.tabs[index];
+}
+
+function chatConsoleId(state = currentState) {
+  const tab = chatColumnOpen ? chatTab(state) : null;
+  return tab && tab.kind === 'console' ? tab.webId : null;
+}
+
+function chatSavedTab(state = currentState) {
+  const tab = chatColumnOpen ? chatTab(state) : null;
+  return tab && tab.kind === 'chat' ? tab : null;
+}
+
+function chatRailAllowance() {
+  if (!(window.leafMinimap && window.leafMinimap.getEnabled())) return 0;
+  if (!chatHoldsScreen) return 0;
+  return monacoMinimapWidth() + readerMinimapGapPx();
+}
+
+function chatWidth(room, state = currentState) {
+  return Math.max(Math.min(MIN_CHAT_WIDTH, room / 2), Math.min(room - pagesFloor(state), chatFraction * room));
+}
+
+function pagesFloor(state = currentState) {
+  const keyedRail = Number.parseFloat(drawnMinimapColumn) || 0;
+  if (!(state && state.beside)) return MIN_READER_WIDTH + keyedRail;
+  return MIN_READER_WIDTH * 2 + keyedRail + besideRailAllowance(state) + rootLengthPx('--reader-split-track');
+}
+
+function pagesFixedWidth() {
+  const keyedRail = Number.parseFloat(drawnMinimapColumn) || 0;
+  if (!splitColumnsOpen) return keyedRail;
+  return keyedRail + (Number.parseFloat(drawnBesideMinimapColumn) || 0) + rootLengthPx('--reader-split-track');
+}
+
+function applyChat(state) {
+  const index = chatTabIndex(state);
+  const wanted = index !== null;
+  chatHoldsScreen = wanted && state.tabs[index].kind === 'console';
+  
+  const crowded = chatCrowdsPane();
+  chatWanted = wanted;
+  if (chatCrowdsPane() !== crowded) queueMicrotask(() => applyPaneLayout());
+  chatColumnOpen = wanted;
+  if (wanted && columnsRoom() < MIN_CHAT_WIDTH + MIN_READER_WIDTH) chatColumnOpen = false;
+  const open = chatColumnOpen;
+  if (chatCard) chatCard.hidden = !open;
+  if (chatSplitLine) chatSplitLine.hidden = !open;
+  if (chatHead) chatHead.hidden = !open;
+  document.body.classList.toggle('has-chat', open);
+  document.body.classList.toggle('chat-on-the-right', open && chatSide === 'right');
+  const tab = open ? state.tabs[index] : null;
+  if (chatHeadTitle) chatHeadTitle.textContent = tab ? String(tab.title || '') : '';
+  if (chatDrawnTab !== (tab ? index : null)) {
+    chatDrawnTab = tab ? index : null;
+    chatFocusOwed = tab && tab.kind === 'console' ? tab.webId : null;
+    drawChatRail(state);
+    
+    savedChatFollowsFront();
+  }
+  if (!open && chatRail) {
+    chatRail.hidden = true;
+    chatRail.replaceChildren();
+  }
+}
+
+function drawChatRail(state) {
+  chatRailFrame = 0;
+  if (!chatRail) return;
+  
+  const id = chatConsoleId(state && typeof state === 'object' ? state : currentState);
+  const entry = id === null ? null : consoleLayers.get(id);
+  const screen = entry && entry.terminal ? consoleScreen(entry.terminal) : null;
+  const on = !!screen && chatRailAllowance() > 0;
+  chatRail.hidden = !chatColumnOpen;
+  if (!on) {
+    chatRail.replaceChildren();
+    return;
+  }
+  let picture = chatRail.firstElementChild;
+  if (!picture || picture.tagName !== 'CANVAS') {
+    picture = document.createElement('canvas');
+    picture.className = 'chat-rail-picture';
+    chatRail.replaceChildren(picture);
+  }
+  const width = Math.max(1, Math.round(monacoMinimapWidth()));
+  const scale = screen.width ? width / screen.width : 0;
+  const height = Math.max(1, Math.round(screen.height * scale));
+  if (picture.width !== width) picture.width = width;
+  if (picture.height !== height) picture.height = height;
+  const context = picture.getContext && picture.getContext('2d');
+  if (!context) return;
+  context.clearRect(0, 0, width, height);
+  context.drawImage(screen, 0, 0, width, height);
+  chatRailDrawnAt = Date.now();
+}
+
+function scheduleChatRail(id) {
+  if (!chatColumnOpen || id !== chatConsoleId() || chatRailFrame) return;
+  const wait = Math.max(0, 250 - (Date.now() - chatRailDrawnAt));
+  chatRailFrame = setTimeout(() => requestAnimationFrame(drawChatRail), wait);
+}
+
+function chatTracks() {
+  if (!chatColumnOpen) return { lead: '', trail: '' };
+  const room = columnsRoom();
+  const shared = room - pagesFixedWidth();
+  const share = shared > 0 ? Math.min(1, chatWidth(room) / shared) : chatFraction;
+  const rail = `${chatRailAllowance()}px`;
+  const card = `minmax(0, ${share}fr)`;
+  if (chatSide === 'right') return { lead: '', trail: `var(--reader-split-track) ${card} ${rail}`, pages: 1 - share };
+  return { lead: `${card} ${rail} var(--reader-split-track)`, trail: '', pages: 1 - share };
+}
+
+function writeChatBand() {
+  if (!appBar) return;
+  if (!chatColumnOpen || !chatCard) {
+    appBar.style.removeProperty('--app-chat-lead');
+    appBar.style.removeProperty('--app-chat-trail');
+    return;
+  }
+  const card = chatCard.getBoundingClientRect();
+  const line = chatSplitLine ? chatSplitLine.getBoundingClientRect() : { width: 0 };
+  const rail = chatRailAllowance();
+  const width = card.width + line.width + rail;
+  appBar.style.setProperty('--app-chat-lead', chatSide === 'right' ? '0px' : `${width}px`);
+  appBar.style.setProperty('--app-chat-trail', chatSide === 'right' ? `${width}px` : '0px');
+  if (chatHead) {
+    
+    chatHead.style.setProperty('--chat-head-left', `${card.left - appBar.getBoundingClientRect().left}px`);
+    chatHead.style.setProperty('--chat-head-width', `${card.width}px`);
+  }
+}
+
+
+const CHAT_FRACTION_FLOOR = 0.2;
+const CHAT_FRACTION_CEILING = 0.7;
+function clampChatFraction(value) {
+  if (!Number.isFinite(value)) return 0.4;
+  return Math.min(CHAT_FRACTION_CEILING, Math.max(CHAT_FRACTION_FLOOR, value));
+}
+function startChatColumn(saved) {
+  chatFraction = clampChatFraction(saved && Number(saved.chatFraction));
+  chatSide = saved && saved.chatSide === 'right' ? 'right' : 'left';
+}
+
+
+let chatDrag = null;
+function startChatDrag(event) {
+  if (!chatSplitLine || event.button !== 0 || !chatColumnOpen || !chatCard) return;
+  const card = chatCard.getBoundingClientRect();
+  event.preventDefault();
+  chatDrag = { pointerId: event.pointerId, startX: event.clientX, startWidth: card.width, room: columnsRoom(), frame: 0, pending: null };
+  leafHoldPointer(chatSplitLine, event.pointerId);
+  document.body.classList.add('split-resizing');
+}
+function applyPendingChatFraction() {
+  if (!chatDrag) return;
+  chatDrag.frame = 0;
+  if (chatDrag.pending == null) return;
+  chatFraction = chatDrag.pending;
+  writeRestingPaneWidth();
+}
+function endChatDrag() {
+  if (!chatDrag) return;
+  if (chatDrag.frame) cancelAnimationFrame(chatDrag.frame);
+  leafReleasePointer(chatSplitLine, chatDrag.pointerId);
+  chatDrag = null;
+  document.body.classList.remove('split-resizing');
+}
+function moveChatDrag(event) {
+  if (!chatDrag || event.pointerId !== chatDrag.pointerId) return;
+  const moved = event.clientX - chatDrag.startX;
+  const pulled = chatDrag.startWidth + (chatSide === 'right' ? -moved : moved);
+  if (pulled < MIN_CHAT_WIDTH - SNAP_SHUT) {
+    endChatDrag();
+    send({ command: 'closeChatColumn' });
+    return;
+  }
+  const room = chatDrag.room;
+  const width = Math.min(room - pagesFloor(), Math.max(Math.min(MIN_CHAT_WIDTH, room / 2), pulled));
+  chatDrag.pending = room > 0 ? width / room : chatFraction;
+  if (!chatDrag.frame) chatDrag.frame = requestAnimationFrame(applyPendingChatFraction);
+}
+function releaseChatDrag(event) {
+  if (!chatDrag || event.pointerId !== chatDrag.pointerId) return;
+  applyPendingChatFraction();
+  endChatDrag();
+  chatFraction = clampChatFraction(chatFraction);
+  send({ command: 'setChatLayout', fraction: chatFraction });
+}
+
+
+let chatGripDrag = null;
+function pagesMiddle() {
+  const first = leftColumn.reader.getBoundingClientRect();
+  const last = (splitOpen() ? rightColumn : leftColumn).reader.getBoundingClientRect();
+  return (first.left + last.right) / 2;
+}
+function startChatGrip(event) {
+  if (!chatGrip || event.button !== 0 || !chatColumnOpen) return;
+  event.preventDefault();
+  chatGripDrag = { pointerId: event.pointerId, middle: pagesMiddle(), past: false };
+  leafHoldPointer(chatGrip, event.pointerId);
+  chatHead.classList.add('is-moving');
+}
+function chatGripPast(clientX) {
+  return chatSide === 'right' ? clientX < chatGripDrag.middle : clientX > chatGripDrag.middle;
+}
+function moveChatGrip(event) {
+  if (!chatGripDrag || event.pointerId !== chatGripDrag.pointerId) return;
+  const past = chatGripPast(event.clientX);
+  chatGripDrag.past = past;
+  chatHead.classList.toggle('is-past', past);
+}
+function releaseChatGrip(event) {
+  if (!chatGripDrag || event.pointerId !== chatGripDrag.pointerId) return;
+  
+  const past = event.type === 'pointerup' && Number.isFinite(event.clientX) ? chatGripPast(event.clientX) : false;
+  leafReleasePointer(chatGrip, chatGripDrag.pointerId);
+  chatGripDrag = null;
+  chatHead.classList.remove('is-moving', 'is-past');
+  if (!past) return;
+  chatSide = chatSide === 'right' ? 'left' : 'right';
+  applyChat(currentState);
+  writeRestingPaneWidth();
+  send({ command: 'setChatLayout', side: chatSide });
 }
 
 
@@ -1577,8 +1979,25 @@ const readerDropZone = document.getElementById('readerDropBeside');
 const readerDropZoneName = document.getElementById('readerDropBesideName');
 const readerLeftEdgeFade = document.getElementById('readerEdgeFade');
 const rightColumnShell = document.getElementById('appRight');
+const chatCard = document.getElementById('appChat');
+const chatRail = document.querySelector('.reader-minimap-chat');
+const chatSplitLine = document.getElementById('chatSplit');
+const chatHead = document.getElementById('chatHead');
+const chatHeadTitle = document.getElementById('chatHeadTitle');
+const chatGrip = document.getElementById('chatGrip');
+const chatCloseButton = document.getElementById('chatClose');
+if (chatCloseButton) chatCloseButton.addEventListener('click', () => send({ command: 'closeChatColumn' }));
+if (chatSplitLine) chatSplitLine.addEventListener('pointerdown', startChatDrag);
+if (chatGrip) chatGrip.addEventListener('pointerdown', startChatGrip);
+document.addEventListener('pointermove', moveChatDrag);
+document.addEventListener('pointermove', moveChatGrip);
+document.addEventListener('pointerup', releaseChatDrag);
+document.addEventListener('pointerup', releaseChatGrip);
+document.addEventListener('pointercancel', releaseChatDrag);
+document.addEventListener('pointercancel', releaseChatGrip);
 
-if (splitCloseButton) splitCloseButton.addEventListener('click', () => send({ command: 'closeBeside' }));
+if (splitCloseButton) splitCloseButton.addEventListener('click', () => send({ command: 'closeSide', side: 'right' }));
+if (splitCloseLeftButton) splitCloseLeftButton.addEventListener('click', () => send({ command: 'closeSide', side: 'left' }));
 
 if (readerSplitLine) readerSplitLine.addEventListener('pointerdown', startSplitDrag);
 document.addEventListener('pointermove', moveSplitDrag);
@@ -9995,6 +10414,7 @@ if (window.__leafEmbedded) document.body.classList.add('is-embedded');
 
 let app = document.getElementById('app');
 const appBar = document.getElementById('appBar');
+const pageHead = document.getElementById('pageHead');
 const appTrailing = document.querySelector('.app-trailing');
 const appActionsItems = document.getElementById('appActionsItems');
 const overflowToggle = document.getElementById('overflowToggle');
@@ -10807,7 +11227,7 @@ function dragWindowFrom(bar) {
     windowDragPressedAtX = null;
     windowDragPressedAtY = null;
     windowDragPressedAtTime = null;
-    if (event.button !== 0 || !event.target || event.target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .update-menu')) return;
+    if (event.button !== 0 || !event.target || event.target.closest('button, a, input, select, textarea, [role="tab"], .tab, .chat-grip, .window-controls, .update-menu')) return;
     windowDragPressedAtX = window.screenX;
     windowDragPressedAtY = window.screenY;
     windowDragPressedAtTime = event.timeStamp;
@@ -14756,7 +15176,7 @@ if (libraryWidth === DEFAULT_PANE_WIDTH) {
 }
 
 function libraryTooNarrow() {
-  return (!!narrowWindowQuery && narrowWindowQuery.matches) || leafShellWidth() < DEFAULT_PANE_WIDTH + MIN_READER_WIDTH;
+  return (!!narrowWindowQuery && narrowWindowQuery.matches) || leafShellWidth() < DEFAULT_PANE_WIDTH + MIN_READER_WIDTH || chatCrowdsPane();
 }
 function libraryIsClosed() {
   return libraryUserClosed || libraryTooNarrow();
@@ -14780,15 +15200,37 @@ function writeSplitColumns(open) {
   writeRestingPaneWidth();
 }
 
+
+
 function shellTrack(paneWidth, minimapColumn, besideMinimapColumn) {
-  if (!splitColumnsOpen) return `${paneWidth} minmax(0, 1fr) ${minimapColumn} var(--reader-gutter)`;
+  const chat = chatTracks();
+  const lead = chat.lead ? `${chat.lead} ` : '';
+  const trail = chat.trail ? ` ${chat.trail}` : '';
+  const pages = chat.pages == null ? 1 : chat.pages;
+  const fr = (share) => (chat.pages == null && share === 1 ? '1' : String(share * pages));
+  if (!splitColumnsOpen) return `${paneWidth} ${lead}minmax(0, ${fr(1)}fr) ${minimapColumn}${trail} var(--reader-gutter)`;
   const shares = splitShares();
   
   const beside = besideColumn();
   const besideOnTheLeft = !!beside && beside.side === 'left';
   const leftRail = besideOnTheLeft ? besideMinimapColumn : minimapColumn;
   const rightRail = besideOnTheLeft ? minimapColumn : besideMinimapColumn;
-  return `${paneWidth} minmax(0, ${shares.left}fr) ${leftRail} var(--reader-split-track) minmax(0, ${shares.right}fr) ${rightRail} var(--reader-gutter)`;
+  return `${paneWidth} ${lead}minmax(0, ${fr(shares.left)}fr) ${leftRail} var(--reader-split-track) minmax(0, ${fr(shares.right)}fr) ${rightRail}${trail} var(--reader-gutter)`;
+}
+
+function shellAreas() {
+  const lead = chatColumnOpen && chatSide !== 'right' ? ['chat', 'chat-rail', 'chat-line'] : [];
+  const trail = chatColumnOpen && chatSide === 'right' ? ['chat-line', 'chat', 'chat-rail'] : [];
+  const pages = splitColumnsOpen ? ['card-a', 'rail-a', 'split', 'card-b', 'rail-b'] : ['card-a', 'rail-a'];
+  const names = ['pane', ...lead, ...pages, ...trail, 'gutter'];
+  return `"${names.join(' ')}" "${names.map(() => '.').join(' ')}"`;
+}
+let drawnShellAreas = '';
+function writeShellAreas() {
+  const areas = shellAreas();
+  if (areas === drawnShellAreas) return;
+  drawnShellAreas = areas;
+  libraryShell.style.setProperty('grid-template-areas', areas);
 }
 
 const APP_RAIL_WIDTH = 48;
@@ -14797,6 +15239,7 @@ function appRailWidth() {
 }
 
 function writePaneWidth(width) {
+  writeShellAreas();
   libraryShell.style.setProperty('grid-template-columns', shellTrack(`${window.__leafEmbedded ? 0 : width}px`, drawnMinimapColumn, drawnBesideMinimapColumn));
   
   appBar.style.setProperty('--library-rail-width', `${width + appRailWidth()}px`);
@@ -15183,8 +15626,16 @@ function applyDocumentPager(current, html) {
   scheduleReaderLayoutUpdate();
 }
 
+
 window.leafSetPager = (state) => {
-  if (!state || activeDocumentIsUntitled() || state.path !== activeDocumentPath()) return;
+  if (!state) return;
+  if (!activeDocumentIsUntitled()) setPagerInColumn(state, activeDocumentPath());
+  const beside = besideColumn();
+  
+  if (beside) withColumn(beside, () => setPagerInColumn(state, currentState && currentState.document && currentState.document.path));
+};
+function setPagerInColumn(state, path) {
+  if (!path || state.path !== path) return;
   pagerHtmlByPath.set(state.path, state.html || '');
   const body = app.querySelector('.document-body');
   const current = body ? body.querySelector('.docs-pager') : null;
@@ -15204,7 +15655,7 @@ window.leafSetPager = (state) => {
   body.appendChild(pager);
   bindDocumentLinks();
   scheduleReaderLayoutUpdate();
-};
+}
 
 function scrollSelectedLibraryRowIntoView() {
   showLibraryRowFor(librarySelectedPath, true);
@@ -21603,6 +22054,9 @@ window.leafMinimap.subscribe(() => {
   
   if (!codeViewActive) renderState();
   
+  redrawBesideForMinimap();
+  drawChatRail();
+  
   drawPaneWidths(paneDrawingState(), libraryIsClosed() ? 0 : clampOpenPaneWidth(libraryWidth));
 });
 minimapListenerArmed = true;
@@ -22524,6 +22978,7 @@ function toggleFavorite(path, kind) {
 var pointedTabPath = null;
 
 var lastTabsMarkup = null;
+var lastTabsCut = null;
 
 var lastActiveTabFile = null;
 
@@ -22665,8 +23120,10 @@ function renderTabs(state) {
     return `<span class="tab${front ? ' tab-active' : ''}${index === besideTabIndex() ? ' tab-beside' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(name)}</button>${tab.kind === 'web' ? webZoomBadge(tab) : ''}<span class="tab-dirty-dot" aria-hidden="true"></span>${tabCloseMarkup(index)}</span>`;
   }).join('');
   
-  if (markup === lastTabsMarkup) return;
+  const cut = besideTabIndex();
+  if (markup === lastTabsMarkup && cut === lastTabsCut) return;
   lastTabsMarkup = markup;
+  lastTabsCut = cut;
   
   writeTabGroups(markup);
   restGroupAtEnd(stripLeftGroup);
@@ -24080,7 +24537,8 @@ function renderCodeView(state) {
   const container = editorHost;
   
   if (activeWebTab()) {
-    webCodeCover = sourceWrap;
+    
+    webCodeCover = app;
     coverWebSurface(true, webCodeCover);
   }
   
@@ -43991,6 +44449,13 @@ window.leafConsoleAgents = rows => {
 window.leafPressConsoleTab = id => {
   const index = (currentState?.tabs || []).findIndex(tab => tab.kind === 'console' && Number(tab.webId) === Number(id));
   if (index < 0) return false;
+  
+  const tabs = currentState.tabs;
+  const front = typeof currentState.active === 'number' ? tabs[currentState.active] : null;
+  if (front && (front.kind === 'document' || front.kind === 'web')) {
+    send({ command: 'openChatColumn', index });
+    return true;
+  }
   switchToTab(index);
   return true;
 };
@@ -44266,7 +44731,12 @@ function readConsoleAgent(id, entry) {
   else if (!entry.titleAgent && !entry.screenAgent) {
     if (screenLines.slice(0, 4).some(line => /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(line)) || consoleCodexSignIn(screenLines) || (/^\s*enter continue · esc skip\s*$/.test(screenLines[0] || '') && screenLines.some(line => /^\s*Update available · \S+ → \S+\s*$/.test(line)))) entry.screenAgent = 'codex';
   }
-  if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) || consoleClaudeSetup(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) || (antigravityOnScreen && consoleAntigravityBoxUnderSpinner(screenLines)) ? 'antigravity' : null;
+  
+  const antigravityBare = /^\s*(?:\? for shortcuts|esc to cancel)\s*$/.test(screenLines[0] || '');
+  const antigravityResting = antigravityOnScreen && antigravityBare;
+  
+  const antigravityBanner = () => antigravityBare && type === 'alternate' && !entry.titleAgent && !entry.screenAgent && consoleBottomLines(entry, entry.terminal.rows || 0).some(line => /^\W*Antigravity CLI \d/.test(line.trim()));
+  if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) || consoleClaudeSetup(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) || antigravityResting || (antigravityOnScreen && consoleAntigravityBoxUnderSpinner(screenLines)) || antigravityBanner() ? 'antigravity' : null;
   entry.agent = heldConsoleAgent(entry);
   reportConsoleAgent(id, entry, screenLines);
   refreshConsoleChat(id, entry);
@@ -44616,12 +45086,19 @@ function makeConsoleLayer(id) {
       entry.map = null;
       consoleWritten(id, entry);
       if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
+      scheduleChatRail(id);
     });
     if (consoleFrontId === id) {
       refreshConsoleGrid(id, entry);
       terminal.focus();
       bindDocumentMinimap();
       scheduleMinimapPreviewUpdate();
+    }
+    
+    if (entry.focusOwed) {
+      entry.focusOwed = false;
+      refreshConsoleGrid(id, entry);
+      terminal.focus();
     }
   }).catch(error => leafToast(error.message));
   return entry;
@@ -44978,15 +45455,24 @@ function placeConsoleLayers(state = currentState) {
   const besideId = besideConsoleId(state);
   const besideCard = besideColumn();
   const split = splitOpen();
+  
+  const chatId = chatConsoleId(state);
   if (besideId !== null && !consoleLayers.has(besideId)) makeConsoleLayer(besideId);
+  if (chatId !== null && !consoleLayers.has(chatId)) makeConsoleLayer(chatId);
   for (const [id, entry] of consoleLayers) {
-    const card = id === consoleFrontId ? keyedColumn : id === besideId ? besideCard : null;
+    const card = id === chatId ? 'chat' : id === consoleFrontId ? keyedColumn : id === besideId ? besideCard : null;
     const shown = !!card;
     const wasHidden = entry.layer.hidden;
     if (!shown || (entry.modelPending && entry.modelPending.card !== card) || (entry.historyIntent && entry.historyIntent.card !== card) || (crumbMenuOwner && entry.status?.contains(crumbMenuOwner) && entry.modelMenuCard !== card)) closeConsoleModel(entry);
     entry.layer.hidden = !shown;
     entry.layer.classList.toggle('is-right-card', shown && card === rightColumn);
-    entry.layer.classList.toggle('is-split', shown && split);
+    entry.layer.classList.toggle('is-chat-card', card === 'chat');
+    
+    if (card === 'chat' && takeChatFocus(id)) {
+      if (entry.terminal && entry.fit) entry.terminal.focus();
+      else entry.focusOwed = true;
+    }
+    entry.layer.classList.toggle('is-split', shown && (split || card === 'chat' || chatId !== null));
     if (shown && wasHidden && entry.fit) refreshConsoleGrid(id, entry);
     
     if (shown && ((wasHidden && entry.fit) || entry.chatOwed)) refreshConsoleChat(id, entry);
@@ -45039,7 +45525,9 @@ window.leafConsoleFront = id => {
   placeConsoleLayers();
   
   sayStartupDrawn(true);
-  if (changed || !currentMinimap()) drawConsoleRail(entry);
+  
+  const rail = currentMinimap();
+  if (changed || !rail || rail.getAttribute('aria-label') !== 'Console minimap') drawConsoleRail(entry);
   if (entry.fit) {
     refreshConsoleGrid(id, entry);
     if (entry.drawOwed) {
@@ -45106,6 +45594,7 @@ function writeConsoleOutput(id, entry, text) {
       entry.mapOutputPending = true;
       consoleWritten(id, entry);
       if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
+      scheduleChatRail(id);
     });
   } finally {
     entry.answering = false;
@@ -51807,6 +52296,22 @@ function savedChatTab() {
   return tab && tab.kind === 'chat' ? tab : null;
 }
 
+function savedChatIndex() {
+  const address = `${savedChat.agent}/${savedChat.conversation}`;
+  const index = (currentState?.tabs || []).findIndex((tab) => tab.kind === 'chat' && tab.url === address);
+  return index >= 0 ? index : currentState?.active;
+}
+function savedChatShownTab() {
+  return savedChatTab() || chatSavedTab();
+}
+
+function savedChatInChatColumn() {
+  const tabs = (currentState && currentState.tabs) || [];
+  const active = currentState ? currentState.active : null;
+  const front = typeof active === 'number' ? tabs[active] : null;
+  return !(front && front.kind === 'chat') && !!chatSavedTab();
+}
+
 function savedChatShowing() {
   return !!savedChatPage && !savedChatPage.hidden;
 }
@@ -51816,7 +52321,7 @@ function savedChatFollowsFront() {
   if (!savedChatPage) return;
   
   noteConsoleAnswersSeen();
-  const tab = savedChatTab();
+  const tab = savedChatShownTab();
   if (tab) showSavedChat(tab);
   pickerFollowsChat();
   const shown = !!tab || savedChatBridging();
@@ -51839,7 +52344,10 @@ function savedChatFollowsFront() {
 let savedChatLit = '';
 
 function coverSavedChatFront() {
-  const chat = savedChatShowing();
+  const inColumn = savedChatInChatColumn();
+  savedChatPage?.classList.toggle('is-chat-card', inColumn);
+  
+  const chat = savedChatShowing() && !inColumn;
   app?.classList.toggle('is-under-map', graphViewOpen || chat);
   readerMinimap?.classList.toggle('is-under-map', graphViewOpen || chat);
   for (const entry of consoleLayers.values()) entry.layer.classList.toggle('is-under-map', chat);
@@ -51851,13 +52359,14 @@ function savedChatBridging() {
   if (!hand) return false;
   
   const took = currentState?.tabs?.[hand.tab];
-  if (!hand.console && took?.kind === 'console' && currentState.active === hand.tab) {
+  
+  if (!hand.console && took?.kind === 'console' && (currentState.active === hand.tab || chatTabIndex() === hand.tab)) {
     hand.console = Number(took.webId);
     hand.until = Date.now() + SAVED_CHAT_BRIDGE_MS;
     setTimeout(savedChatFollowsFront, SAVED_CHAT_BRIDGE_MS + 1);
     watchSavedChatHandOver(hand);
   }
-  if (!hand.console || consoleFrontId !== hand.console || Date.now() > hand.until) return false;
+  if (!hand.console || (consoleFrontId !== hand.console && chatConsoleId() !== hand.console) || Date.now() > hand.until) return false;
   return !consoleAgentRows.some((row) => Number(row.id) === hand.console && row.state === 'needs');
 }
 
@@ -51962,7 +52471,7 @@ function startSavedChat({ toConsole = false, press = '' } = {}) {
     return;
   }
   savedChat.starting = true;
-  const started = { agent: savedChat.agent, conversation: savedChat.conversation, console: 0, tab: currentState?.active, until: 0, draft: savedChat.field?.value || '', held: '', toConsole, press };
+  const started = { agent: savedChat.agent, conversation: savedChat.conversation, console: 0, tab: savedChatIndex(), until: 0, draft: savedChat.field?.value || '', held: '', toConsole, press };
   savedChatHandOver = started;
   reopenConsoleRecent(started.agent, started.conversation, (answer) => {
     if (savedChatHandOver !== started) return;
@@ -58742,7 +59251,9 @@ function settleRailGrip() {
 function drawRailGrip() {
   if (!railDivider) return;
   const shut = window.leafMinimap.getShut();
-  railDivider.hidden = !(railGripAsked && window.leafMinimap.windowIsWide());
+  
+  const asked = splitOpen() && keyedColumn !== rightColumn ? withColumn(rightColumn, () => railGripAsked) : railGripAsked;
+  railDivider.hidden = !(asked && window.leafMinimap.windowIsWide());
   railDivider.classList.toggle('is-rail-shut', shut);
   railDivider.title = shut ? 'Drag to show the minimap' : 'Drag to hide the minimap';
 }

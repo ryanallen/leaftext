@@ -98,7 +98,7 @@ Click a heading in the [outline](01-features/02-navigation.md#outline), or click
 | Close tab | `Ctrl+W` | `Cmd+W` |
 | Quit, keeping your tabs and unsaved edits for next time | `Ctrl+Q` | `Cmd+Q` |
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
-| [Two documents side by side](01-features/02-navigation.md#two-documents-side-by-side), and close the split | `Ctrl+\` | `Cmd+\` |
+| [Two documents side by side](01-features/02-navigation.md#two-documents-side-by-side), or bring back the page closed last | `Ctrl+\` | `Cmd+\` |
 | Back | `Alt+Left` | `Cmd+Left` |
 | Forward | `Alt+Right` | `Cmd+Right` |
 | [Full screen](01-features/06-themes.md#windows) | `F11` | Green dot at the top left |

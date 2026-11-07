@@ -15,6 +15,7 @@ Links inside note and glossary sheets follow the same route as links in the docu
 | [Web tabs](#web-tabs) | Browse a live web page beside your documents |
 | [Console tabs](03-library.md#console) | Run a command line in the folder shown by the library |
 | [Two documents side by side](#two-documents-side-by-side) | Stand a second tab beside the one you are reading, each column scrolling on its own with its own rail |
+| [The chat column](#the-chat-column) | An agent's chat in its own column beside the pages, resized, swapped to either side, closed and brought back on its own |
 | [New document](07-editing.md#new-document) | **New** at the top of the icon rail starts a blank page, ready to type |
 | [Outline](#outline) | The open document's headings, which the side pane opens on whenever a document is in front, with the one you are reading lit and its Back leading to your pinned and recent documents |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you arrive at on screen at once |
@@ -82,7 +83,7 @@ flowchart LR
 | Forward | `Alt+Right` | `Cmd+Right` |
 | Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
-| [Stand the next tab beside this one](#two-documents-side-by-side), and close the split | `Ctrl+\` | `Cmd+\` |
+| [Stand the next tab beside this one](#two-documents-side-by-side), or bring back the page closed last | `Ctrl+\` | `Cmd+\` |
 | [Full screen](06-themes.md#windows), the window's own button at the top right | `F11` | Green dot at the top left |
 | Save (with [unsaved edits](07-editing.md#save), your own typing included) | `Ctrl+S` | `Cmd+S` |
 | [Undo](07-editing.md#undo) — a word of your typing, then the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
@@ -218,20 +219,32 @@ Press outside a right-click menu to close it. The control you press keeps its ac
 
 #### Two documents side by side
 
-Any second tab can stand beside the one you are reading, in a column of its own, so two documents are on screen at once and each scrolls on its own. A [console](03-library.md#console) or a [web page tab](#web-tabs) stands in either half the same way, beside a note or beside another console or page, and pressing into its card hands it the keys. The console button never splits anything on its own: it opens its console in a tab of its own, and you put that tab beside a note when you want it there.
+Any second tab can stand beside the one you are reading, in a column of its own, so two documents are on screen at once and each scrolls on its own. A [console](03-library.md#console) or a [web page tab](#web-tabs) stands in either half the same way, beside a note or beside another console or page, and pressing into its card hands it the keys. A chat opened while a page is in front does not take a half: it stands in [the chat column](#the-chat-column), beside both pages.
 
-- Press `Ctrl+\` (`Cmd+\` on a Mac) to stand the next tab beside the one in front. Right-click a tab and choose **Open beside** to stand that tab on the right. When it is the tab you are reading, it takes the keys to the right and the next tab fills the left. The row is there where there is another tab for it to stand beside, so a window with one document open does not offer it. The same menu row reads **Close beside** while a split is open, and the same key closes it. The page standing beside also carries a **Close beside** press in its top corner, which is how a split holding an agent's chat is closed, since a chat has no tab; closing it leaves the agent running in **All chats**.
+- Press `Ctrl+\` (`Cmd+\` on a Mac) to stand the next tab beside the one in front. Right-click a tab and choose **Open beside** to stand that tab on the right. When it is the tab you are reading, it takes the keys to the right and the next tab fills the left. The row is there where there is another tab for it to stand beside, so a window with one document open does not offer it. The same menu row reads **Close beside** while a split is open.
+- Each page carries its own close at the end of its own tab row, never over what it shows. It closes that page, whichever one has the keys, and the other page takes the window. Leaftext keeps the page you closed and the side it stood on, so `Ctrl+\` with one page up stands it back where it was; with nothing closed, the key stands the next tab beside as before.
 - Right-click a file in the [browse sheet](03-library.md#file-actions) and choose **Open beside** to stand that file in the second column, with the document you are reading keeping the keys.
 - Dragging a tab onto the right half of the page opens that tab on the right. When it is the tab you are reading, it takes the keys and keeps your reading place while the next tab fills the left. The tab rides above everything at your hand, and while it is over the half the second page is drawn as a see-through ghost carrying its name, at the share the split will take; carry it back out and the ghost goes and nothing opens. Along the strip itself the tab still reorders; carried past the last tab, anywhere up to the window’s right edge — over the plus, the buttons at the end of the bar or the minimap rail — it counts as the half, and the other tabs stay where they are.
 - Each column keeps its own place, its own Back list, its own unsaved edits and its own [minimap](04-minimap.md) rail, because each is a tab and a tab already carries all of those.
 - Each page wears its own tabs. The strip is cut into a group per card, each taking that card's share of the window, so the tab of the document you are reading sits over the page it opens; a press in a card's own strip draws into that card, and a tab dragged from the other card's strip into this one hands that document to this card. The second page's own tab carried onto the other page or its strip closes that side: the page it would close fades while the tab is over, and carried back, both pages stay up.
 - One column has the keys: the reader's commands — Find, the outline, the floating toolbar, the padlocks, the source view — all act on that one, and the floating toolbar stands under that card, which is what says which one has them. Press into the other column to move the keys there; neither document moves when you do.
 - The row of tabs stays over the left page and the right page wears only the one tab it is showing, whichever page you pressed into — so pressing into the other page moves no tab. A document opened while the right page has the keys opens there, and the tab it replaces goes back into the row. The tab each card is showing is drawn selected, so the strip says which two documents are on screen and which card each one is in. One document standing beside itself as its source and its page wears one tab, over both cards.
-- Drag the line between the two columns to share the window differently, and Leaftext remembers where you left it. Pull a side narrower than one page needs and the split closes. A window too narrow for two pages folds the second column away and brings it back when there is room again.
+- Drag the line between the two columns to share the window differently, and Leaftext remembers where you left it. A side stops at the narrowest a page can be read at; pull it on past that and the split closes. Two pages need the room left once the pane, every rail, the line and the chat column are counted, and a window without that room folds the second column away and brings it back the moment there is room again.
 - A split is remembered across launches, as the tabs are. Closing either tab ends the split; closing the one you are reading brings the other forward.
-- Pressing a tab that is in neither column reads that document on its own and puts the split away, and pressing the tab you were reading stands the same pair back up — the same document beside it, on the same side. Opening a console or a new web page tab puts the split away the same way, so pressing the tab you were reading brings the pair back. Closing the split with **Close beside** or the key is you saying you are done with it, so that tab opens on one page from then on.
+- Pressing a tab that is in neither column reads that document on its own and puts the split away, and pressing the tab you were reading stands the same pair back up — the same document beside it, on the same side. Opening a new web page tab puts the split away the same way, so pressing the tab you were reading brings the pair back. Closing a page with its close or **Close beside** is you saying you are done with it, so that tab opens on one page from then on.
 
 One document can stand beside itself as well: **Open source beside** on a tab puts its [source](07-editing.md#code-view) in one card and the page it draws in the other, under that one tab. It is one document and one buffer, so a word typed into the source arrives in the page beside it and the Save mark is the tab's; closing it leaves the tab in whichever view you were in.
+
+#### The chat column
+
+An agent's chat stands in a column of its own beside the pages, so you can read what it writes while you read and resize the pages it is working on. Press a chat's row in **All chats**, start one from **New**, or open a console while a page is in front, and the chat stands left of the pages with the page you were reading still in front of you. A document or web page the agent opens lands in the pages, with the chat still up.
+
+- The chat column has its own top row naming the chat, its own [minimap](04-minimap.md) rail, and its own line to the pages. Drag that line to give the chat more or less room; it stops at the narrowest a chat can be read at, and pulled on past that it puts the chat away. Leaftext remembers the chat's share.
+- The grip at the start of the chat's top row carries the column: drag it past the middle of the pages and the chat stands on their right, and back the same way. Let go short of the middle and it stays where it was. The side is remembered.
+- With the chat up, two pages can still stand side by side beside it, each with its own tabs, rail and close. The chat gives up room down to its narrowest before the second page folds away.
+- The chat's own close in its top row puts the column away and leaves the agent running; its row in **All chats** brings it back on the side it stood on.
+- A second chat opened beside — **Compare agents**, or **Open beside** on a chat's row — stands in the pages, so two chats can still be read side by side.
+- The chat in the column is remembered across launches: the next launch stands that conversation back up in the column, ready to go on, once the agent has written its first turn.
 
 #### When the bar runs out of room
 

@@ -115,7 +115,7 @@ In any window wider than 720 pixels the minimap is the reader's scroll indicator
 
 Inside another product's frame, the document scrolls within that frame and the minimap stands beside it while the frame is wider than 720 pixels; a narrower frame reads with the scrollbar, the way a narrow window does. A wheel over either the document or the minimap moves the same page; pressing the minimap jumps through it.
 
-With [two documents side by side](02-navigation.md#two-documents-side-by-side) there is a rail per column, each drawn from the document beside it and each following that column's own scrolling: the rail is the scroll indicator, so a column without one would scroll with nothing to say where it was.
+With [two documents side by side](02-navigation.md#two-documents-side-by-side) there is a rail per column, each drawn from the document beside it and each following that column's own scrolling: the rail is the scroll indicator, so a column without one would scroll with nothing to say where it was. The [chat column](02-navigation.md#the-chat-column) wears a rail of its own too, a picture of its console. With two pages up the grip stands in the gap beside the right-hand rail, and dragging it shut shuts every rail at once, the chat's included; each view then wears its own scrollbar, and dragging back opens them all.
 
 With [source beside the page](07-editing.md#source-beside-the-page), the rendered page's rail is the one picture for the pair. Dragging it moves both the page and its source; the source editor does not draw a second minimap.
 
