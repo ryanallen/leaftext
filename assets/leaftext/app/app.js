@@ -45576,16 +45576,22 @@ function sendConsoleSize(id, entry) {
 
 function frontConsoleEntry() { return consoleLayers.get(consoleFrontId) || null; }
 
+
+function consoleInSight(id) {
+  return id != null && (id === consoleFrontId || id === chatConsoleId());
+}
+
 function consoleDropTarget(hit) {
   const layer = hit && hit.closest && hit.closest('.console-layer');
-  const entry = frontConsoleEntry();
-  if (!layer || !layer.isConnected || layer.hidden || !entry || entry.layer !== layer) return null;
-  return { kind: 'console', element: layer, id: consoleFrontId, compose: consoleChatShown(entry) };
+  if (!layer || !layer.isConnected || layer.hidden) return null;
+  const id = [consoleFrontId, chatConsoleId()].find(id => consoleInSight(id) && consoleLayers.get(id)?.layer === layer);
+  if (id == null) return null;
+  return { kind: 'console', element: layer, id, compose: consoleChatShown(consoleLayers.get(id)) };
 }
 
 window.leafConsolePathsComposed = (id, text) => {
   const entry = consoleLayers.get(id);
-  if (consoleFrontId !== id || !entry || !entry.layer.isConnected || entry.layer.hidden || !consoleChatShown(entry) || !entry.composer) {
+  if (!consoleInSight(id) || !entry || !entry.layer.isConnected || entry.layer.hidden || !consoleChatShown(entry) || !entry.composer) {
     leafToast('The console draft that took the drop is no longer visible.', 'error');
     return;
   }
