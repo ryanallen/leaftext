@@ -8174,7 +8174,7 @@ body.is-embedded .reader-toolbar {
   background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
 }
-/* The icon rail: a column of destinations down the window's left edge under the app bar, standing whether the side pane is open or shut. The shell steps right by its width, which `APP_RAIL_WIDTH` in library.js also counts for the bar's lead and divider. Over the narrow window's pane sheet, under the app bar. */
+/* The icon rail: a column of destinations down the window's left edge under the app bar, standing whether the side pane is open or shut. The shell steps right by its width and the gutter before it, which `appRailWidth()` in library.js also counts for the bar's lead and divider. Over the narrow window's pane sheet, under the app bar. */
 .app-rail {
   display: none;
 }
@@ -10355,8 +10355,7 @@ button.diff-card-fold:disabled { cursor: default; }
 }
 /* An embedded host hides the bar with a rule, so the window state stays off that host. The page takes the resolved padding rather than the variable: a custom property inherits, so declaring the room on `body` — or on `.document-body` — re-resolved it on every element of the open document, which cost a megabyte note 55 to 130 ms of style on the frame the bar's class lands in. Writing the padding costs half a millisecond. */
 body.has-reader-toolbar:not(.is-embedded) .document-body {
-  /* The status line's row as well, under the bar. */
-  padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-room) + var(--lt-space-24));
+  padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-room));
 }
 /* The two boxes outside the document that measure themselves off the bar still read it as a variable, because neither has anything under it. */
 body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-status) {
@@ -10968,48 +10967,6 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   outline: var(--lt-stroke-2) solid var(--lt-accent);
   outline-offset: var(--lt-space-4);
   box-shadow: var(--lt-shadow-spotlight);
-}
-
-/* Under the card with the keys, as the floating bar is. */
-.reader-status.is-keyed-right {
-  grid-column: card-b;
-}
-/* Lifted over the page's status line where one stands; a console's bar keeps its place. */
-.reader-toolbar.is-over-status {
-  margin-bottom: calc(var(--lt-shadow-spread) + var(--lt-space-24));
-}
-/* The page's status line, as the redesign ends the page: the view on the left and the document on the right, quiet, under the floating bar and never in the way of a press. */
-.reader-status {
-  grid-column: card-a;
-  grid-row: 1;
-  align-self: end;
-  z-index: 6;
-  display: flex;
-  justify-content: space-between;
-  gap: var(--lt-space-16);
-  padding: var(--lt-space-8) var(--lt-space-16);
-  /* A band in the page's own color, inside the card's side and foot hairlines and rounded with its foot, so the page scrolls away under it rather than through its words. */
-  margin: 0 var(--lt-stroke-1) var(--lt-stroke-1);
-  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
-  background: var(--lt-markdown-background);
-  color: var(--lt-muted-foreground);
-  font-family: var(--app-font);
-  font-size: var(--lt-text-11);
-  pointer-events: none;
-}
-/* In Source the page's right edge is the editor's own map stroke, inside the shell, so the line ends there too. */
-:root[data-code-view="true"] .reader-status {
-  margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + var(--lt-stroke-1));
-  background: var(--lt-syntax-background);
-}
-.reader-status[hidden] {
-  display: none;
-}
-.reader-status-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .reader-shell {
   background: var(--lt-markdown-background);
@@ -21930,7 +21887,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 119 icons, and all 205 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 119 icons, and all 204 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -21965,7 +21922,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>119</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>205</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>204</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -22451,7 +22408,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">205 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">204 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -23123,10 +23080,6 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Reader tool bar</h3><code class="built">.reader-tool</code><span class="built">app-shell.html</span></header>
 <div class="stage"><div class="reader-tool-tray" style="position:static;max-height:none;transform:none;width:max-content"><span class="reader-tool-tray-clip"><span class="reader-view-tools"><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-lock-closed"></span></button><button type="button" class="reader-subtool" aria-pressed="true"><span class="lt-icon lt-icon-speed-reader-on"></span></button><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-flash-reader"></span></button><button type="button" class="reader-subtool" aria-pressed="true"><span class="lt-icon lt-icon-read-aloud-on"></span></button></span></span></div> <div class="reader-tool-tray" style="position:static;transform:none;width:34px;margin:8px 0"></div> <div class="reader-toolbar"><div class="reader-tool-group"><span class="reader-tool-chip" aria-hidden="true"></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div> <div class="reader-toolbar"><div class="reader-tool-group" role="group" aria-label="Console views"><span class="reader-tool-chip" aria-hidden="true"></span><button type="button" class="reader-tool is-active" aria-pressed="true" aria-label="Chat" title="Chat"><span class="lt-icon lt-icon-comment"></span></button><button type="button" class="reader-tool" aria-pressed="false" aria-label="Console" title="Console"><span class="lt-icon lt-icon-terminal"></span></button></div></div></div>
-</section>
-<section class="part">
-<header><h3>Page status line</h3><code class="built">.reader-status</code><span class="built">app-shell.html, drawn by graph.js: the page's quiet last line under the floating bar, the view on the left (reader-status-view) and the document on the right (reader-status-name), there only while a page of ours is in front</span></header>
-<div class="stage"><div class="reader-status" style="position:static;width:420px"><span class="reader-status-view">Reading view</span><span class="reader-status-name">field.md</span></div></div>
 </section>
 <section class="part">
 <header><h3>Page header</h3><code class="built">.page-head</code><span class="built">app-shell.html, drawn by graph.js: the row under the tabs, where the page in front sits on the left (page-head-path) — the vault, its folders and the document, or a web page's address; over a running agent's chat each folder is a step (page-head-step) whose press opens the chat's folder menu on it — and the page's own buttons on the right (page-head-actions), Open, gone over a chat or console, and Export</span></header>

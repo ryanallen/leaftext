@@ -10337,8 +10337,7 @@ button.diff-card-fold:disabled { cursor: default; }
 }
 
 body.has-reader-toolbar:not(.is-embedded) .document-body {
-  
-  padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-room) + var(--lt-space-24));
+  padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-room));
 }
 
 body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-status) {
@@ -10950,48 +10949,6 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   outline: var(--lt-stroke-2) solid var(--lt-accent);
   outline-offset: var(--lt-space-4);
   box-shadow: var(--lt-shadow-spotlight);
-}
-
-
-.reader-status.is-keyed-right {
-  grid-column: card-b;
-}
-
-.reader-toolbar.is-over-status {
-  margin-bottom: calc(var(--lt-shadow-spread) + var(--lt-space-24));
-}
-
-.reader-status {
-  grid-column: card-a;
-  grid-row: 1;
-  align-self: end;
-  z-index: 6;
-  display: flex;
-  justify-content: space-between;
-  gap: var(--lt-space-16);
-  padding: var(--lt-space-8) var(--lt-space-16);
-  
-  margin: 0 var(--lt-stroke-1) var(--lt-stroke-1);
-  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
-  background: var(--lt-markdown-background);
-  color: var(--lt-muted-foreground);
-  font-family: var(--app-font);
-  font-size: var(--lt-text-11);
-  pointer-events: none;
-}
-
-:root[data-code-view="true"] .reader-status {
-  margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + var(--lt-stroke-1));
-  background: var(--lt-syntax-background);
-}
-.reader-status[hidden] {
-  display: none;
-}
-.reader-status-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .reader-shell {
   background: var(--lt-markdown-background);

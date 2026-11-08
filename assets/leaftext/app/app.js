@@ -1178,8 +1178,6 @@ function focusColumn(column) {
   
   if (readerToolbar) readerToolbar.classList.toggle('is-keyed-right', column === rightColumn);
   
-  if (readerStatus) readerStatus.classList.toggle('is-keyed-right', column === rightColumn);
-  
   writeViewFades();
   
   scheduleLibraryOutline();
@@ -15695,7 +15693,7 @@ function paneDrawingState() {
     
     besideColumnOpen: besideRailColumnOpen(),
     
-    toolbarRailOpen: hasMinimap || !!(window.leafMinimap && window.leafMinimap.getEnabled()) || document.documentElement.dataset.codeView === 'true',
+    toolbarRailOpen: hasMinimap || !!(window.leafMinimap && window.leafMinimap.getEnabled()),
     minimapWidth: null,
   };
 }
@@ -19406,10 +19404,6 @@ function renderOpenAction(chatInFront) {
   open.hidden = chatInFront;
   refitAppBar();
 }
-var readerStatus = document.getElementById('readerStatus');
-var readerStatusView = document.getElementById('readerStatusView');
-var readerStatusName = document.getElementById('readerStatusName');
-const READER_STATUS_VIEWS = { reading: 'Reading view', code: 'Source view', graph: 'Graph view' };
 
 function drawPageHead() {
   const path = pageHeadPath;
@@ -19475,18 +19469,6 @@ function drawPageHeadSteps(path, { id, entry, steps }) {
   if (holding) hideCrumbMenu();
 }
 
-function drawReaderStatus(view) {
-  drawPageHead();
-  if (!readerStatus) return;
-  const tab = view ? currentState?.tabs?.[currentState.active] : null;
-  const name = tab ? String(tab.path || '').split(/[\\/]/).pop() || String(tab.title || '') : '';
-  readerStatus.hidden = !tab;
-  readerToolbar?.classList.toggle('is-over-status', Boolean(tab));
-  if (!tab) return;
-  readerStatusView.textContent = READER_STATUS_VIEWS[view] || '';
-  readerStatusName.textContent = name;
-}
-
 function renderReaderToolbar(viewsStand) {
   const consoleEntry = viewsStand ? consoleViewsEntry() : null;
   const savedFront = Boolean(viewsStand && !consoleEntry && savedChatTab());
@@ -19499,7 +19481,7 @@ function renderReaderToolbar(viewsStand) {
   document.body.classList.toggle('has-reader-toolbar', Boolean(viewsStand));
   if (viewGraphButton) viewGraphButton.hidden = false;
   renderConsoleViews(consoleEntry, savedFront);
-  if (consoleEntry || savedFront || !viewsStand) drawReaderStatus(null);
+  if (consoleEntry || savedFront || !viewsStand) drawPageHead();
   if (consoleEntry || savedFront) return;
   if (!viewsStand) {
     readerToolbar.classList.remove('has-open-tray');
@@ -19527,7 +19509,7 @@ function renderReaderToolbar(viewsStand) {
     activeButton.parentElement.style.setProperty('--reader-tool-chip-w', `${Math.round(activeButton.offsetWidth)}px`);
   }
   renderViewTools(current);
-  drawReaderStatus(current);
+  drawPageHead();
   syncReaderToolTrayState();
   syncReaderToolDividerState();
   coverLivePageWithReaderToolbar();
