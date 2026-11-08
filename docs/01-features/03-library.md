@@ -8,7 +8,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 
 ## The icon rail and the side pane
 
-A narrow rail runs down the window's left edge whether the pane is open or shut, each press an icon:
+A narrow rail runs down the window's left edge whether the pane is open or shut, each press an icon. The rail, the pane, a [chat](10-agents.md) and the page each stand as a card with the page's rounded corners, 4 pixels from each other and from the window's edges:
 
 - **New** opens the menu for a new page, a console or an agent. Its **Starts in** row names the folder the new chat starts in — the folder of the document or chat in front, or a folder you browsed to in the [vault picker](#the-vault-picker) since — and pressing it picks another before you start.
 - **Search** opens the find bar on the whole vault, or on the document when there is no vault, and with an agent in front it puts the keyboard in the chat list's own filter. There is no search field standing in the pane.

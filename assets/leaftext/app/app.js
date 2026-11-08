@@ -15473,7 +15473,7 @@ function writeShellAreas() {
 
 const APP_RAIL_WIDTH = 48;
 function appRailWidth() {
-  return appSurface.classList.contains('has-app-rail') ? APP_RAIL_WIDTH : 0;
+  return appSurface.classList.contains('has-app-rail') ? APP_RAIL_WIDTH + readerGutterPx() : 0;
 }
 
 function writePaneWidth(width) {

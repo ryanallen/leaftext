@@ -4918,7 +4918,7 @@
   --lt-radius-pill: 999px;
   --lt-radius-full: 50%;
   --lt-radius-window: 20px;
-  --lt-radius-window-inner: 12px;
+  --lt-radius-window-inner: 16px;
   /* Document type */
   --type-base: max(0.875rem, calc(1rem + (100vw - 1280px) / 140));
   --type-measure-body: 75ch;
@@ -6296,8 +6296,8 @@
   --lt-grain-shadow-edge-full: calc(var(--lt-grain-blob) * 0.513084 + var(--lt-grain-shadow-dot-full) * 0.486916);
   /* The untinted table rows — the ones carrying no fill, so the grain above has nothing to speckle. Dark themes only: on a light theme these are the near-white rows, where a dot dark enough to see reads as a gray screen-door mesh laid over the whole table. Light themes leave them plain. */
   --reader-row-grain: transparent;
-  /* How far the reading surface is held off the window frame. The chrome shows through the gap, so the page reads as a card floating on the bar's texture rather than something bleeding off the edge of the glass. */
-  --reader-gutter: 8px;
+  /* How far the reading surface is held off the window frame. The chrome shows through the gap, so the page reads as a card floating on the bar's texture rather than something bleeding off the edge of the glass. The one gap: every card — the icon rail, the pane, the chat, the page — stands this far off the window and off its neighbors. */
+  --reader-gutter: 4px;
   /* The gutter the reader's scrollbar occupies, for overlays that must keep off it. Repeats ::-webkit-scrollbar's width rather than feeding it: that rule stays class-driven because Chromium won't re-resolve a scrollbar pseudo when a relational match flips. */
   --reader-scrollbar: 14px;
   /* The minimap rail's metrics. Global because the rail sits outside the page now: the shell sizes its column from them, and the rail itself reads them from the other side of that boundary. */
@@ -6307,7 +6307,7 @@
   /* What separates the page's right border from the rail. The rail's far side keeps --reader-gutter, so it is held off the frame exactly as the page is. */
   --reader-minimap-gap: 4px;
   /* The track the line between two documents stands in. Wide enough for the gutter each card is held off the frame by, so two pages side by side are parted the way a page is parted from the window. Geometry rather than a token: it is this one layout's column, and nothing else measures against it. */
-  --reader-split-track: 8px;
+  --reader-split-track: 4px;
   /* The code view's version of that gap: how far the page frame's right border — which is also the rail's divider — stands off Monaco's minimap. Said once because three things have to land on it: the frame, the app bar's divider, and the top-right corner arc, all measured from the window's right edge. */
   --cv-minimap-standoff: 4px;
   /* How far the code view's line numbers stand off the page frame's left border. Said here because the pinned heading rows draw their own gutter and have to land on the same column. */
@@ -6379,7 +6379,7 @@ body.frameless {
 body.mac-frame .app-surface {
   filter: saturate(var(--lt-active-saturation)) contrast(var(--lt-active-contrast));
 }
-/* macOS rounds a window far harder than Windows does, and the app draws the only corner there is on that side: the window is transparent and the app is held 20px inside it, so the system's own mask falls on a strip nothing paints. The card follows the window in, at the window's number less the 8px gutter between them, which strikes both arcs from one center. Both values are plain rows in design/tokens.md — move one and move the other. On the body rather than on the surface, beside the two it overrides. Above the flush rule below so a browser, which ties this on specificity, still wins. */
+/* macOS rounds a window far harder than Windows does, and the app draws the only corner there is on that side: the window is transparent and the app is held 20px inside it, so the system's own mask falls on a strip nothing paints. The card follows the window in, at the window's number less the 4px gutter between them, which strikes both arcs from one center. Both values are plain rows in design/tokens.md — move one and move the other. On the body rather than on the surface, beside the two it overrides. Above the flush rule below so a browser, which ties this on specificity, still wins. */
 body.mac-frame {
   --app-window-radius: var(--lt-radius-window);
 }
@@ -6768,7 +6768,7 @@ body.frameless.is-fullscreen .startup-card {
 }
 /* The pane shut beside the icon rail: the card starts at the reader's gutter past the rail. */
 .app-surface.has-app-rail .app-bar:not(.has-rail) {
-  --app-page-left: calc(48px + var(--reader-gutter) + var(--app-chat-lead, 0px));
+  --app-page-left: calc(48px + var(--reader-gutter) * 2 + var(--app-chat-lead, 0px));
 }
 .app-bar-lead {
   /* The header's left zone, sized to the library rail so the tab strip begins at the library's right edge and is pushed when the pane is resized. No right border: the top bar reads as one continuous surface, with only the library pane below carrying the rail's vertical stroke. */
@@ -6864,6 +6864,8 @@ body.frameless.is-fullscreen .startup-card {
   padding: var(--lt-space-4) var(--lt-space-12) 0;
   min-width: 0;
   background: var(--lt-markdown-background);
+  /* Turned with the card's top: left square, it painted over the card's arcs in the card's color. One stroke in from each side, so its arc falls inside the card's. */
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
   color: var(--lt-foreground);
   /* The hairline the page's tabs stand on, under the chat's own top row. */
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
@@ -8178,9 +8180,11 @@ body.is-embedded .reader-toolbar {
 }
 .app-surface.has-app-rail .app-rail {
   position: absolute;
+  /* A card like the page's: its top on the cards' top line, a gutter off the window's left and foot, cornered as the page is. */
   top: var(--app-bar-row);
-  left: 0;
-  bottom: 0;
+  left: var(--reader-gutter);
+  bottom: var(--reader-gutter);
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) var(--reader-card-radius) var(--reader-card-radius);
   z-index: 9;
   display: flex;
   flex-direction: column;
@@ -8197,9 +8201,39 @@ body.is-embedded .reader-toolbar {
 .app-surface.has-app-rail .sidebar-lists {
   background-color: var(--lt-surface-muted);
 }
+/* On the app the pane is a card beside the rail's: its top on the cards' top line under the bar, which would otherwise cover its turned corners, its foot on the shell's bottom gutter row where the page's is, cornered as the page is. Its rows keep their place, the bar's row now above it rather than inside it. */
+.app-surface.has-app-rail .library-shell:not(.library-narrow) .library-pane {
+  grid-row: 1;
+  margin-top: var(--app-bar-row);
+  height: calc(100% - var(--app-bar-row));
+  --library-app-bar: 0px;
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) var(--reader-card-radius) var(--reader-card-radius);
+}
+/* Open, it stands a gutter off the rail. */
+.app-surface.has-app-rail .library-shell:not(.library-narrow):not(.library-closed) .library-pane {
+  margin-left: var(--reader-gutter);
+}
+/* And a gutter off the page where no chat stands between them; a chat on its left brings its own lead gutter. */
+body:not(.has-chat) .app-surface.has-app-rail .library-shell:not(.library-narrow):not(.library-closed) .library-pane,
+body.chat-on-the-right .app-surface.has-app-rail .library-shell:not(.library-narrow):not(.library-closed) .library-pane {
+  margin-right: var(--reader-gutter);
+}
+/* The page's top-left arc hangs off the pane, whose top is now the cards' top line rather than the window's. */
+.app-surface.has-app-rail .library-shell:not(.library-narrow) .reader-corner-tl {
+  top: calc(0px - var(--lt-stroke-1));
+}
+body:not(.has-chat) .app-surface.has-app-rail .library-shell:not(.library-narrow):not(.library-closed) .reader-corner-tl,
+body.chat-on-the-right .app-surface.has-app-rail .library-shell:not(.library-narrow):not(.library-closed) .reader-corner-tl {
+  left: calc(100% + var(--reader-gutter));
+}
+/* The pane never clips, so the boxes laid over its whole face turn its corners with it. */
+.app-surface.has-app-rail .library-shell:not(.library-narrow) .library-nav,
+.app-surface.has-app-rail .library-shell:not(.library-narrow) .sidebar-lists {
+  border-radius: inherit;
+}
 .app-surface.has-app-rail .library-shell {
-  /* The shell's own geometry, standing at the surface's right edge one rail narrower. */
-  width: calc(100% - 48px);
+  /* The shell's own geometry, standing at the surface's right edge narrower by the rail's room: its 48 and the gutter before it, the sum `appRailWidth()` in library.js reads. The gutter after it is the shell's: the open pane's margin, or the shut pane's lead track. */
+  width: calc(100% - 48px - var(--reader-gutter));
   margin-left: auto;
 }
 /* More stands at the rail's foot, the space above it taken up, so the destinations stay together at the top. */
@@ -22059,7 +22093,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="value"><code>lt-radius-pill</code><i class="demo tile" style="border-radius:var(--lt-radius-pill)"></i><code>999px</code></div>
 <div class="value"><code>lt-radius-full</code><i class="demo tile" style="border-radius:var(--lt-radius-full)"></i><code>50%</code></div>
 <div class="value"><code>lt-radius-window</code><i class="demo tile" style="border-radius:var(--lt-radius-window)"></i><code>20px</code></div>
-<div class="value"><code>lt-radius-window-inner</code><i class="demo tile" style="border-radius:var(--lt-radius-window-inner)"></i><code>12px</code></div>
+<div class="value"><code>lt-radius-window-inner</code><i class="demo tile" style="border-radius:var(--lt-radius-window-inner)"></i><code>16px</code></div>
 </div>
 <h3>Document type</h3><div class="wall wide">
 <div class="value"><code>type-base</code><code>max(0.875rem, calc(1rem + (100vw - 1280px) / 140))</code></div>

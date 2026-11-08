@@ -4910,7 +4910,7 @@
   --lt-radius-pill: 999px;
   --lt-radius-full: 50%;
   --lt-radius-window: 20px;
-  --lt-radius-window-inner: 12px;
+  --lt-radius-window-inner: 16px;
   /* Document type */
   --type-base: max(0.875rem, calc(1rem + (100vw - 1280px) / 140));
   --type-measure-body: 75ch;
@@ -6289,7 +6289,7 @@
   
   --reader-row-grain: transparent;
   
-  --reader-gutter: 8px;
+  --reader-gutter: 4px;
   
   --reader-scrollbar: 14px;
   
@@ -6299,7 +6299,7 @@
   
   --reader-minimap-gap: 4px;
   
-  --reader-split-track: 8px;
+  --reader-split-track: 4px;
   
   --cv-minimap-standoff: 4px;
   
@@ -6760,7 +6760,7 @@ body.frameless.is-fullscreen .startup-card {
 }
 
 .app-surface.has-app-rail .app-bar:not(.has-rail) {
-  --app-page-left: calc(48px + var(--reader-gutter) + var(--app-chat-lead, 0px));
+  --app-page-left: calc(48px + var(--reader-gutter) * 2 + var(--app-chat-lead, 0px));
 }
 .app-bar-lead {
   
@@ -6856,6 +6856,8 @@ body.frameless.is-fullscreen .startup-card {
   padding: var(--lt-space-4) var(--lt-space-12) 0;
   min-width: 0;
   background: var(--lt-markdown-background);
+  
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
   color: var(--lt-foreground);
   
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
@@ -8170,9 +8172,11 @@ body.is-embedded .reader-toolbar {
 }
 .app-surface.has-app-rail .app-rail {
   position: absolute;
+  
   top: var(--app-bar-row);
-  left: 0;
-  bottom: 0;
+  left: var(--reader-gutter);
+  bottom: var(--reader-gutter);
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) var(--reader-card-radius) var(--reader-card-radius);
   z-index: 9;
   display: flex;
   flex-direction: column;
@@ -8189,9 +8193,39 @@ body.is-embedded .reader-toolbar {
 .app-surface.has-app-rail .sidebar-lists {
   background-color: var(--lt-surface-muted);
 }
+
+.app-surface.has-app-rail .library-shell:not(.library-narrow) .library-pane {
+  grid-row: 1;
+  margin-top: var(--app-bar-row);
+  height: calc(100% - var(--app-bar-row));
+  --library-app-bar: 0px;
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) var(--reader-card-radius) var(--reader-card-radius);
+}
+
+.app-surface.has-app-rail .library-shell:not(.library-narrow):not(.library-closed) .library-pane {
+  margin-left: var(--reader-gutter);
+}
+
+body:not(.has-chat) .app-surface.has-app-rail .library-shell:not(.library-narrow):not(.library-closed) .library-pane,
+body.chat-on-the-right .app-surface.has-app-rail .library-shell:not(.library-narrow):not(.library-closed) .library-pane {
+  margin-right: var(--reader-gutter);
+}
+
+.app-surface.has-app-rail .library-shell:not(.library-narrow) .reader-corner-tl {
+  top: calc(0px - var(--lt-stroke-1));
+}
+body:not(.has-chat) .app-surface.has-app-rail .library-shell:not(.library-narrow):not(.library-closed) .reader-corner-tl,
+body.chat-on-the-right .app-surface.has-app-rail .library-shell:not(.library-narrow):not(.library-closed) .reader-corner-tl {
+  left: calc(100% + var(--reader-gutter));
+}
+
+.app-surface.has-app-rail .library-shell:not(.library-narrow) .library-nav,
+.app-surface.has-app-rail .library-shell:not(.library-narrow) .sidebar-lists {
+  border-radius: inherit;
+}
 .app-surface.has-app-rail .library-shell {
   
-  width: calc(100% - 48px);
+  width: calc(100% - 48px - var(--reader-gutter));
   margin-left: auto;
 }
 
