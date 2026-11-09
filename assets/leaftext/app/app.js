@@ -48149,7 +48149,7 @@ function consoleCompareGone(id) {
 
 const SETUP_AGENT_NAMES = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity' };
 const SETUP_AGENT_MARKS = { claude: 'C', codex: 'X', antigravity: 'A' };
-const setupWalk = { open: false, screen: '', state: null, progress: null, choice: null, error: '', timer: 0, fromMenu: false, returnFocus: null };
+const setupWalk = { open: false, screen: '', state: null, progress: null, choice: null, error: '', timer: 0, fromMenu: false, changing: false, returnFocus: null };
 const setupBackdrop = document.createElement('div');
 setupBackdrop.className = 'lt-backdrop';
 setupBackdrop.hidden = true;
@@ -48272,7 +48272,7 @@ const SETUP_SCREENS = {
     });
     return [...setupHeader(1, 'Keep every conversation with your agents', 'Leaftext found these agents signed in on this computer. Nothing they do is kept once their own history is trimmed. Leaftext can keep all of it for you.'),
       setupGroup(cards),
-      setupActions([setupButton('Not now', false, setupNotNow)], [setupButton('Let me choose', false, () => setupShow('where')), setupButton('Keep them all', true, setupKeepAll)])];
+      setupActions([setupButton('Not now', false, setupNotNow)], [setupButton('Next', true, () => setupShow('where'))])];
   },
   where() {
     const choice = setupWalk.choice;
@@ -48293,7 +48293,7 @@ const SETUP_SCREENS = {
     group.append(insideCard, folderCard, folderRow);
     return [...setupHeader(2, 'Where should they go?', 'You can switch later, and nothing is lost when you do.'), group,
       ...(setupWalk.error ? [setupEl('p', 'setup-walkthrough-error', setupWalk.error)] : []),
-      setupActions([setupButton('Back', false, () => setupShow(setupWalk.fromMenu ? 'done' : 'found'))], [setupButton('Next', true, () => setupShow('keep'))])];
+      setupActions([setupButton('Back', false, () => setupShow(setupWalk.changing ? 'done' : 'found'))], [setupButton('Next', true, () => setupShow('keep'))])];
   },
   keep() {
     const choice = setupWalk.choice;
@@ -48309,7 +48309,7 @@ const SETUP_SCREENS = {
       list,
       setupEl('p', 'setup-walkthrough-note', 'A tool can print a key or a password, so only you should open where these are kept.'),
       ...(setupWalk.error ? [setupEl('p', 'setup-walkthrough-error', setupWalk.error)] : []),
-      setupActions([setupButton('Back', false, () => setupShow('where'))], [setupButton(setupWalk.fromMenu ? 'Save' : 'Start saving', true, setupApply)])];
+      setupActions([setupButton('Back', false, () => setupShow('where'))], [setupButton(setupWalk.changing ? 'Save' : 'Next', true, setupApply)])];
   },
   saving() {
     const agents = (setupWalk.progress && setupWalk.progress.agents) || [];
@@ -48332,7 +48332,7 @@ const SETUP_SCREENS = {
     }
     return [...setupHeader(4, 'Saving your earlier conversations', 'Newest first. You can close this and keep working; it carries on, and the chat shows how far it has got.'), bars,
       setupEl('p', 'setup-walkthrough-note', 'From now on every conversation is saved the moment the agent finishes a turn.'),
-      setupActions([], [setupButton('Keep working', true, setupClose)])];
+      setupActions([], [setupButton('Next', true, () => setupShow('done'))])];
   },
   done() {
     const choice = (setupWalk.state && setupWalk.state.setup) || setupWalk.choice;
@@ -48342,21 +48342,23 @@ const SETUP_SCREENS = {
     const stored = setupWalk.stored || 0;
     const count = Math.max(kept, stored);
     const megabytes = Math.max(1, Math.round((setupWalk.storedBytes || 0) / (1024 * 1024)));
-    const where = choice.home === 'folder' ? `In ${choice.folder}` : `Inside Leaftext · compressed to ${megabytes} MB`;
+    const where = choice.home === 'folder' ? 'In a folder you chose' : `Inside Leaftext · compressed to ${megabytes} MB`;
+    const placeRow = setupEl('div', 'setup-walkthrough-folder-row');
+    placeRow.append(setupEl('span', 'setup-walkthrough-folder', choice.place || choice.folder || ''), setupButton(isMacPlatform ? 'Show in Finder' : 'Show in Explorer', false, setupReveal));
     const what = choice.thinking && choice.output ? 'Thinking and tool output kept' : choice.thinking ? 'Thinking kept, tool output left out' : choice.output ? 'Tool output kept, thinking left out' : 'Prompts and replies kept';
     const skip = choice.skip || [];
     const who = setupAgents().filter((row) => !skip.includes(row.agent)).map((row) => (row.accounts.length > 1 ? `${SETUP_AGENT_NAMES[row.agent]} (${row.accounts.length} accounts)` : SETUP_AGENT_NAMES[row.agent])).join(', ');
     const summary = setupEl('div', 'setup-walkthrough-summary');
-    summary.append(setupEl('div', '', where), setupEl('div', '', what), setupEl('div', '', who || 'No agent'));
+    summary.append(setupEl('div', '', where), placeRow, setupEl('div', '', what), setupEl('div', '', who || 'No agent'));
     const job = progress.job || {};
     const jobLine = job.running ? (job.kind === 'export' ? 'Exporting…' : 'Moving your conversations…') : job.error ? job.error : job.kind === 'export' && job.folder ? `Exported ${setupNumber(job.done)} to ${job.folder}` : '';
     return [...setupHeader(0, setupWalk.fromMenu ? 'Your saved conversations' : (skipped ? `${setupNumber(count)} conversations are kept` : `All ${setupNumber(count)} conversations are kept`)), summary,
       setupGroup([setupCard(setupMark('⌕'), setupEl('span', 'setup-walkthrough-card-title', 'Open them'), 'Every conversation by project and by day', null, false, () => agentLaunchAsk('sessionsOpen').then(setupClose)),
       setupCard(setupMark('↗︎'), setupEl('span', 'setup-walkthrough-card-title', 'Export to a folder…'), 'The same notes, one subfolder per account', null, false, setupExport),
-      ...(setupWalk.fromMenu ? [setupCard(setupMark('⚙︎'), setupEl('span', 'setup-walkthrough-card-title', 'Change where and what'), 'Inside Leaftext or a folder, and what each keeps', null, false, () => setupShow('where'))] : [])]),
+      setupCard(setupMark('⚙︎'), setupEl('span', 'setup-walkthrough-card-title', 'Change where and what'), 'Inside Leaftext or a folder, and what each keeps; everything kept moves across', null, false, () => { setupWalk.changing = true; setupShow('where'); })]),
       ...(skipped ? [setupEl('p', 'setup-walkthrough-note', `${setupNumber(skipped)} earlier records held no conversation or could not be read, and were left as they are.`)] : []),
       ...(jobLine ? [setupEl('p', 'setup-walkthrough-note', jobLine)] : []),
-      setupEl('p', 'setup-walkthrough-note', 'To change any of this later: New, then the agent, then Save sessions.'),
+      setupEl('p', 'setup-walkthrough-note', 'To come back here later: the ⋯ button at the foot of the side bar, then Saved conversations.'),
       setupActions([], [setupButton('Done', true, setupClose)])];
   },
 };
@@ -48400,8 +48402,7 @@ function setupPoll() {
     setupWalk.storedBytes = answer.storedBytes;
     const saving = answer.progress && answer.progress.running;
     const seen = JSON.stringify(answer);
-    if (setupWalk.screen === 'saving' && !saving && setupWalk.started) setupShow('done');
-    else if (seen !== setupWalk.seen) setupDraw();
+    if (seen !== setupWalk.seen) setupDraw();
     setupWalk.seen = seen;
     setupShowSaving();
     if (!saving && !setupWalk.open) {
@@ -48425,6 +48426,7 @@ function setupOpen(screen, fromMenu) {
     chosen: false,
   };
   setupWalk.fromMenu = Boolean(fromMenu);
+  setupWalk.changing = false;
   setupWalk.started = false;
   setupWalk.open = true;
   setupWalk.returnFocus = document.activeElement;
@@ -48459,11 +48461,6 @@ function setupNotNow() {
 function setupSend(choice) {
   return agentLaunchAsk('sessionsSetup', { home: choice.home, thinking: choice.thinking, output: choice.output, earlier: choice.earlier, leaveOut: setupAgents().map((row) => row.agent).filter((agent) => !choice.agents.includes(agent)) });
 }
-function setupKeepAll() {
-  const agents = setupAgents().map((row) => row.agent);
-  setupWalk.choice = { ...setupWalk.choice, home: 'leaftext', thinking: true, output: true, earlier: true, agents };
-  setupApply();
-}
 function setupApply() {
   setupSend(setupWalk.choice).then((answer) => {
     if (!answer || answer.error) {
@@ -48472,6 +48469,7 @@ function setupApply() {
       return;
     }
     setupWalk.state = answer;
+    setupWalk.changing = false;
     setupWalk.started = setupWalk.choice.earlier;
     setupShow(setupWalk.choice.earlier ? 'saving' : 'done');
     setupPoll();
@@ -48483,6 +48481,13 @@ function setupChangeFolder() {
     setupWalk.choice.folder = answer.folder;
     setupWalk.choice.home = 'folder';
     setupDraw();
+  });
+}
+
+function setupReveal() {
+  agentLaunchAsk('sessionsReveal').then((answer) => {
+    setupWalk.error = answer && answer.error ? answer.error : '';
+    if (setupWalk.error) setupDraw();
   });
 }
 function setupExport() {
@@ -49646,6 +49651,7 @@ function moreMenuRows() {
   
   if (libraryProfile && !libraryProfile.hidden) rows.push({ element: libraryProfile });
   rows.push('separator');
+  if (window.__leafHostAnswers?.('agentLaunch') !== false) rows.push({ label: 'Saved conversations', icon: moreIcon('archive'), title: 'Where every agent conversation is kept, and what is kept', run: () => setupOpenFromMenu() });
   rows.push({ label: 'New window', key: isMacPlatform ? '⌘N' : 'Ctrl+N', icon: moreIcon('window-restore'), run: () => send({ command: 'newWindow' }) });
   rows.push('separator', { label: 'About Leaftext', icon: moreIcon('leaf'), value: LEAF_VERSION ? `v${LEAF_VERSION}` : '', keepOpen: true, run: () => showAboutLeaftext() });
   return rows;
