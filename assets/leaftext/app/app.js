@@ -48474,7 +48474,7 @@ function setupClose() {
 }
 
 function setupNotNow() {
-  setupWalk.dismissed = true;
+  agentLaunchAsk('sessionsNotNow');
   setupClose();
 }
 function setupSend(choice) {
@@ -48517,7 +48517,7 @@ function setupExport() {
 }
 
 function setupCheck() {
-  if (setupWalk.open || setupWalk.dismissed) return;
+  if (setupWalk.open) return;
   agentLaunchAsk('sessionsState').then((answer) => {
     if (!answer || answer.error || setupWalk.open) return;
     setupWalk.state = answer;
