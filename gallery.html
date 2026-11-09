@@ -10070,6 +10070,7 @@ body.library-resizing button {
 /* A pane's own heading: its name in the reading ink, plain rather than a small-caps label, with its count at the right. */
 .sidebar-pane-head { display: flex; align-items: baseline; justify-content: space-between; padding: var(--lt-space-10) var(--lt-space-6) var(--lt-space-6); }
 .sidebar-pane-title { color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-13); font-weight: var(--lt-weight-600); }
+.sidebar-pane-saving { margin-left: var(--lt-space-8); color: var(--lt-muted-foreground); font-family: var(--app-font); font-size: var(--lt-text-12); white-space: nowrap; }
 /* Home's own list boxes, at the pane's width: each list scrolls in its own box under its heading. */
 .sidebar-documents-list { margin-bottom: var(--lt-space-8); }
 
@@ -17891,6 +17892,307 @@ p.shelf-foot {
 #glossaryBackdrop {
   z-index: var(--lt-z-42);
 }
+/* The walkthrough that sets up keeping agent conversations: the confirmation's surface, wider, with a step line, choice cards, switches that say On or Off, and a ring on the button Enter presses. Every edge a person must see is the strong border. */
+.setup-walkthrough {
+  position: fixed;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  z-index: var(--lt-z-41);
+  width: min(700px, calc(100% - 48px));
+  max-height: calc(100% - 48px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: var(--lt-space-32) var(--lt-space-32) var(--lt-space-24);
+  border: var(--lt-stroke-2) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-xl);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-15);
+}
+.setup-walkthrough[hidden] {
+  display: none;
+}
+.setup-walkthrough-step {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-16);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-600);
+}
+.setup-walkthrough-step-words {
+  flex: none;
+}
+.setup-walkthrough-bars {
+  display: flex;
+  flex: 1;
+  gap: var(--lt-space-8);
+}
+.setup-walkthrough-bar {
+  flex: 1;
+  height: 6px;
+  box-sizing: border-box;
+  border: var(--lt-stroke-2) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-pill);
+}
+.setup-walkthrough-bar.is-filled {
+  border-color: var(--lt-primary);
+  background: var(--lt-primary);
+}
+.setup-walkthrough-title {
+  margin: var(--lt-space-24) 0 0;
+  font-size: var(--lt-text-18);
+  font-weight: var(--lt-weight-700);
+}
+.setup-walkthrough-detail,
+.setup-walkthrough-note,
+.setup-walkthrough-error {
+  margin: var(--lt-space-12) 0 0;
+  line-height: var(--lt-leading-1-45);
+}
+.setup-walkthrough-note {
+  font-size: var(--lt-text-14);
+}
+.setup-walkthrough-error {
+  color: var(--lt-danger);
+  font-size: var(--lt-text-14);
+}
+.setup-walkthrough-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-12);
+  margin-top: var(--lt-space-20);
+}
+.setup-walkthrough-card {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-16);
+  width: 100%;
+  padding: var(--lt-space-16) var(--lt-space-16);
+  box-sizing: border-box;
+  border: var(--lt-stroke-2) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font: inherit;
+  text-align: left;
+}
+.setup-walkthrough-card.is-selected {
+  border-color: var(--lt-primary);
+}
+@media (hover: hover) {
+  .setup-walkthrough-card:hover {
+    background: var(--lt-wash-hover);
+  }
+}
+.setup-walkthrough-card-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+}
+.setup-walkthrough-card-title {
+  font-weight: var(--lt-weight-600);
+}
+.setup-walkthrough-card-detail {
+  font-size: var(--lt-text-14);
+  line-height: var(--lt-leading-1-4);
+}
+.setup-walkthrough-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: var(--lt-stroke-2) solid var(--lt-foreground);
+  border-radius: var(--lt-radius-md);
+  font-weight: var(--lt-weight-700);
+}
+.setup-walkthrough-check {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  box-sizing: border-box;
+  border: var(--lt-stroke-2) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-sm);
+  font-weight: var(--lt-weight-800);
+}
+.setup-walkthrough-check.is-on {
+  border-color: var(--lt-primary);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+}
+.setup-walkthrough-radio {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: var(--lt-stroke-2) solid var(--lt-foreground);
+  border-radius: var(--lt-radius-full);
+}
+.setup-walkthrough-radio.is-on {
+  border: var(--lt-stroke-6) solid var(--lt-primary);
+  background: var(--lt-primary-foreground);
+}
+.setup-walkthrough-badge {
+  display: inline-block;
+  margin-left: var(--lt-space-8);
+  padding: var(--lt-space-1) var(--lt-space-8);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-700);
+}
+.setup-walkthrough-folder-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-12);
+}
+.setup-walkthrough-folder {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--lt-space-8) var(--lt-space-12);
+  border: var(--lt-stroke-2) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-background);
+  font-family: var(--code-font);
+  font-size: var(--lt-text-13);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.setup-walkthrough-switch-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-12);
+  width: 100%;
+  padding: var(--lt-space-12) 0;
+  border: 0;
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border-strong);
+  background: transparent;
+  color: var(--lt-foreground);
+  font: inherit;
+  text-align: left;
+}
+.setup-walkthrough-switch-label {
+  flex: 1;
+}
+.setup-walkthrough-switch-word {
+  font-size: var(--lt-text-14);
+}
+.setup-walkthrough-switch {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 26px;
+  box-sizing: border-box;
+  border: var(--lt-stroke-2) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-pill);
+}
+.setup-walkthrough-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-foreground);
+}
+.setup-walkthrough-switch.is-on {
+  border-color: var(--lt-primary);
+  background: var(--lt-primary);
+}
+.setup-walkthrough-switch.is-on::after {
+  left: 25px;
+  background: var(--lt-primary-foreground);
+}
+.setup-walkthrough-list {
+  margin-top: var(--lt-space-16);
+  padding: var(--lt-space-12) var(--lt-space-16);
+  border: var(--lt-stroke-2) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-background);
+  font-family: var(--code-font);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-45);
+}
+.setup-walkthrough-summary {
+  margin-top: var(--lt-space-16);
+  padding: var(--lt-space-12) var(--lt-space-16);
+  border: var(--lt-stroke-2) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-background);
+  font-size: var(--lt-text-14);
+  line-height: var(--lt-leading-1-45);
+}
+.setup-walkthrough-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-8);
+  margin-top: var(--lt-space-16);
+}
+.setup-walkthrough-progress-head {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--lt-space-8);
+}
+.setup-walkthrough-track {
+  height: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: var(--lt-stroke-2) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-pill);
+}
+.setup-walkthrough-fill {
+  display: block;
+  height: 100%;
+  background: var(--lt-primary);
+}
+.setup-walkthrough-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--lt-space-12);
+  margin-top: var(--lt-space-24);
+}
+.setup-walkthrough-actions-start,
+.setup-walkthrough-actions-end {
+  display: flex;
+  gap: var(--lt-space-12);
+}
+.setup-walkthrough-button {
+  padding: var(--lt-space-10) var(--lt-space-20);
+  border: var(--lt-stroke-2) solid var(--lt-foreground);
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: var(--lt-foreground);
+  font: inherit;
+}
+@media (hover: hover) {
+  .setup-walkthrough-button:hover {
+    background: var(--lt-wash-hover);
+  }
+}
+.setup-walkthrough-button.is-primary {
+  border-color: var(--lt-primary);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+  font-weight: var(--lt-weight-700);
+}
+.setup-walkthrough-button:focus-visible,
+.setup-walkthrough-button.is-primary,
+.setup-walkthrough-card:focus-visible,
+.setup-walkthrough-switch-row:focus-visible {
+  outline: var(--lt-stroke-3) solid var(--lt-link);
+  outline-offset: var(--lt-stroke-2);
+}
 /* The one question the app asks, on the scrim the sheets already throw. Centered rather than slid up from the bottom: a sheet is somewhere you go, and this is something standing in your way until you answer it. */
 .confirm-dialog {
   position: fixed;
@@ -21898,7 +22200,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 119 icons, and all 206 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 119 icons, and all 207 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -21933,7 +22235,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>119</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>206</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>207</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -22419,7 +22721,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">206 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">207 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -23039,6 +23341,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Confirmation</h3><code class="built">.confirm-dialog</code><span class="built">app-shell.html, asked by context-menu.js</span></header>
 <div class="stage"><div class="confirm-dialog" style="position:static;transform:none;width:340px"><h2 class="confirm-dialog-title">Delete “favorites.md”?</h2><p class="confirm-dialog-detail">It goes to the Recycle Bin, so you can put it back.</p><div class="confirm-dialog-actions"><button type="button" class="confirm-dialog-button">Cancel</button><button type="button" class="confirm-dialog-button is-danger">Delete</button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Setup walkthrough</h3><code class="built">.setup-walkthrough</code><span class="built">built by setup-walkthrough.js, opened at launch and from the New menu's Save sessions</span></header>
+<div class="stage"><div class="setup-walkthrough" style="position:static;transform:none;width:560px"><div class="setup-walkthrough-step"><span class="setup-walkthrough-step-words">Step 1 of 4</span><span class="setup-walkthrough-bars"><span class="setup-walkthrough-bar is-filled"></span><span class="setup-walkthrough-bar"></span><span class="setup-walkthrough-bar"></span><span class="setup-walkthrough-bar"></span></span></div><h2 class="setup-walkthrough-title">Keep every conversation with your agents</h2><p class="setup-walkthrough-detail">Leaftext found these agents signed in on this computer.</p><div class="setup-walkthrough-cards"><button type="button" class="setup-walkthrough-card is-selected"><span class="setup-walkthrough-mark">C</span><span class="setup-walkthrough-card-text"><span class="setup-walkthrough-card-title">Claude Code</span><span class="setup-walkthrough-card-detail">2 accounts: Personal, Work</span></span><span class="setup-walkthrough-check is-on">✓</span></button></div><div class="setup-walkthrough-actions"><div class="setup-walkthrough-actions-start"><button type="button" class="setup-walkthrough-button">Not now</button></div><div class="setup-walkthrough-actions-end"><button type="button" class="setup-walkthrough-button is-primary">Keep them all</button></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Spinner</h3><code class="built">.lt-spinner</code><span class="built">app-shell.html, glossary.js, minimap.js, lib.rs</span></header>

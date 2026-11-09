@@ -47799,23 +47799,9 @@ const AGENT_LAUNCH_VIEWS = {
       { label: 'Rename', keepOpen: true, run: () => { agentLaunch.draft = { name: agentLaunchLabel(agent, id) }; agentLaunchShow('rename'); } },
       status, ...agentLaunchAccountActions(agent, row, status), ...agentLaunchSkipRows(agent), ...agentLaunchErrorNote(),
       { label: 'Launch settings', keepOpen: true, run: () => agentLaunchSettings(agent, id) },
-      ...(['claude', 'codex'].includes(agent) ? [{ label: agentLaunchOf(agent).sessionsFolder ? 'Saving sessions' : 'Save sessions to a folder…', keepOpen: true, run: () => agentLaunchShow('sessions') }] : []),
+      { label: 'Save sessions', run: () => setupOpenFromMenu() },
       agentLaunchStartRow(agent, id),
       ...(row ? [{ label: 'Remove from list', danger: true, keepOpen: true, run: () => agentLaunchShow('remove') }] : [])];
-  },
-  
-  sessions(agent) {
-    const own = agentLaunchOf(agent);
-    const folder = own.sessionsFolder || '';
-    const choose = () => agentLaunchAsk('chooseSessionsFolder').then((answer) => { if (answer && answer.folder) agentLaunchSet('setSessions', { on: true }); });
-    return [agentLaunchBack('account'), { heading: `${AGENT_LAUNCH_NAMES[agent]} · Save sessions` },
-      { note: folder ? `Every ${AGENT_LAUNCH_NAMES[agent]} session is saved to ${folder} as it comes to rest: the prompt, the replies and every tool it ran, linked by project and by day.` : `Save every ${AGENT_LAUNCH_NAMES[agent]} session to a folder you choose, as notes linked by project and by day.` },
-      { label: folder ? 'Choose another folder…' : 'Choose a folder…', icon: FOLDER_ICON_SVG, keepOpen: true, run: choose },
-      ...(folder ? [{ label: 'Save sessions', switch: true, checked: true, keepOpen: true, run: () => agentLaunchSet('setSessions', { on: false }) }] : []),
-      { label: 'Keep the thinking', switch: true, checked: own.sessionsThinking !== false, keepOpen: true, run: () => agentLaunchSet('setSessions', { on: Boolean(folder), thinking: own.sessionsThinking === false }) },
-      { label: 'Keep every tool’s whole output', switch: true, checked: own.sessionsOutput !== false, keepOpen: true, run: () => agentLaunchSet('setSessions', { on: Boolean(folder), output: own.sessionsOutput === false }) },
-      { note: 'A tool’s output can hold anything it printed, a key included, so choose a folder you keep to yourself.' },
-      ...agentLaunchErrorNote()];
   },
   history() {
     return [agentLaunchBack('main'), { heading: 'Past conversations' }, ...agentLaunchHistoryRows()];
@@ -48161,6 +48147,378 @@ function consoleCompareGone(id) {
   return Array.isArray(currentState?.tabs) && !currentState.tabs.some((tab) => tab.kind === 'console' && tab.webId === id);
 }
 
+const SETUP_AGENT_NAMES = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity' };
+const SETUP_AGENT_MARKS = { claude: 'C', codex: 'X', antigravity: 'A' };
+const setupWalk = { open: false, screen: '', state: null, progress: null, choice: null, error: '', timer: 0, fromMenu: false, returnFocus: null };
+const setupBackdrop = document.createElement('div');
+setupBackdrop.className = 'lt-backdrop';
+setupBackdrop.hidden = true;
+const setupDialog = document.createElement('div');
+setupDialog.className = 'setup-walkthrough';
+setupDialog.setAttribute('role', 'dialog');
+setupDialog.setAttribute('aria-modal', 'true');
+setupDialog.hidden = true;
+document.body.append(setupBackdrop, setupDialog);
+
+function setupNumber(count) {
+  return Number(count || 0).toLocaleString('en-US');
+}
+
+function setupAgents() {
+  return (setupWalk.state && setupWalk.state.agents) || [];
+}
+function setupEarlierCount(agent) {
+  const counts = setupWalk.progress && setupWalk.progress.counts;
+  if (!counts) return null;
+  const entry = counts.find((row) => row.agent === agent);
+  return entry ? entry.count : 0;
+}
+function setupEarlierTotal() {
+  return setupAgents().filter((row) => setupWalk.choice.agents.includes(row.agent)).reduce((sum, row) => sum + (setupEarlierCount(row.agent) || 0), 0);
+}
+function setupEl(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function setupButton(label, primary, run) {
+  const button = setupEl('button', primary ? 'setup-walkthrough-button is-primary' : 'setup-walkthrough-button', label);
+  button.type = 'button';
+  button.addEventListener('click', run);
+  return button;
+}
+
+function setupStepLine(step) {
+  const line = setupEl('div', 'setup-walkthrough-step');
+  line.append(setupEl('span', 'setup-walkthrough-step-words', step ? `Step ${step} of 4` : 'Finished'));
+  const bars = setupEl('span', 'setup-walkthrough-bars');
+  bars.setAttribute('aria-hidden', 'true');
+  for (let index = 1; index <= 4; index += 1) bars.append(setupEl('span', !step || index <= step ? 'setup-walkthrough-bar is-filled' : 'setup-walkthrough-bar'));
+  line.append(bars);
+  return line;
+}
+function setupHeader(step, title, detail) {
+  const parts = [setupStepLine(step), setupEl('h2', 'setup-walkthrough-title', title)];
+  parts[1].id = 'setupWalkthroughTitle';
+  if (detail) parts.push(setupEl('p', 'setup-walkthrough-detail', detail));
+  return parts;
+}
+function setupCard(mark, title, detail, end, selected, run) {
+  const card = setupEl('button', selected ? 'setup-walkthrough-card is-selected' : 'setup-walkthrough-card');
+  card.type = 'button';
+  card.append(mark);
+  const text = setupEl('span', 'setup-walkthrough-card-text');
+  text.append(title, setupEl('span', 'setup-walkthrough-card-detail', detail));
+  card.append(text);
+  if (end) card.append(end);
+  card.addEventListener('click', run);
+  return card;
+}
+function setupGroup(cards) {
+  const group = setupEl('div', 'setup-walkthrough-cards');
+  group.append(...cards);
+  return group;
+}
+function setupMark(letter) {
+  return setupEl('span', 'setup-walkthrough-mark', letter);
+}
+function setupTick(on) {
+  const check = setupEl('span', on ? 'setup-walkthrough-check is-on' : 'setup-walkthrough-check', on ? '✓' : '');
+  check.setAttribute('aria-hidden', 'true');
+  return check;
+}
+function setupRadio(on) {
+  return setupEl('span', on ? 'setup-walkthrough-radio is-on' : 'setup-walkthrough-radio');
+}
+function setupSwitchRow(label, on, run) {
+  const row = setupEl('button', 'setup-walkthrough-switch-row');
+  row.type = 'button';
+  row.setAttribute('role', 'switch');
+  row.setAttribute('aria-checked', on ? 'true' : 'false');
+  row.append(setupEl('span', 'setup-walkthrough-switch-label', label), setupEl('span', 'setup-walkthrough-switch-word', on ? 'On' : 'Off'), setupEl('span', on ? 'setup-walkthrough-switch is-on' : 'setup-walkthrough-switch'));
+  row.addEventListener('click', run);
+  return row;
+}
+function setupActions(left, right) {
+  const actions = setupEl('div', 'setup-walkthrough-actions');
+  const start = setupEl('div', 'setup-walkthrough-actions-start');
+  const end = setupEl('div', 'setup-walkthrough-actions-end');
+  start.append(...left);
+  end.append(...right);
+  actions.append(start, end);
+  return actions;
+}
+function setupAccountsLine(row) {
+  const accounts = row.accounts || [];
+  const count = setupEarlierCount(row.agent);
+  const earlier = count === null ? 'counting earlier conversations…' : `${setupNumber(count)} earlier conversation${count === 1 ? '' : 's'}`;
+  const named = accounts.length > 1 ? `${accounts.length} accounts: ${accounts.join(', ')}` : '1 account';
+  return `${named} · ${earlier}`;
+}
+
+const SETUP_SCREENS = {
+  found() {
+    const cards = setupAgents().map((row) => {
+      const on = setupWalk.choice.agents.includes(row.agent);
+      const card = setupCard(setupMark(SETUP_AGENT_MARKS[row.agent]), setupEl('span', 'setup-walkthrough-card-title', SETUP_AGENT_NAMES[row.agent]), setupAccountsLine(row), setupTick(on), on, () => {
+        const kept = setupWalk.choice.agents;
+        setupWalk.choice.agents = on ? kept.filter((agent) => agent !== row.agent) : [...kept, row.agent];
+        setupDraw();
+      });
+      card.setAttribute('role', 'checkbox');
+      card.setAttribute('aria-checked', on ? 'true' : 'false');
+      return card;
+    });
+    return [...setupHeader(1, 'Keep every conversation with your agents', 'Leaftext found these agents signed in on this computer. Nothing they do is kept once their own history is trimmed. Leaftext can keep all of it for you.'),
+      setupGroup(cards),
+      setupActions([setupButton('Not now', false, setupNotNow)], [setupButton('Let me choose', false, () => setupShow('where')), setupButton('Keep them all', true, setupKeepAll)])];
+  },
+  where() {
+    const choice = setupWalk.choice;
+    const inside = choice.home === 'leaftext';
+    const insideTitle = setupEl('span', 'setup-walkthrough-card-title', 'Inside Leaftext ');
+    insideTitle.append(setupEl('span', 'setup-walkthrough-badge', 'Recommended'));
+    const insideCard = setupCard(setupRadio(inside), insideTitle, 'Compressed so it takes little room, and searchable from the app. Nothing to look after.', null, inside, () => { choice.home = 'leaftext'; setupDraw(); });
+    insideCard.setAttribute('role', 'radio');
+    insideCard.setAttribute('aria-checked', inside ? 'true' : 'false');
+    const folderCard = setupCard(setupRadio(!inside), setupEl('span', 'setup-walkthrough-card-title', 'In a folder you can open'), 'Plain notes linked by project and by day, one subfolder per account.', null, !inside, () => { choice.home = 'folder'; setupDraw(); });
+    folderCard.setAttribute('role', 'radio');
+    folderCard.setAttribute('aria-checked', inside ? 'false' : 'true');
+    const folderRow = setupEl('div', 'setup-walkthrough-folder-row');
+    folderRow.append(setupEl('span', 'setup-walkthrough-folder', choice.folder), setupButton('Change…', false, setupChangeFolder));
+    const group = setupEl('div', 'setup-walkthrough-cards');
+    group.setAttribute('role', 'radiogroup');
+    group.setAttribute('aria-labelledby', 'setupWalkthroughTitle');
+    group.append(insideCard, folderCard, folderRow);
+    return [...setupHeader(2, 'Where should they go?', 'You can switch later, and nothing is lost when you do.'), group,
+      ...(setupWalk.error ? [setupEl('p', 'setup-walkthrough-error', setupWalk.error)] : []),
+      setupActions([setupButton('Back', false, () => setupShow(setupWalk.fromMenu ? 'done' : 'found'))], [setupButton('Next', true, () => setupShow('keep'))])];
+  },
+  keep() {
+    const choice = setupWalk.choice;
+    const total = setupEarlierTotal();
+    const list = setupEl('div', 'setup-walkthrough-list');
+    for (const row of setupAgents().filter((entry) => choice.agents.includes(entry.agent))) {
+      for (const account of row.accounts) list.append(setupEl('div', 'setup-walkthrough-list-row', `${SETUP_AGENT_NAMES[row.agent]} / ${account}`));
+    }
+    return [...setupHeader(3, 'What to keep', 'Everything is on. Each account gets its own place, so work and personal never mix.'),
+      setupSwitchRow('Keep what the agent thought', choice.thinking, () => { choice.thinking = !choice.thinking; setupDraw(); }),
+      setupSwitchRow('Keep everything its tools printed', choice.output, () => { choice.output = !choice.output; setupDraw(); }),
+      setupSwitchRow(`Save the ${setupNumber(total)} earlier conversations too`, choice.earlier, () => { choice.earlier = !choice.earlier; setupDraw(); }),
+      list,
+      setupEl('p', 'setup-walkthrough-note', 'A tool can print a key or a password, so only you should open where these are kept.'),
+      ...(setupWalk.error ? [setupEl('p', 'setup-walkthrough-error', setupWalk.error)] : []),
+      setupActions([setupButton('Back', false, () => setupShow('where'))], [setupButton(setupWalk.fromMenu ? 'Save' : 'Start saving', true, setupApply)])];
+  },
+  saving() {
+    const agents = (setupWalk.progress && setupWalk.progress.agents) || [];
+    const bars = setupEl('div', 'setup-walkthrough-progress');
+    for (const row of setupAgents().filter((entry) => setupWalk.choice.agents.includes(entry.agent))) {
+      const entry = agents.find((item) => item.agent === row.agent) || { total: setupEarlierCount(row.agent) || 0, saved: 0, held: 0, skipped: 0 };
+      const done = entry.saved + entry.held + entry.skipped;
+      const head = setupEl('div', 'setup-walkthrough-progress-head');
+      head.append(setupEl('span', '', SETUP_AGENT_NAMES[row.agent]), setupEl('span', '', `${setupNumber(done)} of ${setupNumber(entry.total)}`));
+      const track = setupEl('div', 'setup-walkthrough-track');
+      track.setAttribute('role', 'progressbar');
+      track.setAttribute('aria-label', SETUP_AGENT_NAMES[row.agent]);
+      track.setAttribute('aria-valuemin', '0');
+      track.setAttribute('aria-valuemax', String(entry.total));
+      track.setAttribute('aria-valuenow', String(done));
+      const fill = setupEl('span', 'setup-walkthrough-fill');
+      fill.style.width = `${entry.total ? Math.round((done / entry.total) * 100) : 100}%`;
+      track.append(fill);
+      bars.append(head, track);
+    }
+    return [...setupHeader(4, 'Saving your earlier conversations', 'Newest first. You can close this and keep working; it carries on, and the chat shows how far it has got.'), bars,
+      setupEl('p', 'setup-walkthrough-note', 'From now on every conversation is saved the moment the agent finishes a turn.'),
+      setupActions([], [setupButton('Keep working', true, setupClose)])];
+  },
+  done() {
+    const choice = (setupWalk.state && setupWalk.state.setup) || setupWalk.choice;
+    const progress = setupWalk.progress || {};
+    const kept = (progress.agents || []).reduce((sum, row) => sum + row.saved + row.held, 0);
+    const skipped = (progress.agents || []).reduce((sum, row) => sum + row.skipped, 0);
+    const stored = setupWalk.stored || 0;
+    const count = Math.max(kept, stored);
+    const megabytes = Math.max(1, Math.round((setupWalk.storedBytes || 0) / (1024 * 1024)));
+    const where = choice.home === 'folder' ? `In ${choice.folder}` : `Inside Leaftext · compressed to ${megabytes} MB`;
+    const what = choice.thinking && choice.output ? 'Thinking and tool output kept' : choice.thinking ? 'Thinking kept, tool output left out' : choice.output ? 'Tool output kept, thinking left out' : 'Prompts and replies kept';
+    const skip = choice.skip || [];
+    const who = setupAgents().filter((row) => !skip.includes(row.agent)).map((row) => (row.accounts.length > 1 ? `${SETUP_AGENT_NAMES[row.agent]} (${row.accounts.length} accounts)` : SETUP_AGENT_NAMES[row.agent])).join(', ');
+    const summary = setupEl('div', 'setup-walkthrough-summary');
+    summary.append(setupEl('div', '', where), setupEl('div', '', what), setupEl('div', '', who || 'No agent'));
+    const job = progress.job || {};
+    const jobLine = job.running ? (job.kind === 'export' ? 'Exporting…' : 'Moving your conversations…') : job.error ? job.error : job.kind === 'export' && job.folder ? `Exported ${setupNumber(job.done)} to ${job.folder}` : '';
+    return [...setupHeader(0, setupWalk.fromMenu ? 'Your saved conversations' : (skipped ? `${setupNumber(count)} conversations are kept` : `All ${setupNumber(count)} conversations are kept`)), summary,
+      setupGroup([setupCard(setupMark('⌕'), setupEl('span', 'setup-walkthrough-card-title', 'Open them'), 'Every conversation by project and by day', null, false, () => agentLaunchAsk('sessionsOpen').then(setupClose)),
+      setupCard(setupMark('↗︎'), setupEl('span', 'setup-walkthrough-card-title', 'Export to a folder…'), 'The same notes, one subfolder per account', null, false, setupExport),
+      ...(setupWalk.fromMenu ? [setupCard(setupMark('⚙︎'), setupEl('span', 'setup-walkthrough-card-title', 'Change where and what'), 'Inside Leaftext or a folder, and what each keeps', null, false, () => setupShow('where'))] : [])]),
+      ...(skipped ? [setupEl('p', 'setup-walkthrough-note', `${setupNumber(skipped)} earlier records held no conversation or could not be read, and were left as they are.`)] : []),
+      ...(jobLine ? [setupEl('p', 'setup-walkthrough-note', jobLine)] : []),
+      setupEl('p', 'setup-walkthrough-note', 'To change any of this later: New, then the agent, then Save sessions.'),
+      setupActions([], [setupButton('Done', true, setupClose)])];
+  },
+};
+
+
+function setupDraw(fresh) {
+  if (!setupWalk.open) return;
+  const pressable = () => [...setupDialog.querySelectorAll('button')];
+  const was = fresh ? -1 : pressable().indexOf(document.activeElement);
+  setupDialog.replaceChildren(...SETUP_SCREENS[setupWalk.screen]());
+  setupDialog.setAttribute('aria-labelledby', 'setupWalkthroughTitle');
+  const target = was >= 0 ? pressable()[was] : setupDialog.querySelector('.setup-walkthrough-button.is-primary');
+  if (target) target.focus();
+}
+function setupShow(screen) {
+  setupWalk.error = '';
+  setupWalk.screen = screen;
+  setupDraw(true);
+}
+
+function setupSavingWords() {
+  const progress = setupWalk.progress;
+  if (!progress || !progress.running) return '';
+  const rows = progress.agents || [];
+  const done = rows.reduce((sum, row) => sum + row.saved + row.held + row.skipped, 0);
+  const total = rows.reduce((sum, row) => sum + row.total, 0);
+  return `Saving ${setupNumber(done)} of ${setupNumber(total)}`;
+}
+function setupShowSaving() {
+  const line = typeof consoleRecentsBand === 'undefined' ? null : consoleRecentsBand.querySelector('.sidebar-pane-saving');
+  if (line) line.textContent = setupSavingWords();
+}
+
+function setupPoll() {
+  clearTimeout(setupWalk.timer);
+  if (!setupWalk.open && !setupWalk.background) return;
+  agentLaunchAsk('sessionsProgress').then((answer) => {
+    if (!answer || answer.error) return;
+    setupWalk.progress = answer.progress;
+    setupWalk.stored = answer.stored;
+    setupWalk.storedBytes = answer.storedBytes;
+    const saving = answer.progress && answer.progress.running;
+    const seen = JSON.stringify(answer);
+    if (setupWalk.screen === 'saving' && !saving && setupWalk.started) setupShow('done');
+    else if (seen !== setupWalk.seen) setupDraw();
+    setupWalk.seen = seen;
+    setupShowSaving();
+    if (!saving && !setupWalk.open) {
+      setupWalk.background = false;
+      return;
+    }
+    setupWalk.timer = setTimeout(setupPoll, saving || (answer.progress && !answer.progress.counts) || (answer.progress.job && answer.progress.job.running) ? 500 : 2000);
+  });
+}
+function setupOpen(screen, fromMenu) {
+  const state = setupWalk.state;
+  const setup = (state && state.setup) || {};
+  const agents = setupAgents().map((row) => row.agent);
+  setupWalk.choice = {
+    home: setup.home || 'leaftext',
+    folder: setup.home === 'folder' ? setup.folder : state.defaultFolder,
+    thinking: setup.thinking !== false,
+    output: setup.output !== false,
+    earlier: setup.home ? Boolean(setup.earlier) : true,
+    agents: agents.filter((agent) => !(setup.skip || []).includes(agent)),
+    chosen: false,
+  };
+  setupWalk.fromMenu = Boolean(fromMenu);
+  setupWalk.started = false;
+  setupWalk.open = true;
+  setupWalk.returnFocus = document.activeElement;
+  setupBackdrop.hidden = false;
+  coverWebSurface(true, setupBackdrop);
+  setupDialog.hidden = false;
+  window.requestAnimationFrame(() => setupBackdrop.classList.add('open'));
+  setupShow(screen);
+  setupPoll();
+}
+function setupClose() {
+  if (!setupWalk.open) return;
+  setupWalk.open = false;
+  clearTimeout(setupWalk.timer);
+  setupWalk.background = Boolean(setupWalk.progress && setupWalk.progress.running);
+  if (setupWalk.background) setupWalk.timer = setTimeout(setupPoll, 500);
+  setupDialog.hidden = true;
+  setupDialog.replaceChildren();
+  setupBackdrop.classList.remove('open');
+  setTimeout(() => {
+    setupBackdrop.hidden = true;
+    coverWebSurface(false, setupBackdrop);
+  }, CONFIRM_FADE_MS);
+  leafFocusForKeyboard(setupWalk.returnFocus);
+  setupWalk.returnFocus = null;
+}
+
+function setupNotNow() {
+  setupWalk.dismissed = true;
+  setupClose();
+}
+function setupSend(choice) {
+  return agentLaunchAsk('sessionsSetup', { home: choice.home, thinking: choice.thinking, output: choice.output, earlier: choice.earlier, leaveOut: setupAgents().map((row) => row.agent).filter((agent) => !choice.agents.includes(agent)) });
+}
+function setupKeepAll() {
+  const agents = setupAgents().map((row) => row.agent);
+  setupWalk.choice = { ...setupWalk.choice, home: 'leaftext', thinking: true, output: true, earlier: true, agents };
+  setupApply();
+}
+function setupApply() {
+  setupSend(setupWalk.choice).then((answer) => {
+    if (!answer || answer.error) {
+      setupWalk.error = (answer && answer.error) || 'The choice could not be kept.';
+      setupDraw();
+      return;
+    }
+    setupWalk.state = answer;
+    setupWalk.started = setupWalk.choice.earlier;
+    setupShow(setupWalk.choice.earlier ? 'saving' : 'done');
+    setupPoll();
+  });
+}
+function setupChangeFolder() {
+  agentLaunchAsk('chooseSessionsFolder').then((answer) => {
+    if (!answer || !answer.folder) return;
+    setupWalk.choice.folder = answer.folder;
+    setupWalk.choice.home = 'folder';
+    setupDraw();
+  });
+}
+function setupExport() {
+  agentLaunchAsk('chooseExportFolder').then((answer) => {
+    if (!answer || !answer.folder) return;
+    agentLaunchAsk('sessionsExport').then(() => setupPoll());
+  });
+}
+
+function setupCheck() {
+  if (setupWalk.open || setupWalk.dismissed) return;
+  agentLaunchAsk('sessionsState').then((answer) => {
+    if (!answer || answer.error || setupWalk.open) return;
+    setupWalk.state = answer;
+    if (answer.needed) setupOpen('found', false);
+  });
+}
+
+function setupOpenFromMenu() {
+  agentLaunchAsk('sessionsState').then((answer) => {
+    if (!answer || answer.error) return;
+    setupWalk.state = answer;
+    setupOpen(answer.setup && answer.setup.home ? 'done' : 'where', true);
+  });
+}
+
+const setupAnswerBefore = window.leafAgentLaunchAnswer;
+window.leafAgentLaunchAnswer = (request, answer) => {
+  setupAnswerBefore(request, answer);
+  if (answer && answer.id && answer.state && !setupWalk.open) setupCheck();
+};
+leafOnEscape(() => { if (setupWalk.open) setupNotNow(); }, window);
+setupBackdrop.addEventListener('click', () => { if (setupWalk.screen !== 'saving') setupNotNow(); });
+
+setTimeout(() => window.requestAnimationFrame(() => window.requestAnimationFrame(setupCheck)), 750);
+
 var consoleRecentsBand = document.getElementById('consoleRecents');
 const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true, status: 'active', filterView: null, type: 'all', since: 'all', group: 'none', sort: 'recent', renaming: false, pins: [], carry: null, held: false, listOrder: [] };
 
@@ -48248,7 +48606,7 @@ function drawConsoleRecents() {
 function fillConsoleRecents(html) {
   const menuHere = !crumbMenu.hidden && Boolean(crumbMenuOwner?.classList?.contains('console-recents-filter'));
   
-  consoleRecentsBand.innerHTML = '<div class="sidebar-pane-head"><span class="sidebar-pane-title">Conversations</span></div>' + html;
+  consoleRecentsBand.innerHTML = `<div class="sidebar-pane-head"><span class="sidebar-pane-title">Conversations</span><span class="sidebar-pane-saving" role="status">${setupSavingWords()}</span></div>` + html;
   const button = consoleRecentsBand.querySelector('.console-recents-filter');
   if (menuHere && button) showCrumbMenu(button, consoleChatFilterRows());
 }

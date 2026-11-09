@@ -19,3 +19,6 @@
 
 # The voice skill, linked in from the writing checkout on this machine
 .agents/skills/ryan
+
+# The Discord webhook progress pictures are posted through. A secret, so never committed.
+/.discord-webhook
