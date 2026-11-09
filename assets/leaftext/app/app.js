@@ -2108,6 +2108,16 @@ function chatGripPast(clientX) {
 }
 function moveChatGrip(event) {
   if (!chatGripDrag || event.pointerId !== chatGripDrag.pointerId) return;
+  
+  if (Number.isFinite(event.clientY) && outsideThePage(event.clientX, event.clientY)) {
+    chatGripDrag.over = true;
+    send({ command: 'tabDragOver', width: chatHead.offsetWidth || MIN_CHAT_WIDTH });
+    return;
+  }
+  if (chatGripDrag.over) {
+    chatGripDrag.over = false;
+    send({ command: 'tabDragOff' });
+  }
   const past = chatGripPast(event.clientX);
   chatGripDrag.past = past;
   chatHead.classList.toggle('is-past', past);
@@ -2116,13 +2126,22 @@ function moveChatGrip(event) {
 function releaseChatGrip(event) {
   if (!chatGripDrag || event.pointerId !== chatGripDrag.pointerId) return;
   
-  const past = event.type === 'pointerup' && Number.isFinite(event.clientX) ? chatGripPast(event.clientX) : false;
+  const released = event.type === 'pointerup' && Number.isFinite(event.clientX);
+  
+  const out = released && Number.isFinite(event.clientY) && outsideThePage(event.clientX, event.clientY) ? chatTabIndex() : null;
+  const past = released && out === null ? chatGripPast(event.clientX) : false;
+  
+  if (chatGripDrag.over && out === null) send({ command: 'tabDragOff' });
   leafReleasePointer(chatGrip, chatGripDrag.pointerId);
   chatGripDrag = null;
   chatHead.classList.remove('is-moving', 'is-past');
   if (chatLanding) {
     chatLanding.hidden = true;
     chatLanding.classList.remove('is-past');
+  }
+  if (out !== null) {
+    send({ command: 'tearOutTab', index: out, scroll_anchor: null });
+    return;
   }
   if (!past) return;
   chatSide = chatSide === 'right' ? 'left' : 'right';
@@ -48986,6 +49005,8 @@ function renameConsolePinSection(at) {
 
 
 const CONSOLE_CARRY_THRESHOLD = 5;
+
+const CONSOLE_CARRY_GAP = 160;
 function consolePinDropAt(x, y) {
   const element = document.elementFromPoint(x, y)?.closest?.('[data-pin-drop]');
   return element && consoleRecentsBand.contains(element) ? element : null;
@@ -48996,6 +49017,11 @@ function lightConsolePinDrop(element) {
   carry.target?.classList.remove('is-drop-target');
   element?.classList.add('is-drop-target');
   carry.target = element;
+}
+
+function putConsoleCarryDown() {
+  if (consoleRecents.carry?.over) send({ command: 'tabDragOff' });
+  endConsoleCarry();
 }
 function endConsoleCarry() {
   const carry = consoleRecents.carry;
@@ -49008,6 +49034,23 @@ function endConsoleCarry() {
   carry.target?.classList.remove('is-drop-target');
   leafReleasePointer(consoleRecentsBand, carry.pointerId);
   if (carry.chip) drawConsoleRecents();
+}
+
+
+function carryChatOutOfTheWindow(carry) {
+  const tabs = (currentState && currentState.tabs) || [];
+  const chat = carry.chat;
+  const live = carry.console ?? consoleAgentRows.find((agent) => Array.isArray(agent.conversations) && agent.conversations.map(String).includes(String(chat.id)))?.id;
+  const index = live != null
+    ? tabs.findIndex((tab) => tab.kind === 'console' && Number(tab.webId) === Number(live))
+    : tabs.findIndex((tab) => tab.kind === 'chat' && tab.url === `${chat.agent}/${chat.id}`);
+  if (index >= 0) {
+    send({ command: 'tearOutTab', index, scroll_anchor: null });
+    return true;
+  }
+  if (live != null) return false;
+  send({ command: 'openSavedChat', agent: String(chat.agent), conversation: String(chat.id), title: String(chat.title || ''), newWindow: true });
+  return true;
 }
 
 
@@ -49258,6 +49301,17 @@ if (consoleRecentsBand) {
     }
     event.preventDefault?.();
     carry.chip.style.transform = `translate(${event.clientX - (carry.origin.left || 0)}px, ${event.clientY - (carry.origin.top || 0)}px)`;
+    
+    if (outsideThePage(event.clientX, event.clientY)) {
+      carry.over = true;
+      send({ command: 'tabDragOver', width: carry.chip.offsetWidth || CONSOLE_CARRY_GAP });
+      lightConsolePinDrop(null);
+      return;
+    }
+    if (carry.over) {
+      carry.over = false;
+      send({ command: 'tabDragOff' });
+    }
     lightConsolePinDrop(consolePinDropAt(event.clientX, event.clientY));
   });
   document.addEventListener('pointerup', (event) => {
@@ -49282,10 +49336,13 @@ if (consoleRecentsBand) {
     
     setTimeout(() => { consoleRecents.carried = false; }, 0);
     endConsoleCarry();
+    
+    if (outsideThePage(event.clientX, event.clientY) && carryChatOutOfTheWindow(carry)) return;
+    if (carry.over) send({ command: 'tabDragOff' });
     if (place && !(place === 'recents' && !consoleChatPinned(carry.chat))) pinConsoleChatAt(carry.chat, place);
   });
   document.addEventListener('pointercancel', (event) => {
-    if (consoleRecents.carry && event.pointerId === consoleRecents.carry.pointerId) endConsoleCarry();
+    if (consoleRecents.carry && event.pointerId === consoleRecents.carry.pointerId) putConsoleCarryDown();
   });
   
   consoleRecentsBand.addEventListener('dragstart', (event) => event.preventDefault());
@@ -49293,7 +49350,7 @@ if (consoleRecentsBand) {
     if (event.key !== 'Escape' || !consoleRecents.carry?.chip) return;
     event.preventDefault();
     event.stopPropagation?.();
-    endConsoleCarry();
+    putConsoleCarryDown();
   }, true);
   consoleRecentsBand.addEventListener('contextmenu', (event) => {
     const heading = event.target.closest?.('.console-pin-heading[data-pin-section]');
