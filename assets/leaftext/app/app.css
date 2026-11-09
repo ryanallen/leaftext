@@ -18130,6 +18130,23 @@ p.shelf-foot {
   color: var(--lt-primary-foreground);
   font-weight: var(--lt-weight-700);
 }
+
+.setup-walkthrough-button.is-danger {
+  border-color: var(--lt-danger);
+  background: var(--lt-danger);
+  color: var(--lt-danger-foreground);
+  font-weight: var(--lt-weight-700);
+}
+.setup-walkthrough-card.is-danger {
+  border-color: var(--lt-danger);
+}
+.setup-walkthrough-card-title.is-danger {
+  color: var(--lt-danger);
+}
+.setup-walkthrough-mark.is-danger {
+  border-color: var(--lt-danger);
+  color: var(--lt-danger);
+}
 .setup-walkthrough-button:focus-visible,
 .setup-walkthrough-button.is-primary,
 .setup-walkthrough-card:focus-visible,

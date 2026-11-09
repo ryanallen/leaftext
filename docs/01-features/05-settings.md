@@ -50,7 +50,8 @@ There is nothing to open. Every control changes the app the moment you use it an
 | `{data_dir}/books-online` | The [Books online](03-library.md#books-online) catalog and its download counts. Removing the vault deletes them |
 | `{data_dir}/models` | Nothing Leaftext writes now: a model an earlier version downloaded here is deleted when the app starts, and uninstalling deletes the folder too |
 | `{data_dir}/webview2` | The window's own WebView2 data; each new version drops the last one's compiled scripts the first time it starts |
-| `{data_dir}/web` | The web page tabs' own browser data, sign-ins included |
+| `{data_dir}/web` | The web page tabs' own browser data, sign-ins included. Each launch clears its caches once together they pass 256 MB, keeping cookies and site data, so no site signs you out |
+| `{data_dir}/sessions.db` | [Saved conversations](10-agents.md) kept inside Leaftext, compressed, in one file; **Stop saving and delete everything** removes it |
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
 | `{data_dir}/journal.log` | What the app printed this run, crashes and missed window or page responses ([Journal](#journal)) |
 | `{data_dir}/journal.prev.log` | The previous journal, kept when the live one fills up |

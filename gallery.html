@@ -18190,6 +18190,23 @@ p.shelf-foot {
   color: var(--lt-primary-foreground);
   font-weight: var(--lt-weight-700);
 }
+/* Stop saving and delete everything, and the press that does it: the danger color the app's other destructive presses wear. */
+.setup-walkthrough-button.is-danger {
+  border-color: var(--lt-danger);
+  background: var(--lt-danger);
+  color: var(--lt-danger-foreground);
+  font-weight: var(--lt-weight-700);
+}
+.setup-walkthrough-card.is-danger {
+  border-color: var(--lt-danger);
+}
+.setup-walkthrough-card-title.is-danger {
+  color: var(--lt-danger);
+}
+.setup-walkthrough-mark.is-danger {
+  border-color: var(--lt-danger);
+  color: var(--lt-danger);
+}
 .setup-walkthrough-button:focus-visible,
 .setup-walkthrough-button.is-primary,
 .setup-walkthrough-card:focus-visible,
@@ -23348,7 +23365,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Setup walkthrough</h3><code class="built">.setup-walkthrough</code><span class="built">built by setup-walkthrough.js, opened at launch, from the ⋯ menu's Saved conversations and from the New menu's Save sessions</span></header>
-<div class="stage"><div class="setup-walkthrough" style="position:static;transform:none;width:560px"><div class="setup-walkthrough-step"><span class="setup-walkthrough-step-words">Step 1 of 4</span><span class="setup-walkthrough-bars"><span class="setup-walkthrough-bar is-filled"></span><span class="setup-walkthrough-bar"></span><span class="setup-walkthrough-bar"></span><span class="setup-walkthrough-bar"></span></span></div><h2 class="setup-walkthrough-title">Keep every conversation with your agents</h2><p class="setup-walkthrough-detail">Leaftext found these agents signed in on this computer.</p><div class="setup-walkthrough-cards"><button type="button" class="setup-walkthrough-card is-selected"><span class="setup-walkthrough-mark">C</span><span class="setup-walkthrough-card-text"><span class="setup-walkthrough-card-title">Claude Code</span><span class="setup-walkthrough-card-detail">2 accounts: Personal, Work</span></span><span class="setup-walkthrough-check is-on">✓</span></button></div><div class="setup-walkthrough-actions"><div class="setup-walkthrough-actions-start"><button type="button" class="setup-walkthrough-button">Not now</button></div><div class="setup-walkthrough-actions-end"><button type="button" class="setup-walkthrough-button is-primary">Next</button></div></div></div></div>
+<div class="stage"><div class="setup-walkthrough" style="position:static;transform:none;width:560px"><div class="setup-walkthrough-step"><span class="setup-walkthrough-step-words">Step 1 of 4</span><span class="setup-walkthrough-bars"><span class="setup-walkthrough-bar is-filled"></span><span class="setup-walkthrough-bar"></span><span class="setup-walkthrough-bar"></span><span class="setup-walkthrough-bar"></span></span></div><h2 class="setup-walkthrough-title">Keep every conversation with your agents</h2><p class="setup-walkthrough-detail">Leaftext found these agents signed in on this computer.</p><div class="setup-walkthrough-cards"><button type="button" class="setup-walkthrough-card is-selected"><span class="setup-walkthrough-mark">C</span><span class="setup-walkthrough-card-text"><span class="setup-walkthrough-card-title">Claude Code</span><span class="setup-walkthrough-card-detail">2 accounts: Personal, Work</span></span><span class="setup-walkthrough-check is-on">✓</span></button><button type="button" class="setup-walkthrough-card is-danger"><span class="setup-walkthrough-mark is-danger">✕</span><span class="setup-walkthrough-card-text"><span class="setup-walkthrough-card-title is-danger">Stop saving and delete everything</span><span class="setup-walkthrough-card-detail">Nothing more is kept, and the 366 MB already kept is removed</span></span></button></div><div class="setup-walkthrough-actions"><div class="setup-walkthrough-actions-start"><button type="button" class="setup-walkthrough-button">Not now</button></div><div class="setup-walkthrough-actions-end"><button type="button" class="setup-walkthrough-button is-danger">Delete everything</button><button type="button" class="setup-walkthrough-button is-primary">Next</button></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Spinner</h3><code class="built">.lt-spinner</code><span class="built">app-shell.html, glossary.js, minimap.js, lib.rs</span></header>
