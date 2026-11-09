@@ -8187,6 +8187,10 @@ body.is-embedded .reader-toolbar {
   padding-top: var(--lt-space-8);
   
   background-color: var(--lt-surface-sunken);
+  
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
+  background-attachment: fixed;
 }
 
 .app-surface.has-app-rail .library-pane,
