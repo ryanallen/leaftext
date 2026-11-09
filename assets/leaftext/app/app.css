@@ -10284,8 +10284,10 @@ button.diff-card-fold:disabled { cursor: default; }
 
 .console-composer-mode { display: inline-block; line-height: 24px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .console-composer-mode[hidden] { display: none; }
-.console-composer-repeat { appearance: none; display: inline-flex; align-items: center; gap: var(--lt-space-4); flex: none; height: 24px; padding: 0 var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-accent); border-radius: var(--lt-radius-pill); background: transparent; color: var(--lt-foreground); font: inherit; font-size: var(--lt-text-12); white-space: nowrap; cursor: pointer; }
-.console-composer-repeat .lt-icon { width: 12px; height: 12px; color: var(--lt-accent); }
+.console-composer-repeat { appearance: none; display: inline-flex; align-items: center; gap: var(--lt-space-4); flex: 0 1 auto; min-width: 0; overflow: hidden; height: 24px; padding: 0 var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-accent); border-radius: var(--lt-radius-pill); background: transparent; color: var(--lt-foreground); font: inherit; font-size: var(--lt-text-12); white-space: nowrap; cursor: pointer; }
+.console-composer-repeat .lt-icon { flex: none; width: 12px; height: 12px; color: var(--lt-accent); }
+
+.console-composer-repeat-words { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .console-composer-repeat[hidden] { display: none; }
 @media (hover: hover) { .console-composer-repeat:hover { background: var(--lt-wash-hover); } }
 .console-composer-repeat:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: var(--lt-stroke-1); }
@@ -10321,6 +10323,15 @@ button.diff-card-fold:disabled { cursor: default; }
 .console-server-row.is-failed .console-server-state { color: var(--lt-warning); }
 .console-past-agent { flex: none; color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .console-file-list-note { padding: var(--lt-space-4) var(--lt-space-8); color: var(--lt-muted-foreground); }
+.console-limit-note { color: var(--lt-warning); }
+.console-clock-view { display: flex; flex-direction: column; gap: var(--lt-space-4); }
+.console-clock-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-6); padding: 0 var(--lt-space-8); }
+.console-clock-time { height: 24px; padding: 0 var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-accent); border-radius: var(--lt-radius-md); background: transparent; color: var(--lt-foreground); font: inherit; font-size: var(--lt-text-13); }
+.console-clock-chip, .console-clock-set { appearance: none; height: 24px; padding: 0 var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-pill); background: transparent; color: var(--lt-muted-foreground); font: inherit; font-size: var(--lt-text-12); cursor: pointer; }
+.console-clock-chip.is-on { border-color: var(--lt-accent); background: var(--lt-wash-hover); color: var(--lt-foreground); }
+.console-clock-set { border-color: var(--lt-accent); color: var(--lt-foreground); font-weight: var(--lt-weight-600); }
+@media (hover: hover) { .console-clock-chip:hover, .console-clock-set:hover { background: var(--lt-wash-hover); } }
+.console-clock-time:focus-visible, .console-clock-chip:focus-visible, .console-clock-set:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: var(--lt-stroke-1); }
 .console-file-list-name { flex: none; }
 .console-file-list-detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--lt-muted-foreground); }
 @media (prefers-reduced-motion: reduce) { .console-composer { transition: none; } }

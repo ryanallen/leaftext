@@ -73,6 +73,7 @@ export const COMMANDS = {
   moveFavorite: [ANSWERED],
   newFile: [REFUSED, 'nothing here writes to a disk'],
   newFolder: [REFUSED, 'nothing here writes to a disk'],
+  newCanvas: [REFUSED, 'nothing here writes to a disk'],
   renameFile: [REFUSED, 'nothing here writes to a disk'],
   duplicateFile: [REFUSED, 'nothing here writes to a disk'],
   deleteFile: [REFUSED, 'nothing here writes to a disk'],

@@ -23004,6 +23004,9 @@ window.leafSetWorkspace = (state) => {
     active: next.active == null ? null : next.active,
     beside: next.beside || null,
   });
+  
+  const front = currentState.active == null ? null : currentState.tabs[currentState.active];
+  if (consoleFrontId !== null && !(front && front.kind === 'console' && front.webId === consoleFrontId)) window.leafConsoleFront(null);
   if (graphViewOpen && activeWebTab() && activeWebTab().webId !== previousWebId) graphSetActive(activeWebTab().url, true, false);
   renderReaderToolbar(readerViewsStand());
   renderTabs(currentState);
@@ -44370,7 +44373,7 @@ const consoleAgentAsks = {
   
   claude: { lines: 4, asks: line => line.trim().split(' · ').includes('Esc to cancel') },
   
-  codex: { lines: 12, asks: line => /^\W*Would you like to /.test(line) || /^\s*(?:enter confirm · esc skip|enter continue · esc skip|t trust all · enter review · esc close|space\/enter toggle · esc back)\s*$/.test(line) },
+  codex: { lines: 12, asks: line => /^\W*Would you like to /.test(line) || /^\W*\d\. Yes, proceed \(y\)/.test(line) || /^\s*Allow the .+ (?:MCP )?server\b/.test(line) || /^\s*Press enter to confirm or esc to\b/.test(line) || /^\s*enter to submit\s*$/.test(line) || /^\s*(?:enter confirm · esc skip|enter continue · esc skip|t trust all · enter review · esc close|space\/enter toggle · esc back)\s*$/.test(line) },
   
   antigravity: { lines: 16, asks: line => line.includes('Approve/reject') || (line.includes('↑/↓ Navigate') && !/tab Complete|esc Go Back/.test(line)) },
 };
@@ -45709,12 +45712,14 @@ function placeConsoleLayers(state = currentState) {
   }
   const besideTab = besideCard && state && state.beside && state.tabs ? state.tabs[state.beside.tab] : null;
   const besideCovered = !!besideTab && (besideTab.kind === 'console' || besideTab.kind === 'web');
+  
+  const frontInKeyed = consoleFrontId !== null && consoleFrontId !== chatId;
   for (const column of [leftColumn, rightColumn]) {
     if (!column || !column.reader) continue;
-    const covered = column === keyedColumn ? consoleFrontId !== null : column === besideCard && besideCovered;
+    const covered = column === keyedColumn ? frontInKeyed : column === besideCard && besideCovered;
     column.reader.classList.toggle('is-under-console', covered);
     
-    const underConsole = column === keyedColumn ? consoleFrontId !== null : column === besideCard && !!besideTab && besideTab.kind === 'console';
+    const underConsole = column === keyedColumn ? frontInKeyed : column === besideCard && !!besideTab && besideTab.kind === 'console';
     if (column.fade) column.fade.classList.toggle('is-under-console', underConsole);
   }
 }
@@ -45727,7 +45732,7 @@ function drawConsoleRail(entry) {
 }
 
 window.leafMinimap.subscribe(() => {
-  if (consoleFrontId === null) return;
+  if (consoleFrontId === null || consoleFrontId === chatConsoleId()) return;
   const entry = consoleLayers.get(consoleFrontId);
   if (!entry) return;
   drawConsoleRail(entry);
@@ -45757,7 +45762,8 @@ window.leafConsoleFront = id => {
   sayStartupDrawn(true);
   
   const rail = currentMinimap();
-  if (changed || !rail || rail.getAttribute('aria-label') !== 'Console minimap') drawConsoleRail(entry);
+  
+  if (id !== chatConsoleId() && (changed || !rail || rail.getAttribute('aria-label') !== 'Console minimap')) drawConsoleRail(entry);
   if (entry.fit) {
     refreshConsoleGrid(id, entry);
     if (entry.drawOwed) {
@@ -47352,6 +47358,9 @@ function newMenuFolderRows(listing) {
   const rows = [newMenuFolderBack(), { heading: listing.name || listing.path }, { label: 'Start here', title: listing.path, keepOpen: true, run: () => {
     newMenuFolder.path = listing.path;
     newMenuFolder.view = false;
+    newMenuDesigns.list = Array.isArray(listing.canvases) ? listing.canvases : [];
+    newMenuDesigns.folder = listing.name || '';
+    newMenuDesigns.request = -1;
     agentLaunchShow('main');
   } }, newMenuFolderChooser(), 'separator'];
   if (listing.parent) rows.push({ ...go(listing.parent), label: `↑ ${newMenuFolderName(listing.parent)}` });
@@ -47361,7 +47370,49 @@ function newMenuFolderRows(listing) {
   return rows;
 }
 
+const newMenuDesigns = { request: 0, folder: '', list: null, filter: '', view: false };
+function askNewMenuDesigns() {
+  if (!newMenuHostAnswers('newMenuFolderList')) return;
+  newMenuFolder.request += 1;
+  newMenuDesigns.request = newMenuFolder.request;
+  newMenuDesigns.list = null;
+  send({ command: 'newMenuFolderList', request: newMenuDesigns.request, path: newMenuFolderPath() || '' });
+}
+function newMenuShowDesigns() {
+  newMenuDesigns.view = true;
+  showCrumbMenu(newMenuButton, newMenuDesignRows(), 'Search designs');
+  const field = crumbMenu.querySelector('.crumb-menu-input');
+  if (field && field.setSelectionRange) field.setSelectionRange(field.value.length, field.value.length);
+}
+function newMenuDesignRows() {
+  const back = { label: 'Back', icon: '<span class="lt-icon lt-icon-back" aria-hidden="true"></span>', keepOpen: true, run: () => { newMenuDesigns.view = false; newMenuDesigns.filter = ''; agentLaunchShow('main'); } };
+  const rows = [back, { heading: `Designs in ${newMenuDesigns.folder || newMenuFolderName(newMenuFolderPath()) || 'your home folder'}` },
+    { input: newMenuDesigns.filter, placeholder: 'Search designs', onInput: (value) => { newMenuDesigns.filter = value; newMenuShowDesigns(); }, onEnter: () => { const first = newMenuDesignRows().find((row) => row.icon && row.icon.includes('lt-icon-image')); if (first) { hideCrumbMenu(); first.run(); } }, onEscape: back.run }];
+  
+  if (!newMenuDesigns.filter.trim() && newMenuHostAnswers('newCanvas')) {
+    for (const [kind, label] of [['slides', 'New slides'], ['design', 'New design'], ['design-system', 'New design system']]) {
+      rows.push({ label, icon: '<span class="lt-icon lt-icon-new" aria-hidden="true"></span>', run: () => send({ command: 'newCanvas', kind, path: newMenuFolderPath() || '' }) });
+    }
+    rows.push('separator');
+  }
+  if (newMenuDesigns.list === null) return [...rows, { note: 'Reading the folder…' }];
+  const wanted = newMenuDesigns.filter.trim().toLowerCase();
+  const shown = newMenuDesigns.list.filter((canvas) => !wanted || String(canvas.name).toLowerCase().includes(wanted));
+  for (const canvas of shown) rows.push({ label: canvas.name, title: canvas.path, icon: '<span class="lt-icon lt-icon-image" aria-hidden="true"></span>', run: () => send({ command: 'openRecent', path: canvas.path }) });
+  if (!shown.length) rows.push({ note: newMenuDesigns.list.length ? 'No design matches that.' : 'No designs in this folder.' });
+  return rows;
+}
+function newMenuDesignsRow() {
+  return { label: 'Designs', title: 'The review canvases in the folder New starts in', icon: '<span class="lt-icon lt-icon-cards" aria-hidden="true"></span>', keepOpen: true, run: newMenuShowDesigns };
+}
+
 window.leafNewMenuFolderListed = (request, listing) => {
+  if (request === newMenuDesigns.request) {
+    newMenuDesigns.list = Array.isArray(listing?.canvases) ? listing.canvases : [];
+    newMenuDesigns.folder = listing?.name || '';
+    if (crumbMenuOwner === newMenuButton && !crumbMenu.hidden && newMenuDesigns.view) newMenuShowDesigns();
+    return;
+  }
   if (request !== newMenuFolder.request || !newMenuFolder.view || crumbMenuOwner !== newMenuButton || crumbMenu.hidden) return;
   showCrumbMenu(newMenuButton, listing?.error ? [newMenuFolderBack(), { note: String(listing.error) }, newMenuFolderChooser()] : newMenuFolderRows(listing), 'Back');
 };
@@ -47397,6 +47448,7 @@ function newMenuMainRows() {
     });
   }
   if (newMenuHostAnswers('agentLaunch')) rows.push('separator', ...agentLaunchRows());
+  if (starts && newMenuHostAnswers('newMenuFolderList')) rows.push(newMenuDesignsRow());
   if (newMenuHostAnswers('consoleCompare')) rows.push({ label: 'Compare agents', title: 'Send one prompt to two agents side by side', icon: '<span class="lt-icon lt-icon-split" aria-hidden="true"></span>', keepOpen: true, run: () => agentLaunchShow('compare') });
   if (newMenuHostAnswers('setAgentNotices')) rows.push(newMenuNoticeRow());
   return rows;
@@ -47442,7 +47494,10 @@ function toggleNewMenu() {
   agentLaunchReset();
   newMenuFolder.path = newMenuDefaultFolder();
   newMenuFolder.view = false;
+  newMenuDesigns.view = false;
+  newMenuDesigns.filter = '';
   showCrumbMenu(newMenuButton, newMenuMainRows());
+  askNewMenuDesigns();
 }
 if (newMenuButton) {
   newMenuButton.setAttribute('aria-haspopup', 'menu');
@@ -47744,8 +47799,23 @@ const AGENT_LAUNCH_VIEWS = {
       { label: 'Rename', keepOpen: true, run: () => { agentLaunch.draft = { name: agentLaunchLabel(agent, id) }; agentLaunchShow('rename'); } },
       status, ...agentLaunchAccountActions(agent, row, status), ...agentLaunchSkipRows(agent), ...agentLaunchErrorNote(),
       { label: 'Launch settings', keepOpen: true, run: () => agentLaunchSettings(agent, id) },
+      ...(['claude', 'codex'].includes(agent) ? [{ label: agentLaunchOf(agent).sessionsFolder ? 'Saving sessions' : 'Save sessions to a folder…', keepOpen: true, run: () => agentLaunchShow('sessions') }] : []),
       agentLaunchStartRow(agent, id),
       ...(row ? [{ label: 'Remove from list', danger: true, keepOpen: true, run: () => agentLaunchShow('remove') }] : [])];
+  },
+  
+  sessions(agent) {
+    const own = agentLaunchOf(agent);
+    const folder = own.sessionsFolder || '';
+    const choose = () => agentLaunchAsk('chooseSessionsFolder').then((answer) => { if (answer && answer.folder) agentLaunchSet('setSessions', { on: true }); });
+    return [agentLaunchBack('account'), { heading: `${AGENT_LAUNCH_NAMES[agent]} · Save sessions` },
+      { note: folder ? `Every ${AGENT_LAUNCH_NAMES[agent]} session is saved to ${folder} as it comes to rest: the prompt, the replies and every tool it ran, linked by project and by day.` : `Save every ${AGENT_LAUNCH_NAMES[agent]} session to a folder you choose, as notes linked by project and by day.` },
+      { label: folder ? 'Choose another folder…' : 'Choose a folder…', icon: FOLDER_ICON_SVG, keepOpen: true, run: choose },
+      ...(folder ? [{ label: 'Save sessions', switch: true, checked: true, keepOpen: true, run: () => agentLaunchSet('setSessions', { on: false }) }] : []),
+      { label: 'Keep the thinking', switch: true, checked: own.sessionsThinking !== false, keepOpen: true, run: () => agentLaunchSet('setSessions', { on: Boolean(folder), thinking: own.sessionsThinking === false }) },
+      { label: 'Keep every tool’s whole output', switch: true, checked: own.sessionsOutput !== false, keepOpen: true, run: () => agentLaunchSet('setSessions', { on: Boolean(folder), output: own.sessionsOutput === false }) },
+      { note: 'A tool’s output can hold anything it printed, a key included, so choose a folder you keep to yourself.' },
+      ...agentLaunchErrorNote()];
   },
   history() {
     return [agentLaunchBack('main'), { heading: 'Past conversations' }, ...agentLaunchHistoryRows()];
@@ -47852,7 +47922,7 @@ const AGENT_LAUNCH_VIEWS = {
   },
 };
 
-const AGENT_LAUNCH_PARENT = { compare: 'main', history: 'main', account: 'main', pick: 'main', add: 'pick', link: 'add', rename: 'account', remove: 'account', waiting: 'account', launch: 'account', preparing: 'main', failed: 'main' };
+const AGENT_LAUNCH_PARENT = { compare: 'main', history: 'main', account: 'main', pick: 'main', add: 'pick', link: 'add', rename: 'account', remove: 'account', waiting: 'account', launch: 'account', sessions: 'account', preparing: 'main', failed: 'main' };
 function agentLaunchShow(view) {
   if (view !== agentLaunch.view) agentLaunch.error = '';
   agentLaunch.view = view === 'main' ? null : view;
@@ -51242,7 +51312,9 @@ function makeConsoleComposer(id, entry, frame) {
   mode.hidden = true;
   
   const repeat = consoleComposerButton('console-composer-repeat', 'Repeat', 'refresh');
-  repeat.appendChild(document.createElement('span'));
+  const repeatWords = document.createElement('span');
+  repeatWords.className = 'console-composer-repeat-words';
+  repeat.appendChild(repeatWords);
   repeat.hidden = true;
   const notes = document.createElement('div');
   notes.className = 'console-composer-notes';
@@ -51697,6 +51769,7 @@ function sendConsoleComposer(id, entry) {
   }
   const text = state.field.value.replace(/\s+$/, '');
   if (!consoleComposerHasMessage(entry)) return;
+  if (consoleLimitStopsSend(id, entry)) return;
   if (entry.chat?.agent === 'codex') {
     if (text.startsWith(CONSOLE_SIDE_PREFIX.trim()) && consoleCodexUnstarted(entry)) {
       leafToast('Send a message first.');
@@ -52475,8 +52548,249 @@ const CONSOLE_REPEAT_EVERY = [
   { label: 'Hour', loop: '1h', ms: 60 * 60000 },
 ];
 
+
+const CONSOLE_REPEAT_CLOCK = { label: 'At a time of day…', clock: true };
+const CONSOLE_CLOCK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const CONSOLE_CLOCK_PRESETS = [['Every day', [0, 1, 2, 3, 4, 5, 6]], ['Weekdays', [1, 2, 3, 4, 5]], ['Weekends', [0, 6]]];
+
 function consoleRepeatRows(entry) {
-  return entry.chat?.agent === 'claude' ? [...CONSOLE_REPEAT_EVERY, { label: 'Let Claude pick the pace', loop: '', detail: 'Claude Code only' }] : CONSOLE_REPEAT_EVERY;
+  return entry.chat?.agent === 'claude' ? [...CONSOLE_REPEAT_EVERY, { label: 'Let Claude pick the pace', loop: '', detail: 'Claude Code only' }, CONSOLE_REPEAT_CLOCK] : [...CONSOLE_REPEAT_EVERY, CONSOLE_REPEAT_CLOCK];
+}
+
+
+let consoleClockNow = () => new Date();
+
+
+function nextConsoleClockRun(now, schedule) {
+  for (let ahead = 0; ahead <= 7; ahead += 1) {
+    const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, Math.floor(schedule.minutes / 60), schedule.minutes % 60);
+    if (at <= now) continue;
+    if (schedule.once || schedule.days.includes(at.getDay())) return at;
+  }
+  return null;
+}
+
+
+const CONSOLE_LIMIT_CUTOFF = 99;
+
+
+function consoleSpentUntil(entry, now = consoleClockNow().getTime()) {
+  const spent = (consoleControlRecord(entry)?.limits || []).filter(limit => limit.usedPercent >= CONSOLE_LIMIT_CUTOFF && limit.resetsAt && limit.resetsAt * 1000 > now);
+  if (!spent.length) return null;
+  const last = spent.reduce((late, limit) => (limit.resetsAt > late.resetsAt ? limit : late));
+  return { until: last.resetsAt * 1000, name: consoleStatusLimitName(last.windowMinutes) };
+}
+
+
+function consoleLimitStopsSend(id, entry) {
+  const state = entry.composer;
+  if (state.limitPassed) {
+    state.limitPassed = false;
+    return false;
+  }
+  const spent = consoleSpentUntil(entry);
+  if (!spent) return false;
+  closeConsoleFileList(entry);
+  state.repeatList = { at: 0, empty: false, id, clock: null, limit: spent };
+  drawConsoleRepeatList(entry);
+  return true;
+}
+
+function drawConsoleLimitNote(entry) {
+  const state = entry.composer;
+  const limit = state.repeatList.limit;
+  const agent = AGENT_LAUNCH_NAMES[entry.chat?.agent] || 'The agent';
+  const at = new Date(limit.until);
+  const time = consoleClockTimeWords(at.getHours() * 60 + at.getMinutes());
+  const day = consoleClockNow().toDateString() === at.toDateString() ? '' : `${CONSOLE_CLOCK_DAYS[at.getDay()]} `;
+  state.list.hidden = false;
+  state.list.setAttribute('aria-label', 'This agent is at its limit');
+  const note = consoleFileListNote(`${agent}'s ${limit.name === 'Limit' ? 'limit' : `${limit.name.toLowerCase()} limit`} is used up. It resets at ${day}${time}.`);
+  note.classList.add('console-limit-note');
+  state.list.replaceChildren(note, consoleListOption(0, state.repeatList.at, `Send at ${day}${time}`), consoleListOption(1, state.repeatList.at, 'Send anyway'));
+}
+
+function chooseConsoleLimit(id, entry, index) {
+  const state = entry.composer;
+  const limit = state.repeatList.limit;
+  closeConsoleFileList(entry);
+  if (index === 1) {
+    state.limitPassed = true;
+    sendConsoleComposer(id, entry);
+    return;
+  }
+  
+  clearTimeout(entry.limitWait?.timer);
+  entry.limitWait = { until: limit.until, timer: 0 };
+  armConsoleLimitWait(id, entry);
+}
+
+function armConsoleLimitWait(id, entry) {
+  const wait = entry.limitWait;
+  const left = wait.until - consoleClockNow().getTime();
+  wait.timer = setTimeout(() => {
+    if (entry.limitWait !== wait) return;
+    if (consoleLayers.get(id) !== entry || !entry.composer || !consoleComposerHasMessage(entry)) {
+      entry.limitWait = null;
+      drawConsoleRepeat(entry);
+      return;
+    }
+    if (consoleClockNow().getTime() >= wait.until && !consoleComposerWorking(entry)) {
+      entry.limitWait = null;
+      entry.composer.limitPassed = true;
+      sendConsoleComposer(id, entry);
+      drawConsoleRepeat(entry);
+      return;
+    }
+    armConsoleLimitWait(id, entry);
+  }, left > 0 ? Math.min(60000, left + 1000) : 5000);
+  drawConsoleRepeat(entry);
+}
+
+function consoleClockTimeWords(minutes) {
+  const hour = Math.floor(minutes / 60);
+  return `${hour % 12 || 12}:${String(minutes % 60).padStart(2, '0')}${hour < 12 ? 'am' : 'pm'}`;
+}
+
+function consoleClockDaysWords(schedule) {
+  if (schedule.once) return 'Once';
+  const days = [...schedule.days].sort().join(',');
+  const preset = CONSOLE_CLOCK_PRESETS.find(([, set]) => set.join(',') === days);
+  return preset ? preset[0] : schedule.days.slice().sort().map(day => CONSOLE_CLOCK_DAYS[day]).join(', ');
+}
+
+
+function drawConsoleClockView(entry) {
+  const state = entry.composer;
+  const clock = state.repeatList.clock;
+  state.list.hidden = false;
+  state.list.setAttribute('aria-label', 'Repeat the prompt at a time of day');
+  const view = document.createElement('div');
+  view.className = 'console-clock-view';
+  const chipRow = (chips) => {
+    const row = document.createElement('div');
+    row.className = 'console-clock-chips';
+    row.append(...chips);
+    return row;
+  };
+  const chip = (label, on, press) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = on ? 'console-clock-chip is-on' : 'console-clock-chip';
+    button.textContent = label;
+    button.setAttribute('aria-pressed', String(on));
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      press();
+      drawConsoleClockView(entry);
+    });
+    return button;
+  };
+  const time = document.createElement('input');
+  time.type = 'time';
+  time.className = 'console-clock-time';
+  time.value = `${String(Math.floor(clock.minutes / 60)).padStart(2, '0')}:${String(clock.minutes % 60).padStart(2, '0')}`;
+  time.setAttribute('aria-label', 'Time of day');
+  time.addEventListener('change', () => {
+    const [hours, minutes] = time.value.split(':').map(Number);
+    if (Number.isFinite(hours) && Number.isFinite(minutes)) clock.minutes = hours * 60 + minutes;
+  });
+  time.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { event.preventDefault(); setConsoleClock(state.repeatList.id, entry); }
+    if (event.key === 'Escape') { event.preventDefault(); state.repeatList.clock = null; drawConsoleRepeatList(entry); state.field.focus(); }
+  });
+  const days = clock.days.slice().sort().join(',');
+  const presets = CONSOLE_CLOCK_PRESETS.map(([label, set]) => chip(label, !clock.once && set.join(',') === days, () => { clock.days = set.slice(); clock.once = false; }));
+  const once = chip('Once', clock.once, () => { clock.once = !clock.once; });
+  const dayChips = [1, 2, 3, 4, 5, 6, 0].map(day => chip(CONSOLE_CLOCK_DAYS[day], !clock.once && clock.days.includes(day), () => {
+    clock.once = false;
+    clock.days = clock.days.includes(day) ? clock.days.filter(one => one !== day) : [...clock.days, day];
+  }));
+  const where = [['here', 'In this chat'], ['new', 'In a new chat each time']].map(([value, label]) => chip(label, clock.where === value, () => { clock.where = value; }));
+  const set = document.createElement('button');
+  set.type = 'button';
+  set.className = 'console-clock-set';
+  set.textContent = 'Set';
+  set.addEventListener('click', (event) => { event.preventDefault(); setConsoleClock(state.repeatList.id, entry); });
+  view.append(consoleFileListNote('Send what is in the box at…'), chipRow([time, ...presets, once]), chipRow(dayChips), consoleFileListNote('Each run goes…'), chipRow([...where, set]), consoleFileListNote('Enter to set · Esc to go back to the intervals'));
+  state.list.replaceChildren(view);
+}
+
+function setConsoleClock(id, entry) {
+  const state = entry.composer;
+  const clock = state.repeatList?.clock;
+  const prompt = state.field.value.trim();
+  if (!clock || !prompt || (!clock.once && !clock.days.length)) return;
+  closeConsoleFileList(entry);
+  stopConsoleRepeat(entry);
+  state.field.value = '';
+  state.field.dispatchEvent(new Event('input', { bubbles: true }));
+  entry.repeat = { kind: 'clock', agent: entry.chat?.agent, prompt, schedule: { minutes: clock.minutes, days: clock.days.slice(), once: clock.once, where: clock.where }, due: null, next: 0, timer: 0, folder: (currentState?.tabs || []).find(tab => tab.kind === 'console' && tab.webId === id)?.folder || '' };
+  armConsoleClock(id, entry);
+}
+
+function armConsoleClock(id, entry) {
+  const repeat = entry.repeat;
+  const now = consoleClockNow();
+  if (!repeat.due) repeat.due = nextConsoleClockRun(now, repeat.schedule);
+  if (!repeat.due) {
+    stopConsoleRepeat(entry);
+    return;
+  }
+  repeat.next = repeat.due.getTime();
+  
+  const wait = repeat.held ? 5000 : Math.max(1000, Math.min(60000, repeat.next - now.getTime()));
+  repeat.timer = setTimeout(() => tickConsoleClock(id, entry, repeat), wait);
+  drawConsoleRepeat(entry);
+}
+
+function tickConsoleClock(id, entry, repeat) {
+  if (entry.repeat !== repeat) return;
+  if (consoleLayers.get(id) !== entry || !entry.composer) {
+    entry.repeat = null;
+    return;
+  }
+  if (consoleClockNow().getTime() >= repeat.due.getTime()) {
+    let ran = true;
+    if (repeat.schedule.where === 'new') startConsoleClockRun(repeat);
+    
+    else if (!consoleComposerWorking(entry) && !consoleComposerHasMessage(entry) && consoleModelPrompt(entry, repeat.agent).kind === 'empty') {
+      entry.composer.field.value = repeat.prompt;
+      sendConsoleComposer(id, entry);
+    } else ran = false;
+    repeat.held = !ran;
+    if (ran) {
+      if (repeat.schedule.once) {
+        stopConsoleRepeat(entry);
+        return;
+      }
+      repeat.due = null;
+    }
+  }
+  armConsoleClock(id, entry);
+}
+
+
+function startConsoleClockRun(repeat) {
+  const request = ++agentLaunch.request;
+  send({ command: 'agentLaunch', action: 'start', agent: repeat.agent, id: '', request, path: repeat.folder || newMenuFolderPath() });
+  agentLaunch.waiting.set(request, (first) => {
+    if (first.error) return leafToast(first.error);
+    agentLaunch.waiting.set(request, (done) => {
+      if (done.error) return leafToast(done.error);
+      if (Number.isInteger(done.console)) sendConsoleClockRunWhenReady(done.console, repeat.prompt, 0);
+    });
+  });
+}
+
+function sendConsoleClockRunWhenReady(id, prompt, tries) {
+  const entry = consoleLayers.get(id);
+  if (entry && entry.composer && consoleChatShown(entry) && !consoleComposerWorking(entry) && !consoleComposerHasMessage(entry)) {
+    entry.composer.field.value = prompt;
+    sendConsoleComposer(id, entry);
+    return;
+  }
+  if (tries < 120) setTimeout(() => sendConsoleClockRunWhenReady(id, prompt, tries + 1), 1000);
 }
 
 function openConsoleRepeat(id, entry) {
@@ -52487,13 +52801,21 @@ function openConsoleRepeat(id, entry) {
     return;
   }
   closeConsoleFileList(entry);
-  state.repeatList = { at: 1, empty: false };
+  state.repeatList = { at: 1, empty: false, id, clock: null };
   drawConsoleRepeatList(entry);
 }
 
 function drawConsoleRepeatList(entry) {
   const state = entry.composer;
   const list = state.repeatList;
+  if (list.limit) {
+    drawConsoleLimitNote(entry);
+    return;
+  }
+  if (list.clock) {
+    drawConsoleClockView(entry);
+    return;
+  }
   state.list.hidden = false;
   state.list.setAttribute('aria-label', 'Repeat the prompt');
   list.empty = !state.field.value.trim();
@@ -52514,15 +52836,40 @@ function drawConsoleRepeatList(entry) {
 
 function consoleRepeatListKey(id, entry, event) {
   const list = entry.composer.repeatList;
+  if (list.limit) return consoleListKey(entry, list, 2, drawConsoleRepeatList, index => chooseConsoleLimit(id, entry, index), event);
+  if (list.clock) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      setConsoleClock(id, entry);
+      return true;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      list.clock = null;
+      drawConsoleRepeatList(entry);
+      return true;
+    }
+    return false;
+  }
   const count = entry.composer.field.value.trim() ? consoleRepeatRows(entry).length : 0;
   return consoleListKey(entry, list, count, drawConsoleRepeatList, index => chooseConsoleRepeat(id, entry, index), event);
 }
 
 function chooseConsoleRepeat(id, entry, index) {
   const state = entry.composer;
+  if (state.repeatList?.limit) {
+    chooseConsoleLimit(id, entry, index);
+    return;
+  }
   const row = consoleRepeatRows(entry)[index];
   const prompt = state.field.value.trim();
   if (!row || !prompt) return;
+  if (row.clock) {
+    const now = consoleClockNow();
+    state.repeatList.clock = { minutes: ((now.getHours() + 1) % 24) * 60, days: [0, 1, 2, 3, 4, 5, 6], once: false, where: 'here' };
+    drawConsoleRepeatList(entry);
+    return;
+  }
   closeConsoleFileList(entry);
   stopConsoleRepeat(entry);
   if (entry.chat?.agent === 'claude') {
@@ -52557,6 +52904,8 @@ function armConsoleRepeat(id, entry) {
 function stopConsoleRepeat(entry) {
   if (entry.repeat) clearTimeout(entry.repeat.timer);
   entry.repeat = null;
+  if (entry.limitWait) clearTimeout(entry.limitWait.timer);
+  entry.limitWait = null;
   drawConsoleRepeat(entry);
 }
 
@@ -52564,9 +52913,28 @@ function drawConsoleRepeat(entry) {
   const press = entry.composer?.repeat;
   if (!press) return;
   const repeat = entry.repeat;
-  press.hidden = !repeat;
+  const wait = !repeat && entry.limitWait;
+  press.hidden = !repeat && !wait;
+  if (wait) {
+    const at = new Date(wait.until);
+    press.lastChild.textContent = `Sends at ${consoleClockTimeWords(at.getHours() * 60 + at.getMinutes())}`;
+    const label = `Waiting for the limit to reset, then sending what is in the box. Press to cancel.`;
+    press.title = label;
+    press.setAttribute('aria-label', label);
+    return;
+  }
   if (!repeat) return;
-  const next = new Date(repeat.next).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s/g, '').toLowerCase();
+  if (repeat.kind === 'clock') {
+    const due = new Date(repeat.next);
+    const today = consoleClockNow().toDateString() === due.toDateString();
+    const when = `${consoleClockDaysWords(repeat.schedule)} ${consoleClockTimeWords(repeat.schedule.minutes)}`;
+    press.lastChild.textContent = `${when} · next ${today ? '' : `${CONSOLE_CLOCK_DAYS[due.getDay()]} `}${consoleClockTimeWords(due.getHours() * 60 + due.getMinutes())}`;
+    const label = `Repeating ${when}. Press to stop.`;
+    press.title = label;
+    press.setAttribute('aria-label', label);
+    return;
+  }
+  const next =new Date(repeat.next).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s/g, '').toLowerCase();
   const every = repeat.row.label === 'Hour' ? 'hour' : repeat.row.label;
   press.lastChild.textContent = `Every ${every} · next ${next}`;
   const label = `Repeating every ${every}. Press to stop.`;
@@ -60626,16 +60994,6 @@ function invalidateMinimapPreviewForToggle(event) {
 }
 document.addEventListener('toggle', invalidateMinimapPreviewForToggle, true);
 
-function minimapVisibleDocumentRange(metrics, scrollTop) {
-  const ratio = metrics.scrollable === 0
-    ? 0
-    : Math.min(1, Math.max(0, scrollTop / metrics.scrollable));
-  const previewTop = -ratio * Math.max(0, metrics.scaledDocumentHeight - metrics.trackHeight);
-  const top = metrics.previewScale > 0 ? -previewTop / metrics.previewScale : 0;
-  const height = metrics.previewScale > 0 ? metrics.trackHeight / metrics.previewScale : 0;
-  return { top, bottom: top + height, height };
-}
-
 function moveMinimapBuiltFoot(by) {
   if (!minimapBuiltRange) return;
   
@@ -61052,7 +61410,8 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
     tableAnchor = built.tableAnchor;
     frame.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;
     
-    const outerEdges = window.wrappers.length ? minimapBlockEdges(window.wrappers[0], appTop, scrollTop) : null;
+    const topEdges = window.wrappers.length ? minimapBlockEdges(minimapClaimedWrapper(window.wrappers, false), appTop, scrollTop) : null;
+    const footEdges = window.wrappers.length ? minimapBlockEdges(minimapClaimedWrapper(window.wrappers, true), appTop, scrollTop) : null;
     
     const empty = first > last;
     minimapBuiltRange = {
@@ -61060,7 +61419,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
         ? cut.top
         : (window.beforeFirst >= 0
           ? (window.beforeFirst === 0 ? 0 : firstTop)
-          : (empty ? cut.top : (first === 0 ? (outerEdges ? outerEdges.top : 0) : minimapClaimReaches(rows, first, -1, firstTop, appTop, scrollTop)))),
+          : (empty ? cut.top : (first === 0 ? (topEdges ? topEdges.top : 0) : minimapClaimReaches(rows, first, -1, firstTop, appTop, scrollTop)))),
       bottom: built.slicedBottom
         ? cut.bottom
         : (window.afterLast >= 0
@@ -61068,7 +61427,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
           : (empty
             ? cut.bottom
             : (last >= rows.length - 1
-              ? (outerEdges ? outerEdges.bottom : metrics.scrollHeight)
+              ? (footEdges ? footEdges.bottom : metrics.scrollHeight)
               : minimapClaimReaches(rows, last, 1, minimapBlockEdges(rows[last], appTop, scrollTop).bottom, appTop, scrollTop)))),
     };
     
@@ -61760,6 +62119,22 @@ function minimapViewportPlace(metrics, scrollTopWanted) {
   const viewportDocumentTop = scrollTop * metrics.previewScale;
   const viewportTop = Math.min(Math.max(0, metrics.trackHeight - boundedViewportHeight), Math.max(0, previewTop + viewportDocumentTop));
   return { previewTop, viewportTop, boundedViewportHeight };
+}
+
+function minimapVisibleDocumentRange(metrics, scrollTop) {
+  const ratio = metrics.scrollable === 0
+    ? 0
+    : Math.min(1, Math.max(0, scrollTop / metrics.scrollable));
+  const previewTop = -ratio * Math.max(0, metrics.scaledDocumentHeight - metrics.trackHeight);
+  const top = metrics.previewScale > 0 ? -previewTop / metrics.previewScale : 0;
+  const height = metrics.previewScale > 0 ? metrics.trackHeight / metrics.previewScale : 0;
+  return { top, bottom: top + height, height };
+}
+
+function minimapClaimedWrapper(wrappers, toFoot) {
+  let at = wrappers.length - 1;
+  while (at > 0 && !(toFoot ? wrappers[at].nextElementSibling : wrappers[at].previousElementSibling)) at -= 1;
+  return wrappers[at];
 }
 function updateConsoleMinimapPreview(track, content, minimap) {
   const entry = frontConsoleEntry();

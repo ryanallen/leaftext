@@ -645,7 +645,7 @@
 | Close ends reliably | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Agents edit documents | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Agents tick tasks | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Thirty-four agent tools | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Over forty agent tools | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Written agent workflow | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Untitled saves refused | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drawings described to agents | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -670,6 +670,14 @@
 | Folded diff lines open | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Moved lines drawn once | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Prompt held over chat | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Prompts at clock times | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Send when limit resets | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Awake while agents work | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Sessions saved as notes | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Skill chains | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Why changes were made | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Checks learn from sessions | [✅][l-agent-harness] | ? | [❌][t-seen] | [❌][c-seen] |
+| Design canvas with comments | [✅][l-agent-canvas] | ? | [❌][t-seen] | [❌][c-seen] |
 | Speak a prompt | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Files changed this turn | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Hand turn to agent | [✅][l-agent-fork] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -761,6 +769,7 @@
 [l-agent-harness]: ../01-features/10-agents.md#hold-an-agent-to-your-checks
 [l-agent-drop]: ../01-features/10-agents.md#run-the-agent-in-a-console
 [l-agent-chat]: ../01-features/10-agents.md#the-conversation-as-a-chat
+[l-agent-canvas]: ../01-features/10-agents.md#design-on-a-canvas-with-comments
 [l-agent-fork]: ../01-features/10-agents.md#fork-and-compare
 [l-agent-folder]: ../01-features/10-agents.md#the-agents-status-under-its-console
 [o-cli]: https://obsidian.md/help/cli
