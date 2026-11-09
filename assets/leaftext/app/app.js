@@ -48291,7 +48291,7 @@ const SETUP_SCREENS = {
     });
     return [...setupHeader(1, 'Keep every conversation with your agents', 'Leaftext found these agents signed in on this computer. Nothing they do is kept once their own history is trimmed. Leaftext can keep all of it for you.'),
       setupGroup(cards),
-      setupActions([setupWalk.changing ? setupButton('Back', false, () => { setupWalk.changing = false; setupShow('done'); }) : setupButton('Not now', false, setupNotNow)], [setupButton('Next', true, () => setupShow('where'))])];
+      setupActions([setupWalk.changing ? setupButton('Back', false, () => { setupWalk.changing = false; setupShow('done'); }) : setupButton('Cancel', false, setupCancel)], [setupButton('Next', true, () => setupShow('where'))])];
   },
   where() {
     const choice = setupWalk.choice;
@@ -48488,8 +48488,7 @@ function setupClose() {
   setupWalk.returnFocus = null;
 }
 
-function setupNotNow() {
-  agentLaunchAsk('sessionsNotNow');
+function setupCancel() {
   setupClose();
 }
 function setupSend(choice) {
@@ -48551,32 +48550,17 @@ function setupExport() {
   });
 }
 
-function setupCheck() {
-  if (setupWalk.open) return;
-  agentLaunchAsk('sessionsState').then((answer) => {
-    if (!answer || answer.error || setupWalk.open) return;
-    setupWalk.state = answer;
-    if (answer.needed) setupOpen('found', false);
-  });
-}
-
 function setupOpenFromMenu() {
   agentLaunchAsk('sessionsState').then((answer) => {
     if (!answer || answer.error) return;
     setupWalk.state = answer;
-    setupOpen(answer.setup && answer.setup.home ? 'done' : 'found', true);
+    
+    const kept = Boolean(answer.setup && answer.setup.home);
+    setupOpen(kept ? 'done' : 'found', kept);
   });
 }
-
-const setupAnswerBefore = window.leafAgentLaunchAnswer;
-window.leafAgentLaunchAnswer = (request, answer) => {
-  setupAnswerBefore(request, answer);
-  if (answer && answer.id && answer.state && !setupWalk.open) setupCheck();
-};
-leafOnEscape(() => { if (setupWalk.open) setupNotNow(); }, window);
-setupBackdrop.addEventListener('click', () => { if (setupWalk.screen !== 'saving') setupNotNow(); });
-
-setTimeout(() => window.requestAnimationFrame(() => window.requestAnimationFrame(setupCheck)), 750);
+leafOnEscape(() => { if (setupWalk.open) setupCancel(); }, window);
+setupBackdrop.addEventListener('click', () => { if (setupWalk.screen !== 'saving') setupCancel(); });
 
 var consoleRecentsBand = document.getElementById('consoleRecents');
 const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true, status: 'active', filterView: null, type: 'all', since: 'all', group: 'none', sort: 'recent', renaming: false, pins: [], carry: null, held: false, listOrder: [] };
