@@ -20512,6 +20512,24 @@ p.shelf-foot {
 .wisp-name { width: auto; padding: var(--lt-space-2) var(--lt-space-4); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-sm); background: transparent; color: var(--lt-primary-ink); font-family: var(--app-font); font-size: var(--lt-text-18); font-weight: var(--lt-weight-700); line-height: var(--lt-leading-1-2); }
 .wisp-name:focus { border-color: var(--lt-border-strong); outline: none; }
 .wisp-said { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+
+.wisp-runs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-6) var(--lt-space-12); margin-bottom: var(--lt-space-8); }
+.wisp-runs-part { display: inline-flex; align-items: center; gap: var(--lt-space-6); min-width: 0; }
+.wisp-runs-label { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+.wisp-runs-pick { min-width: 0; max-width: 36ch; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-sm); background: var(--lt-surface-elevated); color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12); }
+.wisp-runs-pick:focus { border-color: var(--lt-border-strong); outline: none; }
+.wisp-runs-pick.is-none { color: var(--lt-danger); }
+.wisp-row-runs { flex: 0 1 55%; min-width: 0; overflow: hidden; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); text-overflow: ellipsis; white-space: nowrap; }
+
+.wisp-talk { display: flex; flex-direction: column; gap: var(--lt-space-8); margin: var(--lt-space-8) 0; }
+.wisp-talk-lines { display: flex; flex-direction: column; gap: var(--lt-space-8); max-height: 40vh; overflow-y: auto; }
+.wisp-talk-line { display: flex; flex-direction: column; gap: var(--lt-space-2); max-width: 80%; padding: var(--lt-space-8) var(--lt-space-12); border-radius: var(--lt-radius-md); color: var(--lt-foreground); font-size: var(--lt-text-13); white-space: pre-wrap; overflow-wrap: anywhere; }
+.wisp-talk-line.is-you { align-self: flex-end; background: var(--lt-wash-hover); }
+.wisp-talk-line.is-wisp { align-self: flex-start; background: var(--lt-surface-elevated); }
+.wisp-talk-who { color: var(--lt-muted-foreground); font-size: var(--lt-text-11); }
+.wisp-talk-box { display: flex; align-items: flex-end; gap: var(--lt-space-8); }
+.wisp-talk-field { flex: 1; min-width: 0; padding: var(--lt-space-6) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-sm); background: var(--lt-surface-elevated); color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-13); resize: vertical; }
+.wisp-talk-field:focus { border-color: var(--lt-border-strong); outline: none; }
 .wisp-keep { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-2) var(--lt-space-8); }
 .wisp-keep-said { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .wisp-empty { margin: var(--lt-space-12) 0; color: var(--lt-muted-foreground); font-size: var(--lt-text-13); }
@@ -20523,6 +20541,11 @@ p.shelf-foot {
 .wisp-service-said.is-good { color: var(--lt-primary-ink); }
 .wisp-service-said.is-bad { color: var(--lt-danger); }
 .wisp-service-key { flex: 1 1 20ch; min-width: 0; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-sm); background: var(--lt-surface-elevated); color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12); }
+.wisp-member { flex: 0 1 26ch; }
+
+.wisp-person-code { color: var(--lt-primary-ink); font-family: var(--font-mono); font-size: var(--lt-text-13); letter-spacing: var(--lt-tracking-060); }
+.wisp-person-chain { display: inline-flex; align-items: center; gap: var(--lt-space-4); color: var(--lt-foreground); font-size: var(--lt-text-12); }
+.wisp-people-heading { margin: var(--lt-space-12) 0 0; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); letter-spacing: var(--lt-tracking-120); text-transform: uppercase; }
 .wisp-service-key:focus { border-color: var(--lt-border-strong); outline: none; }
 .wisp-service-key[hidden] { display: none; }
 .wisp-check-all { margin-top: var(--lt-space-8); }

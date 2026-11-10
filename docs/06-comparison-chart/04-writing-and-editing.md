@@ -658,6 +658,11 @@
 | Ask agent about passage | [✅][l-agent-passage] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Circling agent warned | [✅][l-agent-circle] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agent plugin install | [✅][l-agent-plugin] | ? | [❌][t-seen] | [❌][c-seen] |
+| Bot answers in Slack | [✅][l-wisp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Bot answers in Discord | [✅][l-wisp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Bot hears voice notes | [✅][l-wisp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Stop chains from chat | [✅][l-wisp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Bot status from chat | [✅][l-wisp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents held to checks | [✅][l-agent-harness] | ? | [❌][t-seen] | [❌][c-seen] |
 | Drop paths into console | [✅][l-agent-drop] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Pick agent start folder | [✅][l-agent-drop] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -759,6 +764,7 @@
 [o-seen]: ../05-compare.md#obsidian
 [t-seen]: ../05-compare.md#typora
 [l-agent]: ../01-features/10-agents.md
+[l-wisp]: ../01-features/05-settings.md#your-wisp
 [l-agent-tell]: ../01-features/10-agents.md#agents-in-different-consoles-talk-to-each-other
 [l-agent-start]: ../01-features/10-agents.md#an-agent-starts-another-and-waits-on-it
 [l-agent-drive]: ../01-features/10-agents.md#an-agent-drives-your-other-windows

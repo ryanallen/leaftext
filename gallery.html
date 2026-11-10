@@ -20572,6 +20572,24 @@ p.shelf-foot {
 .wisp-name { width: auto; padding: var(--lt-space-2) var(--lt-space-4); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-sm); background: transparent; color: var(--lt-primary-ink); font-family: var(--app-font); font-size: var(--lt-text-18); font-weight: var(--lt-weight-700); line-height: var(--lt-leading-1-2); }
 .wisp-name:focus { border-color: var(--lt-border-strong); outline: none; }
 .wisp-said { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+/* Runs on and Works in: which account the wisp's agent is and the folder it starts in, always said. */
+.wisp-runs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-6) var(--lt-space-12); margin-bottom: var(--lt-space-8); }
+.wisp-runs-part { display: inline-flex; align-items: center; gap: var(--lt-space-6); min-width: 0; }
+.wisp-runs-label { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+.wisp-runs-pick { min-width: 0; max-width: 36ch; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-sm); background: var(--lt-surface-elevated); color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12); }
+.wisp-runs-pick:focus { border-color: var(--lt-border-strong); outline: none; }
+.wisp-runs-pick.is-none { color: var(--lt-danger); }
+.wisp-row-runs { flex: 0 1 55%; min-width: 0; overflow: hidden; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); text-overflow: ellipsis; white-space: nowrap; }
+/* Talk: the conversation the wisp's console holds, newest at the foot, and the message box under it. */
+.wisp-talk { display: flex; flex-direction: column; gap: var(--lt-space-8); margin: var(--lt-space-8) 0; }
+.wisp-talk-lines { display: flex; flex-direction: column; gap: var(--lt-space-8); max-height: 40vh; overflow-y: auto; }
+.wisp-talk-line { display: flex; flex-direction: column; gap: var(--lt-space-2); max-width: 80%; padding: var(--lt-space-8) var(--lt-space-12); border-radius: var(--lt-radius-md); color: var(--lt-foreground); font-size: var(--lt-text-13); white-space: pre-wrap; overflow-wrap: anywhere; }
+.wisp-talk-line.is-you { align-self: flex-end; background: var(--lt-wash-hover); }
+.wisp-talk-line.is-wisp { align-self: flex-start; background: var(--lt-surface-elevated); }
+.wisp-talk-who { color: var(--lt-muted-foreground); font-size: var(--lt-text-11); }
+.wisp-talk-box { display: flex; align-items: flex-end; gap: var(--lt-space-8); }
+.wisp-talk-field { flex: 1; min-width: 0; padding: var(--lt-space-6) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-sm); background: var(--lt-surface-elevated); color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-13); resize: vertical; }
+.wisp-talk-field:focus { border-color: var(--lt-border-strong); outline: none; }
 .wisp-keep { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-2) var(--lt-space-8); }
 .wisp-keep-said { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .wisp-empty { margin: var(--lt-space-12) 0; color: var(--lt-muted-foreground); font-size: var(--lt-text-13); }
@@ -20583,6 +20601,11 @@ p.shelf-foot {
 .wisp-service-said.is-good { color: var(--lt-primary-ink); }
 .wisp-service-said.is-bad { color: var(--lt-danger); }
 .wisp-service-key { flex: 1 1 20ch; min-width: 0; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-sm); background: var(--lt-surface-elevated); color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12); }
+.wisp-member { flex: 0 1 26ch; }
+/* People: a stranger's code beside their ID, and the two headings over the waiting and the let in. */
+.wisp-person-code { color: var(--lt-primary-ink); font-family: var(--font-mono); font-size: var(--lt-text-13); letter-spacing: var(--lt-tracking-060); }
+.wisp-person-chain { display: inline-flex; align-items: center; gap: var(--lt-space-4); color: var(--lt-foreground); font-size: var(--lt-text-12); }
+.wisp-people-heading { margin: var(--lt-space-12) 0 0; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); letter-spacing: var(--lt-tracking-120); text-transform: uppercase; }
 .wisp-service-key:focus { border-color: var(--lt-border-strong); outline: none; }
 .wisp-service-key[hidden] { display: none; }
 .wisp-check-all { margin-top: var(--lt-space-8); }
@@ -22266,7 +22289,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 119 icons, and all 212 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 119 icons, and all 215 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -22301,7 +22324,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>204</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>119</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>212</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>215</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -22788,7 +22811,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">212 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">215 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -23082,20 +23105,32 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="grove-tabs" role="tablist" style="max-width:520px"><button type="button" class="grove-tab is-chosen" role="tab" aria-selected="true">Growth</button><button type="button" class="grove-tab" role="tab" aria-selected="false">Tree</button></div></div>
 </section>
 <section class="part">
-<header><h3>Wisp row</h3><code class="built">.wisp-row</code><span class="built">wisp.js, at the head of the conversations under the pane's heading, drawn with or without an agent running: the wisp's name and "your bot", ending on its light; a press opens its sheet</span></header>
-<div class="stage"><div class="wisp-row-wrap" style="max-width:260px"><button type="button" class="wisp-row"><span class="wisp-row-mark">✦</span><span class="wisp-row-name">Wisp · your bot</span><span class="wisp-light is-lit"></span></button></div></div>
+<header><h3>Wisp row</h3><code class="built">.wisp-row</code><span class="built">wisp.js, at the head of the conversations under the pane's heading, drawn with or without an agent running: the wisp's name and "your bot", the AI account and folder it is on — No AI chosen or No folder chosen until one is — ending on its light; a press opens its sheet</span></header>
+<div class="stage"><div class="wisp-row-wrap" style="max-width:320px"><button type="button" class="wisp-row"><span class="wisp-row-mark">✦</span><span class="wisp-row-name">Wisp · your bot</span><span class="wisp-row-runs">Claude · leaftext/app</span><span class="wisp-light is-lit"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Wisp runs on</h3><code class="built">.wisp-runs</code><span class="built">wisp.js, at the head of the wisp's sheet under its name: Runs on, a list of every account the New menu lists, and Works in, the folder its agent starts in, pressed to choose one in the system's folder window; either reads in red while nothing is chosen</span></header>
+<div class="stage"><div class="wisp-runs" style="max-width:560px"><span class="wisp-runs-part"><span class="wisp-runs-label">Runs on</span><select class="wisp-runs-pick"><option>Claude · Work</option></select></span><span class="wisp-runs-part"><span class="wisp-runs-label">Works in</span><button type="button" class="wisp-runs-pick is-none">No folder chosen</button></span></div></div>
+</section>
+<section class="part">
+<header><h3>Wisp talk</h3><code class="built">.wisp-talk</code><span class="built">wisp.js, the wisp sheet's Talk tab: what the wisp's console has said, read from its agent's own record — yours on the right, the wisp's on the left under the account it runs on — and a message box with Send under it</span></header>
+<div class="stage"><div class="wisp-talk" style="max-width:560px"><div class="wisp-talk-lines"><div class="wisp-talk-line is-you"><span class="wisp-talk-who">You</span>What is at the top of the plan?</div><div class="wisp-talk-line is-wisp"><span class="wisp-talk-who">Wisp · Claude</span>The wisp ticket, then Slack and Discord.</div></div><div class="wisp-talk-box"><textarea class="wisp-talk-field" rows="2" placeholder="Message Wisp…"></textarea><button type="button" class="theme-mode-btn">Send</button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Wisp's light</h3><code class="built">.wisp-light</code><span class="built">wisp.js, ending the wisp row and at the wisp sheet's top right, where it is pressed: a dot with no word for its state — a ring unlit, glowing lit, pulsing while a chain runs or waits, red when a run failed</span></header>
 <div class="stage"><span class="wisp-light is-unlit"></span> <span class="wisp-light is-lit"></span> <span class="wisp-light is-busy"></span> <span class="wisp-light is-failed"></span> <button type="button" class="wisp-light wisp-light-press is-lit" aria-pressed="true" aria-label="Turn your wisp off"></button></div>
 </section>
 <section class="part">
-<header><h3>Wisp sheet</h3><code class="built">.wisp-sheet</code><span class="built">app-shell.html, driven by wisp.js, on the Grove sheet's frame: the name typed over Wisp with a line saying it is your bot, the light, the switch that keeps Leaftext running, and the Connections, Chains, People and Runs tabs</span></header>
+<header><h3>Wisp sheet</h3><code class="built">.wisp-sheet</code><span class="built">app-shell.html, driven by wisp.js, on the Grove sheet's frame: the name typed over Wisp with a line saying it is your bot, the light, Runs on and Works in, the switch that keeps Leaftext running, and the Talk, Connections, Chains, People and Runs tabs</span></header>
 <div class="stage"><div class="leaf-sheet grove-sheet wisp-sheet open" style="position:static;max-width:640px"><div class="leaf-sheet-grip"></div><div class="grove-sheet-head wisp-sheet-head"><span class="wisp-names"><label class="wisp-name-field"><input class="wisp-name" type="text" value="Wisp"><span class="lt-icon lt-icon-rename"></span></label><span class="wisp-said">Your bot: an agent that runs your chains on its own, on a clock or when Linear, Slack, Discord or a text asks.</span></span><button type="button" class="wisp-light wisp-light-press is-lit" aria-pressed="true"></button><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="wisp-keep"><button type="button" class="grove-switch" role="switch" aria-checked="true"><span class="grove-switch-label">Keep running when you close the window</span><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button><span class="wisp-keep-said">So your wisp can keep working after the last window closes. Quit from the icon.</span></div><div class="grove-tabs"><button type="button" class="grove-tab is-chosen">Connections</button><button type="button" class="grove-tab">Chains</button><button type="button" class="grove-tab">People</button><button type="button" class="grove-tab">Runs</button></div><div class="grove-sheet-body"><p class="wisp-empty">The people your wisp listens to, once a chat service is connected.</p></div></div></div>
 </section>
 <section class="part">
-<header><h3>Service row</h3><code class="built">.wisp-service</code><span class="built">wisp.js, in the wisp's Connections tab and an agent's Connections view: a service's name, what its last check found in plain words, and the one press that fixes it — Enter token, Connect or Forget; the key field is a password field whose value is sent once and never drawn again</span></header>
-<div class="stage"><div class="wisp-services" style="max-width:560px"><div class="wisp-service"><span class="wisp-service-name">Linear</span><span class="wisp-service-said is-good">Key stored. Checked 9:14pm: it answers.</span><button type="button" class="theme-mode-btn">Forget</button></div><div class="wisp-service"><span class="wisp-service-name">Slack</span><span class="wisp-service-said is-bad">Last check: the key was refused.</span><input class="wisp-service-key" type="password" placeholder="Paste a token"><button type="button" class="theme-mode-btn">Enter token</button></div><div class="wisp-service"><span class="wisp-service-name">Discord</span><span class="wisp-service-said">No key yet.</span><button type="button" class="theme-mode-btn">Enter token</button></div></div><button type="button" class="theme-mode-btn wisp-check-all">Check everything</button></div>
+<header><h3>Service row</h3><code class="built">.wisp-service</code><span class="built">wisp.js, in the wisp's Connections tab and an agent's Connections view: a service's name, what its last check found in plain words, and the one press that fixes it — Enter token, Connect or Forget; the key field is a password field whose value is sent once and never drawn again; with a Slack or Discord key kept, that row adds Who may talk, the one member or user ID the wisp answers there</span></header>
+<div class="stage"><div class="wisp-services" style="max-width:560px"><div class="wisp-service"><span class="wisp-service-name">Linear</span><span class="wisp-service-said is-good">Key stored. Checked 9:14pm: it answers.</span><button type="button" class="theme-mode-btn">Forget</button></div><div class="wisp-service"><span class="wisp-service-name">Slack</span><span class="wisp-service-said is-good">Connected to Scholar as wisp.</span><input class="wisp-service-key wisp-member" type="text" placeholder="Who may talk: your member ID" value="U0APATD5Z9D"><button type="button" class="theme-mode-btn">Forget</button></div><div class="wisp-service"><span class="wisp-service-name">Discord</span><span class="wisp-service-said">No key yet.</span><button type="button" class="theme-mode-btn">Enter token</button></div></div><button type="button" class="theme-mode-btn wisp-check-all">Check everything</button></div>
+</section>
+<section class="part">
+<header><h3>Wisp person</h3><code class="built">.wisp-person</code><span class="built">wisp.js, the wisp sheet's People tab: under Waiting for you, a stranger's ID, the app and when they asked, the code the wisp gave them, Let in and Refuse; under Let in, you first and fixed, then each person let in with a tick per trusted chain they may start and Remove</span></header>
+<div class="stage"><div style="max-width:560px"><p class="wisp-people-heading">Waiting for you</p><div class="wisp-services"><div class="wisp-service wisp-person"><span class="wisp-service-name">U07DANA0001</span><span class="wisp-service-said">on Slack · asked 10:42pm</span><span class="wisp-person-code">KQ7M2P</span><button type="button" class="theme-mode-btn">Let in</button><button type="button" class="theme-mode-btn">Refuse</button></div></div><p class="wisp-people-heading">Let in</p><div class="wisp-services"><div class="wisp-service wisp-person"><span class="wisp-service-name">You</span><span class="wisp-service-said">on Slack · may give the wisp work</span></div><div class="wisp-service wisp-person"><span class="wisp-service-name">U07LEE00002</span><span class="wisp-service-said">on Slack · may start</span><label class="wisp-person-chain"><input type="checkbox" checked> ship</label><label class="wisp-person-chain"><input type="checkbox"> tidy</label><button type="button" class="theme-mode-btn">Remove</button></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Agent connections</h3><code class="built">.agent-connections</code><span class="built">console-launch.js, the New menu's view for an agent account opened from its Connections row: the wisp's own service rows under Services, held in the menu, then the agent's tool servers as it lists them — Leaftext's own with no Remove — and Add tool server at the foot</span></header>

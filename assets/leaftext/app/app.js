@@ -49473,8 +49473,10 @@ var wispSheetClose = document.getElementById('wispSheetClose');
 var wispTabs = document.getElementById('wispTabs');
 var wispSheetBody = document.getElementById('wispSheetBody');
 var wispKeepSwitch = document.getElementById('wispKeepSwitch');
+var wispRuns = document.getElementById('wispRuns');
 const WISP_DEFAULT_NAME = 'Wisp';
 const WISP_TABS = [
+  ['talk', 'Talk'],
   ['connections', 'Connections'],
   ['chains', 'Chains'],
   ['people', 'People'],
@@ -49482,13 +49484,14 @@ const WISP_TABS = [
 ];
 
 const WISP_EMPTY = {
+  talk: 'Type a message and your wisp’s agent answers it here, on the account under Runs on, in the folder under Works in.',
   connections: 'Each service your wisp can reach — Linear, Slack, Discord, text messages — gets a row here with its key and what its last check found.',
   chains: 'Every chain note in your vaults is listed here, with whether you have trusted it and a Start press for one you have.',
   people: 'The people your wisp listens to, once a chat service is connected. Nobody is let in until you approve them.',
   runs: 'Every run your wisp makes is listed here, newest first, each opening its run note.',
 };
 
-const wisp = { name: String(LEAF_SETTINGS.wispName || ''), lit: LEAF_SETTINGS.wispLit === true, keepRunning: LEAF_SETTINGS.keepRunning !== false, busy: false, failed: false, tab: 'connections', lastFocus: null };
+const wisp = { name: String(LEAF_SETTINGS.wispName || ''), lit: LEAF_SETTINGS.wispLit === true, keepRunning: LEAF_SETTINGS.keepRunning !== false, agent: String(LEAF_SETTINGS.wispAgent || ''), members: { slack: String(LEAF_SETTINGS.wispSlackMember || ''), discord: String(LEAF_SETTINGS.wispDiscordMember || '') }, account: String(LEAF_SETTINGS.wispAccount || ''), folder: String(LEAF_SETTINGS.wispFolder || ''), busy: false, failed: false, tab: 'talk', lastFocus: null, askedAccounts: false };
 
 function wispShown() {
   return Boolean(wispSheet) && newMenuHostAnswers('setWispLit');
@@ -49508,12 +49511,75 @@ function wispLightWords() {
 }
 
 
+function wispRunsOn() {
+  if (!AGENT_LAUNCH_AGENTS.includes(wisp.agent)) return null;
+  if (agentLaunch.state && !agentLaunchAccounts().some(([agent, id]) => agent === wisp.agent && id === wisp.account)) return null;
+  if (wisp.account && agentLaunchAccount(wisp.agent, wisp.account)?.missing) return null;
+  return { agent: wisp.agent, account: wisp.account, words: wispAccountWords(wisp.agent, wisp.account) };
+}
+function wispAccountWords(agent, id) {
+  
+  if (id && !agentLaunch.state && !wisp.askedAccounts && newMenuHostAnswers('agentLaunch')) {
+    wisp.askedAccounts = true;
+    setTimeout(() => agentLaunchAsk('state').then(() => drawWisp()), 0);
+  }
+  const name = AGENT_LAUNCH_NAMES[agent];
+  const label = agentLaunchLabel(agent, id);
+  return label === name ? name : `${name} · ${label}`;
+}
+
+function wispFolderWords(folder) {
+  const parts = String(folder).split(/[\\/]+/).filter(Boolean);
+  return parts.slice(-2).join('/') || folder;
+}
+
+function wispRunsWords() {
+  const runs = wispRunsOn();
+  return `${runs ? runs.words : 'No AI chosen'} · ${wisp.folder ? wispFolderWords(wisp.folder) : 'No folder chosen'}`;
+}
+
 function wispRowHtml() {
   if (!wispShown()) return '';
   const name = wispName();
-  const label = `${name}, your bot, ${wisp.lit ? 'on' : 'off'}`;
-  return `<div class="wisp-row-wrap"><button type="button" class="wisp-row" data-wisp-open="row" aria-label="${escapeAttr(label)}" title="${escapeAttr(`Open ${name}, your bot`)}"><span class="wisp-row-mark" aria-hidden="true">✦</span><span class="wisp-row-name">${escapeText(name)} · your bot</span><span class="wisp-light is-${wispLightState()}" aria-hidden="true"></span></button></div>`;
+  const runs = wispRunsWords();
+  const label = `${name}, your bot, ${wisp.lit ? 'on' : 'off'}, ${runs}`;
+  return `<div class="wisp-row-wrap"><button type="button" class="wisp-row" data-wisp-open="row" aria-label="${escapeAttr(label)}" title="${escapeAttr(`Open ${name}, your bot: ${runs}`)}"><span class="wisp-row-mark" aria-hidden="true">✦</span><span class="wisp-row-name">${escapeText(name)} · your bot</span><span class="wisp-row-runs">${escapeText(runs)}</span><span class="wisp-light is-${wispLightState()}" aria-hidden="true"></span></button></div>`;
 }
+
+function wispRunsOnHtml() {
+  const runs = wispRunsOn();
+  const chosen = runs ? `${runs.agent}:${runs.account}` : '';
+  const options = agentLaunchAccounts().map(([agent, id]) => {
+    const key = `${agent}:${id}`;
+    return `<option value="${escapeAttr(key)}"${key === chosen ? ' selected' : ''}>${escapeText(wispAccountWords(agent, id))}</option>`;
+  }).join('');
+  const none = `<option value=""${chosen ? '' : ' selected'}>No AI chosen</option>`;
+  const folder = wisp.folder ? wispFolderWords(wisp.folder) : 'No folder chosen';
+  return `<span class="wisp-runs-part"><span class="wisp-runs-label">Runs on</span><select class="wisp-runs-pick${runs ? '' : ' is-none'}" data-wisp-runs-on="1" aria-label="The AI account your wisp runs on">${none}${options}</select></span>`
+    + `<span class="wisp-runs-part"><span class="wisp-runs-label">Works in</span><button type="button" class="wisp-runs-pick${wisp.folder ? '' : ' is-none'}" data-wisp-works-in="1" title="${escapeAttr(wisp.folder || 'Choose the folder your wisp works in')}">${escapeText(folder)}</button></span>`;
+}
+function drawWispRunsOn() {
+  if (!wispRuns) return;
+  
+  if (wispRuns.contains(document.activeElement) && document.activeElement.tagName === 'SELECT') return;
+  wispRuns.innerHTML = wispRunsOnHtml();
+}
+function setWispRunsOn(key) {
+  const [agent, account] = key ? key.split(':') : ['', ''];
+  wisp.agent = agent || '';
+  wisp.account = account || '';
+  send({ command: 'setWispRunsOn', agent: wisp.agent, account: wisp.account });
+  drawWisp();
+}
+function setWispFolder(path) {
+  wisp.folder = String(path || '');
+  send({ command: 'setWispFolder', path: wisp.folder });
+  drawWisp();
+}
+
+window.leafWispFolderChosen = (path) => {
+  if (path) setWispFolder(path);
+};
 
 function drawWispTabs() {
   if (!wispTabs) return;
@@ -49533,8 +49599,30 @@ const WISP_SERVICES = [
   ['sms', 'Text messages'],
 ];
 
-const wispKeys = { stored: {}, asked: false, open: null, error: '', checks: {}, checking: false };
+const wispKeys = { stored: {}, invites: {}, asked: false, open: null, error: '', checks: {}, checking: false };
+
+const WISP_SLACK_SCOPES = ['channels:history', 'groups:history', 'im:history', 'mpim:history', 'channels:read', 'groups:read', 'im:read', 'mpim:read', 'im:write', 'chat:write', 'files:read'];
+
+function wispSlackAppAddress() {
+  const name = (wisp.name || 'Wisp').slice(0, 35);
+  const manifest = {
+    display_information: { name },
+    features: { bot_user: { display_name: name, always_online: true }, app_home: { messages_tab_enabled: true, messages_tab_read_only_enabled: false } },
+    oauth_config: { scopes: { bot: WISP_SLACK_SCOPES } },
+    settings: { org_deploy_enabled: false, socket_mode_enabled: false, token_rotation_enabled: false },
+  };
+  return 'https://api.slack.com/apps?new_app=1&manifest_json=' + encodeURIComponent(JSON.stringify(manifest));
+}
+
+function wispSetup(id) {
+  if (id === 'slack' && !wispKeys.stored.slack) return { words: 'Make the Slack app', address: wispSlackAppAddress() };
+  if (id === 'discord' && !wispKeys.stored.discord) return { words: 'Make the Discord bot', address: 'https://discord.com/developers/applications' };
+  if (id === 'discord' && wispKeys.invites.discord) return { words: 'Add it to your server', address: wispKeys.invites.discord };
+  return null;
+}
 function wispServiceSaid(id) {
+  
+  if (wispKeys.saving === id) return { words: 'Keeping the key… your system may ask you first.', tone: '' };
   const check = wispKeys.checks[id];
   if (check) return { words: check.words, tone: check.good ? 'is-good' : check.good === false ? 'is-bad' : '' };
   if (wispKeys.stored[id]) return { words: 'Key kept. Not checked yet.', tone: '' };
@@ -49549,7 +49637,12 @@ function wispServicesHtml() {
     const press = wispKeys.stored[id]
       ? `<button type="button" class="theme-mode-btn" data-wisp-service-press="forget" data-wisp-service="${id}">Forget</button>`
       : `<button type="button" class="theme-mode-btn" data-wisp-service-press="${open ? 'store' : 'enter'}" data-wisp-service="${id}">Enter token</button>`;
-    return `<div class="wisp-service"><span class="wisp-service-name">${escapeText(name)}</span><span class="wisp-service-said ${said.tone}">${escapeText(said.words)}</span>${field}${press}</div>`;
+    
+    const asks = WISP_MEMBERS[id];
+    const member = asks && wispKeys.stored[id] ? `<input class="wisp-service-key wisp-member" type="text" autocomplete="off" spellcheck="false" data-wisp-member="${id}" aria-label="${escapeAttr(asks.label)}" placeholder="${escapeAttr(asks.placeholder)}" value="${escapeAttr(wisp.members[id])}">` : '';
+    const setup = wispSetup(id);
+    const made = setup && hostAnswers('openExternal') ? `<button type="button" class="theme-mode-btn" data-wisp-service-press="setup" data-wisp-setup="${id}">${escapeText(setup.words)}</button>` : '';
+    return `<div class="wisp-service"><span class="wisp-service-name">${escapeText(name)}</span><span class="wisp-service-said ${said.tone}">${escapeText(said.words)}</span>${field}${member}${made}${press}</div>`;
   }).join('');
   const error = wispKeys.error ? `<p class="wisp-empty wisp-service-said is-bad" role="alert">${escapeText(wispKeys.error)}</p>` : '';
   const checking = wispKeys.checking ? ' disabled' : '';
@@ -49583,7 +49676,9 @@ function askWispKeys() {
 }
 
 window.leafWispKeys = (answer) => {
+  wispKeys.saving = null;
   wispKeys.stored = (answer && answer.stored) || {};
+  wispKeys.invites = (answer && answer.invites) || {};
   wispKeys.error = (answer && answer.error) || '';
   if (!wispKeys.error) wispKeys.open = null;
   drawWispServices();
@@ -49601,6 +49696,9 @@ function sendWispKey(service, field) {
     drawWispServices();
     return;
   }
+  wispKeys.saving = service;
+  wispKeys.open = null;
+  drawWispServices();
   send({ command: 'wispStoreKey', service, key });
 }
 function onWispServicePress(event) {
@@ -49616,6 +49714,9 @@ function onWispServicePress(event) {
     if (field) field.focus();
   } else if (how === 'store') {
     sendWispKey(service, press.parentElement.querySelector('[data-wisp-key]'));
+  } else if (how === 'setup') {
+    const setup = wispSetup(press.dataset.wispSetup);
+    if (setup) send({ command: 'openExternal', url: setup.address });
   } else if (how === 'check') {
     wispKeys.checking = true;
     drawWispServices();
@@ -49625,7 +49726,36 @@ function onWispServicePress(event) {
     send({ command: 'wispForgetKey', service });
   }
 }
+
+const WISP_MEMBERS = {
+  slack: { label: 'The Slack member ID your wisp answers', placeholder: 'Who may talk: your member ID', shape: /^[A-Z0-9]{1,32}$/, upper: true, command: 'setWispSlackMember', refusal: 'A Slack member ID is letters and digits, like U0APATD5Z9D: in Slack, open your profile, press the three dots, then Copy member ID.' },
+  discord: { label: 'The Discord user ID your wisp answers', placeholder: 'Who may talk: your user ID', shape: /^[0-9]{1,24}$/, upper: false, command: 'setWispDiscordMember', refusal: 'A Discord user ID is digits, like 248119002811400193: in Discord, switch on Developer Mode, open your profile, then Copy User ID.' },
+};
+
+function settleWispMember(field) {
+  const service = field.dataset.wispMember;
+  const asks = WISP_MEMBERS[service];
+  if (!asks) return;
+  const typed = String(field.value || '').trim();
+  const member = asks.upper ? typed.toUpperCase() : typed;
+  field.value = member;
+  if (member === wisp.members[service]) return;
+  if (member && !asks.shape.test(member)) {
+    wispKeys.error = asks.refusal;
+    drawWispServices();
+    return;
+  }
+  wisp.members[service] = member;
+  wispKeys.error = '';
+  send({ command: asks.command, member });
+}
 function onWispServiceKey(event) {
+  const memberField = event.target.closest && event.target.closest('[data-wisp-member]');
+  if (memberField && event.key === 'Enter') {
+    event.preventDefault();
+    settleWispMember(memberField);
+    return;
+  }
   const field = event.target.closest && event.target.closest('[data-wisp-key]');
   if (!field) return;
   if (event.key === 'Enter') {
@@ -49647,7 +49777,7 @@ function askWispNotes() {
 window.leafWispNotes = (answer) => {
   wispNotes.notes = Array.isArray(answer && answer.notes) ? answer.notes : [];
   wispNotes.runs = Array.isArray(answer && answer.runs) ? answer.runs : [];
-  if (wispSheet && !wispSheet.hidden && (wisp.tab === 'chains' || wisp.tab === 'runs')) drawWispSheet();
+  if (wispSheet && !wispSheet.hidden && (wisp.tab === 'chains' || wisp.tab === 'runs' || wisp.tab === 'people')) drawWispSheet();
 };
 
 window.leafWispTrust = (answer) => {
@@ -49706,7 +49836,142 @@ function onWispNotePress(event) {
     send({ command: 'openPaths', paths: [run.dataset.wispRun] });
   }
 }
+
+const wispTalk = { events: null, waiting: false, said: '', tone: '', draft: '' };
+function askWispTalk() {
+  if (!newMenuHostAnswers('wispTalk')) return;
+  send({ command: 'wispTalk' });
+}
+window.leafWispTalk = (answer) => {
+  const read = Array.isArray(answer && answer.events) ? answer.events : [];
+  
+  if (read.length || !wispTalk.events) wispTalk.events = read;
+  if (answer && answer.busy) wispTalk.waiting = true;
+  drawWispTalk();
+};
+
+window.leafWispSaid = (answer) => {
+  if (!answer) return;
+  if (answer.sent) {
+    wispTalk.said = 'Sent. Waiting for the answer…';
+    wispTalk.tone = '';
+    
+    if (answer.prompt) {
+      wispTalk.waiting = true;
+      wispTalk.events = [...(wispTalk.events || []), { k: 'prompt', text: String(answer.prompt) }];
+    }
+  } else if (answer.needs) {
+    wispTalk.said = answer.needs;
+    wispTalk.tone = '';
+  } else if (answer.error) {
+    wispTalk.waiting = false;
+    wispTalk.said = String(answer.error);
+    wispTalk.tone = 'is-bad';
+  } else if (answer.reply) {
+    wispTalk.waiting = false;
+    wispTalk.said = '';
+    wispTalk.tone = '';
+    wispTalk.events = [...(wispTalk.events || []), { k: 'reply', text: String(answer.reply) }];
+    askWispTalk();
+  }
+  wisp.busy = wispTalk.waiting;
+  drawWispTalk();
+  drawConsoleRecents();
+};
+function wispTalkHtml() {
+  const runs = wispRunsOn();
+  const who = `${wispName()}${runs ? ` · ${runs.words}` : ''}`;
+  const lines = (wispTalk.events || []).map((event) => event.k === 'prompt'
+    ? `<div class="wisp-talk-line is-you"><span class="wisp-talk-who">You</span>${escapeText(event.text || '')}</div>`
+    : `<div class="wisp-talk-line is-wisp"><span class="wisp-talk-who">${escapeText(who)}</span>${escapeText(event.text || '')}</div>`).join('');
+  const empty = wispTalk.events === null ? '<p class="wisp-empty">Reading the conversation…</p>' : lines ? '' : `<p class="wisp-empty">${escapeText(WISP_EMPTY.talk)}</p>`;
+  const said = wispTalk.said ? `<p class="wisp-empty wisp-service-said ${wispTalk.tone}" role="status">${escapeText(wispTalk.said)}</p>` : '';
+  const disabled = wispTalk.waiting ? ' disabled="disabled"' : '';
+  return `<div class="wisp-talk">${empty}<div class="wisp-talk-lines">${lines}</div>${said}<div class="wisp-talk-box"><textarea class="wisp-talk-field" data-wisp-talk-field="1" rows="2" spellcheck="true" aria-label="${escapeAttr(`Message ${wispName()}`)}" placeholder="${escapeAttr(`Message ${wispName()}…`)}"${disabled}>${escapeText(wispTalk.draft)}</textarea><button type="button" class="theme-mode-btn" data-wisp-talk-send="1"${disabled}>Send</button></div></div>`;
+}
+function drawWispTalk() {
+  if (!wispSheet || wispSheet.hidden || wisp.tab !== 'talk') return;
+  const field = wispSheetBody && wispSheetBody.querySelector('[data-wisp-talk-field]');
+  const typing = field && document.activeElement === field;
+  if (field) wispTalk.draft = field.value;
+  drawWispSheet();
+  const lines = wispSheetBody && wispSheetBody.querySelector('.wisp-talk-lines');
+  if (lines) lines.scrollTop = lines.scrollHeight;
+  if (typing) {
+    const again = wispSheetBody.querySelector('[data-wisp-talk-field]');
+    if (again && !again.disabled) again.focus();
+  }
+}
+function sendWispMessage() {
+  const field = wispSheetBody && wispSheetBody.querySelector('[data-wisp-talk-field]');
+  const text = field ? field.value.trim() : '';
+  if (!text || wispTalk.waiting) return;
+  wispTalk.draft = '';
+  if (field) field.value = '';
+  wispTalk.waiting = true;
+  wispTalk.events = [...(wispTalk.events || []), { k: 'prompt', text }];
+  wispTalk.said = '';
+  wisp.busy = true;
+  send({ command: 'wispSay', text });
+  drawWispTalk();
+  drawConsoleRecents();
+}
+function onWispTalkPress(event) {
+  if (event.target.closest('[data-wisp-talk-send]')) sendWispMessage();
+}
+function onWispTalkKey(event) {
+  if (!event.target.closest || !event.target.closest('[data-wisp-talk-field]')) return;
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendWispMessage();
+  }
+}
+
+const wispPeople = { waiting: null, people: [] };
+const WISP_SERVICE_NAMES = { slack: 'Slack', discord: 'Discord' };
+function askWispPeople() {
+  if (!newMenuHostAnswers('wispPeople')) return;
+  send({ command: 'wispPeople' });
+}
+window.leafWispPeople = (answer) => {
+  wispPeople.waiting = Array.isArray(answer && answer.waiting) ? answer.waiting : [];
+  wispPeople.people = Array.isArray(answer && answer.people) ? answer.people : [];
+  if (wispSheet && !wispSheet.hidden && wisp.tab === 'people') drawWispSheet();
+};
+function wispPeopleHtml() {
+  if (wispPeople.waiting === null) return '<p class="wisp-empty">Reading who is waiting…</p>';
+  const press = (how, person, words) => `<button type="button" class="theme-mode-btn" data-wisp-person-press="${how}" data-wisp-service="${escapeAttr(person.service)}" data-wisp-person="${escapeAttr(person.id)}">${words}</button>`;
+  const app = (service) => WISP_SERVICE_NAMES[service] || service;
+  const waiting = wispPeople.waiting.map((one) => `<div class="wisp-service wisp-person"><span class="wisp-service-name">${escapeText(one.id)}</span><span class="wisp-service-said">${escapeText(`on ${app(one.service)} · asked ${one.at}`)}</span><span class="wisp-person-code">${escapeText(one.code)}</span>${press('in', one, 'Let in')}${press('refuse', one, 'Refuse')}</div>`).join('');
+  const yours = Object.keys(WISP_MEMBERS).filter((service) => wisp.members[service]).map(app);
+  const you = `<div class="wisp-service wisp-person"><span class="wisp-service-name">You</span><span class="wisp-service-said">${escapeText(yours.length ? `on ${yours.join(' and ')} · may give the wisp work` : 'Name yourself on a chat row under Connections.')}</span></div>`;
+  
+  const chains = (wispNotes.notes || []).filter((note) => note.kind === 'chain' && note.trusted && !note.unreadable).map((note) => note.name);
+  const ticks = (one) => chains.map((name) => `<label class="wisp-person-chain"><input type="checkbox" data-wisp-person-chain="${escapeAttr(name)}" data-wisp-service="${escapeAttr(one.service)}" data-wisp-person="${escapeAttr(one.id)}"${(one.chains || []).includes(name) ? ' checked="checked"' : ''}> ${escapeText(name)}</label>`).join('');
+  const people = wispPeople.people.map((one) => `<div class="wisp-service wisp-person"><span class="wisp-service-name">${escapeText(one.id)}</span><span class="wisp-service-said">${escapeText(`on ${app(one.service)} · ${chains.length ? 'may start' : 'no trusted chain to start yet'}`)}</span>${ticks(one)}${press('remove', one, 'Remove')}</div>`).join('');
+  const heading = (words) => `<p class="wisp-people-heading">${words}</p>`;
+  const none = waiting ? '' : `<p class="wisp-empty">${escapeText(WISP_EMPTY.people)}</p>`;
+  return `${heading('Waiting for you')}${none}<div class="wisp-services">${waiting}</div>${heading('Let in')}<div class="wisp-services">${you}${people}</div>`;
+}
+
+function setWispPersonChains(service, id) {
+  const ticks = Array.from(wispSheetBody.querySelectorAll('[data-wisp-person-chain]')).filter((tick) => tick.dataset.wispService === service && tick.dataset.wispPerson === id);
+  const chains = ticks.filter((tick) => tick.checked).map((tick) => tick.dataset.wispPersonChain);
+  const person = wispPeople.people.find((one) => one.service === service && one.id === id);
+  if (person) person.chains = chains;
+  send({ command: 'wispPersonChains', service, id, chains });
+}
+function onWispPersonPress(event) {
+  const press = event.target.closest('[data-wisp-person-press]');
+  if (!press) return;
+  const how = press.dataset.wispPersonPress;
+  const command = how === 'in' ? 'wispLetIn' : how === 'refuse' ? 'wispRefuse' : 'wispRemovePerson';
+  send({ command, service: press.dataset.wispService, id: press.dataset.wispPerson });
+  if (command !== 'wispRefuse') askWispPeople();
+}
 function wispTabHtml(tab) {
+  if (tab === 'talk') return wispTalkHtml();
+  if (tab === 'people') return wispPeopleHtml();
   if (tab === 'chains') return wispChainsHtml();
   if (tab === 'runs') return wispRunsHtml();
   if (tab === 'connections') return wispServicesHtml();
@@ -49728,6 +49993,7 @@ function drawWispSheet() {
     wispKeepSwitch.setAttribute('aria-checked', wisp.keepRunning ? 'true' : 'false');
     for (const part of wispKeepSwitch.querySelectorAll('.grove-switch-track, .grove-switch-thumb')) part.classList.toggle('is-on', wisp.keepRunning);
   }
+  drawWispRunsOn();
   drawWispTabs();
   if (wispSheetBody) wispSheetBody.innerHTML = wispTabHtml(wisp.tab);
 }
@@ -49762,6 +50028,11 @@ function showWispTab(name) {
   const moved = wisp.tab !== name;
   wisp.tab = name;
   if (name === 'chains' || name === 'runs') askWispNotes();
+  if (name === 'talk') askWispTalk();
+  if (name === 'people') {
+    askWispPeople();
+    askWispNotes();
+  }
   drawWispSheet();
   if (moved && wispSheetBody) wispSheetBody.scrollTop = 0;
 }
@@ -49792,6 +50063,9 @@ function openWispSheet() {
   dismissGlossary();
   if (wispSheet.hidden) wisp.lastFocus = document.activeElement;
   askWispKeys();
+  
+  if (newMenuHostAnswers('agentLaunch')) agentLaunchAsk('state').then(() => drawWisp());
+  if (wisp.tab === 'talk') askWispTalk();
   drawWispSheet();
   openSheet(wispSheet, wispBackdrop);
   document.addEventListener('keydown', onWispKey);
@@ -49825,9 +50099,27 @@ if (wispSheet) {
     if (tab) showWispTab(tab.dataset.wispTab);
   });
   wispTabs.addEventListener('keydown', onWispTabKey);
+  if (wispRuns) {
+    wispRuns.addEventListener('change', (event) => {
+      const pick = event.target.closest('[data-wisp-runs-on]');
+      if (pick) setWispRunsOn(pick.value);
+    });
+    wispRuns.addEventListener('click', (event) => {
+      if (event.target.closest('[data-wisp-works-in]')) send({ command: 'wispChooseFolder' });
+    });
+  }
   wispSheetBody.addEventListener('click', onWispServicePress);
   wispSheetBody.addEventListener('click', onWispNotePress);
+  wispSheetBody.addEventListener('click', onWispTalkPress);
+  wispSheetBody.addEventListener('click', onWispPersonPress);
   wispSheetBody.addEventListener('keydown', onWispServiceKey);
+  wispSheetBody.addEventListener('keydown', onWispTalkKey);
+  wispSheetBody.addEventListener('change', (event) => {
+    const field = event.target.closest && event.target.closest('[data-wisp-member]');
+    if (field) settleWispMember(field);
+    const tick = event.target.closest && event.target.closest('[data-wisp-person-chain]');
+    if (tick) setWispPersonChains(tick.dataset.wispService, tick.dataset.wispPerson);
+  });
 }
 if (consoleRecentsBand) {
   consoleRecentsBand.addEventListener('click', (event) => {
