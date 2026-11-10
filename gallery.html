@@ -5088,6 +5088,7 @@
   --lt-shadow-ring: 0 0 0 2px var(--lt-surface);
   --lt-shadow-spotlight: 0 0 0 100vmax color-mix(in srgb, var(--lt-markdown-background) 62%, transparent);
   --lt-glow-icon: drop-shadow(0 0 3px currentColor);
+  --lt-glow-wisp: drop-shadow(0 0 4px currentColor);
   /* Grain */
   --lt-grain-light: rgba(0, 0, 0, 0.1);
   --lt-grain-heavy: rgba(0, 0, 0, 0.3);
@@ -20543,6 +20544,50 @@ p.shelf-foot {
   letter-spacing: var(--lt-tracking-120);
   text-transform: uppercase;
 }
+/* The wisp: its row at the head of the conversations, its light, and what its sheet holds. The sheet's frame is the Grove's, in sheets.css. */
+/* Its own fill, named as a color so the lattice `.leaf-sheet` gives every sheet stays. */
+.wisp-sheet { background-color: var(--lt-background); }
+.wisp-row-wrap { margin-bottom: var(--lt-space-6); }
+/* Drawn as an agent's row in the list beneath it, and its own so a list reading the chats never reads the wisp as one. */
+.wisp-row { display: flex; align-items: center; gap: var(--lt-space-6); box-sizing: border-box; width: 100%; height: 26px; padding: 0 var(--lt-space-6); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-md); background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12-5); text-align: left; cursor: default; }
+@media (hover: hover) { .wisp-row:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
+.wisp-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wisp-row-mark { flex: none; color: var(--lt-primary-ink); font-size: var(--lt-text-12); }
+/* The light: a dot, and the only thing that says whether the wisp is on. Unlit is a ring, lit and busy glow in the accent, failed in danger; busy pulses, and Reduce Motion holds it still. */
+.wisp-light { flex: none; display: inline-block; box-sizing: border-box; width: 10px; height: 10px; padding: 0; border: var(--lt-stroke-1) solid var(--lt-border-strong); border-radius: var(--lt-radius-full); background: transparent; color: var(--lt-accent); }
+.wisp-light.is-lit, .wisp-light.is-busy { border-color: currentColor; background: currentColor; filter: var(--lt-glow-wisp); }
+.wisp-light.is-busy { animation: wisp-pulse var(--lt-duration-1250) var(--lt-ease-in-out) infinite alternate; }
+.wisp-light.is-failed { border-color: currentColor; background: currentColor; color: var(--lt-danger); filter: var(--lt-glow-wisp); }
+@keyframes wisp-pulse { from { opacity: var(--lt-opacity-40); } to { opacity: 1; } }
+/* On the sheet the dot is a press of its own, given a hand-sized target around the same small dot. */
+.wisp-light-press { width: 16px; height: 16px; margin: 0 var(--lt-space-6); cursor: default; }
+@media (hover: hover) {
+  .wisp-light:hover { border-color: currentColor; background: color-mix(in srgb, currentColor 30%, transparent); }
+  .wisp-light.is-lit:hover, .wisp-light.is-busy:hover, .wisp-light.is-failed:hover { background: currentColor; }
+}
+.wisp-sheet-head { align-items: flex-start; padding-top: var(--lt-space-4); }
+.wisp-names { display: flex; flex: 1; flex-direction: column; gap: var(--lt-space-2); min-width: 0; }
+.wisp-name-field { display: inline-flex; align-items: center; gap: var(--lt-space-6); color: var(--lt-muted-foreground); }
+.wisp-name-field .lt-icon { width: 14px; height: 14px; }
+.wisp-name { width: auto; padding: var(--lt-space-2) var(--lt-space-4); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-sm); background: transparent; color: var(--lt-primary-ink); font-family: var(--app-font); font-size: var(--lt-text-18); font-weight: var(--lt-weight-700); line-height: var(--lt-leading-1-2); }
+.wisp-name:focus { border-color: var(--lt-border-strong); outline: none; }
+.wisp-said { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+.wisp-keep { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-2) var(--lt-space-8); }
+.wisp-keep-said { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+.wisp-empty { margin: var(--lt-space-12) 0; color: var(--lt-muted-foreground); font-size: var(--lt-text-13); }
+/* One service the wisp can reach: its name, what its last check found, and the one press that fixes it. A key typed here goes to the system's credential store and is never drawn again. */
+.wisp-services { display: flex; flex-direction: column; margin: var(--lt-space-8) 0; }
+.wisp-service { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-8) var(--lt-space-12); padding: var(--lt-space-10) 0; border-bottom: var(--lt-stroke-1) solid var(--lt-border); }
+.wisp-service-name { flex: 0 0 12ch; color: var(--lt-foreground); font-size: var(--lt-text-13); font-weight: var(--lt-weight-600); }
+.wisp-service-said { flex: 1 1 16ch; min-width: 0; color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
+.wisp-service-said.is-good { color: var(--lt-primary-ink); }
+.wisp-service-said.is-bad { color: var(--lt-danger); }
+.wisp-service-key { flex: 1 1 20ch; min-width: 0; padding: var(--lt-space-4) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-sm); background: var(--lt-surface-elevated); color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12); }
+.wisp-service-key:focus { border-color: var(--lt-border-strong); outline: none; }
+.wisp-service-key[hidden] { display: none; }
+.wisp-check-all { margin-top: var(--lt-space-8); }
+/* The same rows held in an agent account's Connections view in the New menu, inset to the menu's own rows. */
+.agent-connections { min-width: 0; padding: 0 var(--lt-space-8) var(--lt-space-6); }
 /* ---- The flowchart sheet ------------------------------------------------
    Full screen, unlike the other two sheets: it is an editor, not something to glance at, and it has two panes to fit. No grab bar for the same reason — a sheet you can flick away is wrong over unsaved work. */
 .flow-sheet[hidden] {
@@ -22221,7 +22266,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 203 values that do not change with the theme, all 119 icons, and all 207 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 119 icons, and all 212 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -22254,9 +22299,9 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>203</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>204</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>119</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>207</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>212</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -22371,7 +22416,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">203 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">204 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -22569,6 +22614,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="value"><code>lt-shadow-ring</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-ring)"></i><code>0 0 0 2px var(--lt-surface)</code></div>
 <div class="value"><code>lt-shadow-spotlight</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-spotlight)"></i><code>0 0 0 100vmax color-mix(in srgb, var(--lt-markdown-background) 62%, transparent)</code></div>
 <div class="value"><code>lt-glow-icon</code><code>drop-shadow(0 0 3px currentColor)</code></div>
+<div class="value"><code>lt-glow-wisp</code><code>drop-shadow(0 0 4px currentColor)</code></div>
 </div>
 <h3>Grain</h3><div class="wall wide">
 <div class="value"><code>lt-grain-light</code><code>rgba(0, 0, 0, 0.1)</code></div>
@@ -22742,7 +22788,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">207 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">212 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -23034,6 +23080,26 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Grove tabs</h3><code class="built">.grove-tabs</code><span class="built">app-shell.html, driven by profile.js: under the Grove sheet's head, choosing between the Growth overview and the reward tree, drawn as the tab strip's own tabs — the chosen one framed and open onto the row's line in the sheet's grain, the other a darker grain cell; hidden while the record is off, All XP is open or a day waits for review</span></header>
 <div class="stage"><div class="grove-tabs" role="tablist" style="max-width:520px"><button type="button" class="grove-tab is-chosen" role="tab" aria-selected="true">Growth</button><button type="button" class="grove-tab" role="tab" aria-selected="false">Tree</button></div></div>
+</section>
+<section class="part">
+<header><h3>Wisp row</h3><code class="built">.wisp-row</code><span class="built">wisp.js, at the head of the conversations under the pane's heading, drawn with or without an agent running: the wisp's name and "your bot", ending on its light; a press opens its sheet</span></header>
+<div class="stage"><div class="wisp-row-wrap" style="max-width:260px"><button type="button" class="wisp-row"><span class="wisp-row-mark">✦</span><span class="wisp-row-name">Wisp · your bot</span><span class="wisp-light is-lit"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Wisp's light</h3><code class="built">.wisp-light</code><span class="built">wisp.js, ending the wisp row and at the wisp sheet's top right, where it is pressed: a dot with no word for its state — a ring unlit, glowing lit, pulsing while a chain runs or waits, red when a run failed</span></header>
+<div class="stage"><span class="wisp-light is-unlit"></span> <span class="wisp-light is-lit"></span> <span class="wisp-light is-busy"></span> <span class="wisp-light is-failed"></span> <button type="button" class="wisp-light wisp-light-press is-lit" aria-pressed="true" aria-label="Turn your wisp off"></button></div>
+</section>
+<section class="part">
+<header><h3>Wisp sheet</h3><code class="built">.wisp-sheet</code><span class="built">app-shell.html, driven by wisp.js, on the Grove sheet's frame: the name typed over Wisp with a line saying it is your bot, the light, the switch that keeps Leaftext running, and the Connections, Chains, People and Runs tabs</span></header>
+<div class="stage"><div class="leaf-sheet grove-sheet wisp-sheet open" style="position:static;max-width:640px"><div class="leaf-sheet-grip"></div><div class="grove-sheet-head wisp-sheet-head"><span class="wisp-names"><label class="wisp-name-field"><input class="wisp-name" type="text" value="Wisp"><span class="lt-icon lt-icon-rename"></span></label><span class="wisp-said">Your bot: an agent that runs your chains on its own, on a clock or when Linear, Slack, Discord or a text asks.</span></span><button type="button" class="wisp-light wisp-light-press is-lit" aria-pressed="true"></button><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="wisp-keep"><button type="button" class="grove-switch" role="switch" aria-checked="true"><span class="grove-switch-label">Keep running when you close the window</span><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button><span class="wisp-keep-said">So your wisp can keep working after the last window closes. Quit from the icon.</span></div><div class="grove-tabs"><button type="button" class="grove-tab is-chosen">Connections</button><button type="button" class="grove-tab">Chains</button><button type="button" class="grove-tab">People</button><button type="button" class="grove-tab">Runs</button></div><div class="grove-sheet-body"><p class="wisp-empty">The people your wisp listens to, once a chat service is connected.</p></div></div></div>
+</section>
+<section class="part">
+<header><h3>Service row</h3><code class="built">.wisp-service</code><span class="built">wisp.js, in the wisp's Connections tab and an agent's Connections view: a service's name, what its last check found in plain words, and the one press that fixes it — Enter token, Connect or Forget; the key field is a password field whose value is sent once and never drawn again</span></header>
+<div class="stage"><div class="wisp-services" style="max-width:560px"><div class="wisp-service"><span class="wisp-service-name">Linear</span><span class="wisp-service-said is-good">Key stored. Checked 9:14pm: it answers.</span><button type="button" class="theme-mode-btn">Forget</button></div><div class="wisp-service"><span class="wisp-service-name">Slack</span><span class="wisp-service-said is-bad">Last check: the key was refused.</span><input class="wisp-service-key" type="password" placeholder="Paste a token"><button type="button" class="theme-mode-btn">Enter token</button></div><div class="wisp-service"><span class="wisp-service-name">Discord</span><span class="wisp-service-said">No key yet.</span><button type="button" class="theme-mode-btn">Enter token</button></div></div><button type="button" class="theme-mode-btn wisp-check-all">Check everything</button></div>
+</section>
+<section class="part">
+<header><h3>Agent connections</h3><code class="built">.agent-connections</code><span class="built">console-launch.js, the New menu's view for an agent account opened from its Connections row: the wisp's own service rows under Services, held in the menu, then the agent's tool servers as it lists them — Leaftext's own with no Remove — and Add tool server at the foot</span></header>
+<div class="stage"><div class="context-menu crumb-menu" style="position:static;max-width:420px"><div class="crumb-menu-heading">Claude Code · Connections</div><div class="crumb-menu-heading">Services</div><div class="crumb-menu-row"><div class="agent-connections"><div class="wisp-services"><div class="wisp-service"><span class="wisp-service-name">Linear</span><span class="wisp-service-said">Key kept. Not checked yet.</span><button type="button" class="theme-mode-btn">Forget</button></div><div class="wisp-service"><span class="wisp-service-name">Slack</span><span class="wisp-service-said">No key yet.</span><button type="button" class="theme-mode-btn">Enter token</button></div></div></div></div><div class="crumb-menu-heading">Tool servers</div><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item" disabled><span class="crumb-menu-label">leaftext</span></button></div><div class="crumb-menu-note">Leaftext’s own; every console needs it</div><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item" disabled><span class="crumb-menu-label">github</span></button></div><div class="crumb-menu-note">Connected</div><div class="crumb-menu-actions"><button type="button" class="context-menu-item crumb-menu-item crumb-menu-action"><span class="crumb-menu-label">Remove github</span></button></div><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item"><span class="crumb-menu-label">Add tool server…</span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Grove tree</h3><code class="built">.grove-tree</code><span class="built">profile.js, the Grove sheet's Tree tab: every reward on one trunk climbing from the soil, a row per band of Grove levels with its label on the trunk and the reader's own filled, each reward standing in its prerequisite's place, separate prerequisite tracks meeting distinct ports on the upper circles, transparent breaks at unrelated crossings, light dotted limbs from the trunk to a reward with none, explicit column spacers and per-row approach lanes, the sap filled to the reader's level, and the chosen reward whole in the card beside it. Pointing at a reward, or reaching it with the keyboard, strengthens its own lines and quiets the rest, and a port layer painted after the rewards marks where each traced line meets a circle</span></header>

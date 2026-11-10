@@ -11143,6 +11143,7 @@ function openSheet(sheet, backdrop, options) {
   closeCalendarUnder(sheet);
   
   closeGroveUnder(sheet);
+  closeWispUnder(sheet);
   const already = !sheet.hidden && sheet.classList.contains('open');
   if (backdrop) backdrop.hidden = false;
   sheet.hidden = false;
@@ -11531,7 +11532,8 @@ if (window.__leafFrameless || window.__leafMacFrame) {
     const quits = window.__leafMacFrame ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
     if (!quits) return;
     event.preventDefault();
-    send({ command: 'windowClose' });
+    
+    send({ command: 'appQuit' });
   });
   
   if (window.__leafMacFrame) leafWinMaxLabel('Enter Full Screen');
@@ -11794,6 +11796,24 @@ let leafKeyboardDriving = false;
 
 window.addEventListener('keydown', () => { leafKeyboardDriving = true; document.documentElement.dataset.pointerDriving = 'false'; }, true);
 window.addEventListener('pointerdown', () => { leafKeyboardDriving = false; document.documentElement.dataset.pointerDriving = 'true'; }, true);
+
+function everyWhileShown(run, ms, onHide) {
+  let timer = 0;
+  const arm = () => {
+    if (!timer && !document.hidden) timer = setInterval(run, ms);
+  };
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (timer) clearInterval(timer);
+      timer = 0;
+      if (onHide) onHide();
+      return;
+    }
+    run();
+    arm();
+  });
+  arm();
+}
 
 function leafFocusForKeyboard(target) {
   if (!leafKeyboardDriving || !target || !target.isConnected || !target.focus) return false;
@@ -16828,7 +16848,7 @@ function showCrumbMenu(button, items, focusLabel, above) {
   
   crumbMenu.classList.toggle('is-bridged', button.classList.contains('library-vault-switch'));
   
-  const browsing = above !== undefined || button.id === 'libraryRow' || (button === newMenuButton && newMenuFolder.view);
+  const browsing = above !== undefined || button.id === 'libraryRow' || (button === newMenuButton && (newMenuFolder.view || agentLaunch.view === 'connections' || agentLaunch.view === 'addServer'));
   crumbMenu.classList.toggle('is-browsing', browsing);
   
   const anchor = button.getBoundingClientRect();
@@ -21791,7 +21811,7 @@ checkForUpdate(!window.__leafLaterWindow);
 function updaterWindowActivityChanged(active) {
   if (active) checkForUpdate();
 }
-window.setInterval(() => {
+everyWhileShown(() => {
   if (!document.body.classList.contains('is-window-inactive')) checkForUpdate();
 }, 30 * 60 * 1000);
 initializeMinimapState();
@@ -40929,7 +40949,8 @@ function readingInput() {
 for (const type of ['scroll', 'wheel', 'keydown', 'pointerdown', 'pointermove']) {
   document.addEventListener(type, readingInput, { capture: true, passive: true });
 }
-setInterval(flushReading, READING_BEAT_MS);
+
+everyWhileShown(flushReading, READING_BEAT_MS, flushReading);
 
 
 
@@ -47807,6 +47828,31 @@ function agentLaunchNameOk(name) {
   return Boolean(name) && !/[\u0000-\u001f\u007f]/.test(name);
 }
 
+const agentConnections = { rows: [], error: '', reading: false };
+function agentConnectionsOpen(agent, id) {
+  agentLaunch.agent = agent;
+  agentLaunch.id = id;
+  agentConnections.rows = [];
+  agentConnectionsChange('toolServers', {});
+  agentLaunchShow('connections');
+}
+function agentConnectionsChange(action, fields) {
+  agentConnections.reading = true;
+  agentConnections.error = '';
+  agentLaunchRedraw();
+  return agentLaunchAsk(action, { id: agentLaunch.id, ...fields }).then((answer) => {
+    agentConnections.reading = false;
+    agentConnections.error = answer.error || '';
+    if (Array.isArray(answer.toolServers)) agentConnections.rows = answer.toolServers;
+    agentLaunchRedraw();
+    return answer;
+  });
+}
+
+function drawAgentConnections() {
+  if (agentLaunch.view === 'connections') agentLaunchRedraw();
+}
+
 const AGENT_LAUNCH_VIEWS = {
   account(agent) {
     const id = agentLaunch.id;
@@ -47818,12 +47864,38 @@ const AGENT_LAUNCH_VIEWS = {
       { label: 'Rename', keepOpen: true, run: () => { agentLaunch.draft = { name: agentLaunchLabel(agent, id) }; agentLaunchShow('rename'); } },
       status, ...agentLaunchAccountActions(agent, row, status), ...agentLaunchSkipRows(agent), ...agentLaunchErrorNote(),
       { label: 'Launch settings', keepOpen: true, run: () => agentLaunchSettings(agent, id) },
+      { label: 'Connections', keepOpen: true, run: () => agentConnectionsOpen(agent, id) },
       { label: 'Save sessions', run: () => setupOpenFromMenu() },
       agentLaunchStartRow(agent, id),
       ...(row ? [{ label: 'Remove from list', danger: true, keepOpen: true, run: () => agentLaunchShow('remove') }] : [])];
   },
   history() {
     return [agentLaunchBack('main'), { heading: 'Past conversations' }, ...agentLaunchHistoryRows()];
+  },
+  
+  connections(agent) {
+    const held = agentConnections;
+    const servers = held.reading ? [{ note: 'Asking the agent…' }]
+      : held.rows.length ? held.rows.flatMap((row) => {
+        const state = row.connected === false ? (row.words || 'Did not connect') : row.connected ? 'Connected' : (row.words || '');
+        const said = row.own ? 'Leaftext’s own; every console needs it' : row.kept ? (row.connected === false ? `${state} · ${row.kept}` : row.kept) : state;
+        const remove = row.own || row.removable === false ? [] : [{ buttons: [{ label: `Remove ${row.name}`, keepOpen: true, run: () => agentConnectionsChange('removeToolServer', { name: row.name }) }] }];
+        return [{ label: row.name, keepOpen: true, disabled: true }, { note: said }, ...remove];
+      })
+        : [{ note: 'No tool servers.' }];
+    return [agentLaunchBack('account'), { heading: `${agentLaunchLabel(agent, agentLaunch.id)} · Connections` },
+      { heading: 'Services' }, { element: wispServicesElement() },
+      { heading: 'Tool servers' }, ...servers, ...(held.error ? [{ note: held.error, danger: true }] : []),
+      { label: 'Add tool server…', keepOpen: true, run: () => { agentLaunch.draft = { name: '', server: '' }; agentLaunchShow('addServer'); } }];
+  },
+  addServer(agent) {
+    const draft = agentLaunch.draft || (agentLaunch.draft = { name: '', server: '' });
+    const add = () => agentConnectionsChange('addToolServer', { name: draft.name.trim(), server: draft.server.trim() }).then((answer) => { if (!answer.error) agentLaunchShow('connections'); });
+    return [agentLaunchBack('connections'), { heading: `${AGENT_LAUNCH_NAMES[agent]} · Add tool server`, form: true },
+      { input: draft.name, placeholder: 'Name', form: true, onInput: (value) => { draft.name = value; }, onEnter: add, onEscape: () => agentLaunchShow('connections') },
+      { input: draft.server, placeholder: 'Command line or https:// address', form: true, onInput: (value) => { draft.server = value; }, onEnter: add, onEscape: () => agentLaunchShow('connections') },
+      ...(agentConnections.error ? [{ note: agentConnections.error, danger: true }] : []),
+      { buttons: [{ label: 'Cancel', keepOpen: true, run: () => agentLaunchShow('connections') }, { label: agentConnections.reading ? 'Adding…' : 'Add', primary: true, keepOpen: true, run: add }] }];
   },
   pick() {
     return [agentLaunchBack('main'), { heading: 'Add account' },
@@ -47927,7 +47999,7 @@ const AGENT_LAUNCH_VIEWS = {
   },
 };
 
-const AGENT_LAUNCH_PARENT = { compare: 'main', history: 'main', account: 'main', pick: 'main', add: 'pick', link: 'add', rename: 'account', remove: 'account', waiting: 'account', launch: 'account', sessions: 'account', preparing: 'main', failed: 'main' };
+const AGENT_LAUNCH_PARENT = { compare: 'main', history: 'main', account: 'main', connections: 'account', addServer: 'connections', pick: 'main', add: 'pick', link: 'add', rename: 'account', remove: 'account', waiting: 'account', launch: 'account', sessions: 'account', preparing: 'main', failed: 'main' };
 function agentLaunchShow(view) {
   if (view !== agentLaunch.view) agentLaunch.error = '';
   agentLaunch.view = view === 'main' ? null : view;
@@ -48649,7 +48721,7 @@ function drawConsoleRecents() {
 function fillConsoleRecents(html) {
   const menuHere = !crumbMenu.hidden && Boolean(crumbMenuOwner?.classList?.contains('console-recents-filter'));
   
-  consoleRecentsBand.innerHTML = `<div class="sidebar-pane-head"><span class="sidebar-pane-title">Conversations</span><span class="sidebar-pane-saving" role="status">${setupSavingWords()}</span></div>` + html;
+  consoleRecentsBand.innerHTML = `<div class="sidebar-pane-head"><span class="sidebar-pane-title">Conversations</span><span class="sidebar-pane-saving" role="status">${setupSavingWords()}</span></div>` + wispRowHtml() + html;
   const button = consoleRecentsBand.querySelector('.console-recents-filter');
   if (menuHere && button) showCrumbMenu(button, consoleChatFilterRows());
 }
@@ -49389,6 +49461,377 @@ if (consoleRecentsBand) {
       return;
     }
     openConsoleRecentMenu(row.querySelector('.console-recent'), event.clientX, event.clientY);
+  });
+}
+
+
+var wispSheet = document.getElementById('wispSheet');
+var wispBackdrop = document.getElementById('wispBackdrop');
+var wispNameField = document.getElementById('wispName');
+var wispLight = document.getElementById('wispLight');
+var wispSheetClose = document.getElementById('wispSheetClose');
+var wispTabs = document.getElementById('wispTabs');
+var wispSheetBody = document.getElementById('wispSheetBody');
+var wispKeepSwitch = document.getElementById('wispKeepSwitch');
+const WISP_DEFAULT_NAME = 'Wisp';
+const WISP_TABS = [
+  ['connections', 'Connections'],
+  ['chains', 'Chains'],
+  ['people', 'People'],
+  ['runs', 'Runs'],
+];
+
+const WISP_EMPTY = {
+  connections: 'Each service your wisp can reach — Linear, Slack, Discord, text messages — gets a row here with its key and what its last check found.',
+  chains: 'Every chain note in your vaults is listed here, with whether you have trusted it and a Start press for one you have.',
+  people: 'The people your wisp listens to, once a chat service is connected. Nobody is let in until you approve them.',
+  runs: 'Every run your wisp makes is listed here, newest first, each opening its run note.',
+};
+
+const wisp = { name: String(LEAF_SETTINGS.wispName || ''), lit: LEAF_SETTINGS.wispLit === true, keepRunning: LEAF_SETTINGS.keepRunning !== false, busy: false, failed: false, tab: 'connections', lastFocus: null };
+
+function wispShown() {
+  return Boolean(wispSheet) && newMenuHostAnswers('setWispLit');
+}
+function wispName() {
+  return wisp.name.trim() || WISP_DEFAULT_NAME;
+}
+
+function wispLightState() {
+  if (!wisp.lit) return 'unlit';
+  if (wisp.failed) return 'failed';
+  if (wisp.busy) return 'busy';
+  return 'lit';
+}
+function wispLightWords() {
+  return wisp.lit ? 'Turn your wisp off' : 'Turn your wisp on';
+}
+
+
+function wispRowHtml() {
+  if (!wispShown()) return '';
+  const name = wispName();
+  const label = `${name}, your bot, ${wisp.lit ? 'on' : 'off'}`;
+  return `<div class="wisp-row-wrap"><button type="button" class="wisp-row" data-wisp-open="row" aria-label="${escapeAttr(label)}" title="${escapeAttr(`Open ${name}, your bot`)}"><span class="wisp-row-mark" aria-hidden="true">✦</span><span class="wisp-row-name">${escapeText(name)} · your bot</span><span class="wisp-light is-${wispLightState()}" aria-hidden="true"></span></button></div>`;
+}
+
+function drawWispTabs() {
+  if (!wispTabs) return;
+  if (!wispTabs.querySelector('[data-wisp-tab]')) wispTabs.innerHTML = WISP_TABS.map(([name, words]) => `<button type="button" class="grove-tab" role="tab" data-wisp-tab="${name}">${words}</button>`).join('');
+  for (const tab of wispTabs.querySelectorAll('[data-wisp-tab]')) {
+    const chosen = tab.dataset.wispTab === wisp.tab;
+    tab.classList.toggle('is-chosen', chosen);
+    tab.setAttribute('aria-selected', chosen ? 'true' : 'false');
+    tab.setAttribute('tabindex', chosen ? '0' : '-1');
+  }
+}
+
+const WISP_SERVICES = [
+  ['linear', 'Linear'],
+  ['slack', 'Slack'],
+  ['discord', 'Discord'],
+  ['sms', 'Text messages'],
+];
+
+const wispKeys = { stored: {}, asked: false, open: null, error: '', checks: {}, checking: false };
+function wispServiceSaid(id) {
+  const check = wispKeys.checks[id];
+  if (check) return { words: check.words, tone: check.good ? 'is-good' : check.good === false ? 'is-bad' : '' };
+  if (wispKeys.stored[id]) return { words: 'Key kept. Not checked yet.', tone: '' };
+  return { words: 'No key yet.', tone: '' };
+}
+
+function wispServicesHtml() {
+  const rows = WISP_SERVICES.map(([id, name]) => {
+    const said = wispServiceSaid(id);
+    const open = wispKeys.open === id;
+    const field = open ? `<input class="wisp-service-key" type="password" autocomplete="off" spellcheck="false" data-wisp-key="${id}" aria-label="${escapeAttr(`${name} key`)}" placeholder="Paste a token">` : '';
+    const press = wispKeys.stored[id]
+      ? `<button type="button" class="theme-mode-btn" data-wisp-service-press="forget" data-wisp-service="${id}">Forget</button>`
+      : `<button type="button" class="theme-mode-btn" data-wisp-service-press="${open ? 'store' : 'enter'}" data-wisp-service="${id}">Enter token</button>`;
+    return `<div class="wisp-service"><span class="wisp-service-name">${escapeText(name)}</span><span class="wisp-service-said ${said.tone}">${escapeText(said.words)}</span>${field}${press}</div>`;
+  }).join('');
+  const error = wispKeys.error ? `<p class="wisp-empty wisp-service-said is-bad" role="alert">${escapeText(wispKeys.error)}</p>` : '';
+  const checking = wispKeys.checking ? ' disabled' : '';
+  const check = `<button type="button" class="theme-mode-btn wisp-check-all" data-wisp-service-press="check"${checking}>${wispKeys.checking ? 'Checking…' : 'Check everything'}</button>`;
+  return `<div class="wisp-services">${rows}</div>${error}${check}`;
+}
+
+window.leafWispChecked = (answer) => {
+  wispKeys.checking = false;
+  wispKeys.error = (answer && answer.error) || '';
+  if (answer && answer.checks) wispKeys.checks = answer.checks;
+  drawWispServices();
+};
+
+function wispServicesElement() {
+  const box = document.createElement('div');
+  box.className = 'agent-connections';
+  box.innerHTML = wispServicesHtml();
+  box.addEventListener('click', (event) => {
+    event.stopPropagation();
+    onWispServicePress(event);
+  });
+  box.addEventListener('keydown', onWispServiceKey);
+  askWispKeys();
+  return box;
+}
+function askWispKeys() {
+  if (wispKeys.asked || !newMenuHostAnswers('wispKeys')) return;
+  wispKeys.asked = true;
+  send({ command: 'wispKeys' });
+}
+
+window.leafWispKeys = (answer) => {
+  wispKeys.stored = (answer && answer.stored) || {};
+  wispKeys.error = (answer && answer.error) || '';
+  if (!wispKeys.error) wispKeys.open = null;
+  drawWispServices();
+};
+function drawWispServices() {
+  if (wispSheet && !wispSheet.hidden && wisp.tab === 'connections') drawWispSheet();
+  if (typeof drawAgentConnections === 'function') drawAgentConnections();
+}
+
+function sendWispKey(service, field) {
+  const key = field ? field.value : '';
+  if (field) field.value = '';
+  if (!key.trim()) {
+    wispKeys.error = 'Type the key before you enter it.';
+    drawWispServices();
+    return;
+  }
+  send({ command: 'wispStoreKey', service, key });
+}
+function onWispServicePress(event) {
+  const press = event.target.closest('[data-wisp-service-press]');
+  if (!press) return;
+  const service = press.dataset.wispService;
+  const how = press.dataset.wispServicePress;
+  wispKeys.error = '';
+  if (how === 'enter') {
+    wispKeys.open = service;
+    drawWispServices();
+    const field = document.querySelector(`[data-wisp-key="${service}"]`);
+    if (field) field.focus();
+  } else if (how === 'store') {
+    sendWispKey(service, press.parentElement.querySelector('[data-wisp-key]'));
+  } else if (how === 'check') {
+    wispKeys.checking = true;
+    drawWispServices();
+    send({ command: 'wispCheckAll' });
+  } else if (how === 'forget') {
+    delete wispKeys.checks[service];
+    send({ command: 'wispForgetKey', service });
+  }
+}
+function onWispServiceKey(event) {
+  const field = event.target.closest && event.target.closest('[data-wisp-key]');
+  if (!field) return;
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    sendWispKey(field.dataset.wispKey, field);
+  } else if (event.key === 'Escape') {
+    event.stopPropagation();
+    field.value = '';
+    wispKeys.open = null;
+    drawWispServices();
+  }
+}
+
+const wispNotes = { notes: null, runs: null, said: '' };
+function askWispNotes() {
+  if (!newMenuHostAnswers('wispNotes')) return;
+  send({ command: 'wispNotes' });
+}
+window.leafWispNotes = (answer) => {
+  wispNotes.notes = Array.isArray(answer && answer.notes) ? answer.notes : [];
+  wispNotes.runs = Array.isArray(answer && answer.runs) ? answer.runs : [];
+  if (wispSheet && !wispSheet.hidden && (wisp.tab === 'chains' || wisp.tab === 'runs')) drawWispSheet();
+};
+
+window.leafWispTrust = (answer) => {
+  wispNotes.said = answer && answer.error ? String(answer.error) : answer && answer.trusted ? 'Trusted. A change to the note asks again.' : 'Not trusted. Nothing in it will run.';
+  askWispNotes();
+  if (wispSheet && !wispSheet.hidden) drawWispSheet();
+};
+window.leafWispStarted = (answer) => {
+  wispNotes.said = answer && answer.error ? String(answer.error) : 'Started. Its run is listed under Runs.';
+  askWispNotes();
+  if (wispSheet && !wispSheet.hidden) drawWispSheet();
+};
+function wispSaidHtml() {
+  return wispNotes.said ? `<p class="wisp-empty" role="status">${escapeText(wispNotes.said)}</p>` : '';
+}
+function wispChainsHtml() {
+  if (wispNotes.notes === null) return '<p class="wisp-empty">Reading your vaults…</p>';
+  if (!wispNotes.notes.length) return `<p class="wisp-empty">${escapeText(WISP_EMPTY.chains)}</p>`;
+  const rows = wispNotes.notes.map((note) => {
+    const kind = note.kind === 'watcher' ? 'Watcher' : 'Chain';
+    const said = note.unreadable ? `Cannot run: ${note.unreadable}` : note.trusted ? `${kind} · trusted` : `${kind} · not trusted`;
+    const tone = note.unreadable ? 'is-bad' : note.trusted ? 'is-good' : '';
+    let press = '';
+    if (!note.unreadable && !note.trusted) press = `<button type="button" class="theme-mode-btn" data-wisp-trust="${escapeAttr(note.path)}">Trust…</button>`;
+    else if (!note.unreadable && note.kind === 'chain') press = `<button type="button" class="theme-mode-btn" data-wisp-start="${escapeAttr(note.name)}">Start</button>`;
+    return `<div class="wisp-service"><span class="wisp-service-name" title="${escapeAttr(note.path)}">${escapeText(note.name)}</span><span class="wisp-service-said ${tone}">${escapeText(`${said} · ${note.vault}`)}</span>${press}</div>`;
+  }).join('');
+  return `${wispSaidHtml()}<div class="wisp-services">${rows}</div>`;
+}
+function wispRunsHtml() {
+  if (wispNotes.runs === null) return '<p class="wisp-empty">Reading your vaults…</p>';
+  if (!wispNotes.runs.length) return `<p class="wisp-empty">${escapeText(WISP_EMPTY.runs)}</p>`;
+  const rows = wispNotes.runs.map((run) => {
+    const when = run.modified ? new Date(run.modified * 1000).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    return `<div class="wisp-service"><span class="wisp-service-name">${escapeText(run.name)}</span><span class="wisp-service-said">${escapeText(`${when} · ${run.vault}`)}</span><button type="button" class="theme-mode-btn" data-wisp-run="${escapeAttr(run.path)}">Open</button></div>`;
+  }).join('');
+  return `${wispSaidHtml()}<div class="wisp-services">${rows}</div>`;
+}
+function onWispNotePress(event) {
+  const trust = event.target.closest('[data-wisp-trust]');
+  if (trust) {
+    wispNotes.said = 'Answer the box Leaftext raised to trust it.';
+    drawWispSheet();
+    send({ command: 'trustNote', path: trust.dataset.wispTrust });
+    return;
+  }
+  const start = event.target.closest('[data-wisp-start]');
+  if (start) {
+    wispNotes.said = '';
+    send({ command: 'wispStartChain', name: start.dataset.wispStart });
+    return;
+  }
+  const run = event.target.closest('[data-wisp-run]');
+  if (run) {
+    closeWispSheet();
+    send({ command: 'openPaths', paths: [run.dataset.wispRun] });
+  }
+}
+function wispTabHtml(tab) {
+  if (tab === 'chains') return wispChainsHtml();
+  if (tab === 'runs') return wispRunsHtml();
+  if (tab === 'connections') return wispServicesHtml();
+  return `<p class="wisp-empty">${escapeText(WISP_EMPTY[tab] || '')}</p>`;
+}
+function drawWispSheet() {
+  if (!wispSheet) return;
+  
+  if (wispNameField && document.activeElement !== wispNameField) wispNameField.value = wispName();
+  
+  if (wispNameField) wispNameField.size = Math.max(4, wispNameField.value.length + 1);
+  if (wispLight) {
+    wispLight.className = `wisp-light wisp-light-press is-${wispLightState()}`;
+    wispLight.setAttribute('aria-pressed', wisp.lit ? 'true' : 'false');
+    wispLight.setAttribute('aria-label', wispLightWords());
+    wispLight.title = wispLightWords();
+  }
+  if (wispKeepSwitch) {
+    wispKeepSwitch.setAttribute('aria-checked', wisp.keepRunning ? 'true' : 'false');
+    for (const part of wispKeepSwitch.querySelectorAll('.grove-switch-track, .grove-switch-thumb')) part.classList.toggle('is-on', wisp.keepRunning);
+  }
+  drawWispTabs();
+  if (wispSheetBody) wispSheetBody.innerHTML = wispTabHtml(wisp.tab);
+}
+function setWispKeepRunning(enabled) {
+  wisp.keepRunning = Boolean(enabled);
+  send({ command: 'setKeepRunning', enabled: wisp.keepRunning });
+  drawWispSheet();
+}
+function drawWisp() {
+  drawConsoleRecents();
+  if (wispSheet && !wispSheet.hidden) drawWispSheet();
+}
+
+function setWispLit(lit) {
+  wisp.lit = Boolean(lit);
+  send({ command: 'setWispLit', lit: wisp.lit });
+  drawWisp();
+}
+
+function settleWispName() {
+  if (!wispNameField) return;
+  const typed = wispNameField.value.trim().slice(0, 40);
+  const name = typed === WISP_DEFAULT_NAME ? '' : typed;
+  wispNameField.value = name || WISP_DEFAULT_NAME;
+  if (name === wisp.name) return;
+  wisp.name = name;
+  send({ command: 'setWispName', name });
+  drawConsoleRecents();
+}
+function showWispTab(name) {
+  if (!WISP_TABS.some(([tab]) => tab === name)) return;
+  const moved = wisp.tab !== name;
+  wisp.tab = name;
+  if (name === 'chains' || name === 'runs') askWispNotes();
+  drawWispSheet();
+  if (moved && wispSheetBody) wispSheetBody.scrollTop = 0;
+}
+function onWispTabKey(event) {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  event.preventDefault();
+  const at = WISP_TABS.findIndex(([tab]) => tab === wisp.tab);
+  const step = event.key === 'ArrowRight' ? 1 : WISP_TABS.length - 1;
+  showWispTab(WISP_TABS[(at + step) % WISP_TABS.length][0]);
+  const chosen = wispTabs.querySelector(`[data-wisp-tab="${wisp.tab}"]`);
+  if (chosen) chosen.focus();
+}
+function onWispKey(event) {
+  if (event.key !== 'Escape') return;
+  
+  if (document.activeElement === wispNameField) {
+    wispNameField.value = wispName();
+    wispNameField.blur();
+    return;
+  }
+  closeWispSheet();
+}
+
+function openWispSheet() {
+  if (!wispShown()) return;
+  closeHomeSheet();
+  closeThemeSheet();
+  dismissGlossary();
+  if (wispSheet.hidden) wisp.lastFocus = document.activeElement;
+  askWispKeys();
+  drawWispSheet();
+  openSheet(wispSheet, wispBackdrop);
+  document.addEventListener('keydown', onWispKey);
+  leafFocusForKeyboard(wispLight);
+}
+function closeWispSheet(options) {
+  if (!wispSheet || wispSheet.hidden || !wispSheet.classList.contains('open')) return;
+  document.removeEventListener('keydown', onWispKey);
+  settleWispName();
+  closeSheet(wispSheet, wispBackdrop, options);
+  leafFocusForKeyboard(wisp.lastFocus);
+}
+
+function closeWispUnder(sheet) {
+  if (!wispSheet || sheet === wispSheet) return;
+  closeWispSheet();
+}
+
+if (wispSheet) {
+  makeSheetDraggable(wispSheet, wispSheet.querySelector('.leaf-sheet-grip'), closeWispSheet);
+  wispSheetClose.addEventListener('click', () => closeWispSheet());
+  wispBackdrop.addEventListener('click', () => closeWispSheet());
+  wispLight.addEventListener('click', () => setWispLit(!wisp.lit));
+  if (wispKeepSwitch) wispKeepSwitch.addEventListener('click', () => setWispKeepRunning(!wisp.keepRunning));
+  wispNameField.addEventListener('change', settleWispName);
+  wispNameField.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') wispNameField.blur();
+  });
+  wispTabs.addEventListener('click', (event) => {
+    const tab = event.target.closest('[data-wisp-tab]');
+    if (tab) showWispTab(tab.dataset.wispTab);
+  });
+  wispTabs.addEventListener('keydown', onWispTabKey);
+  wispSheetBody.addEventListener('click', onWispServicePress);
+  wispSheetBody.addEventListener('click', onWispNotePress);
+  wispSheetBody.addEventListener('keydown', onWispServiceKey);
+}
+if (consoleRecentsBand) {
+  consoleRecentsBand.addEventListener('click', (event) => {
+    if (event.target.closest('[data-wisp-open]')) openWispSheet();
   });
 }
 
@@ -53788,6 +54231,7 @@ function watchIdleConsoles(now = Date.now()) {
     }
   }
 }
+
 setInterval(watchIdleConsoles, SAVED_CHAT_IDLE_CHECK_MS);
 
 

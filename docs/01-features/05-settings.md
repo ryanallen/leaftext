@@ -15,7 +15,7 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 | [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus | The [graph](03-library.md#graph) view's own toolbar |
 | [Calendar date](#calendar-date) | Changed, Made, or a date field written in the vault | Due | The [calendar](03-library.md#calendar) sheet |
 
-Other preferences are saved here but set where they apply: the [Home box order](#home-boxes), [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, the [Read aloud](#read-aloud) voice, speed and ElevenLabs model, [typing help](#typing-help), and [the two padlocks](#the-padlocks).
+Other preferences are saved here but set where they apply: the [Home box order](#home-boxes), [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, the [Read aloud](#read-aloud) voice, speed and ElevenLabs model, [typing help](#typing-help), [your wisp's name and light](#your-wisp), and [the two padlocks](#the-padlocks).
 
 **Speed Reader** is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
@@ -206,6 +206,15 @@ Move or close a Home box from the quiet controls on its heading; the small plus 
 - On by default, toggled with the wand on the code view's [toolbar](07-editing.md#typing-help)
 - Monaco's IntelliSense, answered from your notes: suggests them after `[[`, headings after `#`, previews a note on hover, and underlines [broken links](07-editing.md#typing-help) in the code view
 - Saved as `code_intel_enabled`
+
+### Your wisp
+
+- Your wisp is Leaftext's bot: an agent that runs your chains on its own. Its row is at the head of the conversations in the library pane, and pressing it opens its sheet
+- Its name is Wisp until you type another over it at the head of the sheet; a blank name goes back to Wisp. Saved as `wisp_name`, empty for Wisp
+- Its light is the dot at the sheet's top right and at the end of its row. Unlit on every copy, and while it is unlit your wisp makes no outside call at all; press the dot to turn it on. Saved as `bot_enabled`
+- Its **Connections** tab has a row each for Linear, Slack, Discord and text messages. **Enter token** takes a key into the system's credential store — never into `settings.json` — and the row then offers **Forget**. **Check everything** asks every service at once and writes what each said on its row, giving each ten seconds; while the wisp is unlit it checks nothing
+- Its **Chains** tab lists every chain and watcher note in your vaults with whether you trusted it. **Trust…** raises the system's own box naming the file and every command it will run, and trusts the note only when you press Yes there; while that box is up no agent can press, type or drive anything. A trusted chain has **Start**. **Runs** lists the last fifty runs, each opening its run note
+- **Keep running when you close the window**, the switch under its name, is on by default: closing the last window hides it behind Leaftext's icon in the notification area or the menu bar, so your wisp keeps working, and Quit on the icon or the quit key ends Leaftext. Off, closing the last window quits, unless a [trusted watcher](10-agents.md#hold-an-agent-to-your-checks) is kept. Saved as `keep_running`
 
 ### Pager
 
