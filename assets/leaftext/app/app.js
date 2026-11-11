@@ -49493,7 +49493,7 @@ const WISP_TABS = [
 ];
 
 const WISP_EMPTY = {
-  connections: 'Each service your wisp can reach — Linear, Slack, Discord, text messages — gets a row here with its key and what its last check found.',
+  connections: 'Each service your wisp can reach — Linear, Slack and Discord — gets a row here with its key and what its last check found.',
   chains: 'Every chain note in your vaults is listed here, with whether you have trusted it and a Start press for one you have.',
   people: 'The people your wisp listens to, once a chat service is connected. Nobody is let in until you approve them.',
   runs: 'Every run your wisp makes is listed here, newest first, each opening its run note.',
@@ -49728,7 +49728,6 @@ const WISP_SERVICES = [
   ['linear', 'Linear'],
   ['slack', 'Slack'],
   ['discord', 'Discord'],
-  ['sms', 'Text messages'],
 ];
 
 const wispKeys = { stored: {}, invites: {}, asked: false, open: null, error: '', checks: {}, checking: false };
