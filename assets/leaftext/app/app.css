@@ -20521,15 +20521,11 @@ p.shelf-foot {
 .wisp-runs-pick.is-none { color: var(--lt-danger); }
 .wisp-row-runs { flex: 0 1 55%; min-width: 0; overflow: hidden; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); text-overflow: ellipsis; white-space: nowrap; }
 
-.wisp-talk { display: flex; flex-direction: column; gap: var(--lt-space-8); margin: var(--lt-space-8) 0; }
-.wisp-talk-lines { display: flex; flex-direction: column; gap: var(--lt-space-8); max-height: 40vh; overflow-y: auto; }
-.wisp-talk-line { display: flex; flex-direction: column; gap: var(--lt-space-2); max-width: 80%; padding: var(--lt-space-8) var(--lt-space-12); border-radius: var(--lt-radius-md); color: var(--lt-foreground); font-size: var(--lt-text-13); white-space: pre-wrap; overflow-wrap: anywhere; }
-.wisp-talk-line.is-you { align-self: flex-end; background: var(--lt-wash-hover); }
-.wisp-talk-line.is-wisp { align-self: flex-start; background: var(--lt-surface-elevated); }
-.wisp-talk-who { color: var(--lt-muted-foreground); font-size: var(--lt-text-11); }
-.wisp-talk-box { display: flex; align-items: flex-end; gap: var(--lt-space-8); }
-.wisp-talk-field { flex: 1; min-width: 0; padding: var(--lt-space-6) var(--lt-space-8); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-sm); background: var(--lt-surface-elevated); color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-13); resize: vertical; }
-.wisp-talk-field:focus { border-color: var(--lt-border-strong); outline: none; }
+.wisp-chat-head { display: flex; flex: none; align-items: center; gap: var(--lt-space-8); height: var(--lt-space-48); padding: 0 var(--lt-space-12); border-bottom: var(--lt-stroke-1) solid var(--lt-border); }
+.wisp-chat-mark { color: var(--lt-primary-ink); }
+.wisp-chat-name { color: var(--lt-primary-ink); font-size: var(--lt-text-14); font-weight: var(--lt-weight-700); white-space: nowrap; }
+.wisp-chat-runs { flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--lt-muted-foreground); font-size: var(--lt-text-12); text-overflow: ellipsis; white-space: nowrap; }
+.console-chat-pin.is-under-head { top: var(--lt-space-48); }
 .wisp-keep { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-2) var(--lt-space-8); }
 .wisp-keep-said { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .wisp-empty { margin: var(--lt-space-12) 0; color: var(--lt-muted-foreground); font-size: var(--lt-text-13); }
@@ -22099,7 +22095,19 @@ body.leaf-paper :is(.docs-pager,
 .block-drag-ghost,
 .selection-toolbar,
 .mermaid-tools,
+.mermaid-view-controls,
+.code-copy,
+.image-lane-corner,
+.frontmatter-remove,
+.table-lens-bar,
 .diagram-overlay) {
+  display: none;
+}
+
+body.leaf-paper .app-surface > :not(.library-shell):not(.reader-shell):not(svg):not(.diagram-print):not(.picture-print) {
+  display: none;
+}
+body.leaf-paper .library-shell > :not(.reader-shell) {
   display: none;
 }
 
