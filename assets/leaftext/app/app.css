@@ -20549,7 +20549,6 @@ p.shelf-foot {
 .wisp-member { flex: 0 1 26ch; }
 
 .wisp-person-code { color: var(--lt-primary-ink); font-family: var(--font-mono); font-size: var(--lt-text-13); letter-spacing: var(--lt-tracking-060); }
-.wisp-person-chain { display: inline-flex; align-items: center; gap: var(--lt-space-4); color: var(--lt-foreground); font-size: var(--lt-text-12); }
 .wisp-people-heading { margin: var(--lt-space-12) 0 0; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); letter-spacing: var(--lt-tracking-120); text-transform: uppercase; }
 .wisp-service-key:focus { border-color: var(--lt-border-strong); outline: none; }
 .wisp-service-key[hidden] { display: none; }

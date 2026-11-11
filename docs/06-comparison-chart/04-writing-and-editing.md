@@ -654,15 +654,12 @@
 | Helpers ask their starter | [✅][l-agent-start] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Remote agents join | [✅][l-agent-tell] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents drive other windows | [✅][l-agent-drive] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Watchers start agents | [✅][l-agent-watch] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Ask agent about passage | [✅][l-agent-passage] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Circling agent warned | [✅][l-agent-circle] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agent plugin install | [✅][l-agent-plugin] | ? | [❌][t-seen] | [❌][c-seen] |
 | Bot answers in Slack | [✅][l-wisp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Bot answers in Discord | [✅][l-wisp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Bot hears voice notes | [✅][l-wisp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Stop chains from chat | [✅][l-wisp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Bot status from chat | [✅][l-wisp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents held to checks | [✅][l-agent-harness] | ? | [❌][t-seen] | [❌][c-seen] |
 | Drop paths into console | [✅][l-agent-drop] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Pick agent start folder | [✅][l-agent-drop] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -679,7 +676,6 @@
 | Send when limit resets | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Awake while agents work | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Sessions saved as notes | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Skill chains | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Why changes were made | [✅][l-agent-chat] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Checks learn from sessions | [✅][l-agent-harness] | ? | [❌][t-seen] | [❌][c-seen] |
 | Design canvas with comments | [✅][l-agent-canvas] | ? | [❌][t-seen] | [❌][c-seen] |
@@ -768,7 +764,6 @@
 [l-agent-tell]: ../01-features/10-agents.md#agents-in-different-consoles-talk-to-each-other
 [l-agent-start]: ../01-features/10-agents.md#an-agent-starts-another-and-waits-on-it
 [l-agent-drive]: ../01-features/10-agents.md#an-agent-drives-your-other-windows
-[l-agent-watch]: ../01-features/10-agents.md#a-watcher-starts-an-agent-when-something-new-appears
 [l-agent-passage]: ../01-features/10-agents.md#ask-an-agent-about-a-passage
 [l-agent-circle]: ../01-features/10-agents.md#an-agent-going-round-in-circles-is-told
 [l-agent-plugin]: ../01-features/10-agents.md#install-the-plugin

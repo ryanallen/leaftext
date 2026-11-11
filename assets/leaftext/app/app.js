@@ -49487,16 +49487,12 @@ var wispRuns = document.getElementById('wispRuns');
 const WISP_DEFAULT_NAME = 'Wisp';
 const WISP_TABS = [
   ['connections', 'Connections'],
-  ['chains', 'Chains'],
   ['people', 'People'],
-  ['runs', 'Runs'],
 ];
 
 const WISP_EMPTY = {
-  connections: 'Each service your wisp can reach — Linear, Slack and Discord — gets a row here with its key and what its last check found.',
-  chains: 'Every chain note in your vaults is listed here, with whether you have trusted it and a Start press for one you have.',
+  connections: 'Each service your wisp can reach — Slack and Discord — gets a row here with its key and what its last check found.',
   people: 'The people your wisp listens to, once a chat service is connected. Nobody is let in until you approve them.',
-  runs: 'Every run your wisp makes is listed here, newest first, each opening its run note.',
 };
 
 const wisp = { name: String(LEAF_SETTINGS.wispName || ''), lit: LEAF_SETTINGS.wispLit === true, keepRunning: LEAF_SETTINGS.keepRunning !== false, agent: String(LEAF_SETTINGS.wispAgent || ''), members: { slack: String(LEAF_SETTINGS.wispSlackMember || ''), discord: String(LEAF_SETTINGS.wispDiscordMember || ''), imessage: String(LEAF_SETTINGS.wispImessageMember || '') }, account: String(LEAF_SETTINGS.wispAccount || ''), folder: String(LEAF_SETTINGS.wispFolder || ''), model: String(LEAF_SETTINGS.wispModel || ''), effort: String(LEAF_SETTINGS.wispEffort || ''), busy: false, failed: false, console: 0, chats: [], asked: '', tab: 'connections', lastFocus: null, askedAccounts: false };
@@ -49725,7 +49721,6 @@ function drawWispTabs() {
 }
 
 const WISP_SERVICES = [
-  ['linear', 'Linear'],
   ['slack', 'Slack'],
   ['discord', 'Discord'],
 ];
@@ -49980,74 +49975,6 @@ function onWispServiceKey(event) {
   }
 }
 
-const wispNotes = { notes: null, runs: null, said: '' };
-function askWispNotes() {
-  if (!newMenuHostAnswers('wispNotes')) return;
-  send({ command: 'wispNotes' });
-}
-window.leafWispNotes = (answer) => {
-  wispNotes.notes = Array.isArray(answer && answer.notes) ? answer.notes : [];
-  wispNotes.runs = Array.isArray(answer && answer.runs) ? answer.runs : [];
-  if (wispSheet && !wispSheet.hidden && (wisp.tab === 'chains' || wisp.tab === 'runs' || wisp.tab === 'people')) drawWispSheet();
-};
-
-window.leafWispTrust = (answer) => {
-  wispNotes.said = answer && answer.error ? String(answer.error) : answer && answer.trusted ? 'Trusted. A change to the note asks again.' : 'Not trusted. Nothing in it will run.';
-  askWispNotes();
-  if (wispSheet && !wispSheet.hidden) drawWispSheet();
-};
-window.leafWispStarted = (answer) => {
-  wispNotes.said = answer && answer.error ? String(answer.error) : 'Started. Its run is listed under Runs.';
-  askWispNotes();
-  if (wispSheet && !wispSheet.hidden) drawWispSheet();
-};
-function wispSaidHtml() {
-  return wispNotes.said ? `<p class="wisp-empty" role="status">${escapeText(wispNotes.said)}</p>` : '';
-}
-function wispChainsHtml() {
-  if (wispNotes.notes === null) return '<p class="wisp-empty">Reading your vaults…</p>';
-  if (!wispNotes.notes.length) return `<p class="wisp-empty">${escapeText(WISP_EMPTY.chains)}</p>`;
-  const rows = wispNotes.notes.map((note) => {
-    const kind = note.kind === 'watcher' ? 'Watcher' : 'Chain';
-    const said = note.unreadable ? `Cannot run: ${note.unreadable}` : note.trusted ? `${kind} · trusted` : `${kind} · not trusted`;
-    const tone = note.unreadable ? 'is-bad' : note.trusted ? 'is-good' : '';
-    let press = '';
-    if (!note.unreadable && !note.trusted) press = `<button type="button" class="theme-mode-btn" data-wisp-trust="${escapeAttr(note.path)}">Trust…</button>`;
-    else if (!note.unreadable && note.kind === 'chain') press = `<button type="button" class="theme-mode-btn" data-wisp-start="${escapeAttr(note.name)}">Start</button>`;
-    return `<div class="wisp-service"><span class="wisp-service-name" title="${escapeAttr(note.path)}">${escapeText(note.name)}</span><span class="wisp-service-said ${tone}">${escapeText(`${said} · ${note.vault}`)}</span>${press}</div>`;
-  }).join('');
-  return `${wispSaidHtml()}<div class="wisp-services">${rows}</div>`;
-}
-function wispRunsHtml() {
-  if (wispNotes.runs === null) return '<p class="wisp-empty">Reading your vaults…</p>';
-  if (!wispNotes.runs.length) return `<p class="wisp-empty">${escapeText(WISP_EMPTY.runs)}</p>`;
-  const rows = wispNotes.runs.map((run) => {
-    const when = run.modified ? new Date(run.modified * 1000).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-    return `<div class="wisp-service"><span class="wisp-service-name">${escapeText(run.name)}</span><span class="wisp-service-said">${escapeText(`${when} · ${run.vault}`)}</span><button type="button" class="theme-mode-btn" data-wisp-run="${escapeAttr(run.path)}">Open</button></div>`;
-  }).join('');
-  return `${wispSaidHtml()}<div class="wisp-services">${rows}</div>`;
-}
-function onWispNotePress(event) {
-  const trust = event.target.closest('[data-wisp-trust]');
-  if (trust) {
-    wispNotes.said = 'Answer the box Leaftext raised to trust it.';
-    drawWispSheet();
-    send({ command: 'trustNote', path: trust.dataset.wispTrust });
-    return;
-  }
-  const start = event.target.closest('[data-wisp-start]');
-  if (start) {
-    wispNotes.said = '';
-    send({ command: 'wispStartChain', name: start.dataset.wispStart });
-    return;
-  }
-  const run = event.target.closest('[data-wisp-run]');
-  if (run) {
-    closeWispSheet();
-    send({ command: 'openPaths', paths: [run.dataset.wispRun] });
-  }
-}
-
 window.leafWispSaid = (answer) => {
   if (!answer) return;
   if (answer.sent) wisp.busy = true;
@@ -50114,20 +50041,10 @@ function wispPeopleHtml() {
   const filled = Object.keys(wispPeople.filled).filter((service) => wispPeople.filled[service] && wisp.members[service]).map((service) => ` · filled in from ${app(service)}`).join('');
   const you = `<div class="wisp-service wisp-person"><span class="wisp-service-name">You</span><span class="wisp-service-said">${escapeText(yours.length ? `on ${yours.join(' and ')} · may give the wisp work${filled}` : 'Name yourself on a chat row under Connections, or press This is me on your own message under Waiting for you.')}</span></div>`;
   
-  const chains = (wispNotes.notes || []).filter((note) => note.kind === 'chain' && note.trusted && !note.unreadable).map((note) => note.name);
-  const ticks = (one) => chains.map((name) => `<label class="wisp-person-chain"><input type="checkbox" data-wisp-person-chain="${escapeAttr(name)}" data-wisp-service="${escapeAttr(one.service)}" data-wisp-person="${escapeAttr(one.id)}"${(one.chains || []).includes(name) ? ' checked="checked"' : ''}> ${escapeText(name)}</label>`).join('');
-  const people = wispPeople.people.map((one) => `<div class="wisp-service wisp-person"><span class="wisp-service-name">${escapeText(one.id)}</span><span class="wisp-service-said">${escapeText(`on ${app(one.service)} · ${chains.length ? 'may start' : 'no trusted chain to start yet'}`)}</span>${ticks(one)}${press('remove', one, 'Remove')}</div>`).join('');
+  const people = wispPeople.people.map((one) => `<div class="wisp-service wisp-person"><span class="wisp-service-name">${escapeText(one.id)}</span><span class="wisp-service-said">${escapeText(`on ${app(one.service)} · told only you give the wisp work`)}</span>${press('remove', one, 'Remove')}</div>`).join('');
   const heading = (words) => `<p class="wisp-people-heading">${words}</p>`;
   const none = waiting ? '' : `<p class="wisp-empty">${escapeText(WISP_EMPTY.people)}</p>`;
   return `${heading('Waiting for you')}${none}<div class="wisp-services">${waiting}</div>${heading('Let in')}<div class="wisp-services">${you}${people}</div>${heading('Add somebody')}<div class="wisp-services">${wispAddHtml()}</div>`;
-}
-
-function setWispPersonChains(service, id) {
-  const ticks = Array.from(wispSheetBody.querySelectorAll('[data-wisp-person-chain]')).filter((tick) => tick.dataset.wispService === service && tick.dataset.wispPerson === id);
-  const chains = ticks.filter((tick) => tick.checked).map((tick) => tick.dataset.wispPersonChain);
-  const person = wispPeople.people.find((one) => one.service === service && one.id === id);
-  if (person) person.chains = chains;
-  send({ command: 'wispPersonChains', service, id, chains });
 }
 function onWispPersonPress(event) {
   const press = event.target.closest('[data-wisp-person-press]');
@@ -50149,8 +50066,6 @@ function onWispPersonPress(event) {
 }
 function wispTabHtml(tab) {
   if (tab === 'people') return wispPeopleHtml();
-  if (tab === 'chains') return wispChainsHtml();
-  if (tab === 'runs') return wispRunsHtml();
   if (tab === 'connections') return wispServicesHtml();
   return `<p class="wisp-empty">${escapeText(WISP_EMPTY[tab] || '')}</p>`;
 }
@@ -50205,11 +50120,7 @@ function showWispTab(name) {
   if (!WISP_TABS.some(([tab]) => tab === name)) return;
   const moved = wisp.tab !== name;
   wisp.tab = name;
-  if (name === 'chains' || name === 'runs') askWispNotes();
-  if (name === 'people') {
-    askWispPeople();
-    askWispNotes();
-  }
+  if (name === 'people') askWispPeople();
   drawWispSheet();
   if (moved && wispSheetBody) wispSheetBody.scrollTop = 0;
 }
@@ -50363,14 +50274,11 @@ if (wispSheet) {
     });
   }
   wispSheetBody.addEventListener('click', onWispServicePress);
-  wispSheetBody.addEventListener('click', onWispNotePress);
   wispSheetBody.addEventListener('click', onWispPersonPress);
   wispSheetBody.addEventListener('keydown', onWispServiceKey);
   wispSheetBody.addEventListener('change', (event) => {
     const field = event.target.closest && event.target.closest('[data-wisp-member]');
     if (field) settleWispMember(field);
-    const tick = event.target.closest && event.target.closest('[data-wisp-person-chain]');
-    if (tick) setWispPersonChains(tick.dataset.wispService, tick.dataset.wispPerson);
     const adding = event.target.closest && event.target.closest('[data-wisp-add-service]');
     if (adding) {
       wispPeople.adding = adding.value;
