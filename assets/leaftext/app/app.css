@@ -20491,6 +20491,11 @@ p.shelf-foot {
 
 .wisp-row { display: flex; align-items: center; gap: var(--lt-space-6); box-sizing: border-box; width: 100%; height: 26px; padding: 0 var(--lt-space-6); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-md); background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12-5); text-align: left; cursor: default; }
 @media (hover: hover) { .wisp-row:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
+
+.wisp-row.is-front { background: color-mix(in srgb, var(--lt-accent) 22%, transparent); font-weight: var(--lt-weight-600); }
+@media (hover: hover) { .wisp-row.is-front:hover { background: color-mix(in srgb, var(--lt-accent) 22%, transparent); } }
+
+.wisp-chat-row { padding-left: var(--lt-space-24); }
 .wisp-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wisp-row-mark { flex: none; color: var(--lt-primary-ink); font-size: var(--lt-text-12); }
 
@@ -20525,7 +20530,11 @@ p.shelf-foot {
 .wisp-chat-mark { color: var(--lt-primary-ink); }
 .wisp-chat-name { color: var(--lt-primary-ink); font-size: var(--lt-text-14); font-weight: var(--lt-weight-700); white-space: nowrap; }
 .wisp-chat-runs { flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--lt-muted-foreground); font-size: var(--lt-text-12); text-overflow: ellipsis; white-space: nowrap; }
-.console-chat-pin.is-under-head { top: var(--lt-space-48); }
+
+.wisp-chat-head.is-over-console { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); right: var(--lt-space-8); z-index: 6; box-sizing: border-box; background: var(--lt-markdown-background); }
+.wisp-chat-head .theme-mode-btn { flex: none; white-space: nowrap; }
+.console-layer.is-wisp { padding-top: calc(var(--console-inset-top) + var(--lt-space-48)); }
+.console-layer.is-wisp .console-chat { top: calc(var(--console-inset-top) + var(--lt-space-48)); }
 .wisp-keep { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-2) var(--lt-space-8); }
 .wisp-keep-said { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .wisp-empty { margin: var(--lt-space-12) 0; color: var(--lt-muted-foreground); font-size: var(--lt-text-13); }

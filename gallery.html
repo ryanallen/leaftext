@@ -20551,6 +20551,11 @@ p.shelf-foot {
 /* Drawn as an agent's row in the list beneath it, and its own so a list reading the chats never reads the wisp as one. */
 .wisp-row { display: flex; align-items: center; gap: var(--lt-space-6); box-sizing: border-box; width: 100%; height: 26px; padding: 0 var(--lt-space-6); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-md); background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12-5); text-align: left; cursor: default; }
 @media (hover: hover) { .wisp-row:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } }
+/* Selected while its chat is in front, with the wash and weight the list gives the chat in front, so selected reads the same everywhere. */
+.wisp-row.is-front { background: color-mix(in srgb, var(--lt-accent) 22%, transparent); font-weight: var(--lt-weight-600); }
+@media (hover: hover) { .wisp-row.is-front:hover { background: color-mix(in srgb, var(--lt-accent) 22%, transparent); } }
+/* The wisp's chats, under its row and set in from it, so they read as the wisp's rather than as All chats. */
+.wisp-chat-row { padding-left: var(--lt-space-24); }
 .wisp-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wisp-row-mark { flex: none; color: var(--lt-primary-ink); font-size: var(--lt-text-12); }
 /* The light: a dot, and the only thing that says whether the wisp is on. Unlit is a ring, lit and busy glow in the accent, failed in danger; busy pulses, and Reduce Motion holds it still. */
@@ -20580,12 +20585,16 @@ p.shelf-foot {
 .wisp-runs-pick:focus { border-color: var(--lt-border-strong); outline: none; }
 .wisp-runs-pick.is-none { color: var(--lt-danger); }
 .wisp-row-runs { flex: 0 1 55%; min-width: 0; overflow: hidden; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); text-overflow: ellipsis; white-space: nowrap; }
-/* The wisp's chat: its own console's chat, headed by its name, what it runs on and where it works, and Settings. */
+/* The wisp's chat: its own console, headed by its name, what it runs on and where it works, New chat, Close and Settings. */
 .wisp-chat-head { display: flex; flex: none; align-items: center; gap: var(--lt-space-8); height: var(--lt-space-48); padding: 0 var(--lt-space-12); border-bottom: var(--lt-stroke-1) solid var(--lt-border); }
 .wisp-chat-mark { color: var(--lt-primary-ink); }
 .wisp-chat-name { color: var(--lt-primary-ink); font-size: var(--lt-text-14); font-weight: var(--lt-weight-700); white-space: nowrap; }
 .wisp-chat-runs { flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--lt-muted-foreground); font-size: var(--lt-text-12); text-overflow: ellipsis; white-space: nowrap; }
-.console-chat-pin.is-under-head { top: var(--lt-space-48); }
+/* Over the whole console, so its presses stand over the agent's own screen as well as the chat; the console keeps its terminal and chat below it. */
+.wisp-chat-head.is-over-console { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); right: var(--lt-space-8); z-index: 6; box-sizing: border-box; background: var(--lt-markdown-background); }
+.wisp-chat-head .theme-mode-btn { flex: none; white-space: nowrap; }
+.console-layer.is-wisp { padding-top: calc(var(--console-inset-top) + var(--lt-space-48)); }
+.console-layer.is-wisp .console-chat { top: calc(var(--console-inset-top) + var(--lt-space-48)); }
 .wisp-keep { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-2) var(--lt-space-8); }
 .wisp-keep-said { color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .wisp-empty { margin: var(--lt-space-12) 0; color: var(--lt-muted-foreground); font-size: var(--lt-text-13); }
@@ -23113,12 +23122,12 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="grove-tabs" role="tablist" style="max-width:520px"><button type="button" class="grove-tab is-chosen" role="tab" aria-selected="true">Growth</button><button type="button" class="grove-tab" role="tab" aria-selected="false">Tree</button></div></div>
 </section>
 <section class="part">
-<header><h3>Wisp row</h3><code class="built">.wisp-row</code><span class="built">wisp.js, at the head of the conversations under the pane's heading, drawn with or without an agent running: the wisp's name and "your bot", the AI account and folder it is on — No AI chosen or No folder chosen until one is — ending on its light; a press brings the wisp's own console forward as its chat, or opens its sheet while nothing is chosen</span></header>
-<div class="stage"><div class="wisp-row-wrap" style="max-width:320px"><button type="button" class="wisp-row"><span class="wisp-row-mark">✦</span><span class="wisp-row-name">Wisp · your bot</span><span class="wisp-row-runs">Claude · leaftext/app</span><span class="wisp-light is-lit"></span></button></div></div>
+<header><h3>Wisp row</h3><code class="built">.wisp-row</code><span class="built">wisp.js, at the head of the conversations under the pane's heading, drawn with or without an agent running: the wisp's name and "your bot", the AI account and folder it is on — No AI chosen or No folder chosen until one is — ending on its light; a press brings the wisp's own console forward as its chat, or opens its sheet while nothing is chosen; is-front and aria-current while its chat is in front, as a tab or in the chat column, drawn with the wash of the chat in front; the wisp's chats stand under it as wisp-chat-row agent rows, newest first, the one in front lit, and All chats carries none of them</span></header>
+<div class="stage"><div class="wisp-row-wrap" style="max-width:320px"><button type="button" class="wisp-row"><span class="wisp-row-mark">✦</span><span class="wisp-row-name">Wisp · your bot</span><span class="wisp-row-runs">Claude · leaftext/app</span><span class="wisp-light is-lit"></span></button><button type="button" class="console-agent wisp-chat-row console-agent-front"><span class="console-agent-name">Today with the wisp</span><span class="console-agent-state">At rest</span></button><button type="button" class="console-agent wisp-chat-row"><span class="console-agent-name">Wisp Slack setup</span><span class="console-agent-state">1h</span></button></div></div>
 </section>
 <section class="part">
-<header><h3>Wisp chat head</h3><code class="built">.wisp-chat-head</code><span class="built">wisp.js, over the chat of the wisp's own standing console, which the wisp's row brings forward as its chat: the mark, the wisp's name, what it runs on and where it works, and Settings, which opens the wisp's sheet; the chat's held prompt sits under it</span></header>
-<div class="stage"><div class="wisp-chat-head" style="max-width:640px"><span class="wisp-chat-mark">✦</span><span class="wisp-chat-name">Wisp</span><span class="wisp-chat-runs">Codex · Work · scholar-work</span><button type="button" class="theme-mode-btn">Settings</button></div></div>
+<header><h3>Wisp chat head</h3><code class="built">.wisp-chat-head</code><span class="built">wisp.js, over the whole of the wisp's own standing console — its chat, or the agent's own screen when the chat cannot draw it — which the wisp's row brings forward as its chat: the mark, the wisp's name, what it runs on and where it works, New chat, which stops the chat standing and starts the wisp on a fresh conversation, Close, which stops the chat and leaves the wisp and its chats, and Settings, which opens the wisp's sheet; the chat's held prompt sits under it</span></header>
+<div class="stage"><div class="wisp-chat-head" style="max-width:640px"><span class="wisp-chat-mark">✦</span><span class="wisp-chat-name">Wisp</span><span class="wisp-chat-runs">Codex · Work · scholar-work</span><button type="button" class="theme-mode-btn">New chat</button><button type="button" class="theme-mode-btn">Close</button><button type="button" class="theme-mode-btn">Settings</button></div></div>
 </section>
 <section class="part">
 <header><h3>Wisp runs on</h3><code class="built">.wisp-runs</code><span class="built">wisp.js, at the head of the wisp's sheet under its name: Runs on, a list of every account the New menu lists, and Works in, the folder its agent starts in, pressed to choose one in the system's folder window; either reads in red while nothing is chosen</span></header>
