@@ -10631,6 +10631,7 @@ if (window.__leafSite) {
   document.getElementById('appVaultPicker')?.remove();
   document.getElementById('appSync')?.remove();
   document.getElementById('libraryBrowse')?.remove();
+  document.getElementById('newMenuBrowse')?.remove();
   
   for (const id of ['openButton', 'newButton']) {
     const button = document.getElementById(id);
@@ -18499,6 +18500,36 @@ function folderRowHtml(node) {
   const count = Number.isFinite(node.count) ? `<span class="library-folder-count">${node.count >= 999 ? '999+' : node.count}</span>` : '';
   const hidden = node.hidden ? ' is-hidden' : '';
   return `<button type="button" class="library-nav-folder${hidden}" data-nav-into="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" data-folder-path="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span>${count}<span class="library-nav-chevron" aria-hidden="true">›</span></button>`;
+}
+
+function plainFolderRow(name, title, run) {
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.className = 'library-nav-folder';
+  row.title = title;
+  row.setAttribute('role', 'menuitem');
+  const icon = document.createElement('span');
+  icon.className = 'lt-icon lt-icon-folder';
+  icon.setAttribute('aria-hidden', 'true');
+  const label = document.createElement('span');
+  label.className = 'library-file-label';
+  label.textContent = name;
+  const chevron = document.createElement('span');
+  chevron.className = 'library-nav-chevron';
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.textContent = '›';
+  row.append(icon, label, chevron);
+  
+  row.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    event.preventDefault();
+    run();
+  });
+  row.addEventListener('click', (event) => {
+    if (event.detail === 0) run();
+  });
+  return row;
 }
 
 let libraryRowList = null;
@@ -48295,8 +48326,29 @@ function newMenuFolderTail(path) {
   const parts = String(path || '').split(/[\\/]/).filter(Boolean);
   return parts.length > 3 ? `…${isMacPlatform ? '/' : '\\'}${parts.slice(-3).join(isMacPlatform ? '/' : '\\')}` : String(path || '');
 }
-function newMenuFolderBack() {
-  return { label: 'Back', icon: '<span class="lt-icon lt-icon-back" aria-hidden="true"></span>', keepOpen: true, run: () => { newMenuFolder.view = false; agentLaunchShow('main'); } };
+
+var newMenuBrowse = document.getElementById('newMenuBrowse');
+var newMenuBrowseVaults = document.getElementById('newMenuBrowseVaults');
+var newMenuBrowseHead = document.getElementById('newMenuBrowseHead');
+var newMenuBrowseList = document.getElementById('newMenuBrowseList');
+
+const newMenuSheet = { listing: null, asked: '', descending: false };
+function newMenuBrowseOpen() {
+  return !!newMenuBrowse && !newMenuBrowse.hidden;
+}
+function closeNewMenuBrowse() {
+  newMenuFolder.view = false;
+  if (!newMenuBrowseOpen()) return;
+  const returnFocus = newMenuBrowse.contains(document.activeElement);
+  newMenuBrowse.hidden = true;
+  coverWebSurface(false, newMenuBrowse);
+  newMenuButton.setAttribute('aria-expanded', 'false');
+  if (returnFocus) leafFocusForKeyboard(newMenuButton);
+}
+
+function newMenuFolderBackToMain() {
+  closeNewMenuBrowse();
+  agentLaunchShow('main');
 }
 function newMenuFolderChooser() {
   return { label: 'Choose another folder…', keepOpen: true, run: () => {
@@ -48305,27 +48357,159 @@ function newMenuFolderChooser() {
   } };
 }
 
+function newMenuPlainPath(path) {
+  return String(path || '').replace(/[\\/]+$/, '').replace(/\\/g, '/').toLowerCase();
+}
+function newMenuPathHolds(root, path) {
+  const top = newMenuPlainPath(root);
+  const plain = newMenuPlainPath(path);
+  return !!top && (plain === top || plain.startsWith(`${top}/`));
+}
+
+function newMenuVaultHolding(path) {
+  let found = null;
+  for (const vault of leafVaults) {
+    if (!vault || !vault.id || !vault.rootPath || !newMenuPathHolds(vault.rootPath, path)) continue;
+    if (!found || vault.rootPath.length > found.rootPath.length) found = vault;
+  }
+  return found;
+}
+
+function newMenuPathSteps(path) {
+  const text = String(path || '');
+  const sep = text.includes('\\') ? '\\' : '/';
+  const parts = text.split(/[\\/]/).filter(Boolean);
+  const lead = text.startsWith('/') ? '/' : '';
+  const at = (index) => {
+    const joined = lead + parts.slice(0, index + 1).join(sep);
+    return index === 0 && /:$/.test(parts[0]) ? joined + sep : joined;
+  };
+  const vault = newMenuVaultHolding(text);
+  let from = Math.max(0, parts.length - 3);
+  if (vault) from = Math.max(0, String(vault.rootPath).split(/[\\/]/).filter(Boolean).length - 1);
+  const steps = [];
+  for (let index = from; index < parts.length; index += 1) {
+    steps.push({ path: at(index), name: vault && index === from ? (vault.name || parts[index]) : parts[index] });
+  }
+  return steps;
+}
+
+function newMenuVaultRows(shown) {
+  const holder = newMenuVaultHolding(shown);
+  const books = leafVaults.find((vault) => vault && vault.kind === 'books-online');
+  const overSheet = (run) => run && (() => {
+    setCrumbMenuOwner(newMenuButton);
+    run();
+  });
+  const rows = [{ heading: 'Vaults' }];
+  for (const entry of vaultMenuItems()) {
+    if (!entry || typeof entry !== 'object' || entry.heading) {
+      rows.push(entry);
+      continue;
+    }
+    let vault = null;
+    if (entry.vaultId) vault = leafVaults.find((candidate) => candidate && candidate.id === entry.vaultId) || null;
+    else if (entry.vaultId === undefined && entry.label === 'Books online') vault = books || null;
+    if (entry.vaultId === 0) {
+      
+      rows.push({ ...entry, keepOpen: true, selected: !holder, run: () => openNewMenuFolder(''), edit: undefined });
+    } else if (vault && vault.rootPath) {
+      rows.push({ ...entry, keepOpen: true, selected: !!holder && holder.id === vault.id, run: () => openNewMenuFolder(vault.rootPath), edit: overSheet(entry.edit) });
+    } else {
+      rows.push({ ...entry, keepOpen: true, run: overSheet(entry.run), edit: overSheet(entry.edit) });
+    }
+  }
+  return rows;
+}
+
+function newMenuHeadRows(listing) {
+  const rows = [{ label: 'Back', icon: '<span class="lt-icon lt-icon-back" aria-hidden="true"></span>', keepOpen: true, run: newMenuFolderBackToMain }];
+  if (!listing || listing.error) return [...rows, newMenuFolderChooser()];
+  const steps = newMenuPathSteps(listing.path);
+  rows.push({
+    barClass: 'is-path',
+    buttons: steps.map((step, at) => ({
+      icon: at ? '<span class="crumb-menu-step" aria-hidden="true">› </span>' : '',
+      label: step.name,
+      title: step.path,
+      primary: at === steps.length - 1,
+      keepOpen: true,
+      run: () => openNewMenuFolder(step.path),
+    })),
+  });
+  rows.push({ buttons: [
+    { label: 'Start here', title: listing.path, primary: true, keepOpen: true, run: () => {
+      newMenuFolder.path = listing.path;
+      newMenuDesigns.list = Array.isArray(listing.canvases) ? listing.canvases : [];
+      newMenuDesigns.folder = listing.name || '';
+      newMenuDesigns.request = -1;
+      newMenuFolderBackToMain();
+    } },
+    newMenuFolderChooser(),
+  ] });
+  
+  rows.push({
+    label: `Sorted by name, ${newMenuSheet.descending ? 'z to a' : 'a to z'}`,
+    title: 'Reverse the order of these folders',
+    icon: `<span class="lt-icon lt-icon-${newMenuSheet.descending ? 'sort-descending' : 'sort-ascending'}" aria-hidden="true"></span>`,
+    keepOpen: true,
+    run: () => {
+      newMenuSheet.descending = !newMenuSheet.descending;
+      drawNewMenuBrowse();
+    },
+  });
+  
+  const active = leafVaults.find((vault) => vault && vault.id === activeVaultId);
+  const sync = librarySyncButton && !librarySyncButton.hidden && librarySyncButton.querySelector('.library-sync-count');
+  if (sync && active && active.rootPath && newMenuPathHolds(active.rootPath, listing.path)) {
+    rows.push({ label: `Sync${sync.textContent ? ` · ${sync.textContent}` : ''}`, title: librarySyncButton.title, icon: SYNC_ICON_SVG, keepOpen: true, run: () => librarySyncButton.click() });
+  }
+  return rows;
+}
+function newMenuNote(text) {
+  const note = document.createElement('div');
+  note.className = 'crumb-menu-note';
+  note.textContent = text;
+  return note;
+}
+function drawNewMenuBrowse() {
+  if (!newMenuBrowse) return;
+  const listing = newMenuSheet.listing;
+  const shown = listing && !listing.error ? listing.path : newMenuSheet.asked;
+  newMenuBrowseVaults.textContent = '';
+  drawCrumbEntries(newMenuBrowseVaults, newMenuVaultRows(shown), null, closeNewMenuBrowse);
+  newMenuBrowseHead.textContent = '';
+  drawCrumbEntries(newMenuBrowseHead, newMenuHeadRows(listing), null, closeNewMenuBrowse);
+  newMenuBrowseList.textContent = '';
+  if (!listing) {
+    newMenuBrowseList.append(newMenuNote('Reading the folder…'));
+    return;
+  }
+  if (listing.error) {
+    newMenuBrowseList.append(newMenuNote(String(listing.error)));
+    return;
+  }
+  const folders = [...(listing.folders || [])].sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true, sensitivity: 'base' }));
+  if (newMenuSheet.descending) folders.reverse();
+  for (const folder of folders) newMenuBrowseList.append(plainFolderRow(folder.name, folder.path, () => openNewMenuFolder(folder.path)));
+  if (!folders.length) newMenuBrowseList.append(newMenuNote('No folders inside this one.'));
+  if (listing.truncated) newMenuBrowseList.append(newMenuNote('This folder holds more than the menu lists. Choose another folder to reach the rest.'));
+}
+
 function openNewMenuFolder(path) {
+  if (!newMenuBrowse) return;
+  if (!newMenuBrowseOpen()) {
+    hideCrumbMenu();
+    newMenuSheet.descending = false;
+  }
   newMenuFolder.request += 1;
   newMenuFolder.view = true;
-  showCrumbMenu(newMenuButton, [newMenuFolderBack(), { note: 'Reading the folder…' }], 'Back');
+  newMenuSheet.listing = null;
+  newMenuSheet.asked = path || '';
+  drawNewMenuBrowse();
+  placeLibraryBrowse(newMenuButton, newMenuBrowse);
+  newMenuButton.setAttribute('aria-expanded', 'true');
   send({ command: 'newMenuFolderList', request: newMenuFolder.request, path: path || '' });
-}
-function newMenuFolderRows(listing) {
-  const go = (path) => ({ keepOpen: true, title: path, run: () => openNewMenuFolder(path) });
-  const rows = [newMenuFolderBack(), { heading: listing.name || listing.path }, { label: 'Start here', title: listing.path, keepOpen: true, run: () => {
-    newMenuFolder.path = listing.path;
-    newMenuFolder.view = false;
-    newMenuDesigns.list = Array.isArray(listing.canvases) ? listing.canvases : [];
-    newMenuDesigns.folder = listing.name || '';
-    newMenuDesigns.request = -1;
-    agentLaunchShow('main');
-  } }, newMenuFolderChooser(), 'separator'];
-  if (listing.parent) rows.push({ ...go(listing.parent), label: `↑ ${newMenuFolderName(listing.parent)}` });
-  for (const folder of listing.folders || []) rows.push({ ...go(folder.path), label: folder.name });
-  if (!(listing.folders || []).length) rows.push({ note: 'No folders inside this one.' });
-  if (listing.truncated) rows.push({ note: 'This folder holds more than the menu lists. Choose another folder to reach the rest.' });
-  return rows;
 }
 
 const newMenuDesigns = { request: 0, folder: '', list: null, filter: '', view: false };
@@ -48371,8 +48555,11 @@ window.leafNewMenuFolderListed = (request, listing) => {
     if (crumbMenuOwner === newMenuButton && !crumbMenu.hidden && newMenuDesigns.view) newMenuShowDesigns();
     return;
   }
-  if (request !== newMenuFolder.request || !newMenuFolder.view || crumbMenuOwner !== newMenuButton || crumbMenu.hidden) return;
-  showCrumbMenu(newMenuButton, listing?.error ? [newMenuFolderBack(), { note: String(listing.error) }, newMenuFolderChooser()] : newMenuFolderRows(listing), 'Back');
+  if (request !== newMenuFolder.request || !newMenuFolder.view || !newMenuBrowseOpen()) return;
+  newMenuSheet.listing = listing && typeof listing === 'object' ? listing : { error: 'Leaftext cannot read that folder.' };
+  drawNewMenuBrowse();
+  const first = newMenuBrowseList.querySelector('.library-nav-folder') || newMenuBrowseHead.querySelector('.crumb-menu-item');
+  if (first) leafFocusForKeyboard(first);
 };
 
 window.leafNewMenuFolderChosen = (request, path) => {
@@ -48445,6 +48632,10 @@ function newMenuDefaultFolder() {
 }
 
 function toggleNewMenu() {
+  if (newMenuBrowseOpen()) {
+    closeNewMenuBrowse();
+    return;
+  }
   if (crumbMenuOwner === newMenuButton && !crumbMenu.hidden) {
     hideCrumbMenu();
     return;
@@ -48472,6 +48663,22 @@ if (newMenuButton) {
   
   newMenuButton.addEventListener('click', (event) => {
     if (event.detail === 0) toggleNewMenu();
+  });
+}
+if (newMenuBrowse) {
+  
+  window.addEventListener('pointerdown', (event) => {
+    if (!newMenuBrowseOpen()) return;
+    const target = event.target;
+    if (newMenuBrowse.contains(target) || crumbMenu.contains(target) || contextMenu.contains(target) || newMenuButton.contains(target)) return;
+    closeNewMenuBrowse();
+  });
+  
+  leafOnEscape(() => {
+    if (newMenuBrowseOpen()) newMenuFolderBackToMain();
+  }, newMenuBrowse);
+  window.addEventListener('resize', () => {
+    if (newMenuBrowseOpen()) placeLibraryBrowse(newMenuButton, newMenuBrowse);
   });
 }
 
@@ -51370,11 +51577,13 @@ function drawLibraryBrowse() {
   libraryBrowseHead.textContent = '';
   drawCrumbEntries(libraryBrowseHead, libraryMenuPath(), null, closeLibraryBrowse);
 }
-function placeLibraryBrowse() {
-  const anchor = libraryRow.getBoundingClientRect();
-  const room = window.innerHeight - anchor.bottom;
-  libraryBrowse.style.maxHeight = `${Math.max(0, room - CRUMB_MENU_DROP - LEAF_FLOAT_MARGIN)}px`;
-  leafPlaceFloating(libraryBrowse, anchor.left, anchor.bottom + CRUMB_MENU_DROP);
+
+function placeLibraryBrowse(button = libraryRow, sheet = libraryBrowse) {
+  const anchor = button.getBoundingClientRect();
+  const beside = button.classList.contains('app-rail-button');
+  const top = beside ? anchor.top : anchor.bottom + CRUMB_MENU_DROP;
+  sheet.style.maxHeight = `${Math.max(0, window.innerHeight - top - LEAF_FLOAT_MARGIN)}px`;
+  leafPlaceFloating(sheet, beside ? anchor.right + CRUMB_MENU_DROP : anchor.left, top);
 }
 function openLibraryBrowse() {
   if (!libraryBrowse || !libraryRow) return;

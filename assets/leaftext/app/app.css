@@ -9484,6 +9484,13 @@ body.library-resizing button {
   min-height: 0;
   padding: var(--lt-space-4);
 }
+
+.library-browse-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--lt-space-4);
+}
 .crumb-menu {
   min-width: 132px;
   max-width: 300px;
