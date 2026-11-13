@@ -8850,6 +8850,7 @@ body.library-resizing button {
   }
   /* The wash under a hovered row takes the quiet ink under 4.5:1, so its words come up to the body's. */
   .library-hit:hover .library-hit-alias,
+  .library-hit:hover .library-hit-line,
   .library-hit:hover .library-hit-snippet {
     color: var(--lt-foreground);
   }
@@ -8862,8 +8863,9 @@ body.library-resizing button {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* The other name a hit matched, or the folder that tells two notes of one name apart in a note group, beside the file's own name on the same line. */
-.library-hit-alias {
+/* The other name a hit matched, or the folder that tells two notes of one name apart in a note group, beside the file's own name on the same line — and the line a hit is on, where one note answers with several rows under the same name. */
+.library-hit-alias,
+.library-hit-line {
   margin-left: var(--lt-space-4);
   font-size: var(--lt-text-11);
   font-weight: var(--lt-weight-400);
@@ -9968,9 +9970,14 @@ body.library-resizing button {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(var(--reader-toolbar-space) + 12px);
-  margin: 0;
-  padding: 0 var(--lt-space-16);
+  /* Over the tray at its open height, not over the bar alone: the pointer is on the Graph button when this line appears, and that opens the tray upward. The tray's own padding and edges are added as its open rule adds them; its foot is inside the bar. */
+  bottom: calc(var(--reader-toolbar-space) + var(--reader-tray-height, 0px) + var(--lt-space-2) * 2 + var(--lt-stroke-1) * 2 + 12px);
+  /* Hugging its words, centered, on the page's own face: the map draws under it, and a node the color of the words erased them where it crossed. */
+  width: fit-content;
+  margin: 0 auto;
+  padding: var(--lt-space-2) var(--lt-space-8);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-markdown-background);
   text-align: center;
   font-size: var(--lt-text-12);
   color: var(--lt-muted-foreground);
@@ -10041,7 +10048,7 @@ body.library-resizing button {
 .console-status-ring-track { stroke: var(--lt-border); }
 .console-status-ring-fill { stroke: var(--lt-primary-ink); }
 /* Over a console the bar stands only with Chat and Console in it. */
-.reader-column.is-under-console, .console-front .reader-toolbar:not(.is-console-views) { visibility: hidden; }
+.reader-column.is-under-console { visibility: hidden; }
 /* No console stands on top: its tab keeps its marks and its drag in the markup, out of sight. Consoles are picked from the pane's chats. */
 .tab.console-tab { display: none; }
 .console-tab .tab-label { display: flex; align-items: center; gap: var(--lt-space-4); position: relative; }
@@ -10363,7 +10370,6 @@ button.diff-card-fold:disabled { cursor: default; }
 /* How much room the page leaves at its foot for the bar: the bar's own height plus the gap it floats above the edge, and nothing at all when it is not there. */
 :root {
   --reader-toolbar-space: 0px;
-  --reader-toolbar-edits: 0px;
   --reader-toolbar-rail: 0px;
   /* The gutter the page is held off the left frame by, which only a shut pane opens — see library.css. */
   --reader-toolbar-gutter: 0px;
@@ -10394,7 +10400,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   /* Off the page's bottom edge by the shadow's own depth, so the band ends on the page's edge rather than past it. */
   margin-bottom: var(--lt-shadow-spread);
   /* The rail measure stays fixed while views collapse the column they do not draw. The gutter is subtracted because a left inset moves the page's own middle right, and a right margin that moves a centered box left has to shrink to follow it. */
-  margin-right: calc(var(--reader-toolbar-rail) - var(--reader-toolbar-edits) - var(--reader-toolbar-gutter));
+  margin-right: calc(var(--reader-toolbar-rail) - var(--reader-toolbar-gutter));
   padding: var(--lt-space-4);
   /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
   --lt-shadow-host-radius: var(--lt-radius-lg);
@@ -10421,7 +10427,16 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   align-items: center;
   gap: var(--lt-space-4);
 }
-/* A console's front tab trades the document's views for Chat and Console, so one group stands at a time. */
+/* The chat card has its own bar in its own grid track. */
+.console-toolbar {
+  grid-column: card-a;
+  margin-right: 0;
+}
+.console-toolbar.is-beside-console {
+  grid-column: chat;
+  margin-right: 0;
+}
+/* A console's front tab carries this bar in the page card's place. */
 .reader-tool-group[hidden] {
   display: none;
 }
@@ -11873,6 +11888,10 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 }
 /* Blocks below the landing leave the page entirely; skipped layout keeps guessed heights in it, so the scroll range and minimap lie until those guesses settle. */
 .is-held-below {
+  display: none !important;
+}
+/* The rows of a table too long for one frame, held back until the fill shows them a slice at a time. */
+.is-held-row {
   display: none !important;
 }
 .docs-pager {
@@ -14403,16 +14422,18 @@ body.is-block-dragging .document-body [data-src-start] {
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--lt-space-2);
+  gap: var(--lt-space-6);
   margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
-  padding: var(--lt-space-2) var(--lt-space-4);
+  /* In line with the path above it, at the path's size, so the two read as one header. */
+  padding: var(--lt-space-4) var(--lt-space-12) var(--lt-space-4) var(--lt-space-24);
   color: var(--lt-foreground);
+  font-size: var(--lt-text-12);
   background: var(--lt-syntax-background);
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
   z-index: var(--lt-z-20);
 }
 .code-member-label {
-  font-size: var(--lt-text-12);
+  color: var(--lt-muted-foreground);
   font-weight: var(--lt-weight-500);
 }
 .code-member-picker,
@@ -15735,7 +15756,9 @@ body.table-resizing.is-row button {
   padding-block: 0;
   border: 0;
 }
+/* Its own height, not the shape's: the shape is a column that shrinks what it holds, and a table scrolls sideways, so squeezed it hid its last rows. */
 .document-body .slide-shape table {
+  flex: none;
   font-size: inherit;
 }
 .document-body .slide-shape img {
@@ -19975,6 +19998,8 @@ p.shelf-foot {
   background: var(--lt-surface-elevated);
 }
 .grove-earned-head {
+  display: flex;
+  align-items: center;
   margin: 0;
   color: var(--lt-foreground);
   font-size: var(--lt-text-12);

@@ -852,7 +852,7 @@ const COLUMN_STATE_NAMES = [
   'siteFrameListening', 'siteFramePath', 'containedPageMermaidPage', 'containedPageMermaidGeneration',
   'siteFrameHeldHeight',
   
-  'lastRenderedDocumentPath', 'readingFillFrame', 'readingHeldCursor', 'exactReadingRestore',
+  'lastRenderedDocumentPath', 'readingFillFrame', 'readingHeldCursor', 'readingHeldRows', 'exactReadingRestore',
   
   'readingPending', 'readingPendingPicturePages', 'readingSeenBlocks', 'readingCredited', 'readingWatch', 'readingBlockShare', 'readingBlockPaid', 'readingFlashPlayed', 'readingDeepest', 'readingHeldPlaces',
   
@@ -941,6 +941,7 @@ function saveColumnState(column) {
   held.lastRenderedDocumentPath = lastRenderedDocumentPath;
   held.readingFillFrame = readingFillFrame;
   held.readingHeldCursor = readingHeldCursor;
+  held.readingHeldRows = readingHeldRows;
   held.exactReadingRestore = exactReadingRestore;
   
   held.readingPending = readingPending;
@@ -1072,6 +1073,7 @@ function loadColumnState(column) {
   lastRenderedDocumentPath = held.lastRenderedDocumentPath;
   readingFillFrame = held.readingFillFrame;
   readingHeldCursor = held.readingHeldCursor;
+  readingHeldRows = held.readingHeldRows;
   exactReadingRestore = held.exactReadingRestore;
   
   readingPending = held.readingPending;
@@ -10701,6 +10703,7 @@ const readerGraphLegend = document.getElementById('readerGraphLegend');
 const graphLocalLabel = document.getElementById('graphLocalLabel');
 const graphExternalLabel = document.getElementById('graphExternalLabel');
 const readerToolbar = document.getElementById('readerToolbar');
+const consoleToolbar = document.getElementById('consoleToolbar');
 const viewReadingButton = document.getElementById('viewReadingButton');
 const viewCodeButton = document.getElementById('viewCodeButton');
 const viewGraphButton = document.getElementById('viewGraphButton');
@@ -11872,7 +11875,7 @@ const HINT_TAIL_INSET = 18;
 
 const HINT_SETTINGS = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
 
-const HINTS_OFF = !!window.__leafSite;
+const HINTS_OFF = !!window.__leafSite || HINT_SETTINGS.hintsOff === true;
 const hintRegistry = new Map();
 
 let hintLaunches = Number(HINT_SETTINGS.hintLaunches) || 0;
@@ -19278,7 +19281,13 @@ const GRAPH_RECENT_SEED_CAP = 50;
 const GRAPH_MIN_ZOOM = 0.15;
 const GRAPH_MAX_ZOOM = 4;
 
-const GRAPH_FIT_PADDING = 64;
+const GRAPH_FIT_PADDING = 40;
+
+const GRAPH_SHAPE_PULL = 0.08;
+
+const GRAPH_DRIFT_ALPHA = 0.02;
+const GRAPH_DRIFT_PUSH = 0.02;
+const GRAPH_DRIFT_MAX = 400;
 
 const GRAPH_FOCUS_ZOOM = 2.2;
 const GRAPH_FOCUS_DURATION_MS = 420;
@@ -19365,9 +19374,19 @@ function consoleIdOf(entry) {
   for (const [id, each] of consoleLayers) if (each === entry) return id;
   return null;
 }
+
+function besideConsoleViewsEntry() {
+  if (activeConsoleTab(currentState)) return null;
+  const id = chatConsoleId();
+  if (id == null) return null;
+  const entry = consoleLayers.get(id);
+  return entry && consoleAgentIcons[entry.agent] ? entry : null;
+}
 function consoleViewsKey(entry) {
+  const beside = entry ? null : besideConsoleViewsEntry();
+  if (beside) return `beside|${chatConsoleId()}|${beside.agent}|${Boolean(beside.chatHeldOff)}`;
   
-  if (!entry) return savedChatTab() ? 'saved' : '';
+  if (!entry) return savedChatTab() ? 'saved' : chatSavedTab() ? `saved-beside|${chatSavedTab().url}` : '';
   return `${consoleFrontId}|${entry.agent}|${Boolean(entry.chatHeldOff)}`;
 }
 
@@ -19378,28 +19397,39 @@ function syncConsoleViewsBar() {
 function renderConsoleViews(entry, saved = false) {
   consoleViewsDrawn = consoleViewsKey(entry);
   const shown = Boolean(entry) || saved;
-  const documentGroup = viewReadingButton?.parentElement;
-  if (documentGroup) documentGroup.hidden = shown;
-  if (consoleViewsGroup) consoleViewsGroup.hidden = !shown;
-  readerToolbar.classList.toggle('is-console-views', shown);
+  const besidePage = !shown && !!readerToolbar && !readerToolbar.hidden;
+  const beside = besidePage ? besideConsoleViewsEntry() : null;
   
-  savedChatPage?.classList.toggle('has-console-views', saved);
+  const savedBeside = besidePage && !beside && !!chatSavedTab();
+  consoleToolbar.hidden = !shown && !beside && !savedBeside;
+  consoleToolbar.classList.toggle('is-beside-console', Boolean(beside || savedBeside));
+  if (beside) lightConsoleViews(beside);
+  if (savedBeside) lightConsoleViews(null);
   
-  if (consoleViewsHolder !== entry) {
-    for (const each of [consoleViewsHolder, entry]) {
+  savedChatPage?.classList.toggle('has-console-views', saved || savedBeside);
+  
+  const holder = entry || beside;
+  if (consoleViewsHolder !== holder) {
+    for (const each of [consoleViewsHolder, holder]) {
       if (!each?.layer) continue;
-      each.layer.classList.toggle('has-console-views', each === entry);
+      each.layer.classList.toggle('has-console-views', each === holder);
       
-      const id = each === entry ? consoleFrontId : consoleIdOf(each);
+      const id = consoleIdOf(each);
       if (id !== null && each.terminal && each.fit && !each.layer.hidden) refreshConsoleGrid(id, each);
     }
-    consoleViewsHolder = entry?.layer ? entry : null;
+    consoleViewsHolder = holder?.layer ? holder : null;
   }
   if (!shown) return;
   readerToolbar.classList.remove('has-open-tray');
   readerToolTrayTouchOpen = '';
   if (readerViewTools) readerViewTools.hidden = true;
   if (readerToolTray) readerToolTray.hidden = true;
+  lightConsoleViews(entry);
+  syncReaderToolDividerState();
+  coverLivePageWithReaderToolbar();
+}
+
+function lightConsoleViews(entry) {
   const current = entry?.chatHeldOff ? consoleTerminalButton : consoleChatButton;
   for (const button of [consoleChatButton, consoleTerminalButton]) {
     if (!button) continue;
@@ -19411,15 +19441,18 @@ function renderConsoleViews(entry, saved = false) {
       consoleViewsGroup.style.setProperty('--reader-tool-chip-w', `${Math.round(button.offsetWidth)}px`);
     }
   }
-  syncReaderToolDividerState();
-  coverLivePageWithReaderToolbar();
 }
 for (const button of [consoleChatButton, consoleTerminalButton]) {
   button?.addEventListener('click', () => {
     const entry = consoleViewsEntry();
+    const beside = entry ? null : besideConsoleViewsEntry();
     if (entry) setConsoleChatHeldOff(consoleFrontId, entry, button === consoleTerminalButton);
+    else if (beside) {
+      setConsoleChatHeldOff(chatConsoleId(), beside, button === consoleTerminalButton);
+      renderReaderToolbar(readerViewsStand());
+    }
     
-    else if (button === consoleTerminalButton && savedChatTab()) startSavedChat({ toConsole: true });
+    else if (button === consoleTerminalButton && (savedChatTab() || chatSavedTab())) startSavedChat({ toConsole: true });
   });
 }
 function webGraphAddress() {
@@ -19521,8 +19554,8 @@ function renderReaderToolbar(viewsStand) {
   
   renderOpenAction(Boolean(activeConsoleTab(currentState) || savedChatTab()));
   if (!readerToolbar) return;
-  readerToolbar.hidden = !viewsStand;
-  document.body.classList.toggle('has-reader-toolbar', Boolean(viewsStand));
+  readerToolbar.hidden = !viewsStand || Boolean(consoleEntry || savedFront);
+  document.body.classList.toggle('has-reader-toolbar', Boolean(viewsStand && !consoleEntry && !savedFront));
   if (viewGraphButton) viewGraphButton.hidden = false;
   renderConsoleViews(consoleEntry, savedFront);
   if (consoleEntry || savedFront || !viewsStand) drawPageHead();
@@ -19571,6 +19604,9 @@ function clearPendingReaderView() {
   renderReaderToolbar(readerViewsStand());
 }
 const GRAPH_ERROR = 'Graph failed to load.';
+const GRAPH_LOAD_ERROR = 'The map could not be drawn.';
+
+const GRAPH_LOAD_WAITS_MS = [250, 1000];
 const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
 let graphScope = GRAPH_SCOPES.includes(LEAF_SETTINGS.graphScope) ? LEAF_SETTINGS.graphScope : 'small';
 
@@ -19785,6 +19821,15 @@ for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
     });
   }
 }
+
+function warmSourceEditor(event) {
+  if (event && isTouch(event)) return;
+  loadMonacoOnce().catch(() => {});
+}
+if (viewCodeButton) {
+  viewCodeButton.addEventListener('pointerenter', warmSourceEditor);
+  viewCodeButton.addEventListener('focus', warmSourceEditor);
+}
 if (readerToolTray) readerToolTray.addEventListener('pointerenter', retireViewToolsHint);
 registerHint('viewTools', () => readerToolTray && !readerToolTray.hidden ? readerToolTray : null, 'The view tools live under this edge.');
 
@@ -19806,7 +19851,10 @@ function anchorToolTray(current) {
   readerToolbar.style.setProperty('--reader-tray-left', `${Math.round(middle)}px`);
   
   if (readerViewTools) {
-    readerToolbar.style.setProperty('--reader-tray-height', `${Math.round(readerViewTools.offsetHeight)}px`);
+    const trayHeight = `${Math.round(readerViewTools.offsetHeight)}px`;
+    readerToolbar.style.setProperty('--reader-tray-height', trayHeight);
+    
+    if (readerGraph) readerGraph.style.setProperty('--reader-tray-height', trayHeight);
   }
 }
 function setSubtoolState(button, on, label) {
@@ -19966,16 +20014,22 @@ function loadGraphLibs() {
   if (ready()) return Promise.resolve();
   if (graphLibsPromise) return graphLibsPromise;
   
-  const pixiChain = window.PIXI
-    ? Promise.resolve()
-    : loadScriptOnce(PIXI_SCRIPT_URL).then(() => loadScriptOnce(PIXI_UNSAFE_EVAL_SCRIPT_URL));
-  graphLibsPromise = Promise.all([
-    pixiChain,
+  const once = () => Promise.all([
+    window.PIXI ? Promise.resolve() : loadScriptOnce(PIXI_SCRIPT_URL).then(() => loadScriptOnce(PIXI_UNSAFE_EVAL_SCRIPT_URL)),
     window.d3 && window.d3.forceSimulation ? Promise.resolve() : loadScriptOnce(D3_FORCE_SCRIPT_URL),
   ]).then(() => {
     if (!ready()) throw new Error('Graph runtimes loaded without exposing PIXI/d3');
   });
-  return graphLibsPromise;
+  const attempt = GRAPH_LOAD_WAITS_MS.reduce(
+    (tries, wait) => tries.catch(() => new Promise((resolve) => setTimeout(resolve, wait)).then(once)),
+    once(),
+  );
+  
+  attempt.catch(() => {
+    if (graphLibsPromise === attempt) graphLibsPromise = null;
+  });
+  graphLibsPromise = attempt;
+  return attempt;
 }
 
 
@@ -20013,6 +20067,32 @@ function graphColors() {
   };
 }
 
+
+function graphShapePull(width, height) {
+  const aspect = Math.max(0.2, Math.min(5, (width || 1) / (height || 1)));
+  return { x: GRAPH_SHAPE_PULL * Math.min(1, 1 / aspect), y: GRAPH_SHAPE_PULL * Math.min(1, aspect) };
+}
+
+function graphDriftForce(nodes) {
+  for (const node of nodes) {
+    node.driftPhase = Math.random() * Math.PI * 2;
+    node.driftRate = 0.3 + Math.random() * 0.4;
+  }
+  return () => {
+    const t = performance.now() / 1000;
+    for (const node of nodes) {
+      node.vx = (node.vx || 0) + GRAPH_DRIFT_PUSH * Math.sin(t * node.driftRate + node.driftPhase);
+      node.vy = (node.vy || 0) + GRAPH_DRIFT_PUSH * Math.cos(t * node.driftRate * 0.8 + node.driftPhase);
+    }
+  };
+}
+
+function startGraphDrift(scene) {
+  if (!scene || !scene.sim || scene.nodes.length > GRAPH_DRIFT_MAX) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  scene.drifting = true;
+  scene.sim.force('drift', graphDriftForce(scene.nodes)).alphaTarget(GRAPH_DRIFT_ALPHA).restart();
+}
 function graphNodeRadius(degree) {
   return Math.max(3, Math.min(14, 3 + Math.sqrt(degree || 0) * 1.1));
 }
@@ -20124,7 +20204,7 @@ function pauseGraph() {
     scene.draggingNode.fx = null;
     scene.draggingNode.fy = null;
     scene.draggingNode = null;
-    scene.sim.alphaTarget(0);
+    scene.sim.alphaTarget(scene.drifting ? GRAPH_DRIFT_ALPHA : 0);
   }
   scene.panning = false;
   scene.panLast = null;
@@ -20133,7 +20213,7 @@ function pauseGraph() {
 }
 
 function resumeGraphScene(scene) {
-  if (!scene.settled) scene.sim.restart();
+  if (!scene.settled || scene.drifting) scene.sim.restart();
 }
 
 function invalidateGraph() {
@@ -20223,7 +20303,8 @@ async function buildGraphScene() {
   } catch (err) {
     console.error('Leaf graph runtimes failed to load', err);
     clearReaderLoading('graph');
-    setGraphStatus((err && err.message) ? String(err.message) : GRAPH_ERROR);
+    
+    setGraphStatus(GRAPH_LOAD_ERROR);
     return;
   }
   
@@ -20358,6 +20439,8 @@ async function buildGraphScene() {
       .theta(heavy ? 1.2 : 0.9))
     .force('link', window.d3.forceLink(links).id((d) => d.path).distance(46).strength(0.6))
     .force('center', window.d3.forceCenter(0, 0));
+  const pull = graphShapePull(readerGraphCanvas.clientWidth || 300, readerGraphCanvas.clientHeight || 300);
+  sim.force('x', window.d3.forceX(0).strength(pull.x)).force('y', window.d3.forceY(0).strength(pull.y));
   if (!veryHeavy) {
     sim.force('collide', window.d3.forceCollide().radius((d) => graphNodeRadius(d.degree) + 3));
   }
@@ -20379,6 +20462,7 @@ async function buildGraphScene() {
     if (scene.autoFit) fitGraphToView(scene);
     layoutGraphLabels(scene);
     renderGraphFrame(scene);
+    startGraphDrift(scene);
   });
   scene.sim = sim;
 
@@ -20650,7 +20734,7 @@ function wireGraphPointer(scene) {
       scene.draggingNode = null;
       node.fx = null;
       node.fy = null;
-      scene.sim.alphaTarget(0);
+      scene.sim.alphaTarget(scene.drifting ? GRAPH_DRIFT_ALPHA : 0);
       
       const moved = scene.pressGlobal
         && Math.hypot(event.global.x - scene.pressGlobal.x, event.global.y - scene.pressGlobal.y) > 4;
@@ -20718,11 +20802,11 @@ function graphBoundsInView(scene, minX, minY, maxX, maxY) {
   const ws = scene.world.scale.x || 1;
   const ox = scene.world.position.x;
   const oy = scene.world.position.y;
-  const pad = GRAPH_FIT_PADDING;
-  return ox + minX * ws >= pad
-    && oy + minY * ws >= pad
-    && ox + maxX * ws <= scene.app.screen.width - pad
-    && oy + maxY * ws <= scene.app.screen.height - pad;
+  const inset = graphFitInsets(scene);
+  return ox + minX * ws >= inset.left
+    && oy + minY * ws >= inset.top
+    && ox + maxX * ws <= scene.app.screen.width - inset.right
+    && oy + maxY * ws <= scene.app.screen.height - inset.bottom;
 }
 
 
@@ -20743,9 +20827,10 @@ function fitGraphToView(scene, follow) {
   if (follow && graphBoundsInView(scene, minX, minY, maxX, maxY)) return;
   const width = scene.app.screen.width;
   const height = scene.app.screen.height;
+  const inset = graphFitInsets(scene);
   
-  const availableX = Math.max(1, width - GRAPH_FIT_PADDING * 2);
-  const availableY = Math.max(1, height - GRAPH_FIT_PADDING * 2);
+  const availableX = Math.max(1, width - inset.left - inset.right);
+  const availableY = Math.max(1, height - inset.top - inset.bottom);
   const spanX = Math.max(1, maxX - minX);
   const spanY = Math.max(1, maxY - minY);
   const scale = Math.max(
@@ -20753,8 +20838,21 @@ function fitGraphToView(scene, follow) {
     Math.min(GRAPH_MAX_ZOOM, Math.min(availableX / spanX, availableY / spanY)),
   );
   scene.world.scale.set(scale);
-  scene.world.position.x = width / 2 - ((minX + maxX) / 2) * scale;
-  scene.world.position.y = height / 2 - ((minY + maxY) / 2) * scale;
+  scene.world.position.x = inset.left + availableX / 2 - ((minX + maxX) / 2) * scale;
+  scene.world.position.y = inset.top + availableY / 2 - ((minY + maxY) / 2) * scale;
+}
+
+function graphFitInsets(scene) {
+  if (scene.fitInsets) return scene.fitInsets;
+  let bottom = GRAPH_FIT_PADDING;
+  if (readerToolbar && !readerToolbar.hidden && readerGraphCanvas) {
+    const view = readerGraphCanvas.getBoundingClientRect();
+    let top = readerToolbar.getBoundingClientRect().top;
+    
+    if (readerGraphStatus && !readerGraphStatus.hidden) top = Math.min(top, readerGraphStatus.getBoundingClientRect().top);
+    if (view.height && top < view.bottom) bottom = Math.max(bottom, view.bottom - top + GRAPH_FIT_PADDING / 2);
+  }
+  return { top: GRAPH_FIT_PADDING, right: GRAPH_FIT_PADDING, bottom, left: GRAPH_FIT_PADDING };
 }
 
 function graphZoomAt(scene, sx, sy, factor) {
@@ -20854,7 +20952,7 @@ function highlightSnippet(snippet) {
     .split('').join('</mark>');
 }
 
-function buildSearchHitRow(hit, folder) {
+function buildSearchHitRow(hit, folder, place = '') {
   const button = document.createElement('button');
   button.setAttribute('type', 'button');
   button.className = 'library-hit';
@@ -20870,11 +20968,11 @@ function buildSearchHitRow(hit, folder) {
     
     send({ command: 'openRecent', path, search: true });
   });
-  updateSearchHitRow(button, hit, folder);
+  updateSearchHitRow(button, hit, folder, place);
   return button;
 }
 
-function updateSearchHitRow(button, hit, folder = '') {
+function updateSearchHitRow(button, hit, folder = '', place = '') {
   const path = (hit && hit.absPath) || '';
   const anchor = (hit && hit.anchor) || '';
   
@@ -20886,11 +20984,12 @@ function updateSearchHitRow(button, hit, folder = '') {
   button.dataset.anchor = anchor;
   button.dataset.line = String(line);
   const drawn = button.leafSearchRow;
-  if (drawn && drawn.path === path && drawn.alias === alias && drawn.folder === folder && drawn.snippet === snippet) return;
-  button.leafSearchRow = { path, alias, folder, snippet };
+  if (drawn && drawn.path === path && drawn.alias === alias && drawn.folder === folder && drawn.place === place && drawn.snippet === snippet) return;
+  button.leafSearchRow = { path, alias, folder, place, snippet };
   button.setAttribute('title', path);
   
-  const also = [folder, alias].filter(Boolean).map((words) => `<span class="library-hit-alias">${escapeText(words)}</span>`).join('');
+  const also = [folder, alias].filter(Boolean).map((words) => `<span class="library-hit-alias">${escapeText(words)}</span>`).join('')
+    + (place ? `<span class="library-hit-line">${escapeText(place)}</span>` : '');
   button.innerHTML = `<span class="library-hit-title">${documentNameMarkup(path, also)}</span><span class="library-hit-snippet">${highlightSnippet(snippet)}</span>`;
 }
 
@@ -20974,11 +21073,18 @@ function drawSearchRows(headHtml, hits) {
   const next = new Map();
   
   const folders = documentFolderWords(hits.map((hit) => (hit && hit.absPath) || ''));
+  
+  const rowsOf = new Map();
+  for (const hit of hits) {
+    const path = (hit && hit.absPath) || '';
+    rowsOf.set(path, (rowsOf.get(path) || 0) + 1);
+  }
+  const placeOf = (hit) => (rowsOf.get((hit && hit.absPath) || '') > 1 && hit.startLine ? `line ${Number(hit.startLine).toLocaleString('en-US')}` : '');
   const rows = hits.map((hit, at) => {
     const key = searchHitKey(hit);
     const kept = drawn.get(key);
-    if (kept) updateSearchHitRow(kept, hit, folders[at]);
-    const row = kept || buildSearchHitRow(hit, folders[at]);
+    if (kept) updateSearchHitRow(kept, hit, folders[at], placeOf(hit));
+    const row = kept || buildSearchHitRow(hit, folders[at], placeOf(hit));
     next.set(key, row);
     return row;
   });
@@ -23551,21 +23657,6 @@ function setDirtyState(path, dirty) {
 }
 
 
-function holdViewButtonsStill() {
-  if (!readerToolbar) return;
-  const gap = parseFloat(getComputedStyle(readerToolbar).columnGap) || 0;
-  let width = 0;
-  for (const button of [undoButton, redoButton, saveButton]) {
-    if (button && !button.hidden) width += button.getBoundingClientRect().width + gap;
-  }
-  const value = `${Math.max(0, width)}px`;
-  if (readerToolbar.style.getPropertyValue('--reader-toolbar-edits') === value) return;
-  readerToolbar.style.setProperty('--reader-toolbar-edits', value);
-}
-
-if (readerToolbar) new ResizeObserver(holdViewButtonsStill).observe(readerToolbar);
-
-
 function updateEditingChrome() {
   const path = activeDocumentPath();
   const hasDocument = !!path;
@@ -23585,7 +23676,6 @@ function updateEditingChrome() {
   syncReaderToolDividerState();
   
   refitAppBar();
-  holdViewButtonsStill();
 }
 
 
@@ -24248,7 +24338,7 @@ function leafColorRanges(text) {
     const before = start > 0 ? text[start - 1] : '';
     const isHex = hit[0][0] === '#';
     
-    if (isHex && (/[\w#]/.test(before) || /\w/.test(text[end] || ''))) continue;
+    if (isHex && (/[\w#&]/.test(before) || /\w/.test(text[end] || ''))) continue;
     if (!isHex && /[-\w]/.test(before)) continue;
     const color = isHex
       ? leafHexColor(hit[0].slice(1))
@@ -24862,6 +24952,11 @@ window.leafShowCodeView = (state) => {
     codeViewText = (state && state.text) || '';
     renderCodeView(state || {});
     const path = activeDocumentPath();
+    
+    if (path !== lastRenderedDocumentPath && readDocumentOutlineRows().length) {
+      setDocumentOutlineRows([]);
+      scheduleLibraryOutline();
+    }
     if (path) setDirtyState(path, !!(state && state.dirty));
     updateEditingChrome();
   });
@@ -37533,17 +37628,63 @@ function findCountText() {
 }
 
 
-function refreshFind({ keepCurrent = true } = {}) {
+function findFirstInView() {
+  let atOrUnder;
+  if (findInSourceView()) {
+    const first = monacoEditor?.getVisibleRanges?.()[0];
+    if (!first) return 0;
+    const line = first.startLineNumber;
+    atOrUnder = (range) => range.startLineNumber >= line;
+  } else {
+    const top = app.getBoundingClientRect().top + appBarHeightPx();
+    atOrUnder = (match) => {
+      const range = findRangeFor(match);
+      return !!range && range.getBoundingClientRect().top >= top;
+    };
+  }
+  let low = 0;
+  let high = findMatches.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (atOrUnder(findMatches[middle])) high = middle;
+    else low = middle + 1;
+  }
+  if (low < findMatches.length) return low;
+  return findTruncated ? null : 0;
+}
+
+
+function refreshFind({ keepCurrent = true, fromView = false } = {}) {
   if (!findOpen || findingAllFiles()) return;
   const previous = findMatches[findCurrent] || null;
   findMatches = findInSourceView() ? collectSourceMatches() : collectRenderedMatches();
+  let reveal = fromView;
   if (!findMatches.length) findCurrent = -1;
-  else if (!keepCurrent || !previous) findCurrent = 0;
+  else if (fromView) {
+    const inView = findFirstInView();
+    reveal = inView !== null;
+    findCurrent = inView ?? 0;
+  } else if (!keepCurrent || !previous) findCurrent = 0;
   else findCurrent = Math.min(findNearest(previous), findMatches.length - 1);
   findCount.textContent = findCountText();
   if (findInSourceView()) paintSourceMatches();
   else paintRenderedMatches();
+  if (reveal && findCurrent >= 0) revealFoundInView();
   findSettling('file', findInput.value, findMatches.length);
+}
+
+
+function revealFoundInView() {
+  if (findInSourceView()) {
+    monacoEditor?.revealRangeInCenterIfOutsideViewport?.(findMatches[findCurrent]);
+    return;
+  }
+  const range = findRangeFor(findMatches[findCurrent]);
+  if (!range) return;
+  const rect = range.getBoundingClientRect();
+  const view = app.getBoundingClientRect();
+  if (rect.top >= view.top + appBarHeightPx() && rect.bottom <= view.bottom) return;
+  revealRenderedMatch();
 }
 
 
@@ -37884,7 +38025,7 @@ function findSelectAllOccurrences() {
 
 findInput.addEventListener('input', () => {
   if (findingAllFiles()) return;
-  refreshFind({ keepCurrent: false });
+  refreshFind({ fromView: true });
 });
 findInput.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter' || findingAllFiles()) return;
@@ -42834,6 +42975,43 @@ function pendingReadingLandingTarget(path, anchor) {
 const READING_FILL_BUDGET = 131072;
 const READING_FILL_ELEMENT_COST = 64;
 let readingFillFrame = 0;
+
+let readingHeldRows = null;
+function readingFillCost(element) {
+  return (1 + element.querySelectorAll('*').length) * READING_FILL_ELEMENT_COST + element.textContent.length;
+}
+
+function holdTableRows(block, room) {
+  const rows = Array.from(block.querySelectorAll('tr'));
+  if (rows.length < 2) return false;
+  let cost = 0;
+  let at = 0;
+  while (at < rows.length && (at === 0 || cost < room)) cost += readingFillCost(rows[at++]);
+  if (at >= rows.length) return false;
+  for (let next = at; next < rows.length; next += 1) rows[next].classList.add('is-held-row');
+  readingHeldRows = rows.slice(at);
+  return true;
+}
+
+function revealHeldRowSlice() {
+  if (!readingHeldRows) return null;
+  let cost = 0;
+  let last = null;
+  while (readingHeldRows.length && cost < READING_FILL_BUDGET) {
+    const row = readingHeldRows.shift();
+    row.classList.remove('is-held-row');
+    cost += readingFillCost(row);
+    last = row;
+  }
+  if (!readingHeldRows.length) readingHeldRows = null;
+  return last;
+}
+
+function revealAllHeldRows() {
+  if (!readingHeldRows) return;
+  for (const row of readingHeldRows) row.classList.remove('is-held-row');
+  readingHeldRows = null;
+}
 let exactReadingRestore = null;
 function cancelExactReadingRestore() {
   exactReadingRestore = null;
@@ -42851,6 +43029,7 @@ function settleExactReadingRestore() {
   return true;
 }
 function cancelReadingFill() {
+  revealAllHeldRows();
   readingHeldCursor = null;
   if (!readingFillFrame) return;
   window.cancelAnimationFrame(readingFillFrame);
@@ -42870,14 +43049,32 @@ function finishReadingFill() {
 }
 function fillHeldBlocks() {
   readingFillFrame = 0;
+  
+  const rowShown = revealHeldRowSlice();
+  if (rowShown) {
+    rowShown.getBoundingClientRect().bottom;
+    if (!readingHeldRows && !readingHasHeldBlocks()) {
+      finishReadingFill();
+      return;
+    }
+    markMinimapWarming();
+    readingFillFrame = columnFrame(fillHeldBlocks);
+    return;
+  }
   let block = nextHeldReadingBlock();
   let last = null;
   let cost = 0;
   while (block && cost < READING_FILL_BUDGET) {
     if (block.classList.contains('is-held-below')) {
+      const own = readingFillCost(block);
       block.classList.remove('is-held-below');
-      cost += (1 + block.querySelectorAll('*').length) * READING_FILL_ELEMENT_COST + block.textContent.length;
       last = block;
+      
+      if (cost + own > READING_FILL_BUDGET && holdTableRows(block, READING_FILL_BUDGET - cost)) {
+        block = nextDocumentBlock(block);
+        break;
+      }
+      cost += own;
     }
     block = nextDocumentBlock(block);
   }
@@ -42885,7 +43082,7 @@ function fillHeldBlocks() {
   readingHeldCursor = block;
   
   last.getBoundingClientRect().bottom;
-  if (!readingHasHeldBlocks()) {
+  if (!readingHasHeldBlocks() && !readingHeldRows) {
     finishReadingFill();
     return;
   }
@@ -42907,6 +43104,8 @@ function revealHeldReadingNearEdge() {
   if (app.scrollTop + app.clientHeight * 2 >= revealedBottom) revealReadingPast(null);
 }
 function revealReadingPast(target) {
+  
+  revealAllHeldRows();
   const body = app.querySelector('.document-body');
   const firstHeld = body ? nextHeldReadingBlock() : null;
   if (!firstHeld) return false;
@@ -44663,7 +44862,7 @@ function reportConsoleAgent(id, entry, screenLines) {
     if (entry.agent !== 'codex') entry.nativeSession = null;
     
     if (before.split(' ')[0] && !entry.agent) consoleRecentsOutOfDate();
-    if (id === consoleFrontId) syncConsoleViewsBar();
+    if (consoleInSight(id)) syncConsoleViewsBar();
   }
   const state = consoleAgentState(entry, screenLines, id);
   const said = `${entry.agent || ''} ${state || ''}`;
@@ -58517,6 +58716,8 @@ function markCellCardTable(table) {
 function laneWideTables(root = app) {
   const body = root.querySelector('.document-body');
   if (!body) return;
+  
+  for (const table of body.querySelectorAll('table.data-table')) table.classList.add('no-cards');
   for (const table of documentBlocks(body)) {
     if (table.tagName !== 'TABLE' || table.classList.contains('data-table')) continue;
     const bay = document.createElement('div');
