@@ -8,19 +8,42 @@ Leaftext calls this **RDB**: a [relational table](../GLOSSARY.md#relational-tabl
 
 ## Open a relational table
 
-Point at a [table](01-rendering.md#tables) with a header row and at least two body rows. A quiet bar appears above it with **Table**, **Cards**, **Board**, **List**, **Sort**, **Filter** and **Describe**, centered over the table, and the copy and whole-window buttons at the same bar's right end. The layout on screen is marked. A smaller table stays an ordinary table, with only those two buttons in the bar.
+Point at a [table](01-rendering.md#tables) with a header row and at least two body rows. A quiet bar appears above it with **Table**, **Cards**, **Board**, **Sort**, **Filter** and **Describe**, centered over the table, and the copy and whole-window buttons at the same bar's right end. The layout on screen is marked. A smaller table stays an ordinary table, with only those two buttons in the bar.
 
-![A reading-list table in the page with a quiet bar standing above it: Table marked, then Cards, Board, List, Sort and Filter, with the copy and whole-window buttons at its right end, over a table of id, title, author, status, pages, read and due columns whose author cells are green links](../../imgs/relational-table-bar.png)
+![A reading-list table in the page with its bar above it: Table, Cards and Board in one segmented control with Table raised, then Sort and Filter, and the copy and whole-window buttons at its right end, over a table of id, title, author, status, pages, read and due columns whose author cells are green links](../../imgs/relational-table-bar-3.png)
 
 The view works from the values already in the table. Leaftext recognizes numbers, ISO dates, task checkboxes, short repeated values, lone images and links to another table. A column it cannot recognize stays text.
 
 ## Views, sort and filter
 
-**Table** is the Markdown table as written. **Cards** shows one record per card. **Board** groups cards by a short list of values such as a status or stage. **List** shows a record name and one trailing field. The field button beside a view says which columns it is using for as long as the document stays open.
+**Table** is the Markdown table as written. **Cards** shows one card per record, as many side by side as the page holds. **Board** lays the records out as a kanban board: a lane per value of a short-list column such as a status or stage, side by side across the window, each card showing its title and its other fields as small chips. The field button beside a view says which columns it is using for as long as the document stays open.
 
-![The same records drawn as cards, one per row, each led by its id with its title, author, status, pages, read and due named beside their values, and Cards marked in the bar with a Card fields button beside the four layouts](../../imgs/relational-cards.png)
+![The same records as a grid of cards two across, each led by its id with its title, author, status, pages, read and due listed under it, and Cards raised in the layout control with a Card fields button beside it](../../imgs/relational-cards-2.png)
 
-![The same records as a board in three columns headed FINISHED, READING and REFERENCE, each card led by its id with its fields listed under it, and Board marked in the bar with a Board fields button beside the four layouts](../../imgs/relational-board.png)
+![The same records as a board: finished, reading and reference lanes side by side with their counts, each card the book's title over its other fields as small chips, the third lane fading where the column ends, and Board raised in the layout control](../../imgs/relational-board-3.png)
+
+### Working a board
+
+On an unlocked page a board is edited where it stands, and every change is an ordinary edit that waits for Save and comes back with one Undo:
+
+- **Drag a card** to another lane to change its value, or above another card to move its row in the table.
+- **From the keyboard**, with a card focused: Alt and Left or Right moves it to the lane beside it, and Alt and Up or Down moves it past the card above or below it (Option on a Mac).
+- **The plus** at the top of a lane adds a card there: type its title and press Enter.
+- **Press a card** to edit every field of it in place, or remove it.
+- **Add a lane** from the last lane on the board. **Press a lane's name** to rename it, which renames every card in it, or **drag a lane by its head** to move it among the others. An empty lane you added can be removed from its foot.
+
+### A board that stays a board
+
+A note can say its tables open as a board. Put the column to group by in the frontmatter, and the lanes in the order you want them:
+
+```yaml
+---
+board: Status
+board-columns: [Backlog, Doing, Review, Done]
+---
+```
+
+Every table in the note with a `Status` column opens as a board grouped by it, every time. That holds from the first card, and before it: a heading row with no rows under it opens as the kept lanes, empty, ready for a card. `board-columns` orders the lanes and keeps a lane with no cards in it. Adding a lane on a board writes both fields for you. Switching a kept board to Table or Cards from the bar lasts until the note is opened again.
 
 A view you set stays set while the document is open, including when the file changes underneath. Editing a cell, dragging a card between board columns, or another program writing the file all redraw the page, and the layout, sort, filters and chosen fields come back with it — with any record that changed drawn as it now reads. Adding or deleting a table above the one you are looking at is the exception: the view is a table's place in the document, so the table you set it on is no longer at that place and it comes back as an ordinary table.
 
@@ -56,7 +79,7 @@ To point words that are already written at a row — a cell holding plain words,
 
 ## On a published site and in an embed
 
-The same bar works on a Leaftext site published to the web and on a document embedded in another product: **Table**, **Cards**, **Board**, **List**, **Sort**, **Filter** and **Describe** all do what they do in the desktop app.
+The same bar works on a Leaftext site published to the web and on a document embedded in another product: **Table**, **Cards**, **Board**, **Sort**, **Filter** and **Describe** all do what they do in the desktop app.
 
 A published site resolves relations only among the pages it serves. A link to a row in another page of the site becomes a relation; a link to a page the site does not publish reads as a red relation, because that page is not there. A site reads at most 64 pages for one table, and a relation into a page past that reads as a dashed gray relation rather than a broken one. A row shown in a note is fetched from the site before the page is drawn; a row in a page the site does not serve stays a link.
 

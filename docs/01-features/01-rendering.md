@@ -177,7 +177,7 @@ Leaftext opens a `.csv` or `.tsv` file as a table: the file name as the page hea
 | A record shorter than the header is padded | Its missing cells are drawn empty |
 | A byte order mark is not part of the first heading | Excel writes one at the start of every UTF-8 file it saves |
 
-The bar over the table sorts and filters it and lays it out as a table, cards, a board or a list, and the corner button opens it across the whole window — none of which changes the file. Describe, which writes a note about the table into a Markdown file, is not offered, because a CSV file has nowhere to keep one.
+The bar over the table sorts and filters it and lays it out as a table, cards or a board, and the corner button opens it across the whole window — none of which changes the file. Describe, which writes a note about the table into a Markdown file, is not offered, because a CSV file has nowhere to keep one.
 
 **A cell can be typed into where you read it** once the page is unlocked. What is saved is that one field and nothing else: a field that was in quotes stays in quotes, and a bare one gains them only when what you typed needs them — a comma, a semicolon, a quote or a line break, or a tab in a `.tsv` — with any quote inside doubled.
 
@@ -391,7 +391,7 @@ A cell can also be one the app keeps right: a [formula line](../GLOSSARY.md#form
 
 A table with one column and at most one body row draws as a card. A header on its own is one set-apart line; a body row makes the header a small label over a large figure. Point at the card to show its **Table** and **Card** switch, which changes only the page and never the file.
 
-**A table with a few rows in it can become a relational table.** Point at a table with a header row and two or more body rows and its quiet bar appears above it: **Table**, **Cards**, **Board**, **List**, **Sort** and **Filter**. [Relational tables](08-relational-tables.md) explains the RDB view, relations, temporary layouts, filters and the optional schema comment. It leaves ordinary GFM tables as the file you own.
+**A table with a few rows in it can become a relational table.** Point at a table with a header row and two or more body rows and its quiet bar appears above it: **Table**, **Cards**, **Board**, **Sort** and **Filter**. [Relational tables](08-relational-tables.md) explains the RDB view, relations, temporary layouts, filters and the optional schema comment. It leaves ordinary GFM tables as the file you own.
 
 A table cell that starts with a task-list marker — `[ ]` or `[x]` — renders it as a checkbox, so a table can carry a status column, and words after the marker sit beside the box and dim while it is ticked. A body cell holding only `☐` or `☑` also draws a checkbox and keeps that character spelling when [ticked and saved](07-editing.md#inline-editing-the-reading-view). Character boxes in headers, prose, code or cells with additional words stay text:
 

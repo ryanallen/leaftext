@@ -145,11 +145,11 @@ Point at a table and a grip appears beside the row and above the column: take ei
 
 Right-click the cell a total belongs in and open Math: the sum, average, count, smallest or largest of the rows above it or the cells to its left, two cells you press multiplied, divided, added or subtracted, or a range you pick. The number goes into the file with a [formula line](docs/GLOSSARY.md#formula-line) under the table saying what that cell is, and Leaftext keeps it right as the rows under it change — one press of undo takes an edit and its totals back together. **[A table that adds itself up →](docs/01-features/07-editing.md#a-table-that-adds-itself-up)**
 
-### Read a table as cards, a board or a list
+### Read a table as cards or a real board
 
-![The same records drawn as a board in three columns headed FINISHED, READING and REFERENCE, each card led by its id with its fields listed under it, and Board marked in the quiet bar above](imgs/relational-board.png)
+![The same records as a board: finished, reading and reference lanes side by side with their counts, each card the book's title over its other fields as small chips, and Board raised in the layout control](imgs/relational-board-3.png)
 
-Point at a table with a header row and a few body rows and a quiet bar appears above it: **Table**, **Cards**, **Board**, **List**, **Sort**, **Filter** and **Describe**. Leaftext works out what each column holds — numbers, dates, checkboxes, short repeated values, pictures, links into another table — and a cell's link can pull in the row it points at. Nothing is written: the file stays an ordinary Markdown table, and reopening it restores the table as you wrote it. **[Relational tables →](docs/01-features/08-relational-tables.md)**
+Point at a table with a header row and a few body rows and a quiet bar appears above it: **Table**, **Cards**, **Board**, **Sort**, **Filter** and **Describe**. Leaftext works out what each column holds — numbers, dates, checkboxes, short repeated values, pictures, links into another table — and a cell's link can pull in the row it points at. On an unlocked page a board is worked where it stands: drag cards between lanes, add and rename lanes, and every move is an ordinary edit to the table that waits for Save. A `board:` line in the frontmatter keeps a note's tables opening as a board. **[Relational tables →](docs/01-features/08-relational-tables.md)**
 
 ### Draw a flowchart instead of typing one
 

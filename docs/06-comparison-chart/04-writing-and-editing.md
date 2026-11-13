@@ -580,7 +580,7 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Lens bar on tables | [✅][l-rdb-open] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Four table views | [✅][l-rdb-views] | [✅][o-bases-views] | [❌][t-seen] | [❌][c-seen] |
+| Three table views | [✅][l-rdb-views] | [✅][o-bases-views] | [❌][t-seen] | [❌][c-seen] |
 | Sort and restore | [✅][l-rdb-views] | [✅][o-bases-views] | [❌][t-seen] | [❌][c-seen] |
 | Filter three ways | [✅][l-rdb-views] | [✅][o-bases-views] | [❌][t-seen] | [❌][c-seen] |
 | Several filters together | [✅][l-rdb-views] | [✅][o-bases-views] | [❌][t-seen] | [❌][c-seen] |
@@ -596,6 +596,9 @@
 | Cell pickers | [✅][l-rdb-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Row link picker | [✅][l-rdb-pick] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Board drags write cell | [✅][l-rdb-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Board lanes added, renamed | [✅][l-rdb-board] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Keyboard moves board cards | [✅][l-rdb-board] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Board kept by frontmatter | [✅][l-rdb-kept] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | One undo per change | [✅][l-rdb-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Types guessed from values | [✅][l-rdb-views] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Repeated values become choices | [✅][l-rdb-views] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -729,6 +732,8 @@
 [l-rdb-describe]: ../01-features/08-relational-tables.md#describe-a-table
 [l-rdb-edit]: ../01-features/08-relational-tables.md#editing-a-relational-table
 [l-rdb-pick]: ../01-features/08-relational-tables.md#point-at-a-row-without-typing-its-address
+[l-rdb-board]: ../01-features/08-relational-tables.md#working-a-board
+[l-rdb-kept]: ../01-features/08-relational-tables.md#a-board-that-stays-a-board
 [l-open-links]: ../01-features/02-navigation.md#opening-a-link-in-a-new-page
 [l-tabs]: ../01-features/02-navigation.md#tabs
 [l-favorites]: ../01-features/02-navigation.md#favorites

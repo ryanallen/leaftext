@@ -13783,7 +13783,7 @@ let confirmAction = null;
 let confirmReturnFocus = null;
 let confirmFadeTimer = 0;
 function openConfirm(title, detail, acceptLabel, action) {
-  confirmDialogDetail.classList.remove('leaf-tag-report');
+  confirmDialogDetail.classList.remove('leaf-tag-report', 'leaf-scroll');
   confirmAction = action;
   confirmReturnFocus = document.activeElement;
   confirmDialogTitle.textContent = title;
@@ -16362,7 +16362,8 @@ function applySettledLibraryDraw(reading) {
 }
 
 const crumbMenu = document.createElement('div');
-crumbMenu.className = 'context-menu crumb-menu';
+
+crumbMenu.className = 'context-menu crumb-menu leaf-scroll';
 crumbMenu.hidden = true;
 crumbMenu.setAttribute('role', 'menu');
 appSurface.appendChild(crumbMenu);
@@ -19883,6 +19884,7 @@ function setReadingUnlocked(unlocked) {
       bindUnlockedLayer(currentState.document, body);
       placePendingCaret(body);
     } else dropUnlockedLayer({ undo: true });
+    redrawTableLensBoards();
     setSubtoolState(readerLockButton, readingUnlocked, viewLockTooltip(false));
     scheduleMinimapPreviewUpdate();
     if (anchor) restoreReaderScrollAnchor(anchor);
@@ -21528,7 +21530,8 @@ window.leaftextTagRenameFinished = (answer) => {
     const changed = answer.changed || [];
     const unchanged = answer.unchanged || [];
     openConfirm('The tag rename stopped', `${answer.error}\n\nChanged: ${changed.length ? changed.join('\n') : 'none'}\n\nUnchanged: ${unchanged.length ? unchanged.join('\n') : 'none'}`, 'Close', () => {});
-    confirmDialogDetail.classList.add('leaf-tag-report');
+    
+    confirmDialogDetail.classList.add('leaf-tag-report', 'leaf-scroll');
   } else {
     const count = (answer.changed || []).length;
     leafToast(`Renamed the tag in ${count} ${count === 1 ? 'file' : 'files'}.`, 'success');
@@ -31462,6 +31465,8 @@ function openBlockGapLine(gap) {
   line.__gap = gap;
   
   line.addEventListener('mousedown', (event) => {
+    
+    if (event.button !== 0) return;
     event.preventDefault();
     const { after, before } = gap;
     hideBlockGutter();
@@ -31669,7 +31674,10 @@ function unwrapTableBay(el) {
   const block = unwrapTableLane(el);
   if (block === el) return [el];
   const bar = Array.from(el.children).find((child) => child.classList && child.classList.contains('table-lens-bar'));
-  return bar ? [bar, block] : [block];
+  
+  const drawn = Array.from(el.children).find((child) => child.classList && child.classList.contains('table-lens-drawn'));
+  const blocks = drawn ? [block, drawn] : [block];
+  return bar ? [bar, ...blocks] : blocks;
 }
 
 
@@ -34359,7 +34367,12 @@ function applyTableLens(table) {
   const view = tableLensOf(table);
   if (!view || !view.model) return;
   const body = table.querySelector(':scope > tbody');
-  if (!body) return;
+  
+  if (!body) {
+    drawTableLensLayout(table, []);
+    rememberTableLens(table);
+    return;
+  }
   const rows = tableLensRows(table);
   rows.forEach((row, at) => {
     row.hidden = !tableLensRowPasses(view, at);
@@ -34412,7 +34425,7 @@ function paintTableLensChips(table, view, rows) {
 
 
 
-const TABLE_LENS_LAYOUTS = ['grid', 'card', 'board', 'list'];
+const TABLE_LENS_LAYOUTS = ['grid', 'card', 'board'];
 
 
 function inferTableLensRoles(model) {
@@ -34421,10 +34434,25 @@ function inferTableLensRoles(model) {
     return at < 0 ? null : at;
   };
   return {
-    title: model.key_column != null ? model.key_column : first((column) => column.kind === 'text') ?? 0,
+    title: tableLensTitleColumn(model, first),
     picture: first((column) => column.kind === 'image'),
     group: first((column) => column.kind === 'select') ?? first((column) => column.kind === 'check'),
   };
+}
+
+
+function tableLensTitleColumn(model, first) {
+  const key = model.key_column;
+  if (key == null) return first((column) => column.kind === 'text') ?? 0;
+  const slug = model.rows.every((row) => {
+    const cell = row.cells[key];
+    return !cell || cell.empty || /^[a-z0-9][a-z0-9_-]*$/.test(cell.text);
+  });
+  if (!slug) return key;
+  const named = model.columns.findIndex(
+    (column, at) => at !== key && column.kind === 'text' && model.rows.some((row) => /\s/.test((row.cells[at] || {}).text || ''))
+  );
+  return named < 0 ? key : named;
 }
 
 
@@ -34455,127 +34483,14 @@ function tableLensCellWords(view, row, at) {
 }
 
 
-function tableLensCard(view, at) {
-  const card = document.createElement('article');
-  card.className = 'table-lens-card';
-  card.dataset.lensRow = String(at);
-  card.draggable = true;
-  card.addEventListener('dragstart', (event) => {
-    if (event.dataTransfer) event.dataTransfer.setData('text/plain', String(at));
-  });
-  const picture = tableLensCellWords(view, at, view.roles.picture);
-  if (picture) {
-    const image = document.createElement('img');
-    image.className = 'table-lens-card-picture';
-    image.src = picture;
-    image.alt = '';
-    card.appendChild(image);
-  }
-  const title = document.createElement('h4');
-  title.className = 'table-lens-card-title';
-  title.textContent = tableLensCellWords(view, at, view.roles.title) || `Row ${at + 1}`;
-  card.appendChild(title);
-  view.model.columns.forEach((column, column_at) => {
-    if (column_at === view.roles.title || column_at === view.roles.picture) return;
-    const words = tableLensCellWords(view, at, column_at);
-    if (!words) return;
-    const field = document.createElement('p');
-    field.className = 'table-lens-card-field';
-    const name = document.createElement('span');
-    name.className = 'table-lens-card-name';
-    name.textContent = column.name;
-    const value = document.createElement('span');
-    value.textContent = words;
-    field.append(name, value);
-    card.appendChild(field);
-  });
-  return card;
-}
-
-
-function moveTableLensCard(table, rowAt, value) {
-  const view = tableLensOf(table);
-  if (!view || view.roles.group == null) return false;
-  const row = tableLensRows(table)[rowAt];
-  const cell = row ? Array.from(row.children)[view.roles.group] : null;
-  if (!cell || (cell.textContent || '').trim() === value) return false;
-  if (!writeTableLensCell(table, cell, value)) return false;
-  
-  const held = ((view.model.rows[rowAt] || { cells: [] }).cells || [])[view.roles.group];
-  if (held) {
-    held.text = value;
-    held.empty = value === '';
-  }
-  applyTableLens(table);
-  return true;
-}
-
-
-function tableLensBoard(view, showing, table) {
-  const board = document.createElement('div');
-  board.className = 'table-lens-board';
-  board.__lensTable = table;
-  const group = view.roles.group;
-  const column = view.model.columns[group];
-  const values = column && column.values.length ? [...column.values] : [];
-  const lanes = new Map();
-  const lane = (name, label) => {
-    if (lanes.has(name)) return lanes.get(name);
-    const made = document.createElement('section');
-    made.className = 'table-lens-column';
-    made.dataset.lensGroup = name;
-    const head = document.createElement('h4');
-    head.className = 'table-lens-column-head';
-    head.textContent = label;
-    made.appendChild(head);
-    made.addEventListener('dragover', (event) => event.preventDefault());
-    made.addEventListener('drop', (event) => {
-      event.preventDefault();
-      const moved = event.dataTransfer ? Number(event.dataTransfer.getData('text/plain')) : NaN;
-      if (Number.isFinite(moved)) moveTableLensCard(board.__lensTable, moved, name);
-    });
-    board.appendChild(made);
-    lanes.set(name, made);
-    return made;
-  };
-  values.forEach((value) => lane(value, value));
-  showing.forEach((at) => {
-    const value = tableLensCellWords(view, at, group);
-    lane(value, value || 'Nothing yet').appendChild(tableLensCard(view, at));
-  });
-  return board;
-}
-
-
-function tableLensList(view, showing) {
-  const list = document.createElement('div');
-  list.className = 'table-lens-list';
-  const trailing = view.model.columns.findIndex(
-    (column, at) => at !== view.roles.title && at !== view.roles.picture && column.kind !== 'image'
-  );
-  showing.forEach((at) => {
-    const line = document.createElement('div');
-    line.className = 'table-lens-line';
-    line.dataset.lensRow = String(at);
-    const title = document.createElement('span');
-    title.className = 'table-lens-line-title';
-    title.textContent = tableLensCellWords(view, at, view.roles.title) || `Row ${at + 1}`;
-    const trail = document.createElement('span');
-    trail.className = 'table-lens-line-trail';
-    trail.textContent = trailing < 0 ? '' : tableLensCellWords(view, at, trailing);
-    line.append(title, trail);
-    list.appendChild(line);
-  });
-  return list;
-}
-
-
 function drawTableLensLayout(table, order) {
   const view = tableLensOf(table);
   const lane = table.parentElement;
   const bay = lane && lane.parentElement;
   if (!view || !bay) return;
   const standing = bay.querySelector(':scope > .table-lens-drawn');
+  
+  const scrolled = standing ? standing.scrollLeft : 0;
   if (standing) standing.remove();
 
   
@@ -34596,15 +34511,16 @@ function drawTableLensLayout(table, order) {
     });
   }
 
-  const drawn = view.layout === 'board' || view.layout === 'list';
+  const drawn = view.layout === 'board';
   lane.hidden = drawn;
   
   bay.classList.toggle('table-bay-is-drawn', drawn);
   if (!drawn) return;
   const showing = order.filter(({ row }) => !row.hidden).map(({ at }) => at);
-  const box = view.layout === 'board' ? tableLensBoard(view, showing, table) : tableLensList(view, showing);
+  const box = tableLensBoard(view, showing, table);
   box.classList.add('table-lens-drawn');
   bay.appendChild(box);
+  if (scrolled) box.scrollLeft = scrolled;
 }
 
 
@@ -34980,6 +34896,8 @@ function openTableLensMenu(bar) {
   
   menu.className = 'table-lens-menu leaf-scroll';
   
+  const anchor = bar.__lensMenuAnchor;
+  if (anchor && anchor.isConnected) menu.style.left = `${anchor.offsetLeft}px`;
   tableLensPills(bar).appendChild(menu);
   bar.classList.add('is-open');
   return menu;
@@ -35138,7 +35056,7 @@ function drawTableLensFilterMenu(bar, table) {
 
 
 const TABLE_LENS_ROLES = [
-  { role: 'title', words: 'Title', layouts: ['card', 'list'] },
+  { role: 'title', words: 'Title', layouts: ['card', 'board'] },
   { role: 'picture', words: 'Picture', layouts: ['card'] },
   { role: 'group', words: 'Group by', layouts: ['board'] },
 ];
@@ -35146,7 +35064,7 @@ const TABLE_LENS_ROLES = [
 const tableLensRolesOnScreen = (view) => TABLE_LENS_ROLES.filter((part) => part.layouts.includes(view.layout));
 
 
-const TABLE_LENS_FIELD_WORDS = { card: 'Card fields', board: 'Board fields', list: 'List fields' };
+const TABLE_LENS_FIELD_WORDS = { card: 'Card fields', board: 'Board fields' };
 
 
 function drawTableLensRoleColumns(bar, table, part) {
@@ -35184,7 +35102,7 @@ function drawTableLensBarWords(bar, table) {
   const sort = bar.querySelector(':scope > .table-lens-pills > .table-lens-sort');
   const filter = bar.querySelector(':scope > .table-lens-pills > .table-lens-filter');
   const fields = bar.querySelector(':scope > .table-lens-pills > .table-lens-fields');
-  bar.querySelectorAll(':scope > .table-lens-pills > .table-lens-layout').forEach((button) => {
+  bar.querySelectorAll(':scope > .table-lens-pills .table-lens-layout').forEach((button) => {
     const layout = button.dataset.lensLayout;
     
     button.classList.toggle('is-on', view ? view.layout === layout : layout === 'grid');
@@ -35223,7 +35141,7 @@ function drawTableLensBarWords(bar, table) {
 }
 
 
-function withTableLensModel(bar, table, then) {
+function withTableLensModel(bar, table, then, refused = () => {}) {
   const view = tableLensOf(table);
   if (view && view.model) {
     then();
@@ -35236,6 +35154,7 @@ function withTableLensModel(bar, table, then) {
     if (!answer || !answer.table) {
       bar.classList.add('is-refused');
       tableLensPills(bar).textContent = `No lens here — ${(answer && answer.refused) || 'the table could not be read'}.`;
+      refused();
       return;
     }
     markTableLensPlaces(table);
@@ -35259,7 +35178,7 @@ function buildTableLensBar(table, ordinal, bar = tableLensRowShell()) {
   bar.__leafLensOrdinal = ordinal;
 
   
-  const layouts = [['grid', 'Table'], ['card', 'Cards'], ['board', 'Board'], ['list', 'List']].map(([layout, words]) => {
+  const layouts = [['grid', 'Table'], ['card', 'Cards'], ['board', 'Board']].map(([layout, words]) => {
     const button = tableLensButton(words, 'table-lens-button table-lens-layout');
     button.dataset.lensLayout = layout;
     
@@ -35295,6 +35214,7 @@ function buildTableLensBar(table, ordinal, bar = tableLensRowShell()) {
   fields.hidden = true;
   fields.addEventListener('click', (event) => {
     event.preventDefault();
+    bar.__lensMenuAnchor = fields;
     if (bar.classList.contains('is-open')) {
       closeTableLensMenu(bar);
       return;
@@ -35307,6 +35227,7 @@ function buildTableLensBar(table, ordinal, bar = tableLensRowShell()) {
   sort.title = 'Sort what is drawn — the file is not changed';
   sort.addEventListener('click', (event) => {
     event.preventDefault();
+    bar.__lensMenuAnchor = sort;
     if (bar.classList.contains('is-open')) {
       closeTableLensMenu(bar);
       return;
@@ -35318,6 +35239,7 @@ function buildTableLensBar(table, ordinal, bar = tableLensRowShell()) {
   filter.title = 'Hide rows that do not answer — the file is not changed';
   filter.addEventListener('click', (event) => {
     event.preventDefault();
+    bar.__lensMenuAnchor = filter;
     if (bar.classList.contains('is-open')) {
       closeTableLensMenu(bar);
       return;
@@ -35328,7 +35250,13 @@ function buildTableLensBar(table, ordinal, bar = tableLensRowShell()) {
   
   sort.classList.add('is-group-start');
   describe.classList.add('is-group-start');
-  tableLensPills(bar).append(...layouts, fields, sort, filter, describe);
+  
+  const segment = document.createElement('div');
+  segment.className = 'table-lens-segment';
+  segment.setAttribute('role', 'group');
+  segment.setAttribute('aria-label', 'Layout');
+  segment.append(...layouts);
+  tableLensPills(bar).append(segment, fields, sort, filter, describe);
   return bar;
 }
 
@@ -35430,7 +35358,8 @@ function bindTableLens(path) {
     const identity = tableIdentity(table);
     if (!identity) return;
     const cellCard = table.classList.contains('is-cell-card');
-    if (!cellCard && !tableLensWorthDrawing(table)) return;
+    
+    if (!cellCard && !tableLensWorthDrawing(table) && keptBoardColumn(table) < 0) return;
     const bar = tableLensRow(table.parentElement);
     if (!bar || tableLensPills(bar).children.length) return;
     if (cellCard) {
@@ -35440,6 +35369,7 @@ function bindTableLens(path) {
     if (!answered) return;
     buildTableLensBar(table, identity.ordinal, bar);
     restoreTableLens(bar, table, identity.ordinal);
+    openKeptBoard(bar, table, identity.ordinal);
   });
 }
 
@@ -35456,6 +35386,788 @@ document.addEventListener(
   },
   true
 );
+
+
+
+
+
+
+
+const BOARD_LANE_CARDS = 50;
+
+
+const BOARD_FIELD = 'board';
+const BOARD_LANES_FIELD = 'board-columns';
+
+
+function documentFieldValue(key) {
+  const cell = app ? app.querySelector(`.frontmatter td[data-leaf-field="${key}"]`) : null;
+  if (!cell) return null;
+  const items = Array.from(cell.querySelectorAll('li, .frontmatter-chip')).map((item) => (item.textContent || '').trim()).filter(Boolean);
+  if (items.length) return items;
+  return (cell.textContent || '').trim();
+}
+
+
+function boardFieldColumn() {
+  const value = documentFieldValue(BOARD_FIELD);
+  if (Array.isArray(value)) return value[0] || '';
+  return value && !/^(false|no|off)$/i.test(value) ? value : '';
+}
+
+
+function boardFieldLanes(view) {
+  const named = boardFieldColumn();
+  const column = view.model.columns[view.roles.group];
+  if (!column || !named || named.toLowerCase() !== String(column.name).toLowerCase()) return [];
+  const value = documentFieldValue(BOARD_LANES_FIELD);
+  if (Array.isArray(value)) return value;
+  return value ? value.split(',').map((one) => one.trim()).filter(Boolean) : [];
+}
+
+
+function tableLensBoardLanes(view, showing) {
+  const lanes = [];
+  const add = (value) => {
+    if (!lanes.includes(value)) lanes.push(value);
+  };
+  boardFieldLanes(view).forEach(add);
+  const column = view.model.columns[view.roles.group];
+  (column && column.values ? column.values : []).forEach(add);
+  showing.forEach((at) => add(tableLensCellWords(view, at, view.roles.group)));
+  return lanes;
+}
+
+
+function tableLensModelCell(text) {
+  const words = String(text == null ? '' : text).trim();
+  const number = words !== '' && Number.isFinite(Number(words)) ? Number(words) : null;
+  return { text: words, number, empty: words === '' };
+}
+
+
+function writeTableLensBody(table, body) {
+  const view = tableLensOf(table);
+  
+  if (!view || table.__boardWritten || !tableTakesControls(table)) return false;
+  const range = rangeOf(table, 'block');
+  if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) return false;
+  const baseline = tableCellTexts(table);
+  if (!baseline) return false;
+  const rows = [baseline[0], ...body.map((one) => one.cells)];
+  if (rows.length === baseline.length && rows.every((cells, at) => cells.join('|') === baseline[at].join('|'))) return false;
+  table.__editCells = baseline;
+  if (!commitBlockEdit(table, tableTextsToMarkdown(table, rows), undefined, rows)) return false;
+  table.__boardWritten = true;
+  const width = view.model.columns.length;
+  view.model.rows = body.map((one) => {
+    const kept = one.model ? one.model.cells.slice() : [];
+    one.cells.forEach((cell, at) => {
+      if (one.changed.has(at) || !kept[at]) kept[at] = tableLensModelCell(cell);
+    });
+    while (kept.length < width) kept.push(tableLensModelCell(''));
+    return { cells: kept };
+  });
+  
+  tableLensRows(table).forEach((row) => {
+    delete row.__leafLensPlace;
+  });
+  view.sort = null;
+  view.filters.clear();
+  drawTableLensLayout(table, view.model.rows.map((_, at) => ({ row: { hidden: false }, at })));
+  return true;
+}
+
+
+function tableLensBody(table) {
+  const view = tableLensOf(table);
+  const texts = tableCellTexts(table);
+  if (!view || !texts) return null;
+  return texts.slice(1).map((cells, at) => ({ cells: cells.slice(), model: view.model.rows[at], changed: new Set() }));
+}
+
+
+function moveTableLensCard(table, rowAt, value, before = undefined) {
+  const view = tableLensOf(table);
+  if (!view || view.roles.group == null || !tableTakesControls(table)) return false;
+  const group = view.roles.group;
+  if (before === undefined) {
+    const row = tableLensRows(table)[rowAt];
+    const cell = row ? Array.from(row.children)[group] : null;
+    if (!cell || (cell.textContent || '').trim() === value) return false;
+    if (!writeTableLensCell(table, cell, value)) return false;
+    
+    const held = ((view.model.rows[rowAt] || { cells: [] }).cells || [])[group];
+    if (held) {
+      held.text = value;
+      held.empty = value === '';
+    }
+    applyTableLens(table);
+    return true;
+  }
+  const body = tableLensBody(table);
+  if (!body || !body[rowAt] || before === rowAt) return false;
+  const moving = body[rowAt];
+  const lane = tableCellWords(value);
+  if (moving.cells[group] !== lane) {
+    moving.cells[group] = lane;
+    moving.changed.add(group);
+  }
+  const rest = body.filter((one) => one !== moving);
+  let place = before == null ? -1 : rest.indexOf(body[before]);
+  if (place < 0) {
+    
+    const inLane = rest.map((one, at) => (one.cells[group] === lane ? at : -1)).filter((at) => at >= 0);
+    place = inLane.length ? inLane[inLane.length - 1] + 1 : Math.min(rowAt, rest.length);
+  }
+  rest.splice(place, 0, moving);
+  return writeTableLensBody(table, rest);
+}
+
+
+function addTableLensCard(table, value, title) {
+  const view = tableLensOf(table);
+  const words = String(title || '').trim();
+  if (!view || view.roles.group == null || !words) return false;
+  const body = tableLensBody(table);
+  const width = (tableCellTexts(table) || [[]])[0].length;
+  if (!body || !width) return false;
+  const cells = new Array(width).fill('');
+  const titleAt = view.roles.title != null && view.roles.title < width ? view.roles.title : 0;
+  const lane = tableCellWords(value);
+  cells[view.roles.group] = lane;
+  cells[titleAt] = tableCellWords(words);
+  const fresh = { cells, model: null, changed: new Set(cells.map((_, at) => at)) };
+  const inLane = body.map((one, at) => (one.cells[view.roles.group] === lane ? at : -1)).filter((at) => at >= 0);
+  body.splice(inLane.length ? inLane[inLane.length - 1] + 1 : body.length, 0, fresh);
+  return writeTableLensBody(table, body);
+}
+
+
+function writeTableLensCardRow(table, rowAt, values) {
+  const body = tableLensBody(table);
+  if (!body || !body[rowAt]) return false;
+  if (values === null) {
+    body.splice(rowAt, 1);
+    return writeTableLensBody(table, body);
+  }
+  const row = body[rowAt];
+  Object.entries(values).forEach(([at, value]) => {
+    const column = Number(at);
+    if (column >= row.cells.length) return;
+    const markdown = tableCellWords(value);
+    if (row.cells[column] === markdown) return;
+    row.cells[column] = markdown;
+    row.changed.add(column);
+  });
+  return writeTableLensBody(table, body);
+}
+
+
+function writeBoardLanes(view, lanes) {
+  const column = view.model.columns[view.roles.group];
+  if (!column) return;
+  if (!boardFieldColumn()) sendFieldEdit(BOARD_FIELD, column.name);
+  sendEditCommand({ command: 'setListField', key: BOARD_LANES_FIELD, items: lanes });
+}
+
+
+function addTableLensLane(table, name) {
+  const view = tableLensOf(table);
+  const words = String(name || '').trim();
+  if (!view || view.roles.group == null || !words || !tableTakesControls(table)) return false;
+  const lanes = tableLensBoardLanes(view, view.model.rows.map((_, at) => at)).filter(Boolean);
+  if (lanes.some((lane) => lane.toLowerCase() === words.toLowerCase())) return false;
+  writeBoardLanes(view, [...lanes, words]);
+  return true;
+}
+
+
+function moveTableLensLane(table, name, before) {
+  const view = tableLensOf(table);
+  if (!view || view.roles.group == null || !tableTakesControls(table) || name === before) return false;
+  const lanes = tableLensBoardLanes(view, view.model.rows.map((_, at) => at)).filter(Boolean);
+  if (!lanes.includes(name)) return false;
+  const rest = lanes.filter((lane) => lane !== name);
+  const at = before == null ? rest.length : rest.indexOf(before);
+  if (at < 0) return false;
+  rest.splice(at, 0, name);
+  if (rest.join('|') === lanes.join('|')) return false;
+  writeBoardLanes(view, rest);
+  return true;
+}
+
+
+function renameTableLensLane(table, from, to) {
+  const view = tableLensOf(table);
+  const words = String(to || '').trim();
+  if (!view || view.roles.group == null || !words || words === from || !tableTakesControls(table)) return false;
+  const group = view.roles.group;
+  const body = tableLensBody(table);
+  if (!body) return false;
+  let moved = false;
+  body.forEach((one) => {
+    if (one.cells[group] !== tableCellWords(from)) return;
+    one.cells[group] = tableCellWords(words);
+    one.changed.add(group);
+    moved = true;
+  });
+  if (moved && !writeTableLensBody(table, body)) return false;
+  const kept = boardFieldLanes(view);
+  if (kept.includes(from)) writeBoardLanes(view, kept.map((lane) => (lane === from ? words : lane)));
+  return moved || kept.includes(from);
+}
+
+
+function removeTableLensLane(table, name) {
+  const view = tableLensOf(table);
+  if (!view || !tableTakesControls(table)) return false;
+  const kept = boardFieldLanes(view);
+  if (!kept.includes(name)) return false;
+  if (view.model.rows.some((_, at) => tableLensCellWords(view, at, view.roles.group) === name)) return false;
+  writeBoardLanes(view, kept.filter((lane) => lane !== name));
+  return true;
+}
+
+function boardElement(tag, className, words) {
+  const made = document.createElement(tag);
+  made.className = className;
+  if (words != null) made.textContent = words;
+  return made;
+}
+
+
+function boardInput(className, placeholder, value, keep, drop) {
+  const box = document.createElement('input');
+  box.type = 'text';
+  box.className = className;
+  box.placeholder = placeholder;
+  box.value = value || '';
+  box.setAttribute('aria-label', placeholder);
+  let done = false;
+  const finish = (kept) => {
+    if (done) return;
+    done = true;
+    if (kept && box.value.trim()) keep(box.value.trim());
+    else drop();
+  };
+  box.addEventListener('keydown', (event) => {
+    event.stopPropagation();
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      finish(true);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      finish(false);
+    }
+  });
+  box.addEventListener('blur', () => finish(true));
+  setTimeout(() => box.focus(), 0);
+  return box;
+}
+
+
+function tableLensCardChips(view, at) {
+  const chips = boardElement('div', 'table-lens-card-chips');
+  view.model.columns.forEach((column, columnAt) => {
+    if (columnAt === view.roles.title || columnAt === view.roles.picture || columnAt === view.roles.group) return;
+    
+    if (columnAt === view.model.key_column) return;
+    const words = tableLensCellWords(view, at, columnAt);
+    if (!words) return;
+    if (column.kind === 'check' && !/^(yes|true|x)$/i.test(words)) return;
+    const chip = boardElement('span', 'table-lens-card-chip');
+    chip.title = column.name;
+    if (column.kind === 'number' || column.kind === 'check' || column.kind === 'computed') {
+      chip.appendChild(boardElement('span', 'table-lens-card-name', column.name));
+      if (column.kind !== 'check') chip.appendChild(document.createTextNode(` ${words}`));
+    } else if (column.kind === 'date') {
+      chip.textContent = boardDateWords(words);
+      chip.title = `${column.name}: ${words}`;
+    } else {
+      chip.textContent = words;
+    }
+    chips.appendChild(chip);
+  });
+  return chips;
+}
+
+
+function boardDateWords(words, today = new Date()) {
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(words);
+  if (!parts) return words;
+  const day = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+  if (Number.isNaN(day.getTime()) || day.getMonth() !== Number(parts[2]) - 1) return words;
+  const sameYear = day.getFullYear() === today.getFullYear();
+  return day.toLocaleDateString('en-US', sameYear ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+
+function tableLensCard(view, at, table, writable) {
+  const card = boardElement('div', 'table-lens-card');
+  card.dataset.lensRow = String(at);
+  card.tabIndex = 0;
+  const picture = tableLensCellWords(view, at, view.roles.picture);
+  if (picture) {
+    const image = document.createElement('img');
+    image.className = 'table-lens-card-picture';
+    image.src = picture;
+    image.alt = '';
+    card.appendChild(image);
+  }
+  card.appendChild(boardElement('div', 'table-lens-card-title', tableLensCellWords(view, at, view.roles.title) || `Row ${at + 1}`));
+  const chips = tableLensCardChips(view, at);
+  if (chips.children.length) card.appendChild(chips);
+  if (!writable) return card;
+  card.dataset.lensMovable = 'true';
+  card.addEventListener('pointerdown', (event) => pressTableLensCard(event, card, table, at));
+  const open = () => openTableLensCardEditor(table, card, at);
+  card.addEventListener('click', () => {
+    
+    if (card.__dragged) return;
+    open();
+  });
+  card.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      open();
+    } else if (event.altKey && /^Arrow(Left|Right|Up|Down)$/.test(event.key)) {
+      event.preventDefault();
+      event.stopPropagation();
+      stepTableLensCard(table, card, at, event.key);
+    }
+  });
+  return card;
+}
+
+
+
+
+
+
+const BOARD_DRAG_SLOP = 4;
+
+const BOARD_DRAG_EDGE = 48;
+
+function pressTableLensCard(event, card, table, at) {
+  if (event.button !== 0 || card.classList.contains('is-editing') || (event.target.closest && event.target.closest('input, button, a'))) return;
+  const board = card.closest('.table-lens-board');
+  if (!board) return;
+  const startX = event.clientX;
+  const startY = event.clientY;
+  let lifted = null;
+  let offsetX = 0;
+  let offsetY = 0;
+  let target = null;
+  let scroll = 0;
+  
+  const laneAt = (x, y) => {
+    for (const under of document.elementsFromPoint(x, y)) {
+      const lane = under.closest ? under.closest('.table-lens-column') : null;
+      if (lane && board.contains(lane)) return lane.classList.contains('table-lens-column-ghost') ? null : lane;
+    }
+    return null;
+  };
+  const mark = (x, y) => {
+    clearBoardDropMarks(board);
+    const lane = laneAt(x, y);
+    target = lane ? { lane, above: boardDropBefore(lane, { clientY: y }) } : null;
+    if (!target) return;
+    if (target.above) target.above.classList.add('is-drop-above');
+    else lane.classList.add('is-drop-end');
+  };
+  const edgeScroll = (x) => {
+    const box = board.getBoundingClientRect();
+    const step = x < box.left + BOARD_DRAG_EDGE ? -12 : x > box.right - BOARD_DRAG_EDGE ? 12 : 0;
+    cancelAnimationFrame(scroll);
+    if (!step) return;
+    const roll = () => {
+      board.scrollLeft += step;
+      scroll = requestAnimationFrame(roll);
+    };
+    scroll = requestAnimationFrame(roll);
+  };
+  const move = (moved) => {
+    if (!lifted) {
+      if (Math.hypot(moved.clientX - startX, moved.clientY - startY) < BOARD_DRAG_SLOP) return;
+      const box = card.getBoundingClientRect();
+      offsetX = startX - box.left;
+      offsetY = startY - box.top;
+      lifted = card.cloneNode(true);
+      lifted.classList.add('table-lens-card-lifted');
+      lifted.style.width = `${box.width}px`;
+      appSurface.appendChild(lifted);
+      card.classList.add('is-dragging');
+      card.__dragged = true;
+    }
+    lifted.style.left = `${moved.clientX - offsetX}px`;
+    lifted.style.top = `${moved.clientY - offsetY}px`;
+    mark(moved.clientX, moved.clientY);
+    edgeScroll(moved.clientX);
+  };
+  const end = (ended) => {
+    document.removeEventListener('pointermove', move, true);
+    document.removeEventListener('pointerup', end, true);
+    document.removeEventListener('pointercancel', end, true);
+    cancelAnimationFrame(scroll);
+    if (!lifted) return;
+    lifted.remove();
+    card.classList.remove('is-dragging');
+    clearBoardDropMarks(board);
+    setTimeout(() => {
+      card.__dragged = false;
+    }, 0);
+    if (ended.type !== 'pointerup' || !target) return;
+    const above = target.above && target.above !== card ? Number(target.above.dataset.lensRow) : null;
+    moveTableLensCard(table, at, target.lane.dataset.lensGroup, above);
+  };
+  document.addEventListener('pointermove', move, true);
+  document.addEventListener('pointerup', end, true);
+  document.addEventListener('pointercancel', end, true);
+}
+
+
+let boardFocusAfterMove = null;
+
+
+function stepTableLensCard(table, card, at, key) {
+  const view = tableLensOf(table);
+  const laneBox = card.closest('.table-lens-column');
+  if (!view || !laneBox) return false;
+  const lane = laneBox.dataset.lensGroup || '';
+  const title = (card.querySelector('.table-lens-card-title') || card).textContent;
+  boardFocusAfterMove = { title, until: Date.now() + 2000 };
+  if (key === 'ArrowLeft' || key === 'ArrowRight') {
+    const lanes = tableLensBoardLanes(view, view.model.rows.map((_, row) => row)).filter(Boolean);
+    const next = lanes[lanes.indexOf(lane) + (key === 'ArrowLeft' ? -1 : 1)];
+    return next != null && moveTableLensCard(table, at, next);
+  }
+  const cards = Array.from(laneBox.querySelectorAll(':scope > .table-lens-card'));
+  const place = cards.indexOf(card);
+  if (key === 'ArrowUp') return place > 0 && moveTableLensCard(table, at, lane, Number(cards[place - 1].dataset.lensRow));
+  if (place >= cards.length - 1) return false;
+  const after = cards[place + 2];
+  return moveTableLensCard(table, at, lane, after ? Number(after.dataset.lensRow) : null);
+}
+
+
+function refocusMovedCard(board) {
+  const wanted = boardFocusAfterMove;
+  if (!wanted || Date.now() > wanted.until) return;
+  const card = Array.from(board.querySelectorAll('.table-lens-card')).find((one) => (one.querySelector('.table-lens-card-title') || one).textContent === wanted.title);
+  if (card) requestAnimationFrame(() => card.focus());
+}
+
+
+function pressTableLensLane(event, laneBox, table, name) {
+  if (event.button !== 0 || (event.target.closest && event.target.closest('input, .table-lens-column-add'))) return;
+  const board = laneBox.closest('.table-lens-board');
+  if (!board) return;
+  const startX = event.clientX;
+  const startY = event.clientY;
+  let moving = false;
+  let target;
+  const mark = (x, y) => {
+    board.querySelectorAll('.is-lane-drop').forEach((one) => one.classList.remove('is-lane-drop'));
+    const lanes = Array.from(board.querySelectorAll(':scope > .table-lens-column'));
+    target = undefined;
+    for (const lane of lanes) {
+      const box = lane.getBoundingClientRect();
+      if (x < box.left + box.width / 2) {
+        target = lane;
+        break;
+      }
+    }
+    if (target === laneBox) return;
+    if (target) target.classList.add('is-lane-drop');
+  };
+  const move = (moved) => {
+    if (!moving) {
+      if (Math.hypot(moved.clientX - startX, moved.clientY - startY) < BOARD_DRAG_SLOP) return;
+      moving = true;
+      laneBox.__dragged = true;
+      laneBox.classList.add('is-dragging');
+    }
+    mark(moved.clientX, moved.clientY);
+  };
+  const end = (ended) => {
+    document.removeEventListener('pointermove', move, true);
+    document.removeEventListener('pointerup', end, true);
+    document.removeEventListener('pointercancel', end, true);
+    if (!moving) return;
+    laneBox.classList.remove('is-dragging');
+    board.querySelectorAll('.is-lane-drop').forEach((one) => one.classList.remove('is-lane-drop'));
+    setTimeout(() => {
+      laneBox.__dragged = false;
+    }, 0);
+    if (ended.type !== 'pointerup' || target === laneBox) return;
+    const before = target && !target.classList.contains('table-lens-column-ghost') ? target.dataset.lensGroup : null;
+    moveTableLensLane(table, name, before);
+  };
+  document.addEventListener('pointermove', move, true);
+  document.addEventListener('pointerup', end, true);
+  document.addEventListener('pointercancel', end, true);
+}
+
+
+function openTableLensCardEditor(table, card, at) {
+  const view = tableLensOf(table);
+  const texts = tableCellTexts(table);
+  if (!view || !texts || !texts[at + 1] || card.classList.contains('is-editing')) return;
+  const form = boardElement('form', 'table-lens-card-editor');
+  const boxes = new Map();
+  texts[0].forEach((heading, column) => {
+    const label = boardElement('label', 'table-lens-editor-field');
+    label.appendChild(boardElement('span', 'table-lens-editor-name', view.model.columns[column] ? view.model.columns[column].name : heading));
+    const value = tableLensCellWords(view, at, column);
+    const box = tableLensEditorBox(view, column, value);
+    label.appendChild(box);
+    form.appendChild(label);
+    boxes.set(column, box);
+  });
+  const actions = boardElement('div', 'table-lens-editor-actions');
+  const remove = boardElement('button', 'table-lens-editor-remove', 'Remove');
+  remove.type = 'button';
+  const cancel = boardElement('button', 'table-lens-editor-cancel', 'Cancel');
+  cancel.type = 'button';
+  const save = boardElement('button', 'table-lens-editor-save', 'Save');
+  save.type = 'submit';
+  actions.append(remove, cancel, save);
+  form.appendChild(actions);
+  const close = () => applyTableLens(table);
+  cancel.addEventListener('click', (event) => {
+    event.stopPropagation();
+    close();
+  });
+  remove.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (!writeTableLensCardRow(table, at, null)) close();
+  });
+  form.addEventListener('click', (event) => event.stopPropagation());
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const values = {};
+    boxes.forEach((box, column) => {
+      values[column] = box.value;
+    });
+    if (!writeTableLensCardRow(table, at, values)) close();
+  });
+  form.addEventListener('keydown', (event) => {
+    event.stopPropagation();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      close();
+    }
+  });
+  card.textContent = '';
+  delete card.dataset.lensMovable;
+  card.classList.add('is-editing');
+  card.appendChild(form);
+  
+  const titleBox = boxes.get(view.roles.title != null ? view.roles.title : 0);
+  if (titleBox) setTimeout(() => titleBox.focus(), 0);
+}
+
+
+function tableLensEditorBox(view, column, value) {
+  const model = view.model.columns[column];
+  const choices = column === view.roles.group ? tableLensBoardLanes(view, view.model.rows.map((_, at) => at)).filter(Boolean) : model && model.kind === 'select' ? model.values : [];
+  if (!choices.length) {
+    const box = document.createElement('input');
+    box.type = 'text';
+    box.className = 'table-lens-input';
+    box.value = value;
+    return box;
+  }
+  const box = document.createElement('select');
+  box.className = 'table-lens-input';
+  ['', ...choices.filter((one) => one !== '')].concat(choices.includes(value) || !value ? [] : [value]).forEach((choice) => {
+    const option = document.createElement('option');
+    option.value = choice;
+    option.textContent = choice || 'Nothing';
+    box.appendChild(option);
+  });
+  box.value = value;
+  return box;
+}
+
+
+function boardDropBefore(laneBox, event) {
+  const cards = Array.from(laneBox.querySelectorAll(':scope > .table-lens-card:not(.is-dragging)'));
+  for (const card of cards) {
+    const box = card.getBoundingClientRect();
+    if (event.clientY < box.top + box.height / 2) return card;
+  }
+  return null;
+}
+
+function clearBoardDropMarks(board) {
+  board.querySelectorAll('.is-drop-above, .is-drop-end').forEach((one) => one.classList.remove('is-drop-above', 'is-drop-end'));
+}
+
+
+function tableLensLane(board, table, view, name, writable) {
+  const column = view.model.columns[view.roles.group];
+  const made = boardElement('div', 'table-lens-column');
+  made.dataset.lensGroup = name;
+  const head = boardElement('div', 'table-lens-column-head');
+  const title = boardElement(writable && name ? 'button' : 'span', 'table-lens-column-name', name || `No ${column ? column.name : 'value'}`);
+  head.append(title, boardElement('span', 'table-lens-column-count', '0'));
+  made.appendChild(head);
+  if (!writable) return made;
+  if (name) {
+    title.type = 'button';
+    title.title = 'Rename this lane, or drag it to move the lane';
+    head.addEventListener('pointerdown', (event) => pressTableLensLane(event, made, table, name));
+    title.addEventListener('click', () => {
+      if (made.__dragged) return;
+      head.replaceChild(boardInput('table-lens-column-rename', 'Lane name', name, (words) => renameTableLensLane(table, name, words), () => applyTableLens(table)), title);
+    });
+  }
+  const add = boardElement('button', 'table-lens-column-add');
+  add.type = 'button';
+  add.title = `Add a card to ${name || 'this lane'}`;
+  add.setAttribute('aria-label', add.title);
+  add.appendChild(boardElement('span', 'lt-icon lt-icon-new'));
+  add.addEventListener('click', () => {
+    const box = boardInput('table-lens-card-new', 'Card title', '', (words) => addTableLensCard(table, name, words), () => box.remove());
+    made.appendChild(box);
+  });
+  head.appendChild(add);
+  return made;
+}
+
+
+function tableLensBoard(view, showing, table) {
+  const board = boardElement('div', 'table-lens-board leaf-scroll');
+  board.__lensTable = table;
+  const writable = tableTakesControls(table);
+  const lanes = new Map();
+  const lane = (name) => {
+    if (!lanes.has(name)) {
+      const made = tableLensLane(board, table, view, name, writable);
+      board.appendChild(made);
+      lanes.set(name, made);
+    }
+    return lanes.get(name);
+  };
+  tableLensBoardLanes(view, showing).forEach((value) => {
+    if (value) lane(value);
+  });
+  
+  const held = new Map();
+  const open = view.boardOpenLanes || new Set();
+  showing.forEach((at) => {
+    const value = tableLensCellWords(view, at, view.roles.group);
+    const made = lane(value);
+    const drawn = made.querySelectorAll(':scope > .table-lens-card').length;
+    if (drawn >= BOARD_LANE_CARDS && !open.has(value)) {
+      held.set(value, (held.get(value) || 0) + 1);
+      return;
+    }
+    made.appendChild(tableLensCard(view, at, table, writable));
+  });
+  const kept = boardFieldLanes(view);
+  lanes.forEach((made, name) => {
+    const more = held.get(name) || 0;
+    const cards = made.querySelectorAll(':scope > .table-lens-card').length + more;
+    made.querySelector('.table-lens-column-count').textContent = String(cards);
+    if (more) {
+      const reveal = boardElement('button', 'table-lens-column-more', `Show ${more} more`);
+      reveal.type = 'button';
+      reveal.addEventListener('click', () => {
+        view.boardOpenLanes = new Set(view.boardOpenLanes || []).add(name);
+        applyTableLens(table);
+      });
+      made.appendChild(reveal);
+    }
+    if (writable && !cards && kept.includes(name)) {
+      const drop = boardElement('button', 'table-lens-column-remove', 'Remove lane');
+      drop.type = 'button';
+      drop.addEventListener('click', () => removeTableLensLane(table, name));
+      made.appendChild(drop);
+    }
+  });
+  if (writable) {
+    const ghost = boardElement('div', 'table-lens-column table-lens-column-ghost');
+    const start = boardElement('button', 'table-lens-column-new');
+    start.type = 'button';
+    start.append(boardElement('span', 'lt-icon lt-icon-new'), document.createTextNode('Add a lane'));
+    start.addEventListener('click', () => {
+      ghost.replaceChild(boardInput('table-lens-column-rename', 'Lane name', '', (words) => addTableLensLane(table, words), () => applyTableLens(table)), start);
+    });
+    ghost.appendChild(start);
+    board.appendChild(ghost);
+  }
+  board.addEventListener('scroll', () => markBoardEdges(board), { passive: true });
+  refocusMovedCard(board);
+  requestAnimationFrame(() => markBoardEdges(board));
+  return board;
+}
+
+
+function markBoardEdges(board) {
+  const room = board.scrollWidth - board.clientWidth;
+  board.classList.toggle('is-more-left', board.scrollLeft > 1);
+  board.classList.toggle('is-more-right', room - board.scrollLeft > 1);
+}
+
+
+function keptBoardColumn(table) {
+  const named = boardFieldColumn().toLowerCase();
+  if (!named) return -1;
+  return tableLensHeadings(table).findIndex((heading) => heading.toLowerCase() === named);
+}
+
+
+function openKeptBoard(bar, table, ordinal) {
+  if (heldTableLenses.has(ordinal) || tableLensOf(table)) return;
+  const column = keptBoardColumn(table);
+  if (column < 0) return;
+  const lane = table.parentElement;
+  lane.hidden = true;
+  
+  if (!tableLensRows(table).length) {
+    const headings = tableLensHeadings(table);
+    tableLensViews.set(table, {
+      model: { key_column: null, columns: headings.map((name) => ({ name, kind: 'text', declared: false, values: [], range: null, choices: [] })), rows: [] },
+      sort: null,
+      filters: new Map(),
+      layout: 'board',
+      roles: { title: column === 0 ? Math.min(1, headings.length - 1) : 0, picture: null, group: column },
+      ordinal,
+    });
+    applyTableLens(table);
+    drawTableLensBarWords(bar, table);
+    return;
+  }
+  withTableLensModel(
+    bar,
+    table,
+    () => {
+      const view = tableLensOf(table);
+      if (!view) {
+        lane.hidden = false;
+        return;
+      }
+      view.roles.group = column;
+      view.layout = 'board';
+      applyTableLens(table);
+      drawTableLensBarWords(bar, table);
+    },
+    () => {
+      lane.hidden = false;
+    }
+  );
+}
+
+
+function redrawTableLensBoards() {
+  if (!app) return;
+  app.querySelectorAll('.table-lane > table[data-lens-layout="board"]').forEach((table) => {
+    if (tableLensOf(table)) applyTableLens(table);
+  });
+}
 
 
 
@@ -36787,7 +37499,8 @@ function drawReadingLinkPopup() {
   }
   if (!readingLinkElement) {
     readingLinkElement = document.createElement('div');
-    readingLinkElement.className = 'reading-link-popup';
+    
+    readingLinkElement.className = 'reading-link-popup leaf-scroll';
     readingLinkElement.setAttribute('role', 'listbox');
     appSurface.appendChild(readingLinkElement);
     
@@ -48450,7 +49163,8 @@ const setupBackdrop = document.createElement('div');
 setupBackdrop.className = 'lt-backdrop';
 setupBackdrop.hidden = true;
 const setupDialog = document.createElement('div');
-setupDialog.className = 'setup-walkthrough';
+
+setupDialog.className = 'setup-walkthrough leaf-scroll';
 setupDialog.setAttribute('role', 'dialog');
 setupDialog.setAttribute('aria-modal', 'true');
 setupDialog.hidden = true;
@@ -48953,8 +49667,6 @@ function consoleChatListItems(shown, archived, custom = false) {
   const writers = consoleChatWriters();
   const placed = new Set();
   for (const row of sortedConsoleAgents(consoleAgentRows)) {
-    
-    if (isWispConsole(row.id)) continue;
     const conversations = (Array.isArray(row.conversations) ? row.conversations : []).map(String);
     const pinnedHere = conversations.some((conversation) => pinnedIds.has(conversation));
     const hasRow = pinnedHere || conversations.some((conversation) => listed.has(conversation));
@@ -48967,8 +49679,6 @@ function consoleChatListItems(shown, archived, custom = false) {
   for (const row of shown) {
     if (pinned.has(consoleChatKey(row))) continue;
     const live = writers.get(String(row.id));
-    
-    if (isWispChat(row.id) || (live && isWispConsole(live.id))) continue;
     if (!live) {
       items.push({ key: `chat:${consoleChatKey(row)}`, row, html: () => consoleRecentRowHtml(row, now, '') });
       continue;
@@ -49006,9 +49716,11 @@ function consoleRunningRowHtml(row) {
   const title = String(row.title ?? '');
   const tip = row.prompt ? String(row.prompt) : title;
   const icon = consoleIconClass(row.agent);
+  
+  const mark = isWispConsole(id) ? wispMarkHtml() : `<span class="console-agent-glow"><span class="${icon}"></span></span><span class="${icon}"></span>`;
   const marks = (id === consoleFrontId ? ' console-agent-front' : '') + (row.state === 'working' ? ' console-agent-working' : '');
   const needs = row.state === 'needs' ? ' console-agent-needs' : '';
-  return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running${marks}" data-console-id="${id}" title="${escapeAttr(tip)}"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="${icon}"></span></span><span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span>${consoleChatFolderHtml(consoleFolderOf(id))}<span class="console-agent-state${needs}">${escapeText(consoleAgentWords[row.state] || '')}</span></button><button type="button" class="console-recent-more" data-console-id="${id}" aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
+  return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running${marks}" data-console-id="${id}" title="${escapeAttr(tip)}"><span class="console-agent-icon" aria-hidden="true">${mark}</span><span class="console-agent-name">${escapeText(title)}</span>${consoleChatFolderHtml(consoleFolderOf(id))}<span class="console-agent-state${needs}">${escapeText(consoleAgentWords[row.state] || '')}</span></button><button type="button" class="console-recent-more" data-console-id="${id}" aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
 }
 
 
@@ -49173,10 +49885,12 @@ function consoleRecentRowHtml(row, now, where, live = null) {
   const marks = (front ? ' console-agent-front' : '') + (row.unread ? ' console-recent-unread' : '') + (gone ? ' console-pin-gone' : '') + (working ? ' console-agent-working' : '');
   const icon = consoleIconClass(agent);
   const glow = working ? `<span class="console-agent-glow"><span class="${icon}"></span></span>` : '';
+  const wispy = isWispChat(row.id) || (live && isWispConsole(live.id));
+  const mark = wispy ? wispMarkHtml() : `${glow}<span class="${icon}"></span>`;
   const drop = where ? ` data-pin-drop="${where}"` : ' data-pin-drop="recents"';
   const state = live ? (consoleAgentWords[live.state] || '') : gone ? 'gone' : consoleRecentAge(row.time, now);
   const needs = live?.state === 'needs' ? ' console-agent-needs' : '';
-  return `<div class="console-recent-row" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}"><span class="console-agent-icon" aria-hidden="true">${glow}<span class="${icon}"></span></span><span class="console-agent-name">${escapeText(title)}</span>${consoleChatFolderHtml(folderPath)}<span class="console-agent-state${needs}">${escapeText(live || row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
+  return `<div class="console-recent-row" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}"><span class="console-agent-icon" aria-hidden="true">${mark}</span><span class="console-agent-name">${escapeText(title)}</span>${consoleChatFolderHtml(folderPath)}<span class="console-agent-state${needs}">${escapeText(live || row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
 }
 
 function consoleRecentPinsHtml(now) {
@@ -49490,6 +50204,12 @@ function pressConsoleRecent(row) {
     pressConsoleRunning(Number(live.id));
     return;
   }
+  
+  if (isWispChat(row.dataset.recentId)) {
+    if (chat?.unread) markConsoleRecent(chat, 'markRead', 'unread', false);
+    openWispChatOf(row.dataset.recentId);
+    return;
+  }
   if (row.classList.contains('console-pin-gone')) {
     leafToast('That chat is gone; its agent no longer keeps it.');
     return;
@@ -49793,39 +50513,19 @@ function wispRowHtml() {
   const runs = wispRunsWords();
   const label = `${name}, your bot, ${wisp.lit ? 'on' : 'off'}, ${runs}`;
   const front = wispChatInFront();
-  return `<div class="wisp-row-wrap"><button type="button" class="wisp-row${front ? ' is-front' : ''}" data-wisp-open="row"${front ? ' aria-current="true"' : ''} aria-label="${escapeAttr(label)}" title="${escapeAttr(`Open ${name}, your bot: ${runs}`)}"><span class="wisp-row-mark" aria-hidden="true">✦</span><span class="wisp-row-name">${escapeText(name)} · your bot</span><span class="wisp-row-runs">${escapeText(runs)}</span><span class="wisp-light is-${wispLightState()}" aria-hidden="true"></span></button>${wispChatsHtml()}</div>`;
+  return `<div class="wisp-row-wrap"><button type="button" class="wisp-row${front ? ' is-front' : ''}" data-wisp-open="row"${front ? ' aria-current="true"' : ''} aria-label="${escapeAttr(label)}" title="${escapeAttr(`Open ${name}, your bot: ${runs}`)}"><span class="wisp-row-mark" aria-hidden="true">✦</span><span class="wisp-row-name">${escapeText(name)} · your bot</span><span class="wisp-row-runs">${escapeText(runs)}</span><span class="wisp-light is-${wispLightState()}" aria-hidden="true"></span></button></div>`;
 }
 
 function wispConsoleRow() {
   return consoleAgentRows.find((row) => isWispConsole(row.id)) || null;
 }
 
-function wispWriting(conversation) {
-  const row = wispConsoleRow();
-  if (!row) return false;
-  const named = (Array.isArray(row.conversations) ? row.conversations : []).map(String);
-  if (named.length) return named.includes(String(conversation));
-  return wisp.asked === String(conversation);
-}
-
 function isWispChat(conversation) {
   return wisp.chats.includes(String(conversation));
 }
 
-function wispChatsHtml() {
-  if (!wisp.chats.length) return '';
-  const now = Date.now() / 1000;
-  const front = wispChatInFront();
-  const live = wispConsoleRow();
-  const rows = (consoleRecents && consoleRecents.rows) || [];
-  return wisp.chats.map((conversation) => {
-    const saved = rows.find((row) => String(row.id) === conversation);
-    const writing = wispWriting(conversation);
-    const title = String((saved && saved.title) || (writing && live && live.title) || 'Untitled conversation');
-    const age = writing ? (consoleAgentWords[live.state] || '') : saved ? consoleRecentAge(saved.time, now) : '';
-    const lit = front && writing ? ' console-agent-front' : '';
-    return `<button type="button" class="console-agent wisp-chat-row${lit}" data-wisp-chat="${escapeAttr(conversation)}" title="${escapeAttr(title)}"><span class="console-agent-name">${escapeText(title)}</span><span class="console-agent-state">${escapeText(age)}</span></button>`;
-  }).join('');
+function wispMarkHtml() {
+  return '<span class="wisp-row-mark">✦</span>';
 }
 
 window.leafWispChats = (conversations) => {
@@ -49841,9 +50541,17 @@ function openWispChatOf(conversation) {
     openWispSheet();
     return;
   }
-  if (!wispWriting(conversation)) closeWispConsole();
+  if (wispWritingAnother(conversation)) closeWispConsole();
   wisp.asked = String(conversation);
   send({ command: 'wispOpen', conversation });
+}
+
+function wispWritingAnother(conversation) {
+  const row = wispConsoleRow();
+  if (!row) return false;
+  const named = (Array.isArray(row.conversations) ? row.conversations : []).map(String);
+  if (named.length) return !named.includes(String(conversation));
+  return wisp.asked !== '' && wisp.asked !== String(conversation);
 }
 
 function closeWispConsole() {
@@ -50488,9 +51196,7 @@ if (wispSheet) {
 }
 if (consoleRecentsBand) {
   consoleRecentsBand.addEventListener('click', (event) => {
-    const chat = event.target.closest('[data-wisp-chat]');
-    if (chat) openWispChatOf(chat.dataset.wispChat);
-    else if (event.target.closest('[data-wisp-open]')) openWispChat();
+    if (event.target.closest('[data-wisp-open]')) openWispChat();
   });
 }
 

@@ -7842,6 +7842,7 @@ body.is-maximized #winMaximize .wc-restore {
 .filter-menu::before,
 .reading-link-popup::before,
 .table-lens-menu::before,
+.table-lens-card-lifted::before,
 .hint-bubble::before,
 .document-body .docs-pager a::before {
   content: '';
@@ -11902,6 +11903,10 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   padding-top: var(--lt-space-24);
   border-top: var(--lt-stroke-1) solid var(--lt-markdown-rule);
 }
+/* The empty slot a page with no Previous holds in its place takes no room: left standing it still took the row's gap, and the lone Next card started a step in from the column's edge. */
+.docs-pager > span:empty {
+  display: none;
+}
 /* Scoped under the document, never a bare `.docs-pager a`: the blanket link rule below is the same weight and later, so at that weight it takes this button's color at rest and its color and an underline on hover. */
 .document-body .docs-pager a {
   flex: 1 1 0;
@@ -12435,10 +12440,10 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body .tei-front-body > :first-child {
   margin-top: 0.7em;
 }
-/* Tree documents — generic (non-TEI) XML, JSON, YAML: label/value rows share one two-column grid, so the labels line up down the page. */
+/* Tree documents — generic (non-TEI) XML, JSON, YAML, INI: label/value rows share one two-column grid, so the labels line up down the page. Each section is a grid of its own, sized to its own longest label, so the label column has a floor every section shares: under it the values of every section start at one line, and only a label longer than the floor moves its own section's. */
 .document-body .data-fields {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-columns: minmax(9em, max-content) minmax(0, 1fr);
   gap: 0.3em 1.2em;
   margin: var(--type-spacing) 0;
 }
@@ -12814,6 +12819,13 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body input[type="checkbox"] {
   accent-color: var(--lt-checkbox-accent);
   margin-right: 0.4em;
+}
+/* A task item's checkbox is its marker, so no bullet is drawn beside it: the box hangs where the bullet stood, and the item's words line up with an ordinary item's. The renderer marks the item, because what decides it is the item's first child. */
+.document-body li[data-leaf-task] {
+  list-style: none;
+}
+.document-body li[data-leaf-task] input[type="checkbox"] {
+  margin-inline-start: -1.4em;
 }
 /* A task checkbox the reading view has made interactive (its `disabled` attribute removed). The arrow: a control is not a link. Written rather than left off, because an unlocked block says `cursor: text` and this would inherit it. */
 .document-body input[type="checkbox"]:not([disabled]) {
@@ -14565,6 +14577,11 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-body .footnote-definition-label {
   font-family: var(--app-font);
 }
+/* A footnote's number stands beside its words rather than on a line of its own above them: the words are a paragraph, which a plain inline number cannot share a line with. */
+.document-body .footnote-definition-label {
+  float: left;
+  margin-inline-end: 0.5em;
+}
 .document-body .footnote-reference-after::before {
   content: ",";
 }
@@ -15165,6 +15182,52 @@ body.mac-frame .table-lane::after {
   padding-top: 0;
 }
 /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
+/* The cards a reader asks for from the lens are a grid of cards rather than a column of full-width rows: as many side by side as the measure holds, each one a record stood up on its own with its title leading and its filled fields under it, and no panel framing the lot. The cards a narrow reader is handed by measurement above stay the single column they are, because there the measure holds one. */
+.document-body table.is-cards[data-lens-layout='card'] {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.document-body table.is-cards[data-lens-layout='card'] tbody {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: var(--lt-space-12);
+}
+.document-body table.is-cards[data-lens-layout='card'] tr {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: var(--lt-space-6);
+  border: 0;
+  border-radius: var(--lt-radius-lg);
+  box-shadow: var(--lt-shadow-hairline);
+  padding: var(--lt-space-12) var(--lt-space-14);
+}
+.document-body table.is-cards[data-lens-layout='card'] td {
+  font-size: var(--lt-text-13);
+  line-height: var(--lt-leading-1-4);
+}
+.document-body table.is-cards[data-lens-layout='card'] td::before {
+  min-width: 64px;
+}
+/* A field nobody filled in is not a field on the card: a label with nothing after it reads as a mistake. */
+.document-body table.is-cards[data-lens-layout='card'] td:empty {
+  display: none;
+}
+/* A card's picture comes first and runs to its edges along the top, as a board card's does, with the title close under it. Without this the title led, and the picture sat inset under it with the document's gap below. */
+.document-body table.is-cards[data-lens-layout='card'] td.is-lens-picture {
+  order: -2;
+  margin: calc(-1 * var(--lt-space-12)) calc(-1 * var(--lt-space-14)) 0;
+}
+.document-body table.is-cards[data-lens-layout='card'] td.is-lens-picture img {
+  width: 100%;
+  margin: 0;
+  border-radius: var(--lt-radius-lg) var(--lt-radius-lg) 0 0;
+}
+/* The card's own title leads it, whichever column it sits in. */
+.document-body table.is-cards[data-lens-layout='card'] td.is-lens-title {
+  order: -1;
+  margin-block-end: var(--lt-space-2);
+}
 .document-run > .table-bay.table-is-cards {
   grid-template-columns: minmax(0, 1fr);
   width: 100%;
@@ -15177,6 +15240,10 @@ body.mac-frame .table-lane::after {
 .document-body .table-lane.table-is-cards::before,
 .document-body .table-lane.table-is-cards::after {
   display: none;
+}
+/* A date or a slug stays on one line when the table is squeezed: broken at its hyphen it reads as two values. The renderer marks only a short value with a hyphen in it, so prose still wraps. */
+.document-body td[data-leaf-whole] {
+  white-space: nowrap;
 }
 .document-body table tr[hidden] {
   display: none;
@@ -15279,7 +15346,9 @@ body.mac-frame .table-lane::after {
       background: none;
       border: 0;
       border-radius: 0;
+      box-shadow: none;
       display: table-row;
+      flex-direction: row;
       flex-wrap: nowrap;
       gap: 0;
       margin-bottom: 0;
@@ -15309,7 +15378,9 @@ body.mac-frame .table-lane::after {
     background: none;
     border: 0;
     border-radius: 0;
+    box-shadow: none;
     display: table-row;
+    flex-direction: row;
     flex-wrap: nowrap;
     gap: 0;
     margin-bottom: 0;
@@ -15929,6 +16000,24 @@ body.table-resizing.is-row button {
     background: var(--lt-wash-hover);
   }
 }
+/* The three layouts as one segmented control: a quiet track, and the layout on screen raised in it as the page's own paper. */
+.table-lens-segment {
+  display: inline-flex;
+  gap: var(--lt-space-1);
+  padding: var(--lt-space-1);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-wash-rest);
+}
+.table-lens-segment > .table-lens-layout {
+  border-color: transparent;
+  background: transparent;
+}
+.table-lens-segment > .table-lens-layout.is-on {
+  border-color: transparent;
+  background: var(--lt-markdown-background);
+  box-shadow: var(--lt-shadow-hairline);
+  color: var(--lt-foreground);
+}
 /* A lens that is doing something says so on the button that is doing it, so a reader coming back to the document knows the rows are not the file's order. */
 .table-lens-button.is-on {
   border-color: var(--lt-primary);
@@ -15972,8 +16061,10 @@ body.table-resizing.is-row button {
   text-align: start;
 }
 @media (hover: hover) {
+  /* The border color too: the app-wide button hover sets one, and the clear row's divider is a border, so the pointer painted that line in the accent. */
   .table-lens-menu-item:hover {
     background: var(--lt-wash-hover);
+    border-color: var(--lt-border);
   }
 }
 .table-lens-menu-label {
@@ -16005,7 +16096,9 @@ body.table-resizing.is-row button {
   display: flex;
   gap: var(--lt-space-4);
 }
+/* A box takes the theme's own face: an input does not inherit one, so it came up in the system font beside labels in the theme's. */
 .table-lens-input {
+  font-family: var(--app-font);
   padding: var(--lt-space-4) var(--lt-space-6);
   min-width: 0;
   width: 100%;
@@ -16021,88 +16114,320 @@ body.table-resizing.is-row button {
   outline: none;
 }
 
-/* The board and the list are drawn beside the table rather than out of it: neither is a shape a `table` can be made into, and both are read-only pictures of the model, so the table itself is hidden while one stands and comes back untouched. */
+/* The board is drawn beside the table rather than out of it: it is not a shape a `table` can be made into, so the table itself is hidden while one stands and comes back untouched.
+ *
+ * One continuous surface with nothing on it that does not do a job: lanes are quiet tinted fields with no border of their own, a card is the page's paper with one hairline, and the one accent the theme has is spent on the place a dragged card will land. */
 .table-lens-board {
   display: flex;
   gap: var(--lt-space-12);
-  overflow-x: auto;
   align-items: flex-start;
-  /* Centered in the reader's lane, the way every other block in the document is. A board of two lanes hanging off the left edge under centered prose reads as a mistake. `safe` so a board wider than the lane still scrolls to its first column rather than clipping it off the front. */
-  justify-content: safe center;
+  /* Lanes keep their width and the board scrolls sideways past the window rather than squeezing four lanes into the measure. Written `auto hidden` so a lane taller than the rest never hangs a vertical bar on the board. */
+  overflow: auto hidden;
+  padding-block-end: var(--lt-space-8);
+  scroll-snap-type: x proximity;
 }
-/* The lane a card stands in. Its fill is the reading view's own tinted panel and the cards on it are the page's paper, so the two read as cards on a lane rather than as one flat field. */
+/* An edge with lanes past it fades out rather than slicing a card in half where the column ends; an edge with nothing past it stays crisp. */
+.table-lens-board.is-more-right {
+  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 56px), transparent 100%);
+}
+.table-lens-board.is-more-left {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 56px);
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 56px);
+}
+.table-lens-board.is-more-left.is-more-right {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 56px, var(--lt-mask-opaque) calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 56px, var(--lt-mask-opaque) calc(100% - 56px), transparent 100%);
+}
+/* The lane a card stands in: a tinted field the full height of its cards, its head and its foot. */
 .table-lens-column {
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: var(--lt-space-8);
-  padding: var(--lt-space-8);
-  min-width: 220px;
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
+  width: 288px;
+  /* Tall enough to take a card even with none in it: an empty lane was only its head, a strip to aim a drop at. */
+  min-height: 144px;
+  padding: var(--lt-space-6) var(--lt-space-8) var(--lt-space-10);
+  border-radius: var(--lt-radius-xl);
   background: var(--lt-surface-muted);
+  scroll-snap-align: start;
+  transition: background-color var(--lt-duration-120) var(--lt-ease);
+}
+/* A lane being dragged by its head, and the lane it will be set down in front of, ringed the way a lane a card is dropped into is. */
+.table-lens-column.is-dragging {
+  opacity: var(--lt-opacity-55);
+}
+.table-lens-column.is-lane-drop {
+  box-shadow: var(--lt-shadow-focus);
 }
 .table-lens-column-head {
-  margin: 0;
-  color: var(--lt-muted-foreground);
-  font-size: var(--lt-text-11-5);
-  font-weight: var(--lt-weight-600);
-  letter-spacing: var(--lt-tracking-060);
-  text-transform: uppercase;
+  cursor: grab;
 }
-.table-lens-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--lt-space-4);
-  padding: var(--lt-space-8);
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-md);
-  background: var(--lt-markdown-background);
+.table-lens-column.is-drop-end {
+  box-shadow: var(--lt-shadow-focus);
 }
-.table-lens-card-picture {
-  border-radius: var(--lt-radius-sm);
-  width: 100%;
-  height: auto;
-}
-.table-lens-card-title {
-  margin: 0;
-  color: var(--lt-foreground);
-  font-size: var(--lt-text-13-5);
-  font-weight: var(--lt-weight-600);
-  line-height: var(--lt-leading-1-3);
-}
-.table-lens-card-field {
+.table-lens-column-head {
   display: flex;
   gap: var(--lt-space-6);
-  margin: 0;
-  color: var(--lt-foreground);
-  font-size: var(--lt-text-12);
-  line-height: var(--lt-leading-1-4);
+  align-items: center;
+  min-height: 32px;
+  padding-inline: var(--lt-space-4) 0;
 }
-/* The column's own name in front of the value, because a card takes the row out of the grid that was labeling it. */
-.table-lens-card-name {
+.table-lens-column-name {
+  overflow: hidden;
+  padding: var(--lt-space-2) var(--lt-space-4);
+  margin-inline-start: calc(-1 * var(--lt-space-4));
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-tight-005);
+  line-height: var(--lt-leading-1-3);
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.table-lens-column-count {
   flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--lt-space-6);
+  border-radius: var(--lt-radius-pill);
+  /* The card's own paper rather than a wash on the lane: on the lane's tint the muted ink fell to 4.07 to 1 in Halcyon dark, and on the paper no theme draws it under 5.4. */
+  background: var(--lt-markdown-background);
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-11-5);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--lt-weight-500);
+  line-height: var(--lt-leading-1);
+}
+/* The plus sits at the head's far end in the lane's quiet ink, so a board of eight lanes is not eight rows of loud buttons. */
+.table-lens-column-add {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-inline-start: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
   color: var(--lt-muted-foreground);
 }
-.table-lens-list {
-  display: flex;
-  flex-direction: column;
+.table-lens-column-add > .lt-icon {
+  width: 16px;
+  height: 16px;
 }
-.table-lens-line {
-  display: flex;
-  gap: var(--lt-space-8);
-  align-items: baseline;
-  justify-content: space-between;
-  padding: var(--lt-space-6) var(--lt-space-2);
-  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
-  color: var(--lt-foreground);
-  font-size: var(--lt-text-13);
+@media (hover: hover) {
+  .table-lens-column-add:hover,
+  .table-lens-column-name:hover {
+    background: var(--lt-wash-hover);
+  }
 }
-.table-lens-line-title {
+/* The last lane, which is only the press that adds one. Drawn as an outline of a lane rather than a lane, so it reads as room for the next one. */
+.table-lens-column-ghost {
+  background: transparent;
+  box-shadow: var(--lt-shadow-hairline);
+}
+.table-lens-column-new,
+.table-lens-column-remove,
+.table-lens-column-more {
+  display: flex;
+  gap: var(--lt-space-6);
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12-5);
   font-weight: var(--lt-weight-500);
 }
-.table-lens-line-trail {
-  color: var(--lt-muted-foreground);
+/* Removing an empty lane is the quietest thing a lane offers, so it sits at the lane's foot in small type rather than in the middle of it. */
+.table-lens-column-remove {
+  margin-block-start: auto;
+  min-height: 28px;
   font-size: var(--lt-text-12);
+}
+.table-lens-column-new > .lt-icon {
+  width: 16px;
+  height: 16px;
+}
+@media (hover: hover) {
+  .table-lens-column-new:hover,
+  .table-lens-column-remove:hover,
+  .table-lens-column-more:hover {
+    background: var(--lt-wash-hover);
+  }
+}
+/* A box typed into on the board: a new card's title, a lane's name. It takes the shape of what it is about to become. */
+.table-lens-column-rename,
+.table-lens-card-new {
+  width: 100%;
+  min-width: 0;
+  padding: var(--lt-space-8) var(--lt-space-10);
+  border: 0;
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-markdown-background);
+  box-shadow: var(--lt-shadow-focus);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  outline: none;
+}
+/* A card: the page's own paper, one hairline, and nothing else until it is aimed at. */
+.table-lens-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-8);
+  padding: var(--lt-space-10) var(--lt-space-12);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-markdown-background);
+  box-shadow: var(--lt-shadow-hairline);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  cursor: default;
+}
+.table-lens-card[data-lens-movable] {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+/* The card in the hand: lifted off the board onto the app's one floating shadow, following the pointer until it is let go. */
+.table-lens-card-lifted {
+  position: fixed;
+  z-index: var(--lt-z-50);
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  --lt-shadow-host-border: 0;
+  border-radius: var(--lt-shadow-host-radius);
+  cursor: grabbing;
+  pointer-events: none;
+}
+.table-lens-card:focus-visible {
+  box-shadow: var(--lt-shadow-focus);
+  outline: none;
+}
+.table-lens-card.is-dragging {
+  opacity: var(--lt-opacity-40);
+}
+/* Where the card being dragged will land: one accent line above the card it goes in front of. */
+.table-lens-card.is-drop-above::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: calc(-1 * var(--lt-space-4) - var(--lt-stroke-1));
+  height: var(--lt-stroke-2);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-primary);
+}
+/* Run to the card's edges along its top. Written as the card's child so it outweighs the document's own picture rule, whose centered margin, gap below and width cap otherwise left it inset in a frame of the card's own padding with a step of empty card under it. */
+.table-lens-card > .table-lens-card-picture {
+  display: block;
+  width: calc(100% + 2 * var(--lt-space-12));
+  max-width: none;
+  height: auto;
+  margin: calc(-1 * var(--lt-space-10)) calc(-1 * var(--lt-space-12)) 0;
+  border-radius: var(--lt-radius-lg) var(--lt-radius-lg) 0 0;
+}
+.table-lens-card-title {
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13-5);
+  font-weight: var(--lt-weight-500);
+  letter-spacing: var(--lt-tracking-tight-005);
+  line-height: var(--lt-leading-1-35);
+  overflow-wrap: anywhere;
+}
+.table-lens-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-4);
+}
+.table-lens-card-chip {
+  max-width: 100%;
+  overflow: hidden;
+  padding: var(--lt-space-1) var(--lt-space-6);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-wash-rest);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11-5);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lt-leading-1-5);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A number's or a checkbox's column name in front of it, because a bare `3` says nothing. */
+.table-lens-card-name {
+  color: var(--lt-muted-foreground);
+  font-weight: var(--lt-weight-600);
+}
+/* A card turned into its own form: a box per column, then its three actions. */
+.table-lens-card.is-editing {
+  box-shadow: var(--lt-shadow-focus);
+  cursor: default;
+}
+.table-lens-card-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-8);
+}
+.table-lens-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+}
+.table-lens-editor-name {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11-5);
+  font-weight: var(--lt-weight-500);
+}
+.table-lens-editor-actions {
+  display: flex;
+  gap: var(--lt-space-6);
+  align-items: center;
+  margin-block-start: var(--lt-space-4);
+}
+.table-lens-editor-remove,
+.table-lens-editor-cancel {
+  padding: var(--lt-space-4) var(--lt-space-10);
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12-5);
+  font-weight: var(--lt-weight-500);
+}
+.table-lens-editor-remove {
+  margin-inline-end: auto;
+  color: var(--lt-danger);
+}
+.table-lens-editor-cancel {
+  color: var(--lt-muted-foreground);
+}
+.table-lens-editor-save {
+  padding: var(--lt-space-4) var(--lt-space-12);
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12-5);
+  font-weight: var(--lt-weight-600);
+}
+@media (hover: hover) {
+  .table-lens-editor-remove:hover,
+  .table-lens-editor-cancel:hover {
+    background: var(--lt-wash-hover);
+  }
 }
 
 /* Cards are the table itself, so which cell leads a card is said on the cell. The label the card drawing writes in front of every value is taken off the two that are the card's own heading and picture. */
@@ -20580,7 +20905,6 @@ p.shelf-foot {
 .wisp-row.is-front { background: color-mix(in srgb, var(--lt-accent) 22%, transparent); font-weight: var(--lt-weight-600); }
 @media (hover: hover) { .wisp-row.is-front:hover { background: color-mix(in srgb, var(--lt-accent) 22%, transparent); } }
 /* The wisp's chats, under its row and set in from it, so they read as the wisp's rather than as All chats. */
-.wisp-chat-row { padding-left: var(--lt-space-24); }
 .wisp-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wisp-row-mark { flex: none; color: var(--lt-primary-ink); font-size: var(--lt-text-12); }
 /* The light: a dot, and the only thing that says whether the wisp is on. Unlit is a ring, lit and busy glow in the accent, failed in danger; busy pulses, and Reduce Motion holds it still. */
@@ -22209,6 +22533,13 @@ body.leaf-paper :is(.docs-pager,
 .image-lane-corner,
 .frontmatter-remove,
 .table-lens-bar,
+.table-lens-column-add,
+.table-lens-column-ghost,
+.table-lens-column-new,
+.table-lens-column-remove,
+.table-lens-column-more,
+.table-lens-editor-remove,
+.table-lens-editor-cancel,
 .diagram-overlay) {
   display: none;
 }
@@ -22330,7 +22661,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 119 icons, and all 215 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 119 icons, and all 214 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -22365,7 +22696,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>204</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>119</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>215</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>214</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -22852,7 +23183,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">215 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">214 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -23146,8 +23477,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="grove-tabs" role="tablist" style="max-width:520px"><button type="button" class="grove-tab is-chosen" role="tab" aria-selected="true">Growth</button><button type="button" class="grove-tab" role="tab" aria-selected="false">Tree</button></div></div>
 </section>
 <section class="part">
-<header><h3>Wisp row</h3><code class="built">.wisp-row</code><span class="built">wisp.js, at the head of the conversations under the pane's heading, drawn with or without an agent running: the wisp's name and "your bot", the AI account and folder it is on — No AI chosen or No folder chosen until one is — ending on its light; a press brings the wisp's own console forward as its chat, or opens its sheet while nothing is chosen; is-front and aria-current while its chat is in front, as a tab or in the chat column, drawn with the wash of the chat in front; the wisp's chats stand under it as wisp-chat-row agent rows, newest first, the one in front lit, and All chats carries none of them</span></header>
-<div class="stage"><div class="wisp-row-wrap" style="max-width:320px"><button type="button" class="wisp-row"><span class="wisp-row-mark">✦</span><span class="wisp-row-name">Wisp · your bot</span><span class="wisp-row-runs">Claude · leaftext/app</span><span class="wisp-light is-lit"></span></button><button type="button" class="console-agent wisp-chat-row console-agent-front"><span class="console-agent-name">Today with the wisp</span><span class="console-agent-state">At rest</span></button><button type="button" class="console-agent wisp-chat-row"><span class="console-agent-name">Wisp Slack setup</span><span class="console-agent-state">1h</span></button></div></div>
+<header><h3>Wisp row</h3><code class="built">.wisp-row</code><span class="built">wisp.js, at the head of the conversations under the pane's heading, drawn with or without an agent running: the wisp's name and "your bot", the AI account and folder it is on — No AI chosen or No folder chosen until one is — ending on its light; a press brings the wisp's own console forward as its chat, or opens its sheet while nothing is chosen; is-front and aria-current while its chat is in front, as a tab or in the chat column, drawn with the wash of the chat in front, standing alone with space under it before All chats; the wisp's chats are rows of All chats in their own place, each wearing the wisp's wisp-row-mark where another chat wears its agent's logo, and a press on a saved one reopens it as the wisp</span></header>
+<div class="stage"><div class="wisp-row-wrap" style="max-width:320px"><button type="button" class="wisp-row"><span class="wisp-row-mark">✦</span><span class="wisp-row-name">Wisp · your bot</span><span class="wisp-row-runs">Claude · leaftext/app</span><span class="wisp-light is-lit"></span></button></div><div class="console-recent-row" style="max-width:320px"><button type="button" class="console-agent console-recent console-agent-front"><span class="console-agent-icon"><span class="wisp-row-mark">✦</span></span><span class="console-agent-name">Today with the wisp</span><span class="console-agent-state">At rest</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Wisp chat head</h3><code class="built">.wisp-chat-head</code><span class="built">wisp.js, over the whole of the wisp's own standing console — its chat, or the agent's own screen when the chat cannot draw it — which the wisp's row brings forward as its chat: the mark, the wisp's name, what it runs on and where it works, New chat, which stops the chat standing and starts the wisp on a fresh conversation, Close, which stops the chat and leaves the wisp and its chats, and Settings, which opens the wisp's sheet; the chat's held prompt sits under it</span></header>
@@ -23690,12 +24021,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="document-body"><p><a href="#components" class="table-lens-chip">Frank Herbert</a> <a href="#components" class="table-lens-chip is-missing">Nobody</a> <a href="#components" class="table-lens-chip is-unread">Somebody Else</a></p></div></div>
 </section>
 <section class="part">
-<header><h3>Table lens board</h3><code class="built">.table-lens-board</code><span class="built">table-lens.js</span></header>
-<div class="stage"><div class="table-lens-board"><section class="table-lens-column"><h4 class="table-lens-column-head">reading</h4><article class="table-lens-card"><h4 class="table-lens-card-title">Dune</h4><p class="table-lens-card-field"><span class="table-lens-card-name">pages</span><span>412</span></p></article></section><section class="table-lens-column"><h4 class="table-lens-column-head">finished</h4><article class="table-lens-card"><h4 class="table-lens-card-title">The Dispossessed</h4><p class="table-lens-card-field"><span class="table-lens-card-name">pages</span><span>387</span></p></article><article class="table-lens-card"><h4 class="table-lens-card-title">The Left Hand of Darkness</h4><p class="table-lens-card-field"><span class="table-lens-card-name">pages</span><span>304</span></p></article></section></div></div>
-</section>
-<section class="part">
-<header><h3>Table lens list</h3><code class="built">.table-lens-list</code><span class="built">table-lens.js</span></header>
-<div class="stage"><div class="table-lens-list"><div class="table-lens-line"><span class="table-lens-line-title">Dune</span><span class="table-lens-line-trail">reading</span></div><div class="table-lens-line"><span class="table-lens-line-title">The Dispossessed</span><span class="table-lens-line-trail">finished</span></div><div class="table-lens-line"><span class="table-lens-line-title">The Left Hand of Darkness</span><span class="table-lens-line-trail">finished</span></div></div></div>
+<header><h3>Table lens board</h3><code class="built">.table-lens-board</code><span class="built">table-board.js</span></header>
+<div class="stage"><div class="table-lens-board"><div class="table-lens-column"><div class="table-lens-column-head"><button type="button" class="table-lens-column-name">reading</button><span class="table-lens-column-count">1</span><button type="button" class="table-lens-column-add" aria-label="Add a card to reading"><span class="lt-icon lt-icon-new"></span></button></div><div class="table-lens-card" data-lens-movable="true"><div class="table-lens-card-title">Dune</div><div class="table-lens-card-chips"><span class="table-lens-card-chip"><span class="table-lens-card-name">pages</span> 412</span></div></div></div><div class="table-lens-column"><div class="table-lens-column-head"><button type="button" class="table-lens-column-name">finished</button><span class="table-lens-column-count">2</span><button type="button" class="table-lens-column-add" aria-label="Add a card to finished"><span class="lt-icon lt-icon-new"></span></button></div><div class="table-lens-card" data-lens-movable="true"><div class="table-lens-card-title">The Dispossessed</div><div class="table-lens-card-chips"><span class="table-lens-card-chip">Le Guin</span><span class="table-lens-card-chip"><span class="table-lens-card-name">pages</span> 387</span></div></div><div class="table-lens-card is-editing"><form class="table-lens-card-editor"><label class="table-lens-editor-field"><span class="table-lens-editor-name">id</span><input class="table-lens-input" value="The Left Hand of Darkness"></label><div class="table-lens-editor-actions"><button type="button" class="table-lens-editor-remove">Remove</button><button type="button" class="table-lens-editor-cancel">Cancel</button><button type="submit" class="table-lens-editor-save">Save</button></div></form></div><input class="table-lens-card-new" placeholder="Card title"></div><div class="table-lens-column"><div class="table-lens-column-head"><input class="table-lens-column-rename" value="abandoned"><span class="table-lens-column-count">0</span></div><button type="button" class="table-lens-column-remove">Remove lane</button></div><div class="table-lens-column table-lens-column-ghost"><button type="button" class="table-lens-column-new"><span class="lt-icon lt-icon-new"></span>Add a lane</button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Full-window table</h3><code class="built">.table-sheet</code><span class="built">table-sheet.js</span></header>
