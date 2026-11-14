@@ -951,6 +951,8 @@ Leaftext sanitizes raw HTML with `ammonia`: a curated set of **safe** tags is al
 
 **HTML you style yourself draws the way a browser draws it.** A `style` attribute, your own class names and a `<style>` block written in the note all reach the page, so a grid of colored boxes drawn in HTML arrives as that grid rather than as bare words. Leaftext draws that HTML inside a box of its own: your CSS styles only what is inside it, a fixed or stacked element stays within it, and nothing it writes can fetch more than a picture in the note already could. Scripts, event handlers and forms are still removed.
 
+An inline `<svg>` draws at its place in a Markdown note, including a note with no stylesheet. Static shapes, text, symbols, clipping and linear gradients are kept. A `<use>` or paint reference such as `fill="url(#ink)"` can point only to a drawing in the same note; external references, animation, embedded HTML and scripts are removed.
+
 Beyond plain Markdown: <ins>inserted</ins>, <s>struck</s>, and <mark>highlighted</mark> text. Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Press <kbd>Ctrl</kbd> + <kbd>F</kbd> to search. An <abbr title="HyperText Markup Language">HTML</abbr> abbreviation shows its title on hover.
 
 Definition list:
@@ -970,7 +972,7 @@ Definition list:
 
 Accepted values: `left`, `center`, `right`, `justify`. Note: `align` is stripped from `<blockquote>` — it is not in the allowlist for that tag.
 
-An `id` on a `<div>`, `<p>`, `<span>`, or a heading (`<h1>`–`<h6>`) creates a named anchor with a stable, author-controlled address for deep-linking (the sanitizer keeps `id` only on those tags):
+An `id` on a `<div>`, `<p>`, `<span>`, a heading (`<h1>`–`<h6>`) or an SVG shape creates a named anchor or drawing reference with a stable, author-controlled address:
 
 <h1 id="foreword" align="center">Foreword</h1>
 
