@@ -12894,6 +12894,11 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   min-height: 0;
 }
 
+
+.document-body .doc-html-look {
+  contain: paint;
+  isolation: isolate;
+}
 .document-body .note-frame {
   margin: var(--lt-space-24) 0;
   border: var(--lt-stroke-1) solid var(--lt-border);

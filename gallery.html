@@ -12928,6 +12928,11 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   min-height: 0;
 }
 /* A framed figure the note's author asked for. The only class a document may name is one beginning `note-` (`markdown/rawhtml.rs`), and this is the first drawing through that door: a titled box with a quiet note in its head, whatever blocks the writer put in the body, and a caption on a sunken strip at the foot. Keyed on `.document-body` like every other document rule, so it draws inside a note and nowhere else. */
+/* The box the renderer wraps a note's own HTML in when it carries a look. Paint containment makes it the frame of every fixed or absolute element inside and clips what spills past it, and isolation keeps every stacking order inside it, so no style a note writes can draw over the app. */
+.document-body .doc-html-look {
+  contain: paint;
+  isolation: isolate;
+}
 .document-body .note-frame {
   margin: var(--lt-space-24) 0;
   border: var(--lt-stroke-1) solid var(--lt-border);
@@ -22668,7 +22673,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 119 icons, and all 214 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 119 icons, and all 215 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -22703,7 +22708,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>204</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>119</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>214</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>215</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -23190,7 +23195,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">214 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">215 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -23290,6 +23295,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Document framed figure</h3><code class="built">.note-frame</code><span class="built">The note's own author, from a note- class in the document (markdown/rawhtml.rs is what lets one past)</span></header>
 <div class="stage"><div class="document-body"><figure class="note-frame"><div class="note-frame-head">Cost of a cover<span class="note-frame-aside">Per 1,000 covers</span></div><p>The body holds whatever blocks the writer put in the box &mdash; prose, a list, a table or a diagram &mdash; and each keeps the drawing it already has.</p><ul><li>A first point.</li><li>A second point.</li></ul><figcaption class="note-frame-caption">A caption under a line, on a sunken strip.</figcaption></figure></div></div>
+</section>
+<section class="part">
+<header><h3>Document HTML box</h3><code class="built">.doc-html-look</code><span class="built">The renderer, round a note's own raw HTML when it carries a look of its own (markdown/note_look.rs); note-look.js scopes the note's sheet to it</span></header>
+<div class="stage"><div class="document-body"><section class="doc-html-look"><p>An author's own HTML, drawn inside the box, where nothing it styles can reach past the box's edge.</p></section></div></div>
 </section>
 <section class="part">
 <header><h3>Document card grid</h3><code class="built">.note-card-grid</code><span class="built">The note's own author, from a note-card-grid wrapper in the document, note-card-grid note-card-grid-compact for short cards, or note-card-grid note-card-grid-pictures for picture cards — at most two across, each row as tall as its tallest card</span></header>

@@ -12595,6 +12595,7 @@ function pageExportMarkup(asBook) {
     if (element.getAttribute('class') === '') element.removeAttribute('class');
   }
   if (!asBook) {
+    writeNoteLookInto(copy, drawn);
     siteLinkAddresses(copy);
     return PAGE_EXPORT_WRAPPER_OPEN + copy.outerHTML + PAGE_EXPORT_WRAPPER_CLOSE;
   }
@@ -12724,6 +12725,8 @@ window.leafExportSitePage = async (html, source, title, links, index, pageCount)
     const body = frame.querySelector('.document-body');
     if (!body) throw new Error('That document has no page to export.');
     drawCodeFencesIn(body);
+    
+    adoptNoteLookSheets(body);
     const math = Array.from(body.querySelectorAll('.math:not([data-math-rendered])'));
     if (math.length) {
       const katex = await loadKatex();
@@ -12735,6 +12738,7 @@ window.leafExportSitePage = async (html, source, title, links, index, pageCount)
     await drawEveryMermaidDiagram(body);
     const copy = body.cloneNode(true);
     copy.removeAttribute('style');
+    writeNoteLookInto(copy, body);
     const controls = PAGE_EXPORT_CONTROLS.split(', ').filter((name) => name !== '.docs-pager').join(', ');
     copy.querySelectorAll(controls).forEach((control) => control.remove());
     copy.querySelectorAll('img').forEach(restoreMissingImage);
@@ -25990,6 +25994,10 @@ function bodyHolds(body, el) {
 
 
 const DOCUMENT_RUN_SIZE = 256;
+
+function isNoteLookBox(el) {
+  return !!el && el.nodeType === 1 && el.tagName === 'SECTION' && !!el.classList && el.classList.contains('doc-html-look');
+}
 function isDocumentRun(el) {
   return !!el && el.nodeType === 1 && !!el.classList && el.classList.contains('document-run');
 }
@@ -26162,7 +26170,7 @@ function collectMarkdownBlockPairs(body, blocks, slice = sliceSourceBytes) {
     for (const el of elements) {
       if (el.nodeType !== 1 || isInjected(el)) continue;
       
-      if (el.classList.contains('table-bay') || el.classList.contains('table-lane') || isDocumentRun(el)) {
+      if (el.classList.contains('table-bay') || el.classList.contains('table-lane') || isDocumentRun(el) || isNoteLookBox(el)) {
         walk(el.children);
         continue;
       }
@@ -26401,6 +26409,140 @@ const MARKDOWN_RAW_INLINE_ATTRIBUTES = {
   div: ['align', 'id'],
   span: ['id'],
 };
+
+
+
+
+
+const NOTE_LOOK_BOX_SELECTOR = 'section.doc-html-look';
+const NOTE_LOOK_CLASS_PREFIX = 'note-u-';
+
+const NOTE_LOOK_GROUPING_RULES = ['@media', '@supports', '@container'];
+
+
+const noteLookSheets = new Map();
+let noteLookNextScope = 1;
+
+
+function renameNoteLookSelector(selector) {
+  let out = '';
+  for (let i = 0; i < selector.length;) {
+    const ch = selector[i];
+    if (ch === '"' || ch === "'") {
+      let end = i + 1;
+      while (end < selector.length && selector[end] !== ch) end += selector[end] === '\\' ? 2 : 1;
+      out += selector.slice(i, end + 1);
+      i = end + 1;
+      continue;
+    }
+    if (ch === '\\') {
+      out += selector.slice(i, i + 2);
+      i += 2;
+      continue;
+    }
+    if (ch === '.' && /[A-Za-z_\\-]/.test(selector[i + 1] || '')) {
+      let end = i + 1;
+      while (end < selector.length && /[A-Za-z0-9_\-\\]/.test(selector[end])) end += selector[end] === '\\' ? 2 : 1;
+      const name = selector.slice(i + 1, end);
+      out += '.' + (name.startsWith('note-') ? name : NOTE_LOOK_CLASS_PREFIX + name);
+      i = end;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return out;
+}
+
+
+function noteLookRuleText(rule) {
+  if (!rule) return '';
+  if (typeof rule.selectorText === 'string') {
+    const selector = rule.selectorText;
+    if (/:scope|&/.test(selector) || (rule.cssRules && rule.cssRules.length)) return '';
+    const text = String(rule.cssText || '');
+    const body = text.slice(text.indexOf('{'));
+    if (!body.startsWith('{')) return '';
+    return renameNoteLookSelector(selector) + ' ' + body;
+  }
+  const text = String(rule.cssText || '');
+  const open = text.indexOf('{');
+  const header = open < 0 ? '' : text.slice(0, open).trim();
+  if (!NOTE_LOOK_GROUPING_RULES.some((word) => header.toLowerCase().startsWith(word))) return '';
+  const children = Array.from(rule.cssRules || []).map(noteLookRuleText).filter(Boolean);
+  return children.length ? `${header} { ${children.join(' ')} }` : '';
+}
+
+
+function scopedNoteLookText(rules, scope) {
+  const kept = Array.from(rules || []).map(noteLookRuleText).filter(Boolean);
+  return kept.length ? `@scope (${scope}) { ${kept.join(' ')} }` : '';
+}
+
+
+function noteLookSourceText(body) {
+  const seen = new Set();
+  for (const box of body.querySelectorAll(NOTE_LOOK_BOX_SELECTOR)) {
+    const text = box.getAttribute('data-sheet');
+    if (text) seen.add(text);
+  }
+  return Array.from(seen).join('\n');
+}
+
+
+function adoptNoteLookSheets(body) {
+  if (!body || typeof body.querySelectorAll !== 'function' || typeof body.getAttribute !== 'function') return;
+  for (const [scope, held] of noteLookSheets) {
+    if (!held.body.isConnected) releaseNoteLookSheet(scope);
+  }
+  const source = noteLookSourceText(body);
+  const scope = body.getAttribute('data-note-look-scope');
+  const held = scope ? noteLookSheets.get(scope) : null;
+  if (held && held.source === source) return;
+  if (held) releaseNoteLookSheet(scope);
+  if (!source || typeof CSSStyleSheet !== 'function' || !Array.isArray(document.adoptedStyleSheets)) {
+    if (scope) body.removeAttribute('data-note-look-scope');
+    return;
+  }
+  const number = scope || String(noteLookNextScope++);
+  body.setAttribute('data-note-look-scope', number);
+  let parsed;
+  try {
+    parsed = new CSSStyleSheet();
+    parsed.replaceSync(source);
+  } catch (_) {
+    return;
+  }
+  const text = scopedNoteLookText(parsed.cssRules, `[data-note-look-scope="${number}"] ${NOTE_LOOK_BOX_SELECTOR}`);
+  if (!text) return;
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(text);
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+  noteLookSheets.set(number, { body, source, sheet, text });
+}
+
+function releaseNoteLookSheet(scope) {
+  const held = noteLookSheets.get(scope);
+  if (!held) return;
+  noteLookSheets.delete(scope);
+  document.adoptedStyleSheets = document.adoptedStyleSheets.filter((sheet) => sheet !== held.sheet);
+}
+
+
+function noteLookTextFor(body) {
+  const scope = body && body.getAttribute ? body.getAttribute('data-note-look-scope') : null;
+  const held = scope ? noteLookSheets.get(scope) : null;
+  return held ? held.text : '';
+}
+
+
+function writeNoteLookInto(copy, body) {
+  const text = noteLookTextFor(body);
+  if (!text || !copy || typeof copy.prepend !== 'function') return;
+  const style = document.createElement('style');
+  style.textContent = text;
+  copy.prepend(style);
+}
 
 
 
@@ -29500,6 +29642,8 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
     drawDocumentComments(body, doc.threads || []);
   }
   setReadingPageHasContainerBlankLines(blankLinesInContainers.length > 0);
+  
+  adoptNoteLookSheets(body);
   
   adoptDrawnRanges(body);
   resetChapterMembers(doc.source_member);

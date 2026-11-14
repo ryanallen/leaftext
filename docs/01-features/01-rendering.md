@@ -949,6 +949,8 @@ Tucked away until you open it.
 
 Leaftext sanitizes raw HTML with `ammonia`: a curated set of **safe** tags is allowed; the rest is stripped, keeping the inner text.
 
+**HTML you style yourself draws the way a browser draws it.** A `style` attribute, your own class names and a `<style>` block written in the note all reach the page, so a grid of colored boxes drawn in HTML arrives as that grid rather than as bare words. Leaftext draws that HTML inside a box of its own: your CSS styles only what is inside it, a fixed or stacked element stays within it, and nothing it writes can fetch more than a picture in the note already could. Scripts, event handlers and forms are still removed.
+
 Beyond plain Markdown: <ins>inserted</ins>, <s>struck</s>, and <mark>highlighted</mark> text. Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Press <kbd>Ctrl</kbd> + <kbd>F</kbd> to search. An <abbr title="HyperText Markup Language">HTML</abbr> abbreviation shows its title on hover.
 
 Definition list:
