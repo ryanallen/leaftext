@@ -19,17 +19,19 @@ export const INSTALL_ID = 'install-it';
 /** Where the recorded clips and their posters are published: `<clip>.webm` and `<clip>.jpg`, written by `scripts/record-site-demo.mjs`. */
 export const DEMO_DIR = 'imgs/demos';
 
-/** The four cards, in order: the README section each is read from and titled by, the clip that shows it, what that clip shows in words, the documentation page that tells the rest, and whether it is the featured card that spans the grid with its clip beside its words. */
+/** The six cards, in order — the harness, the bot, then the reader, on the owner's word of 14 November 2026, 4:30pm: the README section each is read from and titled by, the clip that shows it, what that clip shows in words, the documentation page that tells the rest, and whether it is a featured card that spans the grid with its clip beside its words. */
 export const FRONT_CARDS = [
-  { section: 'read-your-files', clip: 'read', featured: true, shows: 'Leaftext opening a Markdown page, a sitemap, a saved email, a JSON file and a TOML file, each drawn as a page to read', more: 'docs/01-features/01-rendering.md' },
+  { section: 'run-your-agents-as-a-team', clip: 'agents', featured: true, shows: 'A Claude Code console answering another agent that asked it, over the intercom between consoles, how to make a README easy to scan', more: 'docs/01-features/10-agents.md' },
+  { section: 'your-own-bot', clip: 'wisp', shows: 'The wisp asked in its chat what is still open on a plan, and listing the two items left', more: 'docs/01-features/05-settings.md#your-wisp' },
+  { section: 'read-your-files', clip: 'read', shows: 'Leaftext opening a Markdown page, a sitemap, a saved email, a JSON file and a TOML file, each drawn as a page to read', more: 'docs/01-features/01-rendering.md' },
   { section: 'write-where-you-read', clip: 'edit', shows: 'A sentence being typed straight into the rendered page of a note', more: 'docs/01-features/07-editing.md' },
   { section: 'keep-a-library', clip: 'library', shows: 'The documentation index opening into the graph of how its pages link', more: 'docs/01-features/03-library.md' },
-  { section: 'your-thoughts-stay-yours', clip: 'own', shows: 'One page drawn in six themes in turn, the file never leaving the machine', more: 'docs/01-introduction.md' },
+  { section: 'your-thoughts-stay-yours', clip: 'own', featured: true, shows: 'One page drawn in six themes in turn, the file never leaving the machine', more: 'docs/01-introduction.md' },
 ];
 
-/** The clip beside the comparison, which shows the whole window reading, and what it shows in words. */
-export const HERO_CLIP = 'hero';
-export const HERO_SHOWS = 'The Leaftext window scrolling through a long document, its outline in the pane at left and the minimap down the right edge';
+/** The clip in the hero, beside its words: the product is the picture. It shows the whole window, a page read beside a console whose agent asks another over the intercom. */
+export const HERO_CLIP = 'hero-agents';
+export const HERO_SHOWS = 'The Leaftext window with the README open beside a Claude Code console that asks the agent in another console, over the intercom, what makes a README easy to scan, and quotes its answer';
 
 /** The class the laid-out page carries, which is how a reader tells it from a README drawn plain. */
 export const FRONT_LAYOUT_CLASS = 'front-layout';
@@ -94,7 +96,7 @@ function clipBox(clip, shows, className) {
 /** The installation guide, which the hero's small print links. */
 export const INSTALL_GUIDE = 'docs/02-installation.md';
 
-/** The hero: the title, the one line under it, the downloads and the small print beside them. */
+/** The hero: one band holding the title, the one line under it, the downloads and the small print beside them, and the app recorded beside those words. */
 function heroOf(intro) {
   const title = /<h1\b[^>]*>[\s\S]*?<\/h1>/.exec(intro);
   if (!title) throw new Error('the README has no title for the front page to open on');
@@ -106,7 +108,8 @@ function heroOf(intro) {
   // The one link beside the buttons is the install guide, which the Mac's first launch needs.
   if (!small.includes(`href="${INSTALL_GUIDE}`)) throw new Error('the small print under the download buttons in the README no longer links the installation guide');
   const heading = title[0].replace(/^<h1\b/, '<h1 class="front-hero-title"');
-  return `<section class="front-hero" id="download">${dottedLeafMarkup('front')}${heading}${classed(line, 'front-hero-line')}${classed(said[downloads], 'front-downloads')}${classed(small, 'front-small')}</section>`;
+  // The clip sits between the line and the downloads in the source order, so a narrow page keeps the downloads directly over the chart; a wide one moves it beside the words.
+  return `<section class="front-hero" id="download"><div class="front-hero-words">${dottedLeafMarkup('front')}${heading}${classed(line, 'front-hero-line')}</div>${clipBox(HERO_CLIP, HERO_SHOWS, 'front-hero-clip')}<div class="front-hero-get">${classed(said[downloads], 'front-downloads')}${classed(small, 'front-small')}</div></section>`;
 }
 
 /** The links at the foot: the paragraph above the first section that points into the documentation. */
@@ -161,7 +164,7 @@ export function holdLaidOutIds(html, held) {
 }
 
 /**
- * The README drawn as the front page: hero and downloads, the comparison, the app, the four cards, the install line and the foot, then the Previous and Next strip so Next walks on into the documentation.
+ * The README drawn as the front page: the hero with the app recorded beside its words and the downloads, the comparison, the six cards, the install line and the foot, then the Previous and Next strip so Next walks on into the documentation.
  *
  * `html` is the README as the renderer drew it with the comparison chart already under its heading. What this leaves out — the outline's headings, the Mac warning and the long account of every feature — is each on its own documentation page, which the cards and the foot link to.
  */
@@ -177,7 +180,6 @@ export function layoutFrontPage(html) {
     `<article class="document-body ${FRONT_LAYOUT_CLASS}">`,
     heroOf(intro),
     compareOf(sectionOf(all, COMPARE_ID)),
-    `<section class="front-demo">${clipBox(HERO_CLIP, HERO_SHOWS, 'front-demo-clip')}</section>`,
     `<section class="front-cards" id="features">${cards}</section>`,
     `<section class="front-install" id="${INSTALL_ID}">${installLine}</section>`,
     footOf(intro),

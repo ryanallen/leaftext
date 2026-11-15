@@ -10,16 +10,17 @@ Each of these apps is good at something. Obsidian is a notebook of linked Markdo
 
 Sources read 16 October 2026, 10:38pm. The apps themselves checked 23 September 2026, 10:14am.
 
-1. [Files and formats](06-comparison-chart/01-files-and-formats.md)
-2. [Markdown and diagrams](06-comparison-chart/02-markdown-and-diagrams.md)
-3. [Reading and moving around](06-comparison-chart/03-reading-and-moving-around.md)
-4. [Writing and editing](06-comparison-chart/04-writing-and-editing.md)
-5. [Library, search and sync](06-comparison-chart/05-library-search-and-sync.md)
-6. [Look and feel](06-comparison-chart/06-look-and-feel.md)
-7. [Progress](06-comparison-chart/07-progress.md)
-8. [Install, updates and privacy](06-comparison-chart/08-install-updates-and-privacy.md)
-9. [Export and the published site](06-comparison-chart/09-export-and-the-published-site.md)
-10. [Coming](06-comparison-chart/10-coming.md)
+1. [Agents and the harness](06-comparison-chart/00-agents-and-the-harness.md)
+2. [Files and formats](06-comparison-chart/01-files-and-formats.md)
+3. [Markdown and diagrams](06-comparison-chart/02-markdown-and-diagrams.md)
+4. [Reading and moving around](06-comparison-chart/03-reading-and-moving-around.md)
+5. [Writing and editing](06-comparison-chart/04-writing-and-editing.md)
+6. [Library, search and sync](06-comparison-chart/05-library-search-and-sync.md)
+7. [Look and feel](06-comparison-chart/06-look-and-feel.md)
+8. [Progress](06-comparison-chart/07-progress.md)
+9. [Install, updates and privacy](06-comparison-chart/08-install-updates-and-privacy.md)
+10. [Export and the published site](06-comparison-chart/09-export-and-the-published-site.md)
+11. [Coming](06-comparison-chart/10-coming.md)
 
 Obsidian's cross for books and Office files is its own list of the formats it opens, which names neither and points to community plugins for the rest. Typora's is its import, which converts those files into Markdown through Pandoc rather than opening them as themselves. Calibre's is its list of conversion inputs, which converts a Word file into an ebook rather than opening it.
 
@@ -49,15 +50,11 @@ A glossary is where Leaftext and an AI tool meet today. Ask the tool you already
 
 ## On our roadmap
 
-Every row in [Coming](06-comparison-chart/10-coming.md) is planned, or built and not yet switched on. Two of them change how Leaftext works beside AI. [Your own agent can already reach the open document](01-features/10-agents.md).
+Every row in [Coming](06-comparison-chart/10-coming.md) is planned, or built and not yet switched on. One of them changes how Leaftext works beside AI. [Your own agent can already reach the open document](01-features/10-agents.md).
 
 ### Outside tools through MCP
 
 Leaftext will start the tool servers you list, for an assistant working inside the app.
-
-### Define a word in a book with one press
-
-Highlight a word in a book and have its meaning, in the sense this book uses it, written into the book's glossary.
 
 ## Next
 

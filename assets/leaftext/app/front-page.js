@@ -44,7 +44,7 @@ function pauseIn(box) {
   if (clip) clip.pause();
 }
 
-/** What a page's motion has reached: the cards that have risen, by `data-clip-card`, and the clip made in each box, by `data-clip`. */
+/** What a page's motion has reached: the cards that have risen, by `data-clip-card`, and the clip made in each box, by `data-clip`. The hero's clip has always settled by the time a page is redrawn. */
 function heldOn(cards, boxes) {
   const risen = cards.filter((card) => card.classList.contains('is-in')).map((card) => card.dataset.clipCard);
   const clips = new Map();
@@ -97,6 +97,10 @@ export function installFrontMotion(root, held = null) {
     { rootMargin: '0px 0px -10% 0px' }
   );
   for (const card of waiting) rising.observe(card);
+  // The hero's clip settles into place once, on the page's first paint, by the stylesheet alone, so the first response settles it before this script has arrived. A redraw draws a fresh hero, which would settle again; it is put straight in place instead.
+  const settle = [...root.querySelectorAll('.front-hero-clip')].find((box) => !box.closest('.document-minimap, .document-minimap-preview'));
+  if (settle && held) settle.classList.add('is-in');
+
 
   const near = new IntersectionObserver(
     (entries) => {

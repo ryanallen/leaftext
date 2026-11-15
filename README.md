@@ -1,6 +1,6 @@
 # Refine your mind.
 
-Read, understand and edit the files other readers leave closed.
+Run your agents as a team, talk to a bot of your own, and read every file — all on your machine.
 
 **Your thoughts, secure and free.** Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own. Have an AI tool write a glossary for a hard book or a team's notes, and every term in it is linked as you read.
 
@@ -31,6 +31,8 @@ Free, on macOS and Windows.
 | If you want to… | Go to |
 | --- | --- |
 | See it beside Obsidian, Typora and Calibre | [How Leaftext compares](#how-leaftext-compares) |
+| Run several AI agents that work together | [Run your agents as a team](#run-your-agents-as-a-team) |
+| Talk to your own bot from Slack, Discord or iMessage | [Your own bot](#your-own-bot) |
 | See what it looks like | [Read your files](#read-your-files) |
 | Read a file without leaving the terminal | [Read it at your prompt too](#read-it-at-your-prompt-too) |
 | Open a Word, Excel or PowerPoint file | [Word, Excel and PowerPoint files](#word-excel-and-powerpoint-files) |
@@ -45,9 +47,17 @@ Free, on macOS and Windows.
 | Learn the whole app | [Learn it](#learn-it) |
 | Build it from source | [Development](#development) |
 
+## Run your agents as a team
+
+Claude Code, Codex and Antigravity run in consoles beside your files, each on its own account. They message each other, start helpers and wait on them, and drive your other windows, with nobody carrying messages between them, and the installed app is a tool server they reach to read, edit and save the page in front of you. **[Your own AI agent in Leaftext →](docs/01-features/10-agents.md)**
+
+## Your own bot
+
+Your wisp is Leaftext's bot: it answers you on Slack, Discord and iMessage, hears your voice notes, lets in only the people you name, and keeps working with the window closed. **[Your wisp →](docs/01-features/05-settings.md#your-wisp)**
+
 ## Read your files
 
-Markdown, web pages, data, email, Word, Excel, PowerPoint and EPUB books each open as a page you want to read.
+Markdown, web pages, data, email, Word, Excel, PowerPoint and EPUB books each open as a page you want to read — an HTML page an AI tool made for you too — and every one stays a plain file that opens in any other app.
 
 ### Markdown, rendered the way GitHub renders it
 
@@ -229,7 +239,7 @@ The same file keeps a team's words from drifting. When everybody's notes link on
 
 ### Coming next
 
-Leaftext does not yet start outside tool servers through MCP or define a word in a book with one press. Both are on the roadmap, and [the chart that sets Leaftext beside Obsidian, Typora and Calibre](#how-leaftext-compares) marks them as coming, with a source for every other check and cross. **[Its sources →](docs/05-compare.md)**
+Leaftext does not yet start outside tool servers through MCP for an agent of its own. It is on the roadmap, and [the chart that sets Leaftext beside Obsidian, Typora and Calibre](#how-leaftext-compares) marks it as coming, with a source for every other check and cross. Highlighting a word in a book and pressing **Define** already has an agent write it into the book's glossary. **[Define a word in a book →](docs/01-features/10-agents.md#define-a-word-in-a-book)** · **[Its sources →](docs/05-compare.md)**
 
 ## Move around
 

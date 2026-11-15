@@ -20,6 +20,7 @@
 - [Quickstart](https://leaftext.com/docs/03-quickstart.md)
 - [Get help](https://leaftext.com/docs/04-help.md)
 - [How it compares](https://leaftext.com/docs/05-compare.md)
+- [Agents and the harness](https://leaftext.com/docs/06-comparison-chart/00-agents-and-the-harness.md)
 - [Files and formats](https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.md)
 - [Markdown and diagrams](https://leaftext.com/docs/06-comparison-chart/02-markdown-and-diagrams.md)
 - [Reading and moving around](https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.md)

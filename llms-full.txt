@@ -5,7 +5,7 @@
 ## Refine your mind.
 - Page: https://leaftext.com/
 - Markdown: https://leaftext.com/README.md
-- Summary: Read, understand and edit the files other readers leave closed.
+- Summary: Run your agents as a team, talk to a bot of your own, and read every file — all on your machine.
 
 ## Rendering
 - Page: https://leaftext.com/docs/01-features/01-rendering.html
@@ -60,7 +60,7 @@
 ## Meet Leaftext
 - Page: https://leaftext.com/docs/01-introduction.html
 - Markdown: https://leaftext.com/docs/01-introduction.md
-- Summary: Leaftext turns the files you already have into pages you actually want to read. Open a Markdown, HTML, XML, JSON, or YAML document — a plain text or config file, a CSV table, a source file, or a sa...
+- Summary: Leaftext is three things in one window. It is a harness for the AI agents you already use — Claude Code, Codex and Antigravity in consoles that message each other, start helpers and reach the page ...
 
 ## Installation
 - Page: https://leaftext.com/docs/02-installation.html
@@ -81,6 +81,11 @@
 - Page: https://leaftext.com/docs/05-compare.html
 - Markdown: https://leaftext.com/docs/05-compare.md
 - Summary: Each of these apps is good at something. Obsidian is a notebook of linked Markdown notes with a large plugin library; Typora writes Markdown in the finished page; Calibre manages and reads a whole ...
+
+## Agents and the harness
+- Page: https://leaftext.com/docs/06-comparison-chart/00-agents-and-the-harness.html
+- Markdown: https://leaftext.com/docs/06-comparison-chart/00-agents-and-the-harness.md
+- Summary: [c-seen]: ../05-compare.mdcalibre [l-agent-canvas]: ../01-features/10-agents.mddesign-on-a-canvas-with-comments [l-agent-chat]: ../01-features/10-agents.mdthe-conversation-as-a-chat [l-agent-circle...
 
 ## Files and formats
 - Page: https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.html
@@ -130,7 +135,7 @@
 ## Coming
 - Page: https://leaftext.com/docs/06-comparison-chart/10-coming.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/10-coming.md
-- Summary: [l-roadmap]: ../05-compare.mdon-our-roadmap [l-mcp]: ../05-compare.mdoutside-tools-through-mcp [l-agent]: ../05-compare.mdyour-own-ai-agent-in-the-open-document [l-define]: ../05-compare.mddefine-a...
+- Summary: [l-roadmap]: ../05-compare.mdon-our-roadmap [l-mcp]: ../05-compare.mdoutside-tools-through-mcp [l-agent]: ../05-compare.mdyour-own-ai-agent-in-the-open-document [o-edit]: https://obsidian.md/help/e...
 
 ## Privacy
 - Page: https://leaftext.com/docs/07-privacy.html

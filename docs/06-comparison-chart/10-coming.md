@@ -46,7 +46,6 @@
 | Outside MCP servers | [❌][l-mcp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Unattended agent runs | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents add diagrams | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| One-press word definitions | [❌][l-define] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 
 ## Beyond reading
 
@@ -154,7 +153,6 @@
 [l-roadmap]: ../05-compare.md#on-our-roadmap
 [l-mcp]: ../05-compare.md#outside-tools-through-mcp
 [l-agent]: ../05-compare.md#your-own-ai-agent-in-the-open-document
-[l-define]: ../05-compare.md#define-a-word-in-a-book-with-one-press
 [o-edit]: https://obsidian.md/help/edit-and-read
 [o-cursors]: https://obsidian.md/help/multiple-cursors
 [o-attach]: https://obsidian.md/help/attachments
