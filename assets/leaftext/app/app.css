@@ -6892,14 +6892,94 @@ body.frameless.is-fullscreen .startup-card {
 .strip-part.is-closable {
   margin-right: var(--app-tab-row);
 }
-.chat-head-title {
+
+.chat-head-tabs {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  flex: 1 1 auto;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chat-head-tabs[hidden] {
+  display: none;
+}
+
+.chat-head-tabs.is-in-page-head {
+  flex: 0 1 auto;
+  align-self: center;
+  margin-right: var(--lt-space-12);
+}
+
+.chat-head-tab {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: calc(var(--lt-space-48) * 2);
+  color: var(--lt-muted-foreground);
+  font-weight: var(--lt-weight-500);
+  border-bottom: var(--lt-stroke-2) solid transparent;
+}
+.chat-head-tab.is-front {
+  flex-shrink: 0;
+  max-width: 100%;
+  color: var(--lt-foreground);
+  font-weight: var(--lt-weight-600);
+  border-bottom-color: var(--lt-primary-ink);
+}
+.chat-head-tab-label {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  min-width: 0;
+  padding: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) var(--lt-space-8);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   font-family: var(--app-font);
   font-size: var(--lt-text-13);
-  font-weight: var(--lt-weight-600);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .chat-head-tab-label:hover {
+    border-color: transparent;
+    background: var(--lt-wash-hover);
+    color: inherit;
+  }
+}
+.chat-head-tab-icon {
+  flex: none;
+}
+.chat-head-tab.console-working {
+  color: var(--lt-primary-ink);
+}
+.chat-head-tab-name {
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.chat-head-tab-close {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .chat-head-tab-close:hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-foreground);
+  }
 }
 
 .tab-bar,

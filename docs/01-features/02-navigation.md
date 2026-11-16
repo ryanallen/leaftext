@@ -15,7 +15,7 @@ Links inside note and glossary sheets follow the same route as links in the docu
 | [Web tabs](#web-tabs) | Browse a live web page beside your documents |
 | [Console tabs](03-library.md#console) | Run a command line in the folder shown by the library |
 | [Two documents side by side](#two-documents-side-by-side) | Stand a second tab beside the one you are reading, each column scrolling on its own with its own rail |
-| [The chat column](#the-chat-column) | An agent's chat in its own column beside the pages, resized, swapped to either side, closed and brought back on its own |
+| [The chat column](#the-chat-column) | An agent's chat in its own column beside the pages, every chat you opened a tab in its top row, resized, swapped to either side, closed and brought back on its own |
 | [New document](07-editing.md#new-document) | **New** at the top of the icon rail starts a blank page, ready to type |
 | [Outline](#outline) | The open document's headings, which the side pane opens on whenever a document is in front, with the one you are reading lit and its Back leading to your pinned and recent documents |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you arrive at on screen at once |
@@ -239,13 +239,15 @@ One document can stand beside itself as well: **Open source beside** on a tab pu
 
 An agent's chat stands in a column of its own beside the pages, so you can read what it writes while you read and resize the pages it is working on. Press a chat's row in **All chats**, start one from **New**, or open a console while a page is in front, and the chat stands left of the pages with the page you were reading still in front of you. A document or web page the agent opens lands in the pages, with the chat still up.
 
-- The chat stands in a card shaped like the page's, held off the sidebar and the pages by the same gap the pages keep. It has its own top row naming the chat, its own [minimap](04-minimap.md) rail picturing the conversation, and its own line to the pages. Press or drag on the rail to scroll the chat there, or turn the wheel over it. Drag that line to give the chat more or less room; it stops at the narrowest a chat can be read at, and pulled on past that it puts the chat away. Leaftext remembers the chat's share.
+- The chat stands in a card shaped like the page's, held off the sidebar and the pages by the same gap the pages keep. It has its own top row holding the chats you opened as tabs, its own [minimap](04-minimap.md) rail picturing the conversation, and its own line to the pages. Press or drag on the rail to scroll the chat there, or turn the wheel over it. Drag that line to give the chat more or less room; it stops at the narrowest a chat can be read at, and pulled on past that it puts the chat away. Leaftext remembers the chat's share.
 - The grip at the start of the chat's top row carries the column: drag it and a band marked **Chat goes here** stands on the far side of the pages, lit once you are past their middle; let go there and the chat stands on that side. Let go short of the middle and it stays where it was. The side is remembered. Let go outside the window instead and the chat stands in a Leaftext window of its own, or beside the page in the Leaftext window under the pointer, its agent still running and signed in.
 - With the chat up, two pages can still stand side by side beside it, each with its own tabs, rail and close. The chat gives up room down to its narrowest before the second page folds away.
-- The chat's own close in its top row puts the column away and leaves the agent running; its row in **All chats** brings it back on the side it stood on.
+- Every chat you open — a row pressed in **All chats**, a chat started from **New**, a chat carried in from another window — joins the tabs in the column's top row, in the order you opened them, with the one in front selected. Press another tab to bring that chat forward, the page in front staying where it is. A tab's own cross puts that chat away: it leaves the row, its agent goes on running, its row in **All chats** brings it back, and the chat beside it comes forward. Putting the last one away puts the column away.
+- With no page in front, the chat in front has the window, and the same tabs stand at the start of the row under the document tabs, before the chat's folder.
+- The close at the end of the chat's top row puts the column away and leaves every agent running; the next chat pressed brings the column back on the side it stood on, with all its tabs.
 - A tab carried over the chat column has nowhere to land there: nothing lights, its copy fades, and let go over the chat it goes back where it was.
 - A second chat opened beside — **Compare agents**, or **Open beside** on a chat's row — stands in the pages, so two chats can still be read side by side.
-- The chat in the column is remembered across launches: the next launch stands that conversation back up in the column, ready to go on, once the agent has written its first turn.
+- The chats in the column are remembered across launches: the next launch stands each conversation back up as a tab, in order, with the one that was in front in front, ready to go on once its agent has written its first turn.
 
 #### When the bar runs out of room
 

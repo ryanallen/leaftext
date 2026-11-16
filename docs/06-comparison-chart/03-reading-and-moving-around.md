@@ -132,6 +132,7 @@
 | Reopen a closed page | [✅][l-split] | ? | [❌][t-seen] | [❌][c-seen] |
 | Chat column beside pages | [✅][l-chat-column] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Chat column swaps sides | [✅][l-chat-column] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Chat tabs grouped | [✅][l-chat-column] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Chat beside two pages | [✅][l-chat-column] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## History

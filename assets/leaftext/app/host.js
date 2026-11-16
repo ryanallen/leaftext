@@ -121,6 +121,7 @@ export const COMMANDS = {
   closeBeside: [REFUSED, 'the browser owns tabs on a site'],
   openChatColumn: [REFUSED, 'a site shows no console, so there is no chat to stand beside the page'],
   closeChatColumn: [REFUSED, 'a site shows no console, so there is no chat column to put away'],
+  putChatAway: [REFUSED, 'a site shows no console, so there is no chat to put away'],
   setChatLayout: [REFUSED, 'a site shows no console, so there is no chat column to lay out'],
   closeSide: [REFUSED, 'the browser owns tabs on a site'],
   reopenSide: [REFUSED, 'the browser owns tabs on a site'],

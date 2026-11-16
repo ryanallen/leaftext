@@ -6900,14 +6900,94 @@ body.frameless.is-fullscreen .startup-card {
 .strip-part.is-closable {
   margin-right: var(--app-tab-row);
 }
-.chat-head-title {
+/* The window's group of chats, as tabs between the grip and the column's close: they narrow before they scroll, and the one in front keeps its whole name up to the row's width. */
+.chat-head-tabs {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  flex: 1 1 auto;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chat-head-tabs[hidden] {
+  display: none;
+}
+/* The same group at the head of the page, where a chat of it holds the whole window: before the chat's folder trail, which keeps the rest of the row. */
+.chat-head-tabs.is-in-page-head {
+  flex: 0 1 auto;
+  align-self: center;
+  margin-right: var(--lt-space-12);
+}
+/* A tab narrows to its mark, its cross and the first letters of its name and no further; past that the row scrolls, so every chat stays one press away and says which it is. */
+.chat-head-tab {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: calc(var(--lt-space-48) * 2);
+  color: var(--lt-muted-foreground);
+  font-weight: var(--lt-weight-500);
+  border-bottom: var(--lt-stroke-2) solid transparent;
+}
+.chat-head-tab.is-front {
+  flex-shrink: 0;
+  max-width: 100%;
+  color: var(--lt-foreground);
+  font-weight: var(--lt-weight-600);
+  border-bottom-color: var(--lt-primary-ink);
+}
+.chat-head-tab-label {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  min-width: 0;
+  padding: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) var(--lt-space-8);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   font-family: var(--app-font);
   font-size: var(--lt-text-13);
-  font-weight: var(--lt-weight-600);
+  cursor: pointer;
+}
+/* Its own hover, over the filled one every button wears, so a tab under the hand reads as a tab and keeps its words. */
+@media (hover: hover) {
+  .chat-head-tab-label:hover {
+    border-color: transparent;
+    background: var(--lt-wash-hover);
+    color: inherit;
+  }
+}
+.chat-head-tab-icon {
+  flex: none;
+}
+.chat-head-tab.console-working {
+  color: var(--lt-primary-ink);
+}
+.chat-head-tab-name {
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* The cross that puts this one chat away, its agent left running. */
+.chat-head-tab-close {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .chat-head-tab-close:hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-foreground);
+  }
 }
 /* The strip and the header paint the page's own color, so a page scrolled up under them never shows through; the source view's page is the editor's color. */
 .tab-bar,
@@ -24007,8 +24087,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div style="display:grid;grid-template-columns:1fr auto 1fr;height:96px"><div class="chat-card" style="grid-column:auto;grid-row:auto;margin-top:0"></div><div class="chat-split" role="separator" aria-orientation="vertical" style="grid-column:auto;grid-row:auto;margin-top:0"></div><div class="reader-shell" style="grid-column:auto;grid-row:auto"></div></div></div>
 </section>
 <section class="part">
-<header><h3>Chat head</h3><code class="built">.chat-head</code><span class="built">app-shell.html, in the bar's tab band over the chat column's card, placed by columns.js on the card below it: the grip that carries the chat to the other side of the pages (is-moving while carried, is-past once past the middle of the pages), the chat's name, and its close, which sends closeChatColumn</span></header>
-<div class="stage"><div class="chat-head" style="position:static;width:240px"><span class="chat-grip" role="button" tabindex="0" aria-label="Move the chat to the other side"><span class="lt-icon lt-icon-grip"></span></span><span class="chat-head-title">Claude — notes</span><button type="button" class="icon-button chat-close" aria-label="Close chat"><span class="lt-icon lt-icon-close"></span></button></div></div>
+<header><h3>Chat head</h3><code class="built">.chat-head</code><span class="built">app-shell.html, in the bar's tab band over the chat column's card, placed by columns.js on the card below it: the grip that carries the chat to the other side of the pages (is-moving while carried, is-past once past the middle of the pages), the window's group of chats as tabs drawn by columns.js — each its agent's mark, working or done, its name, and a cross that sends putChatAway, the one in front is-front and a press sending openChatColumn — and the column's close, which sends closeChatColumn; the same tabs stand at the head of the page (is-in-page-head) while a chat of the group holds the whole window</span></header>
+<div class="stage"><div class="chat-head" style="position:static;width:420px"><span class="chat-grip" role="button" tabindex="0" aria-label="Move the chat to the other side"><span class="lt-icon lt-icon-grip"></span></span><div class="chat-head-tabs" role="tablist"><span class="chat-head-tab is-front"><button type="button" class="chat-head-tab-label" role="tab" aria-selected="true"><span class="chat-head-tab-icon lt-icon lt-icon-agent-claude"></span><span class="chat-head-tab-name">Claude — notes</span></button><button type="button" class="chat-head-tab-close" aria-label="Put this chat away"><span class="lt-icon lt-icon-tab-close"></span></button></span><span class="chat-head-tab"><button type="button" class="chat-head-tab-label" role="tab" aria-selected="false"><span class="chat-head-tab-icon lt-icon lt-icon-agent-codex"></span><span class="chat-head-tab-name">Codex — review</span></button><button type="button" class="chat-head-tab-close" aria-label="Put this chat away"><span class="lt-icon lt-icon-tab-close"></span></button></span></div><button type="button" class="icon-button chat-close" aria-label="Close chat"><span class="lt-icon lt-icon-close"></span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Chat landing</h3><code class="built">.chat-landing</code><span class="built">app-shell.html, shown by columns.js only while the chat head's grip is carried: a dashed band the chat's own size against the far edge of the pages, faint short of their middle and lit (is-past) once letting go would move the chat there, with its words saying so</span></header>

@@ -1756,8 +1756,57 @@ function chatHeadName(tab) {
 }
 
 function renameChatHead() {
-  const tab = chatColumnOpen ? chatTab() : null;
-  if (chatHeadTitle && tab) chatHeadTitle.textContent = chatHeadName(tab);
+  drawChatGroups(currentState);
+}
+
+function chatGroupTabMarkup(tab, index, front) {
+  const layer = tab.kind === 'console' ? consoleLayers.get(tab.webId) : null;
+  const agent = tab.kind === 'chat' ? String(tab.url || '').split('/')[0] : layer?.agent;
+  const state = layer ? consoleTabState(layer) : 'rest';
+  const name = chatHeadName(tab);
+  const marks = `${front ? ' is-front' : ''}${state === 'working' ? ' console-working' : ''}${state === 'done' ? ' console-done' : ''}`;
+  const consoleMark = tab.kind === 'console' ? ` data-console-id="${tab.webId}"` : '';
+  return `<span class="chat-head-tab${marks}" data-chat-tab="${index}"${consoleMark}><button type="button" class="chat-head-tab-label" role="tab" aria-selected="${front}" data-chat-press="${index}" title="${escapeAttr(name)}"><span class="chat-head-tab-icon ${consoleIconClass(agent)}" aria-hidden="true"></span><span class="chat-head-tab-name">${escapeText(name)}</span></button><button type="button" class="chat-head-tab-close" data-chat-away="${index}" aria-label="Put this chat away" title="Put this chat away"><span class="lt-icon lt-icon-tab-close" aria-hidden="true"></span></button></span>`;
+}
+
+function chatGroupMarkup(state, front) {
+  const tabs = (state && state.tabs) || [];
+  return tabs.map((tab, index) => (tab && (tab.grouped || index === front) ? chatGroupTabMarkup(tab, index, index === front) : '')).join('');
+}
+
+const chatGroupsDrawn = new Map();
+function writeChatGroup(holder, markup) {
+  if (!holder || chatGroupsDrawn.get(holder) === markup) return;
+  chatGroupsDrawn.set(holder, markup);
+  holder.innerHTML = markup;
+}
+
+function drawChatGroups(state = currentState) {
+  const columnFront = chatColumnOpen ? chatTabIndex(state) : null;
+  writeChatGroup(chatHeadTabs, columnFront === null ? '' : chatGroupMarkup(state, columnFront));
+  const front = state && typeof state.active === 'number' ? state.tabs[state.active] : null;
+  const windowFront = front && front.grouped && (front.kind === 'chat' || front.kind === 'console') ? state.active : null;
+  if (pageHeadChats) {
+    pageHeadChats.hidden = windowFront === null;
+    writeChatGroup(pageHeadChats, windowFront === null ? '' : chatGroupMarkup(state, windowFront));
+  }
+}
+
+function pressChatGroup(event, holdsWindow) {
+  const away = event.target.closest('[data-chat-away]');
+  if (away) {
+    event.preventDefault();
+    send({ command: 'putChatAway', index: Number(away.dataset.chatAway) });
+    return;
+  }
+  const press = event.target.closest('[data-chat-press]');
+  if (!press) return;
+  const index = Number(press.dataset.chatPress);
+  if (holdsWindow) {
+    if (currentState && currentState.active !== index) switchToTab(index);
+    return;
+  }
+  send({ command: 'openChatColumn', index });
 }
 
 function applyChat(state) {
@@ -1777,7 +1826,7 @@ function applyChat(state) {
   document.body.classList.toggle('has-chat', open);
   document.body.classList.toggle('chat-on-the-right', open && chatSide === 'right');
   const tab = open ? state.tabs[index] : null;
-  if (chatHeadTitle) chatHeadTitle.textContent = tab ? chatHeadName(tab) : '';
+  drawChatGroups(state);
   
   const chatKey = tab ? `${tab.kind}:${tab.webId ?? tab.url ?? ''}` : '';
   if (chatKey && chatKey !== chatShownKey && librarySheetOpen) queueMicrotask(closeLibrarySheet);
@@ -2220,7 +2269,10 @@ const chatCard = document.getElementById('appChat');
 const chatRail = document.querySelector('.reader-minimap-chat');
 const chatSplitLine = document.getElementById('chatSplit');
 const chatHead = document.getElementById('chatHead');
-const chatHeadTitle = document.getElementById('chatHeadTitle');
+const chatHeadTabs = document.getElementById('chatHeadTabs');
+const pageHeadChats = document.getElementById('pageHeadChats');
+if (chatHeadTabs) chatHeadTabs.addEventListener('click', (event) => pressChatGroup(event, false));
+if (pageHeadChats) pageHeadChats.addEventListener('click', (event) => pressChatGroup(event, true));
 const chatGrip = document.getElementById('chatGrip');
 const chatLanding = document.getElementById('chatLanding');
 const chatCloseButton = document.getElementById('chatClose');
@@ -45455,7 +45507,10 @@ function consoleTabState(entry) {
 
 function markConsoleTab(id, entry) {
   const state = consoleTabState(entry);
-  for (const tab of tabBar.querySelectorAll('.console-tab')) {
+  
+  const groups = [chatHeadTabs, pageHeadChats].filter(Boolean);
+  const tabs = [...tabBar.querySelectorAll('.console-tab'), ...groups.flatMap((group) => [...group.querySelectorAll('.chat-head-tab')])];
+  for (const tab of tabs) {
     if (tab.dataset.consoleId !== String(id)) continue;
     tab.classList.toggle('console-done', state === 'done');
     tab.classList.toggle('console-working', state === 'working');
@@ -46075,7 +46130,7 @@ function readConsoleAgent(id, entry) {
   const antigravityBare = /^\s*(?:\? for shortcuts|esc to cancel)\s*$/.test(screenLines[0] || '');
   const antigravityResting = antigravityOnScreen && antigravityBare;
   
-  const antigravityBanner = () => antigravityBare && type === 'alternate' && !entry.titleAgent && !entry.screenAgent && consoleBottomLines(entry, entry.terminal.rows || 0).some(line => /^\W*Antigravity CLI \d/.test(line.trim()));
+  const antigravityBanner = () => antigravityBare && !entry.titleAgent && !entry.screenAgent && consoleBottomLines(entry, entry.terminal.rows || 0).some(line => /^\W*Antigravity CLI \d/.test(line.trim()));
   if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) || consoleClaudeSetup(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) || antigravityResting || (antigravityOnScreen && consoleAntigravityBoxUnderSpinner(screenLines)) || antigravityBanner() ? 'antigravity' : null;
   entry.agent = heldConsoleAgent(entry);
   reportConsoleAgent(id, entry, screenLines);
