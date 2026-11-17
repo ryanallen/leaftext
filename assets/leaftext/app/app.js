@@ -1836,7 +1836,9 @@ function applyChat(state) {
     drawChatRail(state);
     
     savedChatFollowsFront();
-    markWispRow();
+    
+    if (consoleAgentRows.length) drawConsoleRecents();
+    else markWispRow();
     
     if (wispChatInFront()) paneFollowsFront();
   }
@@ -15590,6 +15592,8 @@ function applyPaneLayout(holdRail, holdRefit) {
   libraryShell.classList.toggle('library-narrow', narrow);
   libraryShell.classList.toggle('library-overlay', narrow && librarySheetOpen);
   appSurface.classList.toggle('has-library-overlay', narrow && librarySheetOpen);
+  
+  coverWebSurface(narrow && librarySheetOpen, libraryShell);
   libraryOpen.setAttribute('aria-expanded', narrow && librarySheetOpen ? 'true' : 'false');
   libraryShell.classList.toggle('library-closed', closed);
   
@@ -45782,8 +45786,23 @@ window.leafConsoleProgramEnded = id => {
   reportConsoleAgent(id, entry);
 };
 
+
 function heldConsoleAgent(entry) {
-  return entry.programEnded ? null : entry.titleAgent || entry.screenAgent || null;
+  if (entry.programEnded) return null;
+  const spoken = entry.titleHeard || entry.screenNamed;
+  return entry.titleAgent || entry.screenAgent || (spoken ? null : entry.hostAgent) || null;
+}
+
+
+function heldHostAgents() {
+  for (const [id, entry] of consoleLayers) {
+    const row = consoleAgentRows.find(row => Number(row.id) === Number(id));
+    entry.hostAgent = row && consoleAgentIcons[row.agent] ? row.agent : null;
+    const agent = heldConsoleAgent(entry);
+    if (agent === entry.agent) continue;
+    entry.agent = agent;
+    reportConsoleAgent(id, entry);
+  }
 }
 
 
@@ -45845,6 +45864,7 @@ function consoleHoldsAgent(id) {
 
 window.leafConsoleAgents = rows => {
   consoleAgentRows = Array.isArray(rows) ? rows : [];
+  heldHostAgents();
   drawConsoleRecents();
   
   if (currentState?.tabs) renderTabs(currentState);
@@ -45869,6 +45889,7 @@ function consoleTitleSaid(id, title) {
   const entry = consoleLayers.get(id);
   if (!entry) return;
   entry.titleAgent = consoleAgentOf(title);
+  entry.titleHeard = true;
   entry.agent = heldConsoleAgent(entry);
   const mark = Array.from(title)[0];
   const marked = entry.titleMark;
@@ -46142,6 +46163,7 @@ function readConsoleAgent(id, entry) {
   
   const antigravityBanner = () => antigravityBare && !entry.titleAgent && !entry.screenAgent && consoleBottomLines(entry, entry.terminal.rows || 0).some(line => /^\W*Antigravity CLI \d/.test(line.trim()));
   if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) || consoleClaudeSetup(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) || antigravityResting || (antigravityOnScreen && consoleAntigravityBoxUnderSpinner(screenLines)) || antigravityBanner() ? 'antigravity' : null;
+  if (entry.screenAgent) entry.screenNamed = true;
   entry.agent = heldConsoleAgent(entry);
   reportConsoleAgent(id, entry, screenLines);
   refreshConsoleChat(id, entry);
@@ -46390,6 +46412,10 @@ function makeConsoleLayer(id) {
   }, true);
   const entry = { layer, host, status, statusRecord: null, nativeSession: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, markers: new Set(), activity: 'quiet', titleMark: null, worked: false, codexRestingState: 'rest', codexUpdating: false, antigravityRestingState: 'rest', lastKey: Date.now(), lastResize: 0, quietTimer: 0 };
   consoleLayers.set(id, entry);
+  
+  const listed = consoleAgentRows.find(row => Number(row.id) === Number(id));
+  entry.hostAgent = listed && consoleAgentIcons[listed.agent] ? listed.agent : null;
+  entry.agent = heldConsoleAgent(entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
     const colors = getComputedStyle(layer);
@@ -50108,6 +50134,11 @@ function consoleChatFolderHtml(path) {
   return name ? `<span class="console-agent-folder">${escapeText(name)}</span>` : '';
 }
 
+function consoleChatOnScreen(id) {
+  const beside = chatConsoleId();
+  return [consoleFrontId, beside].some((on) => on !== null && on !== undefined && Number(on) === Number(id));
+}
+
 function consoleRunningRowHtml(row) {
   const id = Number(row.id);
   const title = String(row.title ?? '');
@@ -50115,7 +50146,7 @@ function consoleRunningRowHtml(row) {
   const icon = consoleIconClass(row.agent);
   
   const mark = isWispConsole(id) ? wispMarkHtml() : `<span class="console-agent-glow"><span class="${icon}"></span></span><span class="${icon}"></span>`;
-  const marks = (id === consoleFrontId ? ' console-agent-front' : '') + (row.state === 'working' ? ' console-agent-working' : '');
+  const marks = (consoleChatOnScreen(id) ? ' console-agent-front' : '') + (row.state === 'working' ? ' console-agent-working' : '');
   const needs = row.state === 'needs' ? ' console-agent-needs' : '';
   return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running${marks}" data-console-id="${id}" title="${escapeAttr(tip)}"><span class="console-agent-icon" aria-hidden="true">${mark}</span><span class="console-agent-name">${escapeText(title)}</span>${consoleChatFolderHtml(consoleFolderOf(id))}<span class="console-agent-state${needs}">${escapeText(consoleAgentWords[row.state] || '')}</span></button><button type="button" class="console-recent-more" data-console-id="${id}" aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
 }
@@ -50278,7 +50309,7 @@ function consoleRecentRowHtml(row, now, where, live = null) {
   
   const gone = row.gone && !live;
   
-  const front = live ? Number(live.id) === Number(consoleFrontId) : savedChatShowing() && savedChat.agent === agent && savedChat.conversation === String(row.id || '');
+  const front = live ? consoleChatOnScreen(live.id) : savedChatShowing() && savedChat.agent === agent && savedChat.conversation === String(row.id || '');
   const marks = (front ? ' console-agent-front' : '') + (row.unread ? ' console-recent-unread' : '') + (gone ? ' console-pin-gone' : '') + (working ? ' console-agent-working' : '');
   const icon = consoleIconClass(agent);
   const glow = working ? `<span class="console-agent-glow"><span class="${icon}"></span></span>` : '';

@@ -8438,7 +8438,8 @@ body.chat-on-the-right .app-surface.has-app-rail .library-shell:not(.library-nar
 }
 .app-surface.has-library-overlay .tab-bar,
 .app-surface.has-library-overlay .page-head,
-.app-surface.has-library-overlay .chat-head {
+.app-surface.has-library-overlay .chat-head,
+.app-surface.has-library-overlay .web-address-bar {
   visibility: hidden;
 }
 /* The toggle's motion: open springs past its width on the overshoot curve; close slams to the reader's padding, bounces off it, and seats — three chained legs, because one curve cannot come back out of its target. The front end writes the width on the track and on the app bar, whose lead, tab strip, divider line and page header read --library-rail-width, so one write per leg moves them all in step; the transitions live only on these classes (library.js holds one per leg), so a drag or resize stays immediate and Reduce Motion's blanket rule zeroes every leg. */

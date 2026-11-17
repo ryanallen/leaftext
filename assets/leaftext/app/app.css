@@ -8430,7 +8430,8 @@ body.chat-on-the-right .app-surface.has-app-rail .library-shell:not(.library-nar
 }
 .app-surface.has-library-overlay .tab-bar,
 .app-surface.has-library-overlay .page-head,
-.app-surface.has-library-overlay .chat-head {
+.app-surface.has-library-overlay .chat-head,
+.app-surface.has-library-overlay .web-address-bar {
   visibility: hidden;
 }
 
