@@ -36,6 +36,7 @@ export const COMMANDS = {
   newDocument: [REFUSED, 'a new document would have nowhere to be saved'],
   newConsole: [REFUSED, 'a published page cannot start a local command line'],
   agentLaunch: [REFUSED, 'a published page cannot start an agent or keep its accounts'],
+  schedule: [REFUSED, 'scheduled tasks run in the desktop app, which starts an agent on a clock'],
   setAgentNotices: [REFUSED, 'a published page holds no console, so no agent can finish or ask in it'],
   setWispLit: [REFUSED, 'a published page has no wisp: nothing runs once the page is closed'],
   setWispName: [REFUSED, 'a published page has no wisp to name'],

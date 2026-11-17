@@ -13,6 +13,7 @@ A narrow rail runs down the window's left edge whether the pane is open or shut,
 - **New** opens the menu for a new page, a console or an agent. Its **Starts in** row names the folder the new chat starts in — the folder of the document or chat in front, or a folder you browsed to in the [vault picker](#the-vault-picker) since — and pressing it picks another before you start.
 - **Search** opens the find bar on the whole vault, or on the document when there is no vault, and with an agent in front it puts the keyboard in the chat list's own filter. There is no search field standing in the pane.
 - **Conversations**, a speech bubble, opens the pane on your chats: [pinned chats](#past-conversations-in-the-sidebar) and then **All chats**, with the agents running now at the top and each chat's folder beside its name. Press a chat to bring it forward or pick a saved one up again; agents have no tabs.
+- **Scheduled**, an alarm clock, opens the [Scheduled page](10-agents.md#scheduled) in the main area: the tasks Leaftext starts an agent for on a clock, and the form that makes one.
 - **Documents** opens the pane on the document in front's **Outline** — [its headings](#the-open-documents-headings) — whose Back shows **Pinned** and **Recent**: your favorite documents and folders, and what you opened last, the same rows as the home screen's.
 
 The pane holds one list at a time. A document opens it on its Outline, a page with no headings on Pinned and Recent, and a chat on the chats. The rail, the pane and the page are three different tones in every [theme](06-themes.md#families).
@@ -27,7 +28,7 @@ Press it and the **browse sheet** hangs under the bar. Down its left are your va
 
 | Feature | What you get |
 | --- | --- |
-| [The icon rail and the side pane](#the-icon-rail-and-the-side-pane) | **New**, **Search**, **Conversations** and **Documents** stand in a rail down the left edge; the pane beside it holds the document's Outline, your Pinned and Recent documents, or your chats, one list at a time |
+| [The icon rail and the side pane](#the-icon-rail-and-the-side-pane) | **New**, **Search**, **Conversations**, **Scheduled** and **Documents** stand in a rail down the left edge; the pane beside it holds the document's Outline, your Pinned and Recent documents, or your chats, one list at a time |
 | [The vault picker](#the-vault-picker) | One control in the app bar names the folder of whatever is in front and opens a browse sheet holding your vaults, the folder's trail, View and Sync, and its rows |
 | [Vaults](#vaults) | A folder you name as a library root. The vault picker's browse sheet creates, edits and moves between them |
 | [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the vault picker the first time you open the pane, and goes for good the moment you point at it. A sheet takes it down, unmet, and it returns once the last one closes |

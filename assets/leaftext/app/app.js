@@ -1818,7 +1818,6 @@ function applyChat(state) {
   chatWanted = wanted;
   if (chatCrowdsPane() !== crowded) queueMicrotask(() => applyPaneLayout());
   chatColumnOpen = wanted;
-  if (wanted && columnsRoom() < MIN_CHAT_WIDTH + MIN_READER_WIDTH) chatColumnOpen = false;
   const open = chatColumnOpen;
   if (chatCard) chatCard.hidden = !open;
   if (chatSplitLine) chatSplitLine.hidden = !open;
@@ -2109,11 +2108,6 @@ function moveChatDrag(event) {
   if (!chatDrag || event.pointerId !== chatDrag.pointerId) return;
   const moved = event.clientX - chatDrag.startX;
   const pulled = chatDrag.startWidth + (chatSide === 'right' ? -moved : moved);
-  if (pulled < MIN_CHAT_WIDTH - SNAP_SHUT) {
-    endChatDrag();
-    send({ command: 'closeChatColumn' });
-    return;
-  }
   const room = chatDrag.room;
   const width = Math.min(room - pagesFloor(), Math.max(Math.min(MIN_CHAT_WIDTH, room / 2), pulled));
   chatDrag.pending = room > 0 ? width / room : chatFraction;
@@ -2275,8 +2269,6 @@ if (chatHeadTabs) chatHeadTabs.addEventListener('click', (event) => pressChatGro
 if (pageHeadChats) pageHeadChats.addEventListener('click', (event) => pressChatGroup(event, true));
 const chatGrip = document.getElementById('chatGrip');
 const chatLanding = document.getElementById('chatLanding');
-const chatCloseButton = document.getElementById('chatClose');
-if (chatCloseButton) chatCloseButton.addEventListener('click', () => send({ command: 'closeChatColumn' }));
 if (chatSplitLine) chatSplitLine.addEventListener('pointerdown', startChatDrag);
 if (chatGrip) chatGrip.addEventListener('pointerdown', startChatGrip);
 if (chatRail) {
@@ -23576,6 +23568,10 @@ function renderTabs(state) {
       return `<span class="tab console-tab${index === active ? ' tab-active' : ''}${state}" data-tab-pos="${index}" data-tab-path="" data-console-id="${tab.webId}"><button type="button" class="${consoleLabel}" data-tab-index="${index}" title="${escapeAttr(tab.tip || tab.title)}"><span class="console-tab-icon" aria-hidden="true"><span class="console-tab-glow"><span class="${icon}"></span></span><span class="${icon}"></span></span><span class="console-tab-name">${escapeText(tab.title)}</span></button>${tabCloseMarkup(index)}</span>`;
     }
     
+    if (tab.kind === 'scheduled') {
+      return `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="Scheduled"><span class="lt-icon lt-icon-scheduled" aria-hidden="true"></span>${escapeText(tab.title || 'Scheduled')}</button>${tabCloseMarkup(index)}</span>`;
+    }
+    
     if (tab.kind === 'web' && !tab.site) {
       return `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.url || '')}">${escapeText(tab.title || tab.url || '')}</button>${webZoomBadge(tab)}${tabCloseMarkup(index)}</span>`;
     }
@@ -44618,6 +44614,14 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   
   findHomeArrived();
   
+  if (scheduleTabInFront(state)) {
+    drawSchedulePage();
+    refreshPaneFoot();
+    sayStartupDrawn(false);
+    return;
+  }
+  markRailScheduled(state);
+  
   const consoleTab = activeConsoleTab(state);
   if (consoleTab) {
     app.innerHTML = '';
@@ -44703,6 +44707,10 @@ function sameDocumentFragmentHref(rawHref) {
   }
   return null;
 }
+function scheduleTabInFront() { return false; }
+function markRailScheduled() {}
+function drawSchedulePage() {}
+if (document.getElementById('railScheduled')) document.getElementById('railScheduled').hidden = true;
 
 var homeBoxDrag = null;
 function homeBoxSlots() {
@@ -57786,6 +57794,7 @@ const LEAF_MERMAID_ICONS = {
     'tab-close': { body: "<path d=\"M18 6 6 18\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2.25\"/><path d=\"m6 6 12 12\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2.25\"/>", width: 24, height: 24 },
     'favorite-off': { body: "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z\" />", width: 24, height: 24 },
     'favorite-on': { body: "<path fill=\"currentColor\" d=\"M11.645 20.91a.75.75 0 0 0 .71 0c1.2-.65 9.145-5.16 9.145-12.66 0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.5 7.945 12.01 9.145 12.66Z\"/>", width: 24, height: 24 },
+    'scheduled': { body: "<g fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"><circle cx=\"12\" cy=\"13\" r=\"8\"/><path d=\"M12 9v4l2 2\"/><path d=\"M5 3 2 6\"/><path d=\"m22 6-3-3\"/><path d=\"M6.38 18.7 4 21\"/><path d=\"M17.64 18.67 20 21\"/></g>", width: 24, height: 24 },
     'recent': { body: "<path d=\"M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'search': { body: "<path d=\"m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'calendar': { body: "<path d=\"M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },

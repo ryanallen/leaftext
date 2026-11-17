@@ -322,6 +322,10 @@ An ordinary Markdown table with a temporary RDB view over it: cards, a board, a 
 
 Writing the buffer to your file, always explicitly. A green **Save** button (and `Ctrl+S` / `Cmd+S`) appears the moment the buffer differs from the file, and the [tab](GLOSSARY.md#tab) shows an [unsaved marker](GLOSSARY.md#unsaved-marker). There is no autosave — the one exception is ticking a checkbox, which saves on the spot. A [new document](GLOSSARY.md#new-document) is asked where to go on its first save.
 
+## Scheduled task
+
+One prompt for one agent in one folder, on a timetable, kept on the [Scheduled page](01-features/10-agents.md#scheduled). When it is due, Leaftext opens a new console behind the tab you are reading, starts the agent, types the prompt and presses Enter; its chat stands under Scheduled in Conversations. It runs only while Leaftext is running and the computer is awake. Not the same as the vault's dated checkboxes Home lists as scheduled.
+
 ## Scroll anchor
 
 How Leaftext remembers a reading position: the nearest heading above the top edge, the [block](GLOSSARY.md#block) within that section, and a pixel offset. It survives a rerender, so images, diagrams and the [pager](GLOSSARY.md#pager) settling in cannot pull you away from the line you were reading.
