@@ -22612,6 +22612,13 @@ body.leaf-paper .app-surface {
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }
+/* No filter on paper, and no fade out of one. A Mac window always draws its surface through a filter, at identity while it is active, and macOS 27's WebKit writes a filtered layer into a PDF as one flat picture with no text in it — watched on Lancre, macOS 27.2.1, where the export then refused the page as blank. An identity filter flattens it as surely as the inactive one, so only `none` will do, and without the transition off the fade is still running when the sheet is taken. Under all three paper classes, because a diagram's and a picture's PDF are written through this same surface. */
+body.leaf-paper .app-surface,
+body.leaf-paper-diagram .app-surface,
+body.leaf-paper-picture .app-surface {
+  filter: none;
+  transition: none;
+}
 /* The grid holding a rail, a minimap column and the gutters the page is inset by. With everything but the page hidden there is nothing left for it to place, and its own texture is the chrome's rather than the document's. */
 body.leaf-paper .library-shell {
   display: block;

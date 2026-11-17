@@ -22467,6 +22467,13 @@ body.leaf-paper .app-surface {
   -webkit-print-color-adjust: exact;
 }
 
+body.leaf-paper .app-surface,
+body.leaf-paper-diagram .app-surface,
+body.leaf-paper-picture .app-surface {
+  filter: none;
+  transition: none;
+}
+
 body.leaf-paper .library-shell {
   display: block;
   height: auto;
