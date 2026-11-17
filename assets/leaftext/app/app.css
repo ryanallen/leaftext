@@ -7205,6 +7205,12 @@ body.tab-lands-nowhere .console-terminal {
   
   text-overflow: ellipsis;
 }
+
+.scheduled-tab .tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+}
 .tab-active .tab-label {
   
   color: var(--tab-label-ink, var(--lt-foreground));
@@ -19725,6 +19731,34 @@ p.shelf-foot {
 }
 
 .calendar-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.schedule-sheet {
+  position: fixed;
+  z-index: var(--lt-z-41);
+  gap: var(--lt-space-10);
+  padding: 0 var(--lt-space-20) calc(var(--lt-space-16) + var(--sheet-raise));
+  background-color: var(--lt-background);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+}
+.schedule-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-8);
+  flex: none;
+}
+.schedule-sheet-title {
+  color: var(--lt-primary-ink);
+  font-size: var(--lt-text-18);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
+}
+.schedule-sheet-body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;

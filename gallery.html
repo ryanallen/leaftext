@@ -7213,6 +7213,12 @@ body.tab-lands-nowhere .console-terminal {
   /* A fade would bite a name that fits; an ellipsis draws only once the name is cut. */
   text-overflow: ellipsis;
 }
+/* The Scheduled tab: its alarm clock stands apart from its name. */
+.scheduled-tab .tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+}
 .tab-active .tab-label {
   /* Full-strength ink so the selected name stays readable on the surface it joins. */
   color: var(--tab-label-ink, var(--lt-foreground));
@@ -19791,6 +19797,34 @@ p.shelf-foot {
   min-height: 0;
   overflow-y: auto;
 }
+/* The scheduled task form — the same slide-up pattern, at the ordinary column. Its title stands in the head, so scrolling the form never takes it off the screen. */
+.schedule-sheet {
+  position: fixed;
+  z-index: var(--lt-z-41);
+  gap: var(--lt-space-10);
+  padding: 0 var(--lt-space-20) calc(var(--lt-space-16) + var(--sheet-raise));
+  background-color: var(--lt-background);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+}
+.schedule-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-8);
+  flex: none;
+}
+.schedule-sheet-title {
+  color: var(--lt-primary-ink);
+  font-size: var(--lt-text-18);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
+}
+.schedule-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
 /* The picked day's documents, under the month and scrolling with it. */
 .calendar-day-list {
   margin-top: var(--lt-space-16);
@@ -21082,7 +21116,7 @@ p.shelf-foot {
 .wisp-check-all { margin-top: var(--lt-space-8); }
 /* The same rows held in an agent account's Connections view in the New menu, inset to the menu's own rows. */
 .agent-connections { min-width: 0; padding: 0 var(--lt-space-8) var(--lt-space-6); }
-/* The Scheduled page: drawn in the main area where Home is, its list, templates, a task's own page, and the form standing over it. */
+/* The Scheduled page: drawn in the main area where Home is, its list, templates and a task's own page. The form New task, a template or Edit opens stands in the Scheduled task sheet; its frame is in sheets.css, its fields here. */
 .schedule-page { box-sizing: border-box; width: min(860px, calc(100% - 40px)); height: 100%; margin: 0 auto; padding: var(--lt-space-32) 0; overflow-y: auto; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-14); }
 .schedule-head { margin-bottom: var(--lt-space-16); }
 .schedule-title { margin: 0 0 var(--lt-space-16); color: var(--lt-primary-ink); font-size: var(--lt-text-18); font-weight: var(--lt-weight-700); }
@@ -21098,7 +21132,7 @@ p.shelf-foot {
 .schedule-primary:disabled { opacity: var(--lt-opacity-40); }
 .schedule-button { padding: var(--lt-space-4) var(--lt-space-12); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-md); background: transparent; color: var(--lt-foreground); font-family: inherit; font-size: var(--lt-text-13); }
 .schedule-button.is-danger { color: var(--lt-danger); }
-@media (hover: hover) { .schedule-button:hover, .schedule-tab:hover, .schedule-row:hover, .schedule-template:hover, .schedule-menu-row:hover, .schedule-back:hover, .schedule-link:hover, .schedule-chip:hover { background: var(--lt-wash-hover); } .schedule-chip.is-on:hover { background: var(--lt-foreground); } }
+@media (hover: hover) { .schedule-button:hover, .schedule-tab:hover, .schedule-row-open:hover, .schedule-template:hover, .schedule-menu-row:hover, .schedule-back:hover, .schedule-link:hover, .schedule-chip:hover { background: var(--lt-wash-hover); } .schedule-chip.is-on:hover { background: var(--lt-foreground); } }
 .schedule-menu { position: absolute; top: calc(100% + var(--lt-space-4)); right: 0; z-index: 3; display: flex; flex-direction: column; min-width: 18ch; padding: var(--lt-space-4); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-md); background: var(--lt-surface-elevated); }
 .schedule-menu-row { padding: var(--lt-space-6) var(--lt-space-8); border: 0; border-radius: var(--lt-radius-sm); background: transparent; color: var(--lt-foreground); font-family: inherit; font-size: var(--lt-text-13); text-align: left; }
 .schedule-empty { display: flex; flex-direction: column; align-items: center; gap: var(--lt-space-8); margin: var(--lt-space-48) 0 var(--lt-space-24); text-align: center; }
@@ -21115,7 +21149,9 @@ p.shelf-foot {
 .schedule-template-when { display: inline-flex; align-items: center; gap: var(--lt-space-4); color: var(--lt-muted-foreground); font-size: var(--lt-text-12); }
 .schedule-template-when .lt-icon { width: 14px; height: 14px; }
 .schedule-rows { display: flex; flex-direction: column; }
-.schedule-row { display: flex; align-items: center; gap: var(--lt-space-12); padding: var(--lt-space-12) var(--lt-space-8); border: 0; border-bottom: var(--lt-stroke-1) solid var(--lt-border); background: transparent; color: var(--lt-foreground); font-family: inherit; text-align: left; }
+.schedule-row { display: flex; align-items: center; gap: var(--lt-space-8); padding-right: var(--lt-space-8); border-bottom: var(--lt-stroke-1) solid var(--lt-border); }
+.schedule-row-open { display: flex; flex: 1; align-items: center; gap: var(--lt-space-12); min-width: 0; padding: var(--lt-space-12) var(--lt-space-8); border: 0; background: transparent; color: var(--lt-foreground); font-family: inherit; text-align: left; }
+.schedule-row-actions { display: flex; flex: none; align-items: center; gap: var(--lt-space-6); }
 .schedule-mark { flex: none; width: 20px; height: 20px; }
 .schedule-row-text { display: flex; flex: 1; flex-direction: column; gap: var(--lt-space-2); min-width: 0; }
 .schedule-row-name { font-weight: var(--lt-weight-600); }
@@ -21137,9 +21173,7 @@ p.shelf-foot {
 .schedule-run-said { flex: 1 1 24ch; min-width: 0; }
 .schedule-run.is-skipped .schedule-run-said { color: var(--lt-warning); }
 .schedule-run.is-failed .schedule-run-said { color: var(--lt-danger); }
-.schedule-scrim { position: fixed; inset: 0; z-index: 4; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: var(--lt-space-48) var(--lt-space-16); background: color-mix(in srgb, var(--lt-background) 70%, transparent); }
-.schedule-form { box-sizing: border-box; width: min(640px, 100%); padding: var(--lt-space-24); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); background: var(--lt-background); font-size: var(--lt-text-13); }
-.schedule-form-title { margin: 0 0 var(--lt-space-8); font-size: var(--lt-text-16); font-weight: var(--lt-weight-700); }
+.schedule-form { box-sizing: border-box; width: 100%; padding-bottom: var(--lt-space-8); font-size: var(--lt-text-13); }
 .schedule-field { display: block; margin-top: var(--lt-space-12); }
 .schedule-field .schedule-input { width: 100%; }
 .schedule-prompt { resize: vertical; font-family: inherit; line-height: var(--lt-leading-1-45); }
@@ -22849,7 +22883,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 120 icons, and all 219 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 120 icons, and all 220 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -22884,7 +22918,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>204</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>120</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>219</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>220</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -23372,7 +23406,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">219 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">220 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -23614,6 +23648,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><span class="tab console-tab console-working console-has-agent" data-console-id="7"><button type="button" class="tab-label"><span class="console-tab-icon" aria-hidden="true"><span class="console-tab-glow"><span class="lt-icon lt-icon-agent-claude"></span></span><span class="lt-icon lt-icon-agent-claude"></span></span><span class="console-tab-name">notes</span></button></span></div>
 </section>
 <section class="part">
+<header><h3>Scheduled tab</h3><code class="built">.scheduled-tab</code><span class="built">render-state.js — the Scheduled page in the strip: its alarm clock apart from its name, and no close, because it goes as soon as anything else comes in front</span></header>
+<div class="stage"><span class="tab scheduled-tab tab-active"><button type="button" class="tab-label"><span class="lt-icon lt-icon-scheduled" aria-hidden="true"></span>Scheduled</button></span></div>
+</section>
+<section class="part">
 <header><h3>Running chat row</h3><code class="built">.console-agent</code><span class="built">console-recents.js, the top rows of All chats, from the host's list of this window's console agents: a row per running agent with its name and what it is doing where a saved chat shows its age, asking ones first in --lt-primary-ink (console-agent-needs), then done, working and at rest, held in place while the pointer is over the list; each mark (console-agent-icon) is the color of the name beside it and holds still, but a working agent's (console-agent-working) wears --lt-primary-ink and pulses its halo copy (console-agent-glow); a hovered row takes the pane's wash and the body's ink for its name, its state and its mark, a working one included, the console in front lit the way the active tab is (console-agent-front); a press on the way down brings that console forward in whichever window holds it (console-running), and a saved chat that agent is still writing is not drawn a second time; the section headings share one muted capital style (console-agents-heading)</span></header>
 <div class="stage"><div class="console-recents" style="position:relative;height:96px" role="list" aria-label="Chats"><div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="lt-icon lt-icon-agent-claude"></span></span><span class="lt-icon lt-icon-agent-claude"></span></span><span class="console-agent-name">app 2</span><span class="console-agent-state console-agent-needs">Needs you</span></button></div><div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running console-agent-front console-agent-working"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="lt-icon lt-icon-agent-claude"></span></span><span class="lt-icon lt-icon-agent-claude"></span></span><span class="console-agent-name">scratchpad</span><span class="console-agent-state">Working</span></button></div><div class="console-recent-row" role="listitem"><button type="button" class="console-agent console-running"><span class="console-agent-icon" aria-hidden="true"><span class="console-agent-glow"><span class="lt-icon lt-icon-agent-codex"></span></span><span class="lt-icon lt-icon-agent-codex"></span></span><span class="console-agent-name">site</span><span class="console-agent-state">At rest</span></button></div></div></div>
 </section>
@@ -23690,8 +23728,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><section class="schedule-page" style="height:auto"><header class="schedule-head"><h1 class="schedule-title">Scheduled</h1><div class="schedule-bar"><button type="button" class="schedule-tab is-chosen">Yours</button><button type="button" class="schedule-tab">Templates</button><span class="schedule-tools"><input type="search" class="schedule-search" placeholder="Search tasks"><select class="schedule-filter"><option>All</option></select><span class="schedule-new-wrap"><button type="button" class="schedule-new">New task ▾</button><div class="schedule-menu"><button type="button" class="schedule-menu-row">Blank task</button><button type="button" class="schedule-menu-row">Ask an agent</button></div></span></span></div></header><section class="schedule-empty"><span class="schedule-empty-mark lt-icon lt-icon-scheduled"></span><h2 class="schedule-empty-title">Nothing scheduled yet</h2><p class="schedule-said">A scheduled task sends one prompt to one agent on a timetable.</p><p class="schedule-note">Runs while Leaftext is open or in the notification area and this computer is awake.</p><button type="button" class="schedule-primary">New task</button></section><div class="schedule-rule"></div><div class="schedule-templates"><button type="button" class="schedule-template"><span class="schedule-template-name">Daily briefing</span><span class="schedule-template-said">What needs your attention today.</span><span class="schedule-template-when"><span class="lt-icon lt-icon-scheduled"></span>Weekdays at 8:00am</span></button></div><p class="schedule-note schedule-none">No tasks match.</p></section></div>
 </section>
 <section class="part">
-<header><h3>Scheduled task row</h3><code class="built">.schedule-row</code><span class="built">schedule-page.js, one per task on Yours: the agent's mark, the name, the folder and when, the next run (Paused for a paused one, Runs when you press Run now for a manual one) and the last with its outcome, and an Active or Paused pill; a press opens the task's page</span></header>
-<div class="stage"><div class="schedule-rows" style="max-width:720px"><button type="button" class="schedule-row"><span class="schedule-mark lt-icon lt-icon-agent-claude"></span><span class="schedule-row-text"><span class="schedule-row-name">Daily briefing</span><span class="schedule-row-where">Notes · Weekdays at 8:00am</span></span><span class="schedule-row-times"><span>Next: Mon 8:00am</span><span>Last: Fri 8:03am ✓</span></span><span class="schedule-pill">Active</span></button><button type="button" class="schedule-row"><span class="schedule-mark lt-icon lt-icon-agent-antigravity"></span><span class="schedule-row-text"><span class="schedule-row-name">Monitor Voynich news</span><span class="schedule-row-where">voynich · Daily at 9:00am</span></span><span class="schedule-row-times"><span>Paused</span><span>Last: Nov 12 9:02am ✓</span></span><span class="schedule-pill is-paused">Paused</span></button></div></div>
+<header><h3>Scheduled task row</h3><code class="built">.schedule-row</code><span class="built">schedule-page.js, one per task on Yours: the agent's mark, the name, the folder and when, the next run (Paused for a paused one, Runs when you press Run now for a manual one) and the last with its outcome, an Active or Paused pill, and Edit, Pause or Resume, and Delete on the row itself; a press anywhere else on the row opens the task's page</span></header>
+<div class="stage"><div class="schedule-rows" style="max-width:720px"><div class="schedule-row"><button type="button" class="schedule-row-open"><span class="schedule-mark lt-icon lt-icon-agent-claude"></span><span class="schedule-row-text"><span class="schedule-row-name">Daily briefing</span><span class="schedule-row-where">Notes · Weekdays at 8:00am</span></span><span class="schedule-row-times"><span>Next: Mon 8:00am</span><span>Last: Fri 8:03am ✓</span></span><span class="schedule-pill">Active</span></button><span class="schedule-row-actions"><button type="button" class="schedule-button">Edit</button><button type="button" class="schedule-button">Pause</button><button type="button" class="schedule-button is-danger">Delete</button></span></div><div class="schedule-row"><button type="button" class="schedule-row-open"><span class="schedule-mark lt-icon lt-icon-agent-antigravity"></span><span class="schedule-row-text"><span class="schedule-row-name">Monitor Voynich news</span><span class="schedule-row-where">voynich · Daily at 9:00am</span></span><span class="schedule-row-times"><span>Paused</span><span>Last: Nov 12 9:02am ✓</span></span><span class="schedule-pill is-paused">Paused</span></button><span class="schedule-row-actions"><button type="button" class="schedule-button">Edit</button><button type="button" class="schedule-button">Resume</button><button type="button" class="schedule-button is-danger">Delete</button></span></div></div></div>
 </section>
 <section class="part">
 <header><h3>Scheduled task page</h3><code class="built">.schedule-task</code><span class="built">schedule-page.js, a task pressed on Yours: back to Scheduled, its name, its agent, folder and when, Run now, Active or Paused, Edit and Delete (asking once, saying its runs' chats are kept), Sends, then presses Enter over the exact line, and its History</span></header>
@@ -23702,8 +23740,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="schedule-runs" style="max-width:720px"><div class="schedule-run is-failed"><span class="schedule-run-when">Sat, Nov 15, 8:00am</span><span class="schedule-run-said">Failed: Claude Code no longer lists /briefing in Notes, so nothing was sent</span></div><div class="schedule-run is-ran"><span class="schedule-run-when">Fri, Nov 14, 8:03am</span><span class="schedule-run-said">Ran</span><button type="button" class="schedule-link">Open the chat ›</button></div><div class="schedule-run is-skipped"><span class="schedule-run-when">Wed, Nov 12, 8:00am</span><span class="schedule-run-said">Skipped: leaftext was not running</span></div></div></div>
 </section>
 <section class="part">
-<header><h3>Scheduled task form</h3><code class="built">.schedule-form</code><span class="built">schedule-page.js, over the Scheduled page from New task, a template or Edit: what a run does, Agent from the New menu's accounts, the folder the agent starts in, the skills that agent lists for that folder in its own sign, the prompt sent as the message, the exact line typed then sent with Enter, When with the next run, and the name; Create task stays off until a folder and a prompt or skill are filled</span></header>
-<div class="stage"><div class="schedule-scrim" style="position:static"><form class="schedule-form"><h2 class="schedule-form-title">New scheduled task</h2><div class="schedule-field"><span class="schedule-label">Agent</span><div class="schedule-chips"><button type="button" class="schedule-chip">Claude Code</button><button type="button" class="schedule-chip is-on">Codex</button></div></div><div class="schedule-field"><span class="schedule-label">Folder — the agent starts here</span><div class="schedule-folder"><span class="schedule-input schedule-folder-path">C:\work\leaftext</span><button type="button" class="schedule-button">Choose…</button></div></div><div class="schedule-field"><select class="schedule-filter schedule-skill"><option>$design</option></select></div><label class="schedule-field"><textarea class="schedule-input schedule-prompt" rows="2">Design the top ticket.</textarea></label><pre class="schedule-line">$design Design the top ticket.</pre><div class="schedule-chips"><button type="button" class="schedule-chip is-on">Weekdays</button><input type="time" class="schedule-input schedule-time" value="08:00"><label class="schedule-at">at minute <input type="number" class="schedule-input schedule-minute" value="0"></label></div><div class="schedule-form-foot"><button type="button" class="schedule-button">Cancel</button><button type="submit" class="schedule-primary">Create task</button></div></form></div></div>
+<header><h3>Scheduled task sheet</h3><code class="built">.schedule-form</code><span class="built">app-shell.html, filled by schedule-page.js: a bottom sheet over the Scheduled page from New task, a template or Edit: what a run does, Agent from the New menu's accounts, the folder the agent starts in, the skills that agent lists for that folder in its own sign, the prompt sent as the message, the exact line typed then sent with Enter, When with the next run, and the name; Create task stays off until a folder and a prompt or skill are filled</span></header>
+<div class="stage"><div class="leaf-sheet schedule-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="schedule-sheet-head"><span class="schedule-sheet-title">New scheduled task</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="schedule-sheet-body"><form class="schedule-form"><div class="schedule-field"><span class="schedule-label">Agent</span><div class="schedule-chips"><button type="button" class="schedule-chip">Claude Code</button><button type="button" class="schedule-chip is-on">Codex</button></div></div><div class="schedule-field"><span class="schedule-label">Folder — the agent starts here</span><div class="schedule-folder"><span class="schedule-input schedule-folder-path">C:\work\leaftext</span><button type="button" class="schedule-button">Choose…</button></div></div><div class="schedule-field"><select class="schedule-filter schedule-skill"><option>$design</option></select></div><label class="schedule-field"><textarea class="schedule-input schedule-prompt" rows="2">Design the top ticket.</textarea></label><pre class="schedule-line">$design Design the top ticket.</pre><div class="schedule-chips"><button type="button" class="schedule-chip is-on">Weekdays</button><input type="time" class="schedule-input schedule-time" value="08:00"><label class="schedule-at">at minute <input type="number" class="schedule-input schedule-minute" value="0"></label></div><div class="schedule-form-foot"><button type="button" class="schedule-button">Cancel</button><button type="submit" class="schedule-primary">Create task</button></div></form></div></div></div>
 </section>
 <section class="part">
 <header><h3>Service row</h3><code class="built">.wisp-service</code><span class="built">wisp.js, in the wisp's Connections tab and an agent's Connections view: a service's name, what its last check found in plain words, and the one press that fixes it — Enter token, Connect or Forget; the key field is a password field whose value is sent once and never drawn again; with a Slack or Discord key kept, that row adds Who may talk, the one member or user ID the wisp answers there</span></header>

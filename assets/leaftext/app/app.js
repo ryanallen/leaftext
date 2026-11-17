@@ -11197,6 +11197,8 @@ function openSheet(sheet, backdrop, options) {
   
   closeGroveUnder(sheet);
   closeWispUnder(sheet);
+  
+  if (typeof closeScheduleUnder === 'function') closeScheduleUnder(sheet);
   const already = !sheet.hidden && sheet.classList.contains('open');
   if (backdrop) backdrop.hidden = false;
   sheet.hidden = false;
@@ -23569,7 +23571,7 @@ function renderTabs(state) {
     }
     
     if (tab.kind === 'scheduled') {
-      return `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="Scheduled"><span class="lt-icon lt-icon-scheduled" aria-hidden="true"></span>${escapeText(tab.title || 'Scheduled')}</button>${tabCloseMarkup(index)}</span>`;
+      return `<span class="tab scheduled-tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="Scheduled"><span class="lt-icon lt-icon-scheduled" aria-hidden="true"></span>${escapeText(tab.title || 'Scheduled')}</button></span>`;
     }
     
     if (tab.kind === 'web' && !tab.site) {
@@ -51859,9 +51861,13 @@ if (libraryBrowse) {
     if (libraryBrowseOpen()) placeLibraryBrowse();
   });
 }
-if (railChats) railChats.addEventListener('click', () => showChatsInPane());
-if (railDocuments) railDocuments.addEventListener('click', () => showDocumentsInPane());
-if (railOutline) railOutline.addEventListener('click', () => showOutlineInPane());
+
+function leaveScheduledForRail() {
+  if (scheduleTabInFront()) send({ command: 'schedule', action: 'leave' });
+}
+if (railChats) railChats.addEventListener('click', () => { leaveScheduledForRail(); showChatsInPane(); });
+if (railDocuments) railDocuments.addEventListener('click', () => { leaveScheduledForRail(); showDocumentsInPane(); });
+if (railOutline) railOutline.addEventListener('click', () => { leaveScheduledForRail(); showOutlineInPane(); });
 if (libraryNav) {
   
   try {
