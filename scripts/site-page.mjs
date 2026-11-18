@@ -213,20 +213,24 @@ export async function filesUnder(dir, rel = '', found = []) {
   return found.sort();
 }
 
-/** The marks a site's page wears on its startup card and its home button, each the app's own: Leaftext's by default, and another site's where it names its own. */
+/** The marks a site's page wears on its startup card, its home button and the word beside it, each the app's own: Leaftext's by default, and another site's where it names its own. */
 export const BRAND_MARKS = {
   card: (icon) => `<span class="lt-icon lt-icon-${icon} startup-card-mark" aria-hidden="true"></span>`,
   label: (name) => `aria-label="${name} is starting"`,
   name: (name) => `<span class="startup-card-name">${name}</span>`,
   home: (icon) => `<button type="button" id="homeButton" class="brand-button" aria-label="Home" title="Home">\n      <span class="lt-icon lt-icon-${icon}"></span>`,
+  word: (word) => `<span class="brand-word">${word}</span>`,
 };
+
+/** What each mark carries on the app's own page, which is what a site's page replaces. */
+const APP_MARK = { card: 'leaf', home: 'leaf', label: 'Leaftext', name: 'Leaftext', word: 'leaftext' };
 
 /** The app's page wearing a site's own name and mark where Leaftext's stand, refused where the page no longer carries one of them. */
 export function brandPage(page, { name, icon }) {
   const escaped = String(name).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   let branded = page;
   for (const [part, mark] of Object.entries(BRAND_MARKS)) {
-    const from = mark(part === 'card' || part === 'home' ? 'leaf' : 'Leaftext');
+    const from = mark(APP_MARK[part]);
     if (!branded.includes(from)) throw new Error(`the app's page carries no ${part} for a site to wear its own on: ${from}`);
     branded = branded.replace(from, mark(part === 'card' || part === 'home' ? icon : escaped));
   }

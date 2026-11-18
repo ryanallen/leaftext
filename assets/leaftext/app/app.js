@@ -44498,6 +44498,8 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   const state = siteLaidOutState(currentState || { recent: [], favorites: [], tabs: [], active: null, document: null });
   prepareStateRender(state, keepDetachedRender);
   
+  markRailScheduled(state);
+  
   if (renderWebSurface(state)) {
     sayStartupDrawn(true);
     return;
@@ -44626,7 +44628,6 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     sayStartupDrawn(false);
     return;
   }
-  markRailScheduled(state);
   
   const consoleTab = activeConsoleTab(state);
   if (consoleTab) {
@@ -44713,10 +44714,11 @@ function sameDocumentFragmentHref(rawHref) {
   }
   return null;
 }
+const railScheduled = document.getElementById('railScheduled');
 function scheduleTabInFront() { return false; }
 function markRailScheduled() {}
 function drawSchedulePage() {}
-if (document.getElementById('railScheduled')) document.getElementById('railScheduled').hidden = true;
+if (railScheduled) railScheduled.hidden = true;
 
 var homeBoxDrag = null;
 function homeBoxSlots() {
@@ -51765,8 +51767,10 @@ function showViewInPane(view) {
 
 function drawRailPressed() {
   if (!railChats) return;
+  const scheduled = scheduleTabInFront();
+  if (railScheduled) railScheduled.setAttribute('aria-pressed', String(scheduled));
   
-  const paneShowing = libraryShell.classList.contains('library-narrow') ? librarySheetOpen : !libraryShell.classList.contains('library-closed');
+  const paneShowing = !scheduled && (libraryShell.classList.contains('library-narrow') ? librarySheetOpen : !libraryShell.classList.contains('library-closed'));
   const drawn = paneViewDrawn();
   railChats.setAttribute('aria-pressed', String(paneShowing && drawn === 'chats'));
   if (railDocuments) railDocuments.setAttribute('aria-pressed', String(paneShowing && drawn === 'documents'));
