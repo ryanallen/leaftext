@@ -242,6 +242,11 @@ export const COMMANDS = {
   codeLint: [ANSWERED],
   schemaCheck: [REFUSED, 'a schema is found through the settings file of the folder a YAML file sits in, and a published page has no folder to read one from'],
   tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
+  boardNote: [REFUSED, 'a published site has no chats and no plan tree; the Board place stands only in the Conversations list of the desktop app'],
+  boardChats: [REFUSED, 'a published site has no chats and no plan tree; the Board place stands only in the Conversations list of the desktop app'],
+  boardChooseNote: [REFUSED, 'there is no Board place to choose a note for outside the desktop app'],
+  setChatBoard: [REFUSED, 'there is no Board place to keep a note for outside the desktop app'],
+  boardCardMoved: [REFUSED, 'a browser host has no consoles, so no agent reading the note is there to tell'],
   tableRows: [REFUSED, 'listing every row would fetch every page this site serves on the first keystroke'],
   toggleTask: [ANSWERED],
   editBlock: [ANSWERED], // A table checkbox may request fallback text before its terminal answer.

@@ -34673,6 +34673,12 @@ function inferTableLensRoles(model) {
 function tableLensTitleColumn(model, first) {
   const key = model.key_column;
   if (key == null) return first((column) => column.kind === 'text') ?? 0;
+  
+  if (tableLensKeyIsRank(model)) {
+    const group = first((column) => column.kind === 'select');
+    const named = model.columns.findIndex((column, at) => at > key && at !== group && column.kind === 'text');
+    return named < 0 ? key : named;
+  }
   const slug = model.rows.every((row) => {
     const cell = row.cells[key];
     return !cell || cell.empty || /^[a-z0-9][a-z0-9_-]*$/.test(cell.text);
@@ -34682,6 +34688,28 @@ function tableLensTitleColumn(model, first) {
     (column, at) => at !== key && column.kind === 'text' && model.rows.some((row) => /\s/.test((row.cells[at] || {}).text || ''))
   );
   return named < 0 ? key : named;
+}
+
+
+function tableLensKeyIsRank(model) {
+  const held = model.__rankHeld;
+  if (held && held.rows === model.rows.length) return held.rank;
+  const rank = tableLensKeyReadsAsRank(model);
+  Object.defineProperty(model, '__rankHeld', { value: { rows: model.rows.length, rank }, writable: true, configurable: true, enumerable: false });
+  return rank;
+}
+
+function tableLensKeyReadsAsRank(model) {
+  const key = model.key_column;
+  if (key == null) return false;
+  let filled = 0;
+  const all = model.rows.every((row) => {
+    const cell = row.cells[key];
+    if (!cell || cell.empty) return true;
+    filled += 1;
+    return /^\d+$/.test(cell.text);
+  });
+  return all && filled > 0;
 }
 
 
@@ -35655,10 +35683,23 @@ function boardFieldLanes(view) {
 }
 
 
+const BOARD_MOVES_FIELD = 'board-moves';
+function boardRefusesMoves(view) {
+  const named = boardFieldColumn();
+  const column = view && view.model ? view.model.columns[view.roles.group] : null;
+  if (!column || !named || named.toLowerCase() !== String(column.name).toLowerCase()) return '';
+  const value = documentFieldValue(BOARD_MOVES_FIELD);
+  return Array.isArray(value) ? value.join(' ') : value || '';
+}
+
+
 function tableLensBoardLanes(view, showing) {
   const lanes = [];
+  const seen = new Set();
   const add = (value) => {
-    if (!lanes.includes(value)) lanes.push(value);
+    if (seen.has(value)) return;
+    seen.add(value);
+    lanes.push(value);
   };
   boardFieldLanes(view).forEach(add);
   const column = view.model.columns[view.roles.group];
@@ -35719,7 +35760,22 @@ function tableLensBody(table) {
 function moveTableLensCard(table, rowAt, value, before = undefined) {
   const view = tableLensOf(table);
   if (!view || view.roles.group == null || !tableTakesControls(table)) return false;
+  
+  const refused = boardRefusesMoves(view);
+  if (refused) {
+    leafToast(refused);
+    applyTableLens(table);
+    return false;
+  }
   const group = view.roles.group;
+  
+  const left = tableLensCellWords(view, rowAt, group);
+  
+  const card = tableLensCellWords(view, rowAt, view.roles.title) || `Row ${rowAt + 1}`;
+  const told = (wrote) => {
+    if (wrote && left !== tableCellWords(value)) send({ command: 'boardCardMoved', path: String((currentState && currentState.document && currentState.document.path) || activeDocumentPath() || ''), card, from: left, to: tableCellWords(value) });
+    return wrote;
+  };
   if (before === undefined) {
     const row = tableLensRows(table)[rowAt];
     const cell = row ? Array.from(row.children)[group] : null;
@@ -35732,7 +35788,7 @@ function moveTableLensCard(table, rowAt, value, before = undefined) {
       held.empty = value === '';
     }
     applyTableLens(table);
-    return true;
+    return told(true);
   }
   const body = tableLensBody(table);
   if (!body || !body[rowAt] || before === rowAt) return false;
@@ -35750,7 +35806,7 @@ function moveTableLensCard(table, rowAt, value, before = undefined) {
     place = inLane.length ? inLane[inLane.length - 1] + 1 : Math.min(rowAt, rest.length);
   }
   rest.splice(place, 0, moving);
-  return writeTableLensBody(table, rest);
+  return told(writeTableLensBody(table, rest));
 }
 
 
@@ -35896,15 +35952,129 @@ function boardInput(className, placeholder, value, keep, drop) {
 }
 
 
-function tableLensCardChips(view, at) {
+function boardCellSaysNothing(words) {
+  return /^[\s—–-]*$/.test(words || '');
+}
+
+
+function boardDrawnCell(table, at, column) {
+  if (!table || table.__boardWritten || column == null) return null;
+  
+  if (!table.__boardRowsHeld) table.__boardRowsHeld = tableLensRows(table);
+  const row = table.__boardRowsHeld[at];
+  return row ? Array.from(row.children)[column] || null : null;
+}
+
+
+function boardCellBadges(cell) {
+  return cell ? Array.from(cell.querySelectorAll('.doc-badge')) : [];
+}
+
+
+function boardColumnWords(view, columnAt) {
+  return view.model.rows.map((row) => ((row.cells[columnAt] || {}).text || '').trim()).filter((words) => words && !boardCellSaysNothing(words));
+}
+
+
+function boardColumnIsChoice(view, columnAt) {
+  const column = view.model.columns[columnAt];
+  if (!column) return false;
+  if (column.kind === 'select') return true;
+  if (column.kind !== 'text') return false;
+  const words = boardColumnWords(view, columnAt);
+  return words.length > 1 && new Set(words).size < words.length && words.every((one) => one.split(/\s+/).length <= 4);
+}
+
+
+function boardBlockedColumn(view) {
+  return boardHeldColumn(view, 'boardBlocked', () => view.model.columns.findIndex((column) => /^blocked by$/i.test((column.name || '').trim())));
+}
+
+
+function boardHeld(view, key, find) {
+  const held = view[key];
+  if (held && held.model === view.model && held.title === view.roles.title && held.group === view.roles.group && held.rows === view.model.rows.length) return held.value;
+  view[key] = { model: view.model, title: view.roles.title, group: view.roles.group, rows: view.model.rows.length, value: find() };
+  return view[key].value;
+}
+
+function boardHeldColumn(view, key, find) {
+  return boardHeld(view, key, () => {
+    const at = find();
+    return at == null || at < 0 ? null : at;
+  });
+}
+
+
+function boardLineColumn(view) {
+  return boardHeldColumn(view, 'boardLine', () => {
+    const spent = new Set([view.roles.title, view.roles.picture, view.roles.group, view.model.key_column, boardBlockedColumn(view)]);
+    return view.model.columns.findIndex((column, columnAt) => {
+      if (spent.has(columnAt) || column.kind !== 'text' || boardColumnIsChoice(view, columnAt)) return false;
+      const words = boardColumnWords(view, columnAt);
+      return words.length > 0 && words.filter((one) => one.split(/\s+/).length >= 3).length * 2 > words.length;
+    });
+  });
+}
+
+
+function boardMetaColumn(view, table) {
+  return boardHeldColumn(view, 'boardMeta', () => {
+    const spent = new Set([view.roles.title, view.roles.picture, view.roles.group, view.model.key_column, boardBlockedColumn(view), boardLineColumn(view)]);
+    return view.model.columns.findIndex((column, columnAt) => {
+      if (spent.has(columnAt) || !boardColumnIsChoice(view, columnAt)) return false;
+      return !boardBadgeColumns(view, table).includes(columnAt);
+    });
+  });
+}
+
+
+function boardBadgeColumns(view, table) {
+  return boardHeld(view, 'boardBadges', () =>
+    view.model.columns.map((_, columnAt) => columnAt).filter((columnAt) => view.model.rows.some((_, at) => boardCellBadges(boardDrawnCell(table, at, columnAt)).length))
+  );
+}
+
+
+function boardRedColumns(view, table) {
+  return boardHeld(view, 'boardRed', () =>
+    view.model.columns
+      .map((_, columnAt) => columnAt)
+      .filter((columnAt) => columnAt !== view.roles.group && boardBadgeColumns(view, table).includes(columnAt) && view.model.rows.some((_, at) => boardCellBadges(boardDrawnCell(table, at, columnAt)).some((badge) => badge.classList.contains('doc-badge--red'))))
+  );
+}
+
+
+function boardRedBadges(view, at, table) {
+  const found = [];
+  boardRedColumns(view, table).forEach((columnAt) => {
+    boardCellBadges(boardDrawnCell(table, at, columnAt)).forEach((badge) => {
+      if (badge.classList.contains('doc-badge--red')) found.push(badge);
+    });
+  });
+  return found;
+}
+
+
+function tableLensCardChips(view, at, table = null) {
   const chips = boardElement('div', 'table-lens-card-chips');
+  const spent = new Set([view.roles.title, view.roles.picture, view.roles.group, boardLineColumn(view), boardMetaColumn(view, table), boardBlockedColumn(view)]);
+  const badgeColumns = boardBadgeColumns(view, table);
   view.model.columns.forEach((column, columnAt) => {
-    if (columnAt === view.roles.title || columnAt === view.roles.picture || columnAt === view.roles.group) return;
+    if (spent.has(columnAt)) return;
     
     if (columnAt === view.model.key_column) return;
     const words = tableLensCellWords(view, at, columnAt);
-    if (!words) return;
+    if (!words || boardCellSaysNothing(words)) return;
     if (column.kind === 'check' && !/^(yes|true|x)$/i.test(words)) return;
+    const badges = badgeColumns.includes(columnAt) ? boardCellBadges(boardDrawnCell(table, at, columnAt)) : [];
+    if (badges.length) {
+      
+      badges.forEach((badge) => {
+        if (!badge.classList.contains('doc-badge--red')) chips.appendChild(badge.cloneNode(true));
+      });
+      return;
+    }
     const chip = boardElement('span', 'table-lens-card-chip');
     chip.title = column.name;
     if (column.kind === 'number' || column.kind === 'check' || column.kind === 'computed') {
@@ -35932,6 +36102,22 @@ function boardDateWords(words, today = new Date()) {
 }
 
 
+function boardCardTitle(view, at, table, writable) {
+  const words = tableLensCellWords(view, at, view.roles.title) || `Row ${at + 1}`;
+  const title = boardElement('div', 'table-lens-card-title');
+  const cell = writable ? null : boardDrawnCell(table, at, view.roles.title);
+  const link = cell ? cell.querySelector('a[href]') : null;
+  if (link) {
+    const copy = link.cloneNode(true);
+    copy.textContent = words;
+    title.appendChild(copy);
+  } else {
+    title.textContent = words;
+  }
+  return title;
+}
+
+
 function tableLensCard(view, at, table, writable) {
   const card = boardElement('div', 'table-lens-card');
   card.dataset.lensRow = String(at);
@@ -35944,29 +36130,69 @@ function tableLensCard(view, at, table, writable) {
     image.alt = '';
     card.appendChild(image);
   }
-  card.appendChild(boardElement('div', 'table-lens-card-title', tableLensCellWords(view, at, view.roles.title) || `Row ${at + 1}`));
-  const chips = tableLensCardChips(view, at);
+  card.appendChild(boardCardTitle(view, at, table, writable));
+  
+  const meta = boardElement('div', 'table-lens-card-meta');
+  boardRedBadges(view, at, table).forEach((badge) => meta.appendChild(badge.cloneNode(true)));
+  const facts = [];
+  const rank = tableLensKeyIsRank(view.model) ? tableLensCellWords(view, at, view.model.key_column) : '';
+  if (rank) facts.push(`#${rank}`);
+  const metaAt = boardMetaColumn(view, table);
+  const choice = metaAt == null ? '' : tableLensCellWords(view, at, metaAt);
+  if (choice && !boardCellSaysNothing(choice)) facts.push(choice);
+  if (facts.length) meta.appendChild(boardElement('span', '', facts.join(' · ')));
+  if (meta.children.length) card.appendChild(meta);
+  const blockedAt = boardBlockedColumn(view);
+  const blocked = blockedAt == null ? '' : tableLensCellWords(view, at, blockedAt);
+  if (blocked && !boardCellSaysNothing(blocked)) card.appendChild(boardElement('div', 'table-lens-card-blocked', `Blocked by ${blocked}`));
+  const lineAt = boardLineColumn(view);
+  const line = lineAt == null ? '' : tableLensCellWords(view, at, lineAt);
+  if (line && !boardCellSaysNothing(line)) card.appendChild(boardElement('div', 'table-lens-card-line', line));
+  const chips = tableLensCardChips(view, at, table);
   if (chips.children.length) card.appendChild(chips);
+  
+  const who = typeof view.boardWho === 'function' ? view.boardWho(at) : null;
+  if (who && who.length) {
+    const foot = boardElement('div', 'table-lens-card-who');
+    who.forEach((one) => foot.appendChild(one));
+    card.appendChild(foot);
+  }
   if (!writable) return card;
+  
   card.dataset.lensMovable = 'true';
-  card.addEventListener('pointerdown', (event) => pressTableLensCard(event, card, table, at));
-  const open = () => openTableLensCardEditor(table, card, at);
-  card.addEventListener('click', () => {
-    
-    if (card.__dragged) return;
-    open();
+  return card;
+}
+
+
+function boardPressedCard(event) {
+  const card = event.target && event.target.closest ? event.target.closest('.table-lens-card[data-lens-movable]') : null;
+  return card ? { card, at: Number(card.dataset.lensRow) } : null;
+}
+
+
+function listenToBoardCards(board, table) {
+  board.addEventListener('pointerdown', (event) => {
+    const pressed = boardPressedCard(event);
+    if (pressed) pressTableLensCard(event, pressed.card, table, pressed.at);
   });
-  card.addEventListener('keydown', (event) => {
+  board.addEventListener('click', (event) => {
+    const pressed = boardPressedCard(event);
+    
+    if (!pressed || pressed.card.__dragged) return;
+    openTableLensCardEditor(table, pressed.card, pressed.at);
+  });
+  board.addEventListener('keydown', (event) => {
+    const pressed = boardPressedCard(event);
+    if (!pressed || event.target !== pressed.card) return;
     if (event.key === 'Enter') {
       event.preventDefault();
-      open();
+      openTableLensCardEditor(table, pressed.card, pressed.at);
     } else if (event.altKey && /^Arrow(Left|Right|Up|Down)$/.test(event.key)) {
       event.preventDefault();
       event.stopPropagation();
-      stepTableLensCard(table, card, at, event.key);
+      stepTableLensCard(table, pressed.card, pressed.at, event.key);
     }
   });
-  return card;
 }
 
 
@@ -35977,6 +36203,17 @@ function tableLensCard(view, at, table, writable) {
 const BOARD_DRAG_SLOP = 4;
 
 const BOARD_DRAG_EDGE = 48;
+
+
+function scrollBoardToward(board, step) {
+  board.style.scrollSnapType = 'none';
+  board.scrollLeft += step;
+}
+
+
+function releaseBoardSnap(board) {
+  board.style.scrollSnapType = '';
+}
 
 function pressTableLensCard(event, card, table, at) {
   if (event.button !== 0 || card.classList.contains('is-editing') || (event.target.closest && event.target.closest('input, button, a'))) return;
@@ -36011,7 +36248,7 @@ function pressTableLensCard(event, card, table, at) {
     cancelAnimationFrame(scroll);
     if (!step) return;
     const roll = () => {
-      board.scrollLeft += step;
+      scrollBoardToward(board, step);
       scroll = requestAnimationFrame(roll);
     };
     scroll = requestAnimationFrame(roll);
@@ -36039,6 +36276,7 @@ function pressTableLensCard(event, card, table, at) {
     document.removeEventListener('pointerup', end, true);
     document.removeEventListener('pointercancel', end, true);
     cancelAnimationFrame(scroll);
+    releaseBoardSnap(board);
     if (!lifted) return;
     lifted.remove();
     card.classList.remove('is-dragging');
@@ -36235,13 +36473,14 @@ function clearBoardDropMarks(board) {
 }
 
 
-function tableLensLane(board, table, view, name, writable) {
+function tableLensLane(board, table, view, name, writable, tone = 'doc-badge--gray') {
   const column = view.model.columns[view.roles.group];
   const made = boardElement('div', 'table-lens-column');
   made.dataset.lensGroup = name;
   const head = boardElement('div', 'table-lens-column-head');
   const title = boardElement(writable && name ? 'button' : 'span', 'table-lens-column-name', name || `No ${column ? column.name : 'value'}`);
-  head.append(title, boardElement('span', 'table-lens-column-count', '0'));
+  
+  head.append(boardElement('span', `table-lens-column-mark ${tone}`), title, boardElement('span', 'table-lens-column-count', '0'));
   made.appendChild(head);
   if (!writable) return made;
   if (name) {
@@ -36267,14 +36506,36 @@ function tableLensLane(board, table, view, name, writable) {
 }
 
 
+function boardLaneTones(view, showing, table) {
+  return boardHeld(view, 'boardTones', () => boardLaneTonesRead(view, table));
+}
+
+function boardLaneTonesRead(view, table) {
+  const tones = new Map();
+  view.model.rows.forEach((_, at) => {
+    const value = tableLensCellWords(view, at, view.roles.group);
+    if (tones.has(value)) return;
+    const badge = boardCellBadges(boardDrawnCell(table, at, view.roles.group))[0];
+    const tone = badge ? Array.from(badge.classList).find((one) => one.startsWith('doc-badge--')) : null;
+    if (tone) tones.set(value, tone);
+  });
+  return tones;
+}
+
+
 function tableLensBoard(view, showing, table) {
   const board = boardElement('div', 'table-lens-board leaf-scroll');
   board.__lensTable = table;
+  table.__boardRowsHeld = null;
+  listenToBoardCards(board, table);
   const writable = tableTakesControls(table);
+  
+  const growable = writable && !boardRefusesMoves(view);
   const lanes = new Map();
+  const tones = boardLaneTones(view, showing, table);
   const lane = (name) => {
     if (!lanes.has(name)) {
-      const made = tableLensLane(board, table, view, name, writable);
+      const made = tableLensLane(board, table, view, name, growable, tones.get(name));
       board.appendChild(made);
       lanes.set(name, made);
     }
@@ -36297,6 +36558,17 @@ function tableLensBoard(view, showing, table) {
     made.appendChild(tableLensCard(view, at, table, writable));
   });
   const kept = boardFieldLanes(view);
+  
+  const named = [...lanes.keys()].filter(Boolean);
+  named.forEach((name, place) => {
+    const mark = lanes.get(name).querySelector('.table-lens-column-mark');
+    if (named.length > 1 && place === named.length - 1) {
+      mark.style.setProperty('--lane-fill', '1');
+      mark.appendChild(boardElement('span', 'lt-icon lt-icon-check'));
+    } else if (named.length > 1) {
+      mark.style.setProperty('--lane-fill', String(Math.round((place / (named.length - 1)) * 4) / 4));
+    }
+  });
   lanes.forEach((made, name) => {
     const more = held.get(name) || 0;
     const cards = made.querySelectorAll(':scope > .table-lens-card').length + more;
@@ -36310,18 +36582,22 @@ function tableLensBoard(view, showing, table) {
       });
       made.appendChild(reveal);
     }
-    if (writable && !cards && kept.includes(name)) {
+    if (!cards) made.appendChild(boardElement('div', 'table-lens-column-well', writable ? 'Drop a card here' : 'Nothing here'));
+    if (growable && !cards && kept.includes(name)) {
       const drop = boardElement('button', 'table-lens-column-remove', 'Remove lane');
       drop.type = 'button';
       drop.addEventListener('click', () => removeTableLensLane(table, name));
       made.appendChild(drop);
     }
   });
-  if (writable) {
+  if (growable) {
     const ghost = boardElement('div', 'table-lens-column table-lens-column-ghost');
     const start = boardElement('button', 'table-lens-column-new');
     start.type = 'button';
-    start.append(boardElement('span', 'lt-icon lt-icon-new'), document.createTextNode('Add a lane'));
+    
+    start.title = 'Add a lane';
+    start.setAttribute('aria-label', 'Add a lane');
+    start.appendChild(boardElement('span', 'lt-icon lt-icon-new'));
     start.addEventListener('click', () => {
       ghost.replaceChild(boardInput('table-lens-column-rename', 'Lane name', '', (words) => addTableLensLane(table, words), () => applyTableLens(table)), start);
     });
@@ -36331,6 +36607,7 @@ function tableLensBoard(view, showing, table) {
   board.addEventListener('scroll', () => markBoardEdges(board), { passive: true });
   refocusMovedCard(board);
   requestAnimationFrame(() => markBoardEdges(board));
+  table.__boardRowsHeld = null;
   return board;
 }
 
@@ -45868,6 +46145,7 @@ window.leafConsoleAgents = rows => {
   consoleAgentRows = Array.isArray(rows) ? rows : [];
   heldHostAgents();
   drawConsoleRecents();
+  chatBoardFollowsConsoles();
   
   if (currentState?.tabs) renderTabs(currentState);
 };
@@ -49978,6 +50256,394 @@ function setupOpenFromMenu() {
 leafOnEscape(() => { if (setupWalk.open) setupCancel(); }, window);
 setupBackdrop.addEventListener('click', () => { if (setupWalk.screen !== 'saving') setupCancel(); });
 
+
+
+
+const CHAT_BOARD_PAGE = 40;
+
+const chatBoardShell = document.getElementById('libraryShell');
+const chatBoardNewButton = document.getElementById('newButton');
+const chatBoard = { open: false, token: 0, note: null, error: '', rows: [], chats: new Map(), chatsToken: 0, filter: 'all', order: 'rank', shown: new Map(), element: null };
+
+
+function chatBoardNotePath() {
+  return String(LEAF_SETTINGS.chatBoard || '');
+}
+
+
+function chatBoardRowHtml() {
+  if (!hostAnswers('boardNote')) return '';
+  const lit = chatBoard.open ? ' console-agent-front' : '';
+  const count = chatBoard.note ? String(chatBoard.rows.length) : '';
+  return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent chat-board-row${lit}" data-chat-board="open" title="The board of every ticket by its stage"><span class="console-agent-icon" aria-hidden="true"><span class="chat-board-mark"></span></span><span class="console-agent-name">Board</span><span class="console-agent-state">${escapeText(count)}</span></button></div>`;
+}
+
+
+function chatBoardElement() {
+  if (chatBoard.element) return chatBoard.element;
+  const shell = chatBoardShell;
+  if (!shell) return null;
+  const made = document.createElement('section');
+  made.className = 'chat-board';
+  made.setAttribute('aria-label', 'Board');
+  made.hidden = true;
+  made.addEventListener('click', pressChatBoard);
+  made.addEventListener('pointerdown', liftChatBoardCard);
+  shell.appendChild(made);
+  chatBoard.element = made;
+  return made;
+}
+
+function openChatBoard() {
+  const path = chatBoardNotePath();
+  if (!path) {
+    send({ command: 'boardChooseNote' });
+    return;
+  }
+  chatBoard.open = true;
+  const element = chatBoardElement();
+  if (element) element.hidden = false;
+  document.body.classList.add('has-chat-board');
+  askChatBoardNote();
+  drawChatBoard();
+  drawConsoleRecents();
+}
+
+function closeChatBoard() {
+  if (!chatBoard.open) return;
+  chatBoard.open = false;
+  if (chatBoard.element) chatBoard.element.hidden = true;
+  document.body.classList.remove('has-chat-board');
+  drawConsoleRecents();
+}
+
+function askChatBoardNote() {
+  chatBoard.token += 1;
+  send({ command: 'boardNote', path: chatBoardNotePath(), token: chatBoard.token });
+}
+
+
+window.leafChatBoardChosen = (path) => {
+  if (!path) return;
+  LEAF_SETTINGS.chatBoard = String(path);
+  send({ command: 'setChatBoard', path: String(path) });
+  openChatBoard();
+};
+
+window.leafBoardNote = (answer) => {
+  if (!answer || answer.token !== chatBoard.token) return;
+  chatBoard.error = answer.error ? String(answer.error) : '';
+  chatBoard.note = answer.note || null;
+  chatBoard.rows = chatBoard.note ? chatBoardRows(chatBoard.note) : [];
+  drawChatBoard();
+  drawConsoleRecents();
+  askChatBoardChats();
+};
+
+function askChatBoardChats() {
+  if (!chatBoard.rows.length) return;
+  chatBoard.chatsToken += 1;
+  send({ command: 'boardChats', paths: chatBoard.rows.map((row) => row.path), token: chatBoard.chatsToken });
+}
+
+window.leafBoardChats = (answer) => {
+  if (!answer || answer.token !== chatBoard.chatsToken || !Array.isArray(answer.chats)) return;
+  chatBoard.chats = new Map(chatBoard.rows.map((row, at) => [row.path, Array.isArray(answer.chats[at]) ? answer.chats[at] : []]));
+  drawChatBoard();
+};
+
+
+function chatBoardTicketPath(href) {
+  if (!href) return '';
+  if (/^file:/i.test(href)) {
+    try {
+      return decodeURIComponent(new URL(href).pathname).replace(/^\/([A-Za-z]:)/, '$1');
+    } catch {
+      return '';
+    }
+  }
+  const folder = chatBoardNotePath().replace(/[\\/][^\\/]*$/, '');
+  const parts = `${folder}/${decodeURIComponent(href.split('#')[0])}`.split(/[\\/]+/);
+  const kept = [];
+  for (const part of parts) {
+    if (part === '..') kept.pop();
+    else if (part !== '.') kept.push(part);
+  }
+  return kept.join('/');
+}
+
+
+function chatBoardRows(note) {
+  const box = document.createElement('template');
+  box.innerHTML = String(note.table || '');
+  
+  const table = (box.content || box).querySelector('table');
+  if (!table) return [];
+  const names = Array.from(table.querySelectorAll('thead th, tr:first-child th')).map((cell) => (cell.textContent || '').trim().toLowerCase());
+  const at = (name) => names.indexOf(name.toLowerCase());
+  const group = at(note.board || 'Stage');
+  return Array.from(table.querySelectorAll('tbody tr')).map((line) => {
+    const cells = Array.from(line.children);
+    const cell = (name) => cells[at(name)] || null;
+    const words = (name) => ((cell(name) || {}).textContent || '').trim();
+    const title = cell('Ticket') || cells[1] || null;
+    const link = title ? title.querySelector('a[href]') : null;
+    const kind = cell('Kind');
+    return {
+      rank: words('#'),
+      title: (title ? title.textContent : '').trim(),
+      path: chatBoardTicketPath(link ? link.getAttribute('href') : ''),
+      stage: ((cells[group] || {}).textContent || '').trim(),
+      bug: !!(kind && kind.querySelector('.doc-badge--red')),
+      track: words('Track'),
+      blocked: words('Blocked by').replace(/^[—–-]$/, ''),
+      why: words('Why'),
+    };
+  });
+}
+
+
+function chatBoardLive(chat) {
+  return consoleAgentRows.find((row) => Array.isArray(row.conversations) && row.conversations.map(String).includes(String(chat.id))) || null;
+}
+
+
+function chatBoardChatState(chat) {
+  const live = chatBoardLive(chat);
+  return live ? String(live.state || 'rest') : 'idle';
+}
+
+const CHAT_BOARD_STATE_WORDS = { working: 'working', needs: 'needs you', done: 'done', rest: 'idle', idle: 'idle', error: 'error' };
+
+function chatBoardChatsOf(row) {
+  return chatBoard.chats.get(row.path) || [];
+}
+
+
+function chatBoardCounts() {
+  const chats = chatBoard.rows.flatMap(chatBoardChatsOf);
+  const states = chats.map(chatBoardChatState);
+  const count = (state) => states.filter((one) => one === state).length;
+  const parts = [`${count('working')} working`, `${chatBoard.rows.length} tickets`];
+  const needs = count('needs');
+  if (needs) parts.push(`${needs} need you`);
+  const error = count('error');
+  if (error) parts.push(`${error} error`);
+  const bugs = chatBoard.rows.filter((row) => row.bug).length;
+  if (bugs) parts.push(`${bugs} ${bugs === 1 ? 'bug' : 'bugs'}`);
+  const blocked = chatBoard.rows.filter((row) => row.blocked).length;
+  if (blocked) parts.push(`${blocked} blocked`);
+  return parts.join(' · ');
+}
+
+
+function chatBoardShown() {
+  let rows = chatBoard.rows;
+  if (chatBoard.filter === 'bugs') rows = rows.filter((row) => row.bug);
+  if (chatBoard.filter === 'chats') rows = rows.filter((row) => chatBoardChatsOf(row).length);
+  if (chatBoard.order === 'activity') {
+    const latest = (row) => Math.max(0, ...chatBoardChatsOf(row).map((chat) => Number(chat.time) || 0));
+    rows = rows.slice().sort((a, b) => latest(b) - latest(a));
+  }
+  return rows;
+}
+
+
+function chatBoardChanged(live) {
+  const entry = live ? consoleLayers.get(Number(live.id)) : null;
+  if (!entry || !entry.layer) return null;
+  let added = 0;
+  let removed = 0;
+  for (const counts of entry.layer.querySelectorAll('.diff-card-counts')) {
+    const words = String(counts.textContent || '');
+    const of = (word) => Number((new RegExp(`(\\d+) ${word}`).exec(words) || [])[1] || 0);
+    added += of('changed') + of('added');
+    removed += of('changed') + of('removed');
+  }
+  return added || removed ? { added, removed } : null;
+}
+
+function chatBoardChatHtml(chat) {
+  const live = chatBoardLive(chat);
+  const state = chatBoardChatState(chat);
+  const title = String(chat.title || (live && live.title) || 'Untitled chat');
+  const age = chat.time ? consoleRecentAge(Number(chat.time)) : '';
+  const words = [chat.agent === 'claude' ? 'Claude' : chat.agent === 'codex' ? 'Codex' : String(chat.agent || ''), CHAT_BOARD_STATE_WORDS[state] || state, age].filter(Boolean).join(' · ');
+  const saved = consoleRecents.rows.find((row) => String(row.id) === String(chat.id));
+  const unread = saved && saved.unread ? '<span class="chat-board-unread" title="Unread" aria-label="Unread"></span>' : '';
+  const changed = chatBoardChanged(live);
+  const lines = changed ? `<span class="chat-board-lines">+${changed.added} −${changed.removed}</span>` : '';
+  const stop = state === 'working' && live ? `<button type="button" class="chat-board-stop" data-chat-board-stop="${Number(live.id)}" title="Stop">Stop</button>` : '';
+  return `<div class="chat-board-chat${state === 'working' ? ' is-working' : ''}${state === 'needs' ? ' is-needs' : ''}"><button type="button" class="chat-board-chat-open" data-chat-board-chat="${escapeAttr(String(chat.id))}" data-chat-board-agent="${escapeAttr(String(chat.agent || ''))}" data-chat-board-title="${escapeAttr(title)}" title="${escapeAttr(title)}"><span class="chat-board-dot" aria-hidden="true"></span><span class="${consoleIconClass(chat.agent)}" aria-hidden="true"></span><span class="chat-board-chat-title">${escapeText(title)}</span><span class="chat-board-chat-meta">${escapeText(words)}</span>${unread}${lines}</button>${stop}</div>`;
+}
+
+function chatBoardCardHtml(row, last) {
+  const chats = chatBoardChatsOf(row);
+  const needs = chats.some((chat) => chatBoardChatState(chat) === 'needs');
+  const edge = needs || row.blocked ? ' is-waiting' : '';
+  const facts = [row.rank ? `#${row.rank}` : '', row.track, chats.length ? `${chats.length} ${chats.length === 1 ? 'chat' : 'chats'}` : ''].filter(Boolean).join(' · ');
+  const bug = row.bug ? '<span class="doc-badge doc-badge--red">BUG</span>' : '';
+  const blocked = row.blocked ? `<div class="table-lens-card-blocked">Blocked by ${escapeText(row.blocked)}</div>` : '';
+  const retire = last && row.path ? `<button type="button" class="chat-board-retire" data-chat-board-retire="${escapeAttr(row.path)}">Retire</button>` : '';
+  const who = chats.length ? `<div class="table-lens-card-who">${chats.map(chatBoardChatHtml).join('')}</div>` : '';
+  return `<div class="chat-board-card${edge}" data-chat-board-card="${escapeAttr(row.path)}"><button type="button" class="chat-board-card-title" data-chat-board-ticket="${escapeAttr(row.path)}">${escapeText(row.title)}</button><div class="table-lens-card-meta">${bug}<span>${escapeText(facts)}</span></div>${blocked}${who}${retire}</div>`;
+}
+
+
+function drawChatBoard() {
+  const element = chatBoardElement();
+  if (!element || !chatBoard.open) return;
+  const note = chatBoard.note;
+  const pill = (group, value, words, on) => `<button type="button" class="chat-board-pill${on ? ' is-on' : ''}" data-chat-board-${group}="${value}" aria-pressed="${on}">${words}</button>`;
+  const head = `<header class="chat-board-head"><span class="chat-board-title">Board</span><span class="chat-board-note">${escapeText(note ? note.heading : '')}</span><span class="chat-board-counts">${escapeText(note ? chatBoardCounts() : '')}</span><span class="chat-board-tools">${pill('filter', 'all', 'All', chatBoard.filter === 'all')}${pill('filter', 'bugs', 'Bugs', chatBoard.filter === 'bugs')}${pill('filter', 'chats', 'With a chat', chatBoard.filter === 'chats')}<span class="chat-board-gap"></span>${pill('order', 'rank', 'Rank', chatBoard.order === 'rank')}${pill('order', 'activity', 'Activity', chatBoard.order === 'activity')}<span class="chat-board-gap"></span><button type="button" class="chat-board-pill" data-chat-board-do="refresh">Refresh</button><button type="button" class="chat-board-pill" data-chat-board-do="new">New chat</button><button type="button" class="chat-board-pill" data-chat-board-do="add">Add to board</button></span></header>`;
+  if (!note) {
+    element.innerHTML = `${head}<div class="chat-board-none">${escapeText(chatBoard.error || 'Reading the board…')}</div>`;
+    return;
+  }
+  const shown = chatBoardShown();
+  const stages = Array.isArray(note.columns) && note.columns.length ? note.columns : [...new Set(chatBoard.rows.map((row) => row.stage))];
+  const columns = stages.map((stage, place) => {
+    const cards = shown.filter((row) => row.stage === stage);
+    const limit = chatBoard.shown.get(stage) || CHAT_BOARD_PAGE;
+    const visible = cards.slice(0, limit);
+    const fill = stages.length > 1 ? Math.round((place / (stages.length - 1)) * 4) / 4 : 0;
+    const last = place === stages.length - 1;
+    const mark = `<span class="table-lens-column-mark doc-badge--gray" style="--lane-fill:${fill}">${last ? '<span class="lt-icon lt-icon-check"></span>' : ''}</span>`;
+    const more = cards.length > visible.length ? `<button type="button" class="chat-board-more" data-chat-board-more="${escapeAttr(stage)}">Show ${CHAT_BOARD_PAGE} more (${cards.length - visible.length} hidden)</button>` : '';
+    const body = visible.length ? visible.map((row) => chatBoardCardHtml(row, last)).join('') + more : '<div class="chat-board-none">None</div>';
+    const count = visible.length < cards.length ? `${visible.length} of ${cards.length}` : String(cards.length);
+    return `<section class="chat-board-column" data-chat-board-stage="${escapeAttr(stage)}"><div class="chat-board-column-head">${mark}<span class="chat-board-column-name">${escapeText(stage)}</span><span class="table-lens-column-count">${escapeText(count)}</span></div><div class="chat-board-cards leaf-scroll">${body}</div></section>`;
+  });
+  element.innerHTML = `${head}<div class="chat-board-columns leaf-scroll">${columns.join('')}</div>`;
+  const row = element.querySelector('.chat-board-columns');
+  markChatBoardEdges(row);
+  row.addEventListener('scroll', () => markChatBoardEdges(row), { passive: true });
+}
+
+
+function markChatBoardEdges(row) {
+  if (!row) return;
+  requestAnimationFrame(() => markBoardEdges(row));
+}
+
+
+function startChatHolding(words) {
+  const request = ++agentLaunch.request;
+  const folder = chatBoardNotePath().replace(/[\\/][^\\/]*$/, '');
+  send({ command: 'agentLaunch', action: 'start', agent: 'claude', id: '', request, path: folder || newMenuFolderPath() });
+  agentLaunch.waiting.set(request, (first) => {
+    if (first.error) return leafToast(String(first.error));
+    agentLaunch.waiting.set(request, (done) => {
+      if (done.error) return leafToast(String(done.error));
+      closeChatBoard();
+      
+      let tries = 0;
+      const fill = () => {
+        const entry = consoleLayers.get(Number(done.console));
+        const field = entry && entry.composer && entry.composer.field;
+        if (field) {
+          field.value = words;
+          field.selectionStart = field.selectionEnd = words.length;
+          field.focus();
+          return;
+        }
+        if ((tries += 1) < 600) setTimeout(fill, 100);
+      };
+      fill();
+    });
+  });
+}
+
+function pressChatBoard(event) {
+  const target = event.target.closest ? event.target : null;
+  if (!target) return;
+  const filter = target.closest('[data-chat-board-filter]');
+  if (filter) {
+    chatBoard.filter = filter.dataset.chatBoardFilter;
+    return drawChatBoard();
+  }
+  const order = target.closest('[data-chat-board-order]');
+  if (order) {
+    chatBoard.order = order.dataset.chatBoardOrder;
+    return drawChatBoard();
+  }
+  const action = target.closest('[data-chat-board-do]');
+  if (action) {
+    const what = action.dataset.chatBoardDo;
+    if (what === 'refresh') return askChatBoardNote();
+    if (what === 'new') return chatBoardNewButton?.click();
+    if (what === 'add') return startChatHolding('/ticket ');
+  }
+  const more = target.closest('[data-chat-board-more]');
+  if (more) {
+    const stage = more.dataset.chatBoardMore;
+    chatBoard.shown.set(stage, (chatBoard.shown.get(stage) || CHAT_BOARD_PAGE) + CHAT_BOARD_PAGE);
+    return drawChatBoard();
+  }
+  const stop = target.closest('[data-chat-board-stop]');
+  if (stop) {
+    const id = Number(stop.dataset.chatBoardStop);
+    return consoleComposerStop(id, consoleLayers.get(id));
+  }
+  const retire = target.closest('[data-chat-board-retire]');
+  if (retire) return startChatHolding(`/done ${retire.dataset.chatBoardRetire}`);
+  const chat = target.closest('[data-chat-board-chat]');
+  if (chat) return pressChatBoardChat(chat.dataset.chatBoardChat, chat.dataset.chatBoardAgent, chat.dataset.chatBoardTitle);
+  const ticket = target.closest('[data-chat-board-ticket]');
+  if (ticket && ticket.dataset.chatBoardTicket) {
+    closeChatBoard();
+    send({ command: 'openPaths', paths: [ticket.dataset.chatBoardTicket] });
+  }
+}
+
+
+function pressChatBoardChat(id, agent, title) {
+  closeChatBoard();
+  const live = chatBoardLive({ id });
+  if (live) return pressConsoleRunning(Number(live.id));
+  send({ command: 'openSavedChat', agent, conversation: id, title });
+}
+
+
+function liftChatBoardCard(event) {
+  const card = event.target.closest && event.target.closest('.chat-board-card');
+  if (!card || event.button !== 0 || event.target.closest('button')) return;
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const move = (moved) => {
+    if (Math.hypot(moved.clientX - startX, moved.clientY - startY) < BOARD_DRAG_SLOP) return;
+    card.classList.add('is-dragging');
+  };
+  const end = () => {
+    document.removeEventListener('pointermove', move, true);
+    document.removeEventListener('pointerup', end, true);
+    document.removeEventListener('pointercancel', end, true);
+    if (!card.classList.contains('is-dragging')) return;
+    card.classList.remove('is-dragging');
+    leafToast(String((chatBoard.note && chatBoard.note.moves) || 'Stages move when the ticket does.'));
+  };
+  document.addEventListener('pointermove', move, true);
+  document.addEventListener('pointerup', end, true);
+  document.addEventListener('pointercancel', end, true);
+}
+
+
+function chatBoardHearsListPress(target) {
+  if (target.closest('[data-chat-board]')) return;
+  if (chatBoard.open && target.closest('.console-agent, .console-recent, [data-recent-id], [data-console-id]')) closeChatBoard();
+}
+
+
+function chatBoardFollowsConsoles() {
+  const working = new Set(consoleAgentRows.filter((row) => row.state === 'working').flatMap((row) => (Array.isArray(row.conversations) ? row.conversations.map(String) : [])));
+  const onBoard = new Set([...chatBoard.chats.values()].flat().map((chat) => String(chat.id)));
+  const finished = [...(chatBoard.working || [])].some((id) => onBoard.has(id) && !working.has(id));
+  chatBoard.working = working;
+  if (!chatBoard.open) return;
+  if (finished) askChatBoardNote();
+  else drawChatBoard();
+}
+
 var consoleRecentsBand = document.getElementById('consoleRecents');
 const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true, status: 'active', filterView: null, type: 'all', since: 'all', group: 'none', sort: 'recent', renaming: false, pins: [], carry: null, held: false, listOrder: [] };
 
@@ -50065,7 +50731,7 @@ function drawConsoleRecents() {
 function fillConsoleRecents(html) {
   const menuHere = !crumbMenu.hidden && Boolean(crumbMenuOwner?.classList?.contains('console-recents-filter'));
   
-  consoleRecentsBand.innerHTML = `<div class="sidebar-pane-head"><span class="sidebar-pane-title">Conversations</span><span class="sidebar-pane-saving" role="status">${setupSavingWords()}</span></div>` + wispRowHtml() + html;
+  consoleRecentsBand.innerHTML = `<div class="sidebar-pane-head"><span class="sidebar-pane-title">Conversations</span><span class="sidebar-pane-saving" role="status">${setupSavingWords()}</span></div>` + chatBoardRowHtml() + wispRowHtml() + html;
   const button = consoleRecentsBand.querySelector('.console-recents-filter');
   if (menuHere && button) showCrumbMenu(button, consoleChatFilterRows());
 }
@@ -50656,6 +51322,8 @@ if (consoleRecentsBand) {
       consoleRecents.carried = false;
       return;
     }
+    
+    if (event.target.closest) chatBoardHearsListPress(event.target);
     const sectionMore = event.target.closest?.('.console-pin-more');
     if (sectionMore) {
       event.stopPropagation?.();
@@ -50709,6 +51377,12 @@ if (consoleRecentsBand) {
     
     if (event.target.closest?.('.console-recents-filter')) {
       event.stopPropagation?.();
+      return;
+    }
+    
+    if (event.button === 0 && event.target.closest?.('[data-chat-board]')) {
+      event.preventDefault?.();
+      openChatBoard();
       return;
     }
     

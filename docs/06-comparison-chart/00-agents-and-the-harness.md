@@ -17,6 +17,8 @@
 | Play pointer gestures | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Quit like closing | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Agent on a timetable | [✅][l-agent-schedule] | ? | [❌][t-seen] | [❌][c-seen] |
+| Board of agents' work | [✅][l-agent-board] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agent hears board drag | [✅][l-agent-board] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Local question pipe | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Close ends reliably | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Agents edit documents | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
@@ -76,6 +78,7 @@
 [l-agent-circle]: ../01-features/10-agents.md#an-agent-going-round-in-circles-is-told
 [l-agent-close]: ../01-features/10-agents.md#closing-the-last-window
 [l-agent-schedule]: ../01-features/10-agents.md#scheduled
+[l-agent-board]: ../01-features/10-agents.md#the-board
 [l-agent-drive]: ../01-features/10-agents.md#an-agent-drives-your-other-windows
 [l-agent-drop]: ../01-features/10-agents.md#run-the-agent-in-a-console
 [l-agent-folder]: ../01-features/10-agents.md#the-agents-status-under-its-console

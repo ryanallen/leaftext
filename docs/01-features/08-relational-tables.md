@@ -16,7 +16,7 @@ The view works from the values already in the table. Leaftext recognizes numbers
 
 ## Views, sort and filter
 
-**Table** is the Markdown table as written. **Cards** shows one card per record, as many side by side as the page holds. **Board** lays the records out as a kanban board: a lane per value of a short-list column such as a status or stage, side by side across the window, each card showing its title and its other fields as small chips. The field button beside a view says which columns it is using for as long as the document stays open.
+**Table** is the Markdown table as written. **Cards** shows one card per record, as many side by side as the page holds. **Board** lays the records out as a kanban board: a lane per value of a short-list column such as a status or stage, side by side across the window, each lane headed by a small ring in its cards' color, filled further the further along the lanes it stands, and each card showing its title, one quiet line of what it is, its sentence and its other fields as small chips. Lanes keep their width and the board scrolls sideways, fading the edge with more lanes past it; a card held near that edge rolls the board toward them. The field button beside a view says which columns it is using for as long as the document stays open.
 
 ![The same records as a grid of cards two across, each led by its id with its title, author, status, pages, read and due listed under it, and Cards raised in the layout control with a Card fields button beside it](../../imgs/relational-cards-2.png)
 
@@ -32,6 +32,14 @@ On an unlocked page a board is edited where it stands, and every change is an or
 - **Press a card** to edit every field of it in place, or remove it.
 - **Add a lane** from the last lane on the board. **Press a lane's name** to rename it, which renames every card in it, or **drag a lane by its head** to move it among the others. An empty lane you added can be removed from its foot.
 
+### What a card says
+
+- **Its title**, from the column that names the record. A table led by a column of whole numbers is ranked rather than keyed, so the title is the first column of words after it; a link in the title cell opens what it points at on a locked page.
+- **One quiet line**: a bug's red badge, then the rank as `#4`, then the record's short repeating choice, such as a track — `BUG #4 · Progress`.
+- **What it waits on**: a `Blocked by` column's words, on a line of their own in the warning color.
+- **Its sentence**: the first column most of whose cells are three words or more and that is not a short repeating choice, two lines at most.
+- **Its other fields** as chips. A dash says nothing and draws none, and a cell drawn as a badge stays that badge.
+
 ### A board that stays a board
 
 A note can say its tables open as a board. Put the column to group by in the frontmatter, and the lanes in the order you want them:
@@ -44,6 +52,17 @@ board-columns: [Backlog, Doing, Review, Done]
 ```
 
 Every table in the note with a `Status` column opens as a board grouped by it, every time. That holds from the first card, and before it: a heading row with no rows under it opens as the kept lanes, empty, ready for a card. `board-columns` orders the lanes and keeps a lane with no cards in it. Adding a lane on a board writes both fields for you. Switching a kept board to Table or Cards from the bar lasts until the note is opened again.
+
+A board whose stages are written somewhere else says so with `board-moves`, a sentence:
+
+```yaml
+---
+board: Stage
+board-moves: "Stages move when the ticket does: /design, /dev, /test and /done write it."
+---
+```
+
+That board offers no plus, no new lane, no rename and no removal, and a card dragged or moved from the keyboard goes back where it stood while the sentence shows.
 
 A view you set stays set while the document is open, including when the file changes underneath. Editing a cell, dragging a card between board columns, or another program writing the file all redraw the page, and the layout, sort, filters and chosen fields come back with it — with any record that changed drawn as it now reads. Adding or deleting a table above the one you are looking at is the exception: the view is a table's place in the document, so the table you set it on is no longer at that place and it comes back as an ordinary table.
 

@@ -224,6 +224,10 @@ Move or close a Home box from the quiet controls on its heading; the small plus 
 - Its **Connections** tab has a row each for Slack and Discord, and on a Mac one for iMessage. **Enter token** takes a key into the system's credential store — never into `settings.json` — and the row then offers **Forget**. **Check everything** asks every service at once and writes what each said on its row, giving each ten seconds; while the wisp is unlit it checks nothing
 - **Keep running when you close the window**, the switch under its name, is on by default: closing the last window hides it behind Leaftext's icon in the notification area or the menu bar, so your wisp keeps working, and Quit on the icon or the quit key ends Leaftext. Off, closing the last window quits. Saved as `keep_running`
 
+### The board
+
+- **The note the [board](10-agents.md#the-board) draws**, chosen in the file window the first time **Board** is pressed with none chosen, and kept across launches. Only a Markdown note is kept; a note deleted since reads as none chosen, so the next press asks again. Saved as `chat_board`
+
 ### Pager
 
 - **Always on.** It is not a choice any more, and there is nothing to switch

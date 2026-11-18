@@ -14714,8 +14714,11 @@ body.is-block-dragging .document-body [data-src-start] {
   margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
 }
 /* A board or a list takes the whole measure rather than the table's width, so the column does too. */
+/* And it takes the reader's whole lane, the block controls' strip included: a board's lanes divide the width between them, and every pixel the strip held back was taken from each lane. */
 .document-run > .table-bay.table-bay-is-drawn {
   grid-template-columns: minmax(0, 1fr);
+  width: max(100%, 100cqi);
+  margin-inline: calc((100% - max(100%, 100cqi)) / 2);
 }
 /* And the lane keeps its own box inside the bay, so everything keyed on it — the bands, the corner control, the hover that reveals it, the wheel, the full-window sheet — lands where it always did. Auto margins center it because it can no longer be wider than its parent; a block box wider than its containing block has them treated as zero, which is why they cannot center the lane against the measure directly. */
 .table-bay > .table-lane {
@@ -16202,8 +16205,9 @@ body.table-resizing.is-row button {
 .table-lens-board {
   display: flex;
   gap: var(--lt-space-12);
-  align-items: flex-start;
-  /* Lanes keep their width and the board scrolls sideways past the window rather than squeezing four lanes into the measure. Written `auto hidden` so a lane taller than the rest never hangs a vertical bar on the board. */
+  /* Every lane stands as a column the height of the tallest, so a lane with one card is a column and not a stub. */
+  align-items: stretch;
+  /* Lanes keep their width and the board scrolls sideways past the window rather than squeezing every lane into the measure — the owner's word of 18 November 2026, 9:49am, after a build that stacked them onto rows. Written `auto hidden` so a lane taller than the rest never hangs a vertical bar on the board. */
   overflow: auto hidden;
   padding-block-end: var(--lt-space-8);
   scroll-snap-type: x proximity;
@@ -16221,7 +16225,7 @@ body.table-resizing.is-row button {
   -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 56px, var(--lt-mask-opaque) calc(100% - 56px), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 56px, var(--lt-mask-opaque) calc(100% - 56px), transparent 100%);
 }
-/* The lane a card stands in: a tinted field the full height of its cards, its head and its foot. */
+/* The lane a card stands in: a tinted field the full height of the board, keeping its width however many lanes there are. */
 .table-lens-column {
   flex: none;
   display: flex;
@@ -16236,6 +16240,20 @@ body.table-resizing.is-row button {
   scroll-snap-align: start;
   transition: background-color var(--lt-duration-120) var(--lt-ease);
 }
+/* An empty lane: a dashed well the lane's whole height, so it reads as room for a card rather than a lane that ended early. */
+.table-lens-column-well {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 96px;
+  padding: var(--lt-space-8);
+  border: var(--lt-stroke-1) dashed var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  text-align: center;
+}
 /* A lane being dragged by its head, and the lane it will be set down in front of, ringed the way a lane a card is dropped into is. */
 .table-lens-column.is-dragging {
   opacity: var(--lt-opacity-55);
@@ -16243,20 +16261,22 @@ body.table-resizing.is-row button {
 .table-lens-column.is-lane-drop {
   box-shadow: var(--lt-shadow-focus);
 }
-.table-lens-column-head {
-  cursor: grab;
-}
 .table-lens-column.is-drop-end {
   box-shadow: var(--lt-shadow-focus);
 }
 .table-lens-column-head {
   display: flex;
-  gap: var(--lt-space-6);
+  cursor: grab;
+  /* One line: a lane keeps its 288 px, so a long name ends in an ellipsis rather than pushing the count and plus onto a line of their own and its cards lower than its neighbors'. */
+  flex-wrap: nowrap;
+  gap: var(--lt-space-4) var(--lt-space-6);
   align-items: center;
   min-height: 32px;
   padding-inline: var(--lt-space-4) 0;
 }
 .table-lens-column-name {
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   padding: var(--lt-space-2) var(--lt-space-4);
   margin-inline-start: calc(-1 * var(--lt-space-4));
@@ -16293,6 +16313,7 @@ body.table-resizing.is-row button {
 /* The plus sits at the head's far end in the lane's quiet ink, so a board of eight lanes is not eight rows of loud buttons. */
 .table-lens-column-add {
   display: grid;
+  flex: none;
   place-items: center;
   width: 26px;
   height: 26px;
@@ -16315,6 +16336,9 @@ body.table-resizing.is-row button {
 }
 /* The last lane, which is only the press that adds one. Drawn as an outline of a lane rather than a lane, so it reads as room for the next one. */
 .table-lens-column-ghost {
+  /* Only as wide as its press: it is room for the next lane, not a lane, so it takes no share of the width the lanes divide. */
+  flex: none;
+  padding-inline: var(--lt-space-2);
   background: transparent;
   box-shadow: var(--lt-shadow-hairline);
 }
@@ -16372,7 +16396,9 @@ body.table-resizing.is-row button {
   display: flex;
   flex-direction: column;
   gap: var(--lt-space-8);
-  padding: var(--lt-space-10) var(--lt-space-12);
+  /* Shrinks with its lane rather than holding the lane open at its longest word. */
+  min-width: 0;
+  padding: var(--lt-space-8) var(--lt-space-10);
   border-radius: var(--lt-radius-lg);
   background: var(--lt-markdown-background);
   box-shadow: var(--lt-shadow-hairline);
@@ -16415,10 +16441,10 @@ body.table-resizing.is-row button {
 /* Run to the card's edges along its top. Written as the card's child so it outweighs the document's own picture rule, whose centered margin, gap below and width cap otherwise left it inset in a frame of the card's own padding with a step of empty card under it. */
 .table-lens-card > .table-lens-card-picture {
   display: block;
-  width: calc(100% + 2 * var(--lt-space-12));
+  width: calc(100% + 2 * var(--lt-space-10));
   max-width: none;
   height: auto;
-  margin: calc(-1 * var(--lt-space-10)) calc(-1 * var(--lt-space-12)) 0;
+  margin: calc(-1 * var(--lt-space-8)) calc(-1 * var(--lt-space-10)) 0;
   border-radius: var(--lt-radius-lg) var(--lt-radius-lg) 0 0;
 }
 .table-lens-card-title {
@@ -16428,6 +16454,68 @@ body.table-resizing.is-row button {
   letter-spacing: var(--lt-tracking-tight-005);
   line-height: var(--lt-leading-1-35);
   overflow-wrap: anywhere;
+}
+/* A title that is a link — a ticket's name on the running order — takes the link's own color and the card's type, and wraps inside a narrow lane rather than widening it. */
+.table-lens-card-title > a {
+  color: var(--lt-primary-ink);
+  text-decoration: none;
+}
+/* What the card is, on one quiet line under its title: a bug's red badge, the rank and the track — version D's meta line, so a running-order card reads `BUG #4 · Progress` rather than a corner number and a row of chips. */
+.table-lens-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2) var(--lt-space-6);
+  align-items: center;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lt-leading-1-35);
+}
+/* What the card waits on, in the warning ink on a line of its own, so a blocked card is told apart at a glance. */
+.table-lens-card-blocked {
+  color: var(--lt-warning);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-35);
+  overflow-wrap: anywhere;
+}
+/* The card's foot: the chats working the record, one line each, under a hairline. Only drawn where a board has chats to put in it. */
+.table-lens-card-who {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  padding-block-start: var(--lt-space-6);
+  border-block-start: var(--lt-stroke-1) solid var(--lt-border);
+}
+/* The lane's stage mark: one small ring in the lane's tone, filled by how far along the lanes it stands, a check in the last, dashed where the lane has no tone of its own. */
+.table-lens-column-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border: var(--lt-stroke-1-5) solid currentColor;
+  border-radius: var(--lt-radius-pill);
+  background: conic-gradient(currentColor calc(var(--lane-fill, 0) * 1turn), transparent 0);
+}
+.table-lens-column-mark.doc-badge--gray {
+  border-style: dashed;
+}
+.table-lens-column-mark > .lt-icon {
+  width: 10px;
+  height: 10px;
+  color: var(--lt-markdown-background);
+}
+/* The card's sentence: the record's own words about itself, two lines at most, rather than a chip cut off mid-word. */
+.table-lens-card-line {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12-5);
+  line-height: var(--lt-leading-1-35);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 .table-lens-card-chips {
   display: flex;
@@ -16554,6 +16642,237 @@ body.table-resizing.is-row button {
   padding: var(--lt-space-2) var(--lt-space-6) 0;
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-12-5);
+}
+/* The Board place: Sideboard's board beside the Conversations list, drawn dense as version D2 draws it. It stands in the shell's grid over every track after the pane — the chat column, the pages and the rail — until a chat is pressed, so the board has the window's width and nothing under it shows through. */
+.chat-board {
+  grid-column: 2 / -1;
+  grid-row: 1 / -1;
+  z-index: var(--lt-z-20);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-12);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--console-inset-top) var(--lt-space-20) var(--lt-space-12);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+}
+/* Put down, the place is gone: its own display would otherwise outweigh `hidden` and keep it drawn over the chat a press brought forward. */
+.chat-board[hidden] {
+  display: none;
+}
+/* One line says what is running: the place's name, the note's own heading, the counts, then the filter, the order and the three presses. */
+.chat-board-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-6) var(--lt-space-12);
+  align-items: center;
+}
+.chat-board-title {
+  font-size: var(--lt-text-16);
+  font-weight: var(--lt-weight-600);
+}
+.chat-board-note {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-13);
+}
+.chat-board-counts {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+  font-variant-numeric: tabular-nums;
+}
+.chat-board-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-4);
+  align-items: center;
+  margin-inline-start: auto;
+}
+.chat-board-gap {
+  width: var(--lt-space-8);
+}
+.chat-board-pill {
+  padding: var(--lt-space-2) var(--lt-space-8);
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+}
+.chat-board-pill.is-on {
+  background: var(--lt-surface-muted);
+  color: var(--lt-foreground);
+}
+@media (hover: hover) {
+  .chat-board-pill:hover,
+  .chat-board-card-title:hover,
+  .chat-board-chat-open:hover {
+    background: var(--lt-wash-hover);
+  }
+}
+/* The columns: frameless, each its mark, name and count over its cards, sharing the width while they fit and scrolling sideways with the edge faded where they do not — every board's rule since the owner's word of 18 November 2026, 9:49am. */
+.chat-board-columns {
+  display: flex;
+  flex: 1;
+  gap: var(--lt-space-12);
+  min-height: 0;
+  overflow: auto hidden;
+  scroll-snap-type: x proximity;
+  /* A card carried across the columns selects nothing it passes. */
+  user-select: none;
+}
+.chat-board-columns.is-more-right {
+  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 56px), transparent 100%);
+}
+.chat-board-columns.is-more-left {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 56px);
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 56px);
+}
+.chat-board-columns.is-more-left.is-more-right {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 56px, var(--lt-mask-opaque) calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 56px, var(--lt-mask-opaque) calc(100% - 56px), transparent 100%);
+}
+/* A column the full height of the place, its cards scrolling on their own. */
+.chat-board-column {
+  display: flex;
+  flex: 1 0 220px;
+  flex-direction: column;
+  gap: var(--lt-space-8);
+  min-height: 0;
+  scroll-snap-align: start;
+}
+.chat-board-column-head {
+  display: flex;
+  gap: var(--lt-space-6);
+  align-items: center;
+  min-height: 28px;
+}
+.chat-board-column-name {
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+}
+.chat-board-cards {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--lt-space-6);
+  min-height: 0;
+  overflow: hidden auto;
+}
+/* A card per ticket: its title, one quiet line, what it waits on, and the chats working it. An amber edge where a chat on it waits on the owner or the ticket waits on another. */
+.chat-board-card {
+  display: flex;
+  border-inline-start: var(--lt-stroke-2) solid transparent;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  padding: var(--lt-space-8) var(--lt-space-10);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-markdown-background);
+  box-shadow: var(--lt-shadow-hairline);
+}
+.chat-board-card.is-waiting {
+  border-inline-start-color: var(--lt-warning);
+}
+.chat-board-card.is-dragging {
+  opacity: var(--lt-opacity-55);
+}
+.chat-board-card-title {
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-35);
+  text-align: start;
+}
+/* A chat working the card, one line: its dot, its agent's mark, its title, then agent, state and age, wrapping to a second line in a narrow column. */
+.chat-board-chat {
+  display: flex;
+  gap: var(--lt-space-4);
+  align-items: center;
+}
+.chat-board-chat-open {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2) var(--lt-space-6);
+  align-items: center;
+  min-width: 0;
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  text-align: start;
+}
+.chat-board-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-muted-foreground);
+}
+.chat-board-chat.is-working .chat-board-dot {
+  background: var(--lt-success);
+}
+.chat-board-chat.is-needs .chat-board-dot {
+  background: var(--lt-warning);
+}
+.chat-board-chat-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-board-chat-meta {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11-5);
+}
+.chat-board-unread {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-primary);
+}
+.chat-board-lines {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11-5);
+  font-variant-numeric: tabular-nums;
+}
+.chat-board-stop,
+.chat-board-retire,
+.chat-board-more {
+  align-self: flex-start;
+  padding: var(--lt-space-2) var(--lt-space-8);
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-surface-muted);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-11-5);
+}
+.chat-board-none {
+  padding: var(--lt-space-8);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+}
+/* The row at the head of the Conversations list wears a small ring, three quarters filled: the board's mark. */
+.chat-board-mark {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border: var(--lt-stroke-1-5) solid currentColor;
+  border-radius: var(--lt-radius-pill);
+  background: conic-gradient(currentColor 0.75turn, transparent 0);
 }
 /* Lives in the shell's own column, outside the page — so no bleed and nothing to out-stack: it never overlaps the bar or the card.
 
@@ -22891,7 +23210,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 120 icons, and all 220 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 120 icons, and all 221 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -22926,7 +23245,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>204</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>120</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>220</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>221</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -23414,7 +23733,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">220 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">221 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -24277,7 +24596,11 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Table lens board</h3><code class="built">.table-lens-board</code><span class="built">table-board.js</span></header>
-<div class="stage"><div class="table-lens-board"><div class="table-lens-column"><div class="table-lens-column-head"><button type="button" class="table-lens-column-name">reading</button><span class="table-lens-column-count">1</span><button type="button" class="table-lens-column-add" aria-label="Add a card to reading"><span class="lt-icon lt-icon-new"></span></button></div><div class="table-lens-card" data-lens-movable="true"><div class="table-lens-card-title">Dune</div><div class="table-lens-card-chips"><span class="table-lens-card-chip"><span class="table-lens-card-name">pages</span> 412</span></div></div></div><div class="table-lens-column"><div class="table-lens-column-head"><button type="button" class="table-lens-column-name">finished</button><span class="table-lens-column-count">2</span><button type="button" class="table-lens-column-add" aria-label="Add a card to finished"><span class="lt-icon lt-icon-new"></span></button></div><div class="table-lens-card" data-lens-movable="true"><div class="table-lens-card-title">The Dispossessed</div><div class="table-lens-card-chips"><span class="table-lens-card-chip">Le Guin</span><span class="table-lens-card-chip"><span class="table-lens-card-name">pages</span> 387</span></div></div><div class="table-lens-card is-editing"><form class="table-lens-card-editor"><label class="table-lens-editor-field"><span class="table-lens-editor-name">id</span><input class="table-lens-input" value="The Left Hand of Darkness"></label><div class="table-lens-editor-actions"><button type="button" class="table-lens-editor-remove">Remove</button><button type="button" class="table-lens-editor-cancel">Cancel</button><button type="submit" class="table-lens-editor-save">Save</button></div></form></div><input class="table-lens-card-new" placeholder="Card title"></div><div class="table-lens-column"><div class="table-lens-column-head"><input class="table-lens-column-rename" value="abandoned"><span class="table-lens-column-count">0</span></div><button type="button" class="table-lens-column-remove">Remove lane</button></div><div class="table-lens-column table-lens-column-ghost"><button type="button" class="table-lens-column-new"><span class="lt-icon lt-icon-new"></span>Add a lane</button></div></div></div>
+<div class="stage"><div class="table-lens-board"><div class="table-lens-column"><div class="table-lens-column-head"><span class="table-lens-column-mark doc-badge--gray"></span><button type="button" class="table-lens-column-name">reading</button><span class="table-lens-column-count">1</span><button type="button" class="table-lens-column-add" aria-label="Add a card to reading"><span class="lt-icon lt-icon-new"></span></button></div><div class="table-lens-card" data-lens-movable="true"><div class="table-lens-card-title">Dune</div><div class="table-lens-card-meta"><span class="doc-badge doc-badge--red">BUG</span><span>#1 · Science fiction</span></div><div class="table-lens-card-blocked">Blocked by The Left Hand</div><div class="table-lens-card-line">A desert planet, a spice, and the family sent to rule it.</div><div class="table-lens-card-chips"><span class="table-lens-card-chip"><span class="table-lens-card-name">pages</span> 412</span></div></div></div><div class="table-lens-column"><div class="table-lens-column-head"><span class="table-lens-column-mark doc-badge--green" style="--lane-fill:1"><span class="lt-icon lt-icon-check"></span></span><button type="button" class="table-lens-column-name">finished</button><span class="table-lens-column-count">2</span><button type="button" class="table-lens-column-add" aria-label="Add a card to finished"><span class="lt-icon lt-icon-new"></span></button></div><div class="table-lens-card" data-lens-movable="true"><div class="table-lens-card-title">The Dispossessed</div><div class="table-lens-card-chips"><span class="table-lens-card-chip">Le Guin</span><span class="table-lens-card-chip"><span class="table-lens-card-name">pages</span> 387</span></div></div><div class="table-lens-card is-editing"><form class="table-lens-card-editor"><label class="table-lens-editor-field"><span class="table-lens-editor-name">id</span><input class="table-lens-input" value="The Left Hand of Darkness"></label><div class="table-lens-editor-actions"><button type="button" class="table-lens-editor-remove">Remove</button><button type="button" class="table-lens-editor-cancel">Cancel</button><button type="submit" class="table-lens-editor-save">Save</button></div></form></div><input class="table-lens-card-new" placeholder="Card title"></div><div class="table-lens-column"><div class="table-lens-column-head"><input class="table-lens-column-rename" value="abandoned"><span class="table-lens-column-count">0</span></div><div class="table-lens-column-well">Drop a card here</div><button type="button" class="table-lens-column-remove">Remove lane</button></div><div class="table-lens-column table-lens-column-ghost"><button type="button" class="table-lens-column-new" title="Add a lane" aria-label="Add a lane"><span class="lt-icon lt-icon-new"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Chat board</h3><code class="built">.chat-board</code><span class="built">chat-board.js</span></header>
+<div class="stage"><section class="chat-board" style="position:relative;height:360px"><header class="chat-board-head"><span class="chat-board-title">Board</span><span class="chat-board-note">The board</span><span class="chat-board-counts">1 working · 3 tickets · 1 blocked</span><span class="chat-board-tools"><button type="button" class="chat-board-pill is-on">All</button><button type="button" class="chat-board-pill">Bugs</button><span class="chat-board-gap"></span><button type="button" class="chat-board-pill">Refresh</button></span></header><div class="chat-board-columns"><section class="chat-board-column"><div class="chat-board-column-head"><span class="table-lens-column-mark doc-badge--gray"></span><span class="chat-board-column-name">Ready</span><span class="table-lens-column-count">1</span></div><div class="chat-board-cards"><div class="chat-board-card is-waiting"><button type="button" class="chat-board-card-title">Sparkle and glitter</button><div class="table-lens-card-meta"><span>#6 · Progress</span></div><div class="table-lens-card-blocked">Blocked by Action effects</div></div></div></section><section class="chat-board-column"><div class="chat-board-column-head"><span class="table-lens-column-mark doc-badge--gray" style="--lane-fill:0.5"></span><span class="chat-board-column-name">Dev</span><span class="table-lens-column-count">1</span></div><div class="chat-board-cards"><div class="chat-board-card"><button type="button" class="chat-board-card-title">The running order reads as a board</button><div class="table-lens-card-meta"><span class="doc-badge doc-badge--red">BUG</span><span>#3 · Table lens · 1 chat</span></div><div class="table-lens-card-who"><div class="chat-board-chat is-working"><button type="button" class="chat-board-chat-open"><span class="chat-board-dot"></span><span class="chat-board-chat-title">Running order board</span><span class="chat-board-chat-meta">Claude · working · now</span><span class="chat-board-unread"></span><span class="chat-board-lines">+12 −3</span></button><button type="button" class="chat-board-stop">Stop</button></div></div></div><button type="button" class="chat-board-more">Show 40 more (2 hidden)</button></div></section><section class="chat-board-column"><div class="chat-board-column-head"><span class="table-lens-column-mark doc-badge--gray" style="--lane-fill:1"><span class="lt-icon lt-icon-check"></span></span><span class="chat-board-column-name">Released</span><span class="table-lens-column-count">0</span></div><div class="chat-board-cards"><div class="chat-board-none">None</div><button type="button" class="chat-board-retire">Retire</button></div></section></div></section></div>
 </section>
 <section class="part">
 <header><h3>Full-window table</h3><code class="built">.table-sheet</code><span class="built">table-sheet.js</span></header>
