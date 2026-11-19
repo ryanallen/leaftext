@@ -113,7 +113,7 @@ export const APP_DEMO = 'docs/03-quickstart.md';
 
 /** The front page's own bar, standing where the app's bar stands on every other page: the leaf and the name, the page's own parts, the documentation, the app and the downloads. */
 function navOf() {
-  return `<nav class="front-nav" aria-label="Leaftext"><a class="front-nav-brand" href="#download"><span class="lt-icon lt-icon-leaf" aria-hidden="true"></span>leaftext</a><span class="front-nav-links"><a href="#features">Apps</a><a href="#${COMPARE_ID}">Compare</a><a href="docs/">Docs</a></span><a class="front-nav-try" href="${APP_DEMO}">Try the app →</a><a class="front-nav-get" href="#download">Download</a></nav>`;
+  return `<nav class="front-nav" aria-label="Leaftext"><a class="front-nav-brand" href="#download"><span class="lt-icon lt-icon-leaf" aria-hidden="true"></span>leaftext</a><span class="front-nav-links"><a href="#features">Apps</a><a href="#${COMPARE_ID}">Compare</a><a href="docs/">Docs</a></span><a class="front-nav-try" href="${APP_DEMO}" data-app-window="">Try the app →</a><a class="front-nav-get" href="#download">Download</a></nav>`;
 }
 
 /** The hero: one band holding the title, the one line under it, the downloads and the small print beside them, and the app recorded beside those words. */
@@ -149,7 +149,7 @@ function runningOf(section) {
   if (!heading || !said) throw new Error(`the README's "${RUNNING_ID}" section has no line for the running-in-your-browser panel`);
   // The line loses its own Try the app link to the buttons, so it is no longer the README's paragraph byte for byte and is not offered for typing.
   const line = unproved(classed(said.replace(/\s*<strong><a\b[^>]*>[^<]*<\/a><\/strong>\s*/, ' ').replace(/\s+<\/p>$/, '</p>'), 'front-running-line'));
-  const buttons = `<p class="front-running-go"><a class="front-running-try" href="${APP_DEMO}">Try the app →</a><a href="${SAMPLE_BOOK}">Open a book</a><a href="docs/">Read the docs</a></p>`;
+  const buttons = `<p class="front-running-go"><a class="front-running-try" href="${APP_DEMO}" data-app-window="">Try the app →</a><a href="${SAMPLE_BOOK}">Open a book</a><a href="docs/">Read the docs</a></p>`;
   return `<section class="front-running" id="${RUNNING_ID}">${heading[0].replace(/^<h2\b/, '<h2 class="front-running-title"')}${line}${buttons}</section>`;
 }
 

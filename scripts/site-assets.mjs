@@ -61,6 +61,7 @@ export const HOST_FILES = [
   [`${APP_DIR}/dotted-leaf.js`, 'site/dotted-leaf.js'],
   [`${APP_DIR}/compare-chart.js`, 'site/compare-chart.js'],
   [`${APP_DIR}/front-page.js`, 'site/front-page.js'],
+  [`${APP_DIR}/front-window.js`, 'site/front-window.js'],
   [`${APP_DIR}/shelf-layout.js`, 'site/shelf-layout.js'],
   [`${APP_DIR}/shelf.js`, 'site/shelf.js'],
   [`${APP_DIR}/leaf.svg`, 'src/assets/leaf.svg'],

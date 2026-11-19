@@ -7,6 +7,7 @@
 
 import { DEMO_DIR, FRONT_LAYOUT_CLASS } from './front-page-layout.js';
 import { startDottedLeaf } from './dotted-leaf.js';
+import { installAppWindow } from './front-window.js';
 
 /** How far ahead of the window a clip starts arriving, so it is playing by the time it is seen. */
 const CLIP_AHEAD = '400px 0px';
@@ -91,12 +92,14 @@ export function holdMarketingPage(root) {
  */
 export function installFrontMotion(root, held = null) {
   holdMarketingPage(root);
+  // Try the app opens the app in a window over the page whether or not the reader asked for less motion; only its growing in is left out then.
+  const stopWindow = installAppWindow(root, { marketing: MARKETING_CLASS });
   const cards = [...root.querySelectorAll('.front-card')];
   const leaf = [...root.querySelectorAll('.dotted-leaf')].find((mark) => !mark.closest('.document-minimap, .document-minimap-preview'));
   // Only the reading column's boxes: the rail's copy of the page keeps its posters, since a clip there would fetch and decode the same file again for a picture too small to watch.
   const boxes = [...root.querySelectorAll('.front-clip[data-clip]')].filter((box) => !box.closest('.document-minimap, .document-minimap-preview'));
   const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (still || typeof IntersectionObserver !== 'function') return { root, cards: cards.length, clips: 0, stop: () => {}, hold: () => null };
+  if (still || typeof IntersectionObserver !== 'function') return { root, cards: cards.length, clips: 0, stop: stopWindow, hold: () => null };
 
   if (held) {
     for (const box of boxes) {
@@ -153,6 +156,7 @@ export function installFrontMotion(root, held = null) {
   if (leafInView) leafInView.observe(leaf);
   // A redraw puts a fresh page in, so the page it replaced is let go of rather than watched for ever.
   const stop = () => {
+    stopWindow();
     rising.disconnect();
     near.disconnect();
     if (leafInView) leafInView.disconnect();

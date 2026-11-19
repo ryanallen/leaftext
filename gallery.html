@@ -5140,6 +5140,19 @@
   --lt-front-bar: color-mix(in srgb, var(--lt-markdown-background) 72%, transparent);
   --lt-front-bar-blur: blur(14px) saturate(1.4);
   --lt-front-panel-glow: radial-gradient(ellipse 60% 90% at 50% 100%, color-mix(in srgb, var(--lt-link) 20%, transparent), transparent 70%);
+  --lt-front-button-height: 44px;
+  --lt-front-button-height-small: 36px;
+  --lt-front-button-fill: linear-gradient(100deg, var(--lt-primary), color-mix(in srgb, var(--lt-primary) 45%, var(--lt-link)));
+  --lt-front-button-lift: brightness(1.08) saturate(1.1);
+  --lt-front-button-soft: color-mix(in srgb, var(--lt-markdown-background) 78%, transparent);
+  --lt-front-window-width: 1280px;
+  --lt-front-window-height: 820px;
+  --lt-front-window-bar: 44px;
+  --lt-front-window-rail: 48px;
+  --lt-front-window-files: 200px;
+  --lt-front-window-agent: 280px;
+  --lt-front-window-scrim: color-mix(in srgb, var(--lt-foreground) 34%, transparent);
+  --lt-front-window-scrim-blur: blur(6px) saturate(1.1);
 }
 
 /* Generated from design/icons.md by `just bundle-icons`. Do not edit. */
@@ -17898,22 +17911,68 @@ body.is-home-box-dragging button {
   gap: var(--lt-space-24);
   margin-inline-start: auto;
 }
-.front-nav :is(a.front-nav-try, a.front-nav-get) {
-  padding: var(--lt-space-6) var(--lt-space-14);
+/* Every button on the marketing page is one pill of one height, on the owner's word of 18 November 2026, 8:01pm that the buttons were ugly: Try the app filled with the title's own two colors, the Windows download and the bar's Download filled with the page's ink, every other one the page's ground on a hairline. Hover lifts a pixel and deepens the color; focus draws the app's ring. */
+.front-nav :is(a.front-nav-try, a.front-nav-get),
+p.front-running-go a,
+p.front-closing-go a,
+.front-downloads a.leaf-md-button,
+a.front-card-try {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-8);
+  height: var(--lt-front-button-height);
+  margin: 0;
+  padding: 0 var(--lt-space-24);
   border: var(--lt-stroke-1) solid var(--lt-border-strong);
   border-radius: var(--lt-radius-pill);
+  background: var(--lt-front-button-soft);
   color: var(--lt-foreground);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1);
+  text-decoration: none;
   white-space: nowrap;
+  transition: transform var(--lt-duration-160) var(--lt-ease), border-color var(--lt-duration-160) var(--lt-ease), background-color var(--lt-duration-160) var(--lt-ease), color var(--lt-duration-160) var(--lt-ease), opacity var(--lt-duration-160) var(--lt-ease), filter var(--lt-duration-160) var(--lt-ease);
 }
-.front-nav a.front-nav-get {
+.front-nav :is(a.front-nav-try, a.front-nav-get),
+a.front-card-try {
+  height: var(--lt-front-button-height-small);
+  padding: 0 var(--lt-space-16);
+  font-size: var(--lt-text-14);
+}
+:is(.front-nav a.front-nav-try, p.front-running-go a.front-running-try, a.front-card-try) {
+  border-color: transparent;
+  background: var(--lt-front-button-fill);
+  color: var(--lt-primary-foreground);
+}
+:is(.front-nav a.front-nav-get, .front-downloads a.leaf-md-button) {
   border-color: var(--lt-foreground);
   background: var(--lt-foreground);
   color: var(--lt-background);
 }
+.front-downloads a.leaf-md-button + a.leaf-md-button {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-front-button-soft);
+  color: var(--lt-foreground);
+}
+:is(.front-nav a.front-nav-try, .front-nav a.front-nav-get, p.front-running-go a, p.front-closing-go a, .front-downloads a.leaf-md-button, a.front-card-try):focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+  outline-offset: var(--lt-space-2);
+}
 @media (hover: hover) {
   .front-nav a:hover { color: var(--lt-foreground); }
-  .front-nav a.front-nav-try:hover { background: var(--lt-wash-hover); }
-  .front-nav a.front-nav-get:hover { color: var(--lt-background); opacity: var(--lt-opacity-85); }
+  :is(.front-nav a.front-nav-try, .front-nav a.front-nav-get, p.front-running-go a, p.front-closing-go a, .front-downloads a.leaf-md-button, a.front-card-try):hover {
+    transform: translateY(calc(-1 * var(--lt-space-1)));
+    border-color: var(--lt-foreground);
+  }
+  :is(.front-nav a.front-nav-try, p.front-running-go a.front-running-try, a.front-card-try):hover {
+    border-color: transparent;
+    color: var(--lt-primary-foreground);
+    filter: var(--lt-front-button-lift);
+  }
+  :is(.front-nav a.front-nav-get, .front-downloads a.leaf-md-button):hover { color: var(--lt-background); opacity: var(--lt-opacity-85); }
+  .front-downloads a.leaf-md-button + a.leaf-md-button:hover { color: var(--lt-foreground); opacity: 1; }
 }
 @media (max-width: 720px) {
   .front-nav-links,
@@ -18016,23 +18075,6 @@ p.front-running-go {
   gap: var(--lt-space-10);
   margin: var(--lt-space-24) 0 0;
 }
-p.front-running-go a {
-  padding: var(--lt-space-8) var(--lt-space-16);
-  border: var(--lt-stroke-1) solid var(--lt-border-strong);
-  border-radius: var(--lt-radius-pill);
-  background: var(--lt-background);
-  color: var(--lt-foreground);
-  text-decoration: none;
-}
-p.front-running-go a.front-running-try {
-  border-color: var(--lt-foreground);
-  background: var(--lt-foreground);
-  color: var(--lt-background);
-}
-@media (hover: hover) {
-  p.front-running-go a:hover { background: var(--lt-wash-hover); }
-  p.front-running-go a.front-running-try:hover { background: var(--lt-foreground); opacity: var(--lt-opacity-85); }
-}
 
 /* Every feature as an app, Equin's grid: the heading and its line centered, the six recorded apps as tiles three across — the clip on top with Try it live over its corner, the name and the line under it on the raised surface — and every other app a chip with its own colored mark. */
 .front-apps-section {
@@ -18085,13 +18127,6 @@ a.front-card-try {
   position: absolute;
   right: var(--lt-space-10);
   bottom: var(--lt-space-10);
-  padding: var(--lt-space-4) var(--lt-space-10);
-  border-radius: var(--lt-radius-pill);
-  background: var(--lt-foreground);
-  color: var(--lt-background);
-  font-size: var(--lt-text-12);
-  font-weight: var(--lt-weight-600);
-  text-decoration: none;
 }
 /* A tile's mark is painted behind the start of its title rather than drawn as a box before it, so nothing stands before a heading where the drop cap's frame floats. */
 .front-apps-section .front-card,
@@ -18249,16 +18284,6 @@ p.front-closing-go {
   gap: var(--lt-space-10);
   margin: 0;
 }
-p.front-closing-go a {
-  padding: var(--lt-space-8) var(--lt-space-16);
-  border: var(--lt-stroke-1) solid var(--lt-border-strong);
-  border-radius: var(--lt-radius-pill);
-  color: var(--lt-foreground);
-  text-decoration: none;
-}
-@media (hover: hover) {
-  p.front-closing-go a:hover { background: var(--lt-wash-hover); }
-}
 
 /* On the article for the baked page, and on the run the reading page moves its blocks into once it draws it. */
 .front-layout,
@@ -18324,33 +18349,7 @@ p.front-downloads {
   width: fit-content;
   margin: 0 auto;
 }
-/* No accent on the downloads: a theme's accent filling one button is a colored slab that shouts over the title. Both are drawn in the page's own ink — the first filled with it, the second outlined in it — the same shape, size and weight, so they read as one pair in every theme. */
-.front-downloads a.leaf-md-button {
-  margin: 0;
-  padding: var(--lt-space-12) var(--lt-space-24);
-  border: var(--lt-stroke-1) solid var(--lt-foreground);
-  border-radius: var(--lt-radius-md);
-  background: var(--lt-foreground);
-  color: var(--lt-background);
-  font-weight: var(--lt-weight-500);
-}
-.front-downloads a.leaf-md-button + a.leaf-md-button {
-  background: transparent;
-  color: var(--lt-foreground);
-}
-@media (hover: hover) {
-  .front-downloads a.leaf-md-button:hover {
-    border-color: var(--lt-foreground);
-    background: var(--lt-foreground);
-    color: var(--lt-background);
-    opacity: var(--lt-opacity-85);
-  }
-  .front-downloads a.leaf-md-button + a.leaf-md-button:hover {
-    background: var(--lt-wash-hover);
-    color: var(--lt-foreground);
-    opacity: 1;
-  }
-}
+/* No accent on the downloads: a theme's accent filling one button is a colored slab that shouts over the title. The pair is drawn with every other button on the page, near the top of this sheet: the first in the page's ink, the second the quiet pill beside it. */
 /* The small print's link in the page's ink, underlined, rather than a second spot of accent under the buttons. */
 .front-hero p.front-small a { color: var(--lt-foreground); text-decoration: underline; text-underline-offset: 0.2em; font-weight: var(--lt-weight-400); }
 @container (max-width: 520px) {
@@ -18593,6 +18592,361 @@ p.front-more {
 @media (hover: hover) {
   :is(.front-install, .front-foot) a:hover,
   .front-card p.front-more a:hover { text-decoration-color: var(--lt-foreground); }
+}
+
+/* Try the app's window, drawn by `site/front-window.js` over the marketing page on the owner's word of 18 November 2026, 8:01pm: a smaller window that loads in the way the app starts, a tab per file the visitor picks, and an agent that is plainly a scripted demo. Every tab is the app's own page in a frame; the page inside wears `front-windowed`, under which its own bar, pane and starting card go so this window's chrome is the only one. */
+.leaf-app.front-windowed :is(.app-bar, .library-pane, .startup-card, .window-band) {
+  display: none;
+}
+/* The shell keeps its own grid, so the minimap stands at the right and the toolbar at the foot as they do in the app; only the pane's track is shut. The front end writes that track on the shell's own style as the pane moves, so only an important rule outranks it. */
+.leaf-app.front-windowed .library-shell {
+  grid-template-columns: 0 minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter) !important;
+}
+
+.front-window-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--lt-z-50);
+  display: none;
+  place-items: center;
+  padding: var(--lt-space-32);
+  background: var(--lt-front-window-scrim);
+  -webkit-backdrop-filter: var(--lt-front-window-scrim-blur);
+  backdrop-filter: var(--lt-front-window-scrim-blur);
+}
+.front-window-scrim.is-open { display: grid; }
+section.front-window {
+  display: grid;
+  grid-template-rows: var(--lt-front-window-bar) minmax(0, 1fr);
+  width: min(var(--lt-front-window-width), 100%);
+  height: min(var(--lt-front-window-height), 100%);
+  overflow: hidden;
+  border: var(--lt-stroke-1) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-window);
+  background: var(--lt-markdown-background);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-14);
+  transform-origin: center;
+  outline: 0;
+}
+header.front-window-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-10);
+  min-width: 0;
+  padding: 0 var(--lt-space-10) 0 var(--lt-space-16);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-surface);
+}
+.front-window-brand {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--lt-space-6);
+  margin-inline-end: var(--lt-space-10);
+  font-weight: var(--lt-weight-600);
+}
+.front-window-brand .lt-icon { color: var(--lt-primary-ink); }
+.front-window-tabs {
+  display: flex;
+  flex: 0 1 auto;
+  align-self: stretch;
+  align-items: flex-end;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.front-window-tab {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--lt-space-2);
+  height: calc(var(--lt-front-window-bar) - var(--lt-space-8));
+  padding: 0 var(--lt-space-4) 0 var(--lt-space-12);
+  border: var(--lt-stroke-1) solid transparent;
+  border-bottom: 0;
+  border-radius: var(--lt-radius-lg) var(--lt-radius-lg) 0 0;
+  color: var(--lt-muted-foreground);
+}
+.front-window-tab.is-on {
+  border-color: var(--lt-border);
+  background: var(--lt-markdown-background);
+  color: var(--lt-foreground);
+}
+:is(button.front-window-tab-name, button.front-window-tab-close, button.front-window-new, button.front-window-close, button.front-window-rail-button, button.front-window-file, button.front-window-ask, button.front-window-send) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+button.front-window-tab-name {
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:is(button.front-window-tab-close, button.front-window-new, button.front-window-close, button.front-window-send) {
+  justify-content: center;
+  flex: none;
+  width: var(--lt-space-24);
+  height: var(--lt-space-24);
+  border-radius: var(--lt-radius-md);
+  color: var(--lt-muted-foreground);
+}
+button.front-window-close { margin-inline-start: auto; width: var(--lt-space-32); height: var(--lt-space-32); }
+.front-window-body {
+  position: relative;
+  display: flex;
+  min-height: 0;
+}
+nav.front-window-rail {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lt-space-8);
+  width: var(--lt-front-window-rail);
+  padding-top: var(--lt-space-12);
+  border-right: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-surface);
+}
+button.front-window-rail-button {
+  justify-content: center;
+  width: var(--lt-space-32);
+  height: var(--lt-space-32);
+  border-radius: var(--lt-radius-lg);
+  color: var(--lt-muted-foreground);
+}
+button.front-window-rail-button.is-on {
+  background: var(--lt-front-button-fill);
+  color: var(--lt-primary-foreground);
+}
+aside.front-window-files,
+aside.front-window-agent {
+  display: none;
+  flex: none;
+  flex-direction: column;
+  min-height: 0;
+  border-right: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-surface);
+}
+aside.front-window-files.is-shown,
+aside.front-window-agent.is-shown { display: flex; }
+aside.front-window-files { width: var(--lt-front-window-files); padding: var(--lt-space-12) var(--lt-space-8); overflow-y: auto; }
+aside.front-window-agent { width: var(--lt-front-window-agent); }
+p.front-window-folder {
+  margin: 0 var(--lt-space-8) var(--lt-space-8);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-060);
+  text-transform: uppercase;
+}
+ul.front-window-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+button.front-window-file {
+  width: 100%;
+  padding: var(--lt-space-6) var(--lt-space-8);
+  border-radius: var(--lt-radius-md);
+  text-align: start;
+}
+button.front-window-file .lt-icon { flex: none; color: var(--lt-muted-foreground); }
+button.front-window-file.is-on { background: var(--lt-wash-hover); }
+.front-window-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+small.front-window-file-kind { flex: none; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); }
+p.front-window-agent-head {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  margin: 0;
+  padding: var(--lt-space-12) var(--lt-space-14) var(--lt-space-8);
+  font-weight: var(--lt-weight-600);
+}
+p.front-window-agent-head .lt-icon { color: var(--lt-primary-ink); }
+.front-window-agent-name { flex: 1; }
+.front-window-demo {
+  padding: var(--lt-space-2) var(--lt-space-8);
+  border-radius: var(--lt-radius-pill);
+  background: color-mix(in srgb, var(--lt-warning) 22%, transparent);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-700);
+  letter-spacing: var(--lt-tracking-060);
+  text-transform: uppercase;
+}
+p.front-window-note {
+  margin: 0 var(--lt-space-12);
+  padding: var(--lt-space-8) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-warning) 45%, transparent);
+  border-radius: var(--lt-radius-lg);
+  background: color-mix(in srgb, var(--lt-warning) 10%, transparent);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-4);
+}
+ol.front-window-chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--lt-space-8);
+  min-height: 0;
+  margin: 0;
+  padding: var(--lt-space-12);
+  overflow-y: auto;
+  list-style: none;
+}
+li.front-window-said {
+  max-width: 88%;
+  margin: 0;
+  padding: var(--lt-space-8) var(--lt-space-10);
+  border-radius: var(--lt-radius-xl);
+  line-height: var(--lt-leading-1-45);
+}
+li.front-window-said-agent {
+  align-self: flex-start;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-markdown-background);
+}
+li.front-window-said-you {
+  align-self: flex-end;
+  background: var(--lt-front-button-fill);
+  color: var(--lt-primary-foreground);
+}
+li.front-window-said.is-typing::after {
+  content: '• • •';
+  color: var(--lt-muted-foreground);
+  animation: front-breathe var(--lt-duration-800) var(--lt-ease-in-out) infinite alternate;
+}
+p.front-window-asks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-6);
+  margin: 0;
+  padding: 0 var(--lt-space-12) var(--lt-space-8);
+}
+button.front-window-ask {
+  padding: var(--lt-space-4) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-markdown-background);
+  font-size: var(--lt-text-12);
+}
+form.front-window-say {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  margin: 0 var(--lt-space-12) var(--lt-space-12);
+  padding: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) var(--lt-space-12);
+  border: var(--lt-stroke-1) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-xl);
+  background: var(--lt-markdown-background);
+}
+input.front-window-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--lt-space-6) 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--lt-foreground);
+  font: inherit;
+}
+button.front-window-send { background: var(--lt-front-button-fill); color: var(--lt-primary-foreground); }
+.front-window-pages {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: var(--lt-markdown-background);
+}
+iframe.front-window-page {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity var(--lt-duration-300) var(--lt-ease);
+}
+iframe.front-window-page.is-on { visibility: visible; }
+iframe.front-window-page.is-on.is-ready { opacity: 1; }
+.front-window-launch {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  pointer-events: none;
+}
+.front-window-launch.is-shown { display: grid; }
+.front-window-launch .lt-icon {
+  width: var(--lt-space-48);
+  height: var(--lt-space-48);
+  color: var(--lt-primary-ink);
+  animation: front-breathe var(--lt-duration-1250) var(--lt-ease-in-out) infinite alternate;
+}
+p.front-window-failed {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-content: center;
+  margin: 0;
+  padding: var(--lt-space-24);
+  color: var(--lt-muted-foreground);
+  text-align: center;
+}
+p.front-window-failed.is-shown { display: grid; }
+@keyframes front-breathe {
+  from { opacity: var(--lt-opacity-35); transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .front-window-launch .lt-icon,
+  li.front-window-said.is-typing::after { animation: none; }
+}
+@media (hover: hover) {
+  :is(button.front-window-tab-close, button.front-window-new, button.front-window-close, button.front-window-rail-button, button.front-window-file, button.front-window-ask):hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-foreground);
+  }
+  .front-window-tab:hover { color: var(--lt-foreground); }
+}
+:is(button.front-window-tab-name, button.front-window-tab-close, button.front-window-new, button.front-window-close, button.front-window-rail-button, button.front-window-file, button.front-window-ask, button.front-window-send):focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+  outline-offset: calc(-1 * var(--lt-stroke-2));
+}
+/* On a phone the window fills the screen less a gutter, and the files and the agent each open over the document from the rail rather than beside it. */
+@media (max-width: 720px) {
+  .front-window-scrim { padding: var(--lt-space-8); }
+  section.front-window { width: 100%; height: 100%; border-radius: var(--lt-radius-2xl); }
+  .front-window-brand { display: none; }
+  aside.front-window-files,
+  aside.front-window-agent {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--lt-front-window-rail);
+    z-index: var(--lt-z-20);
+    width: calc(100% - var(--lt-front-window-rail));
+  }
 }
 /* A shelf, the Arthurian shelf and any other the site lays out as one: `index.md` laid out by `site/shelf-layout.js` inside the reading column as a bookshelf — the hero, the switch between its orders, the finder, the key, the case of bays and spines, the book opened off it and the list it was drawn from. The app's bar, pane and rail stand around it as around every page, and the desktop never draws it. Every color is the theme's; the six tradition tones are the page's own categorical scale, which `site/shelf.js` sets on the shelf as `--shelf-tone-*` and `--shelf-ink-*` and sets again on every theme change. A spine's width and height are its own geometry, written on it by the layout from its reach and its title. */
 
@@ -23778,7 +24132,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 212 values that do not change with the theme, all 120 icons, and all 221 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 225 values that do not change with the theme, all 120 icons, and all 221 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -23811,7 +24165,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>212</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>225</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>120</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>221</b></button>
 </div>
@@ -23928,7 +24282,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">212 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">225 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -24184,6 +24538,19 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="value"><code>lt-front-bar</code><code>color-mix(in srgb, var(--lt-markdown-background) 72%, transparent)</code></div>
 <div class="value"><code>lt-front-bar-blur</code><code>blur(14px) saturate(1.4)</code></div>
 <div class="value"><code>lt-front-panel-glow</code><code>radial-gradient(ellipse 60% 90% at 50% 100%, color-mix(in srgb, var(--lt-link) 20%, transparent), transparent 70%)</code></div>
+<div class="value"><code>lt-front-button-height</code><code>44px</code></div>
+<div class="value"><code>lt-front-button-height-small</code><code>36px</code></div>
+<div class="value"><code>lt-front-button-fill</code><code>linear-gradient(100deg, var(--lt-primary), color-mix(in srgb, var(--lt-primary) 45%, var(--lt-link)))</code></div>
+<div class="value"><code>lt-front-button-lift</code><code>brightness(1.08) saturate(1.1)</code></div>
+<div class="value"><code>lt-front-button-soft</code><code>color-mix(in srgb, var(--lt-markdown-background) 78%, transparent)</code></div>
+<div class="value"><code>lt-front-window-width</code><code>1280px</code></div>
+<div class="value"><code>lt-front-window-height</code><code>820px</code></div>
+<div class="value"><code>lt-front-window-bar</code><code>44px</code></div>
+<div class="value"><code>lt-front-window-rail</code><code>48px</code></div>
+<div class="value"><code>lt-front-window-files</code><code>200px</code></div>
+<div class="value"><code>lt-front-window-agent</code><code>280px</code></div>
+<div class="value"><code>lt-front-window-scrim</code><code>color-mix(in srgb, var(--lt-foreground) 34%, transparent)</code></div>
+<div class="value"><code>lt-front-window-scrim-blur</code><code>blur(6px) saturate(1.1)</code></div>
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
@@ -24737,7 +25104,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="document-body"><nav class="docs-pager"><a class="docs-pager-prev" href="#"><span class="docs-pager-label">Previous</span>Gauge Maintenance</a><a class="docs-pager-next" href="#"><span class="docs-pager-label">Next</span>Weir Crest Survey</a></nav></div></div>
 </section>
 <section class="part">
-<header><h3>Front page</h3><code class="built">.front</code><span class="built">site/front-page-layout.js lays the README out — the hero one band in the page's own ink holding front-hero-words, the app recorded in front-hero-clip and the downloads in front-hero-get — site/front-page.js swaps in the clips, raises the cards, and front-page.css settles the hero clip once on first paint by its front-settle keyframes, a redraw putting it straight in place with is-in, and only leaftext.com draws it. It opens on its own bar, front-nav (the leaf, Apps, Compare, Docs, front-nav-try into the app and front-nav-get), and while the body wears front-marketing — written by the bake, kept by site/front-page.js while the landing is drawn — none of the app's chrome is drawn around it</span></header>
+<header><h3>Front page</h3><code class="built">.front</code><span class="built">site/front-page-layout.js lays the README out — the hero one band in the page's own ink holding front-hero-words, the app recorded in front-hero-clip and the downloads in front-hero-get — site/front-page.js swaps in the clips, raises the cards, starts site/front-window.js — Try the app's demo window over the page, front-window with its tabs, files pane and scripted agent badged front-window-demo, each tab the app's own page in a frame wearing front-windowed — and front-page.css settles the hero clip once on first paint by its front-settle keyframes, a redraw putting it straight in place with is-in, and only leaftext.com draws it. It opens on its own bar, front-nav (the leaf, Apps, Compare, Docs, front-nav-try into the app and front-nav-get), and while the body wears front-marketing — written by the bake, kept by site/front-page.js while the landing is drawn — none of the app's chrome is drawn around it</span></header>
 <div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body front-layout"><section class="front-hero"><div class="front-hero-words"><span class="dotted-leaf" role="img" aria-label="Leaftext leaf" data-dotted-leaf="front"><svg class="dotted-leaf-still" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor"><circle cx="6.5" cy="9" r="0.82"/><circle cx="6.5" cy="11.5" r="0.82"/><circle cx="9" cy="11.5" r="0.82"/><circle cx="6.5" cy="14" r="0.82"/><circle cx="9" cy="14" r="0.82"/><circle cx="11.5" cy="14" r="0.82"/><circle cx="6.5" cy="16.5" r="0.82"/><circle cx="9" cy="16.5" r="0.82"/><circle cx="11.5" cy="16.5" r="0.82"/><circle cx="14" cy="16.5" r="0.82"/><circle cx="6.5" cy="19" r="0.82"/><circle cx="9" cy="19" r="0.82"/><circle cx="11.5" cy="19" r="0.82"/><circle cx="14" cy="19" r="0.82"/><circle cx="16.5" cy="19" r="0.82"/><circle cx="19" cy="19" r="0.82"/><circle cx="6.5" cy="21.5" r="0.82"/><circle cx="9" cy="21.5" r="0.82"/><circle cx="11.5" cy="21.5" r="0.82"/><circle cx="14" cy="21.5" r="0.82"/><circle cx="16.5" cy="21.5" r="0.82"/><circle cx="19" cy="21.5" r="0.82"/><circle cx="21.5" cy="21.5" r="0.82"/><circle cx="24" cy="21.5" r="0.82"/><circle cx="26.5" cy="21.5" r="0.82"/><circle cx="6.5" cy="24" r="0.82"/><circle cx="9" cy="24" r="0.82"/><circle cx="11.5" cy="24" r="0.82"/><circle cx="14" cy="24" r="0.82"/><circle cx="16.5" cy="24" r="0.82"/><circle cx="19" cy="24" r="0.82"/><circle cx="21.5" cy="24" r="0.82"/><circle cx="24" cy="24" r="0.82"/><circle cx="26.5" cy="24" r="0.82"/><circle cx="29" cy="24" r="0.82"/><circle cx="31.5" cy="24" r="0.82"/><circle cx="34" cy="24" r="0.82"/><circle cx="36.5" cy="24" r="0.82"/><circle cx="39" cy="24" r="0.82"/><circle cx="6.5" cy="26.5" r="0.82"/><circle cx="9" cy="26.5" r="0.82"/><circle cx="11.5" cy="26.5" r="0.82"/><circle cx="16.5" cy="26.5" r="0.82"/><circle cx="19" cy="26.5" r="0.82"/><circle cx="21.5" cy="26.5" r="0.82"/><circle cx="24" cy="26.5" r="0.82"/><circle cx="26.5" cy="26.5" r="0.82"/><circle cx="29" cy="26.5" r="0.82"/><circle cx="31.5" cy="26.5" r="0.82"/><circle cx="34" cy="26.5" r="0.82"/><circle cx="36.5" cy="26.5" r="0.82"/><circle cx="39" cy="26.5" r="0.82"/><circle cx="41.5" cy="26.5" r="0.82"/><circle cx="44" cy="26.5" r="0.82"/><circle cx="9" cy="29" r="0.82"/><circle cx="11.5" cy="29" r="0.82"/><circle cx="14" cy="29" r="0.82"/><circle cx="16.5" cy="29" r="0.82"/><circle cx="19" cy="29" r="0.82"/><circle cx="21.5" cy="29" r="0.82"/><circle cx="24" cy="29" r="0.82"/><circle cx="26.5" cy="29" r="0.82"/><circle cx="29" cy="29" r="0.82"/><circle cx="31.5" cy="29" r="0.82"/><circle cx="34" cy="29" r="0.82"/><circle cx="36.5" cy="29" r="0.82"/><circle cx="39" cy="29" r="0.82"/><circle cx="41.5" cy="29" r="0.82"/><circle cx="44" cy="29" r="0.82"/><circle cx="46.5" cy="29" r="0.82"/><circle cx="9" cy="31.5" r="0.82"/><circle cx="11.5" cy="31.5" r="0.82"/><circle cx="14" cy="31.5" r="0.82"/><circle cx="16.5" cy="31.5" r="0.82"/><circle cx="19" cy="31.5" r="0.82"/><circle cx="24" cy="31.5" r="0.82"/><circle cx="26.5" cy="31.5" r="0.82"/><circle cx="29" cy="31.5" r="0.82"/><circle cx="31.5" cy="31.5" r="0.82"/><circle cx="34" cy="31.5" r="0.82"/><circle cx="36.5" cy="31.5" r="0.82"/><circle cx="39" cy="31.5" r="0.82"/><circle cx="41.5" cy="31.5" r="0.82"/><circle cx="44" cy="31.5" r="0.82"/><circle cx="46.5" cy="31.5" r="0.82"/><circle cx="49" cy="31.5" r="0.82"/><circle cx="9" cy="34" r="0.82"/><circle cx="11.5" cy="34" r="0.82"/><circle cx="14" cy="34" r="0.82"/><circle cx="16.5" cy="34" r="0.82"/><circle cx="19" cy="34" r="0.82"/><circle cx="21.5" cy="34" r="0.82"/><circle cx="24" cy="34" r="0.82"/><circle cx="31.5" cy="34" r="0.82"/><circle cx="34" cy="34" r="0.82"/><circle cx="36.5" cy="34" r="0.82"/><circle cx="39" cy="34" r="0.82"/><circle cx="41.5" cy="34" r="0.82"/><circle cx="44" cy="34" r="0.82"/><circle cx="46.5" cy="34" r="0.82"/><circle cx="49" cy="34" r="0.82"/><circle cx="51.5" cy="34" r="0.82"/><circle cx="11.5" cy="36.5" r="0.82"/><circle cx="14" cy="36.5" r="0.82"/><circle cx="16.5" cy="36.5" r="0.82"/><circle cx="19" cy="36.5" r="0.82"/><circle cx="21.5" cy="36.5" r="0.82"/><circle cx="24" cy="36.5" r="0.82"/><circle cx="26.5" cy="36.5" r="0.82"/><circle cx="29" cy="36.5" r="0.82"/><circle cx="44" cy="36.5" r="0.82"/><circle cx="46.5" cy="36.5" r="0.82"/><circle cx="49" cy="36.5" r="0.82"/><circle cx="51.5" cy="36.5" r="0.82"/><circle cx="11.5" cy="39" r="0.82"/><circle cx="14" cy="39" r="0.82"/><circle cx="16.5" cy="39" r="0.82"/><circle cx="19" cy="39" r="0.82"/><circle cx="21.5" cy="39" r="0.82"/><circle cx="24" cy="39" r="0.82"/><circle cx="26.5" cy="39" r="0.82"/><circle cx="29" cy="39" r="0.82"/><circle cx="31.5" cy="39" r="0.82"/><circle cx="34" cy="39" r="0.82"/><circle cx="36.5" cy="39" r="0.82"/><circle cx="49" cy="39" r="0.82"/><circle cx="51.5" cy="39" r="0.82"/><circle cx="54" cy="39" r="0.82"/><circle cx="14" cy="41.5" r="0.82"/><circle cx="16.5" cy="41.5" r="0.82"/><circle cx="19" cy="41.5" r="0.82"/><circle cx="21.5" cy="41.5" r="0.82"/><circle cx="24" cy="41.5" r="0.82"/><circle cx="26.5" cy="41.5" r="0.82"/><circle cx="29" cy="41.5" r="0.82"/><circle cx="31.5" cy="41.5" r="0.82"/><circle cx="34" cy="41.5" r="0.82"/><circle cx="36.5" cy="41.5" r="0.82"/><circle cx="39" cy="41.5" r="0.82"/><circle cx="41.5" cy="41.5" r="0.82"/><circle cx="44" cy="41.5" r="0.82"/><circle cx="51.5" cy="41.5" r="0.82"/><circle cx="54" cy="41.5" r="0.82"/><circle cx="16.5" cy="44" r="0.82"/><circle cx="19" cy="44" r="0.82"/><circle cx="21.5" cy="44" r="0.82"/><circle cx="24" cy="44" r="0.82"/><circle cx="26.5" cy="44" r="0.82"/><circle cx="29" cy="44" r="0.82"/><circle cx="31.5" cy="44" r="0.82"/><circle cx="34" cy="44" r="0.82"/><circle cx="36.5" cy="44" r="0.82"/><circle cx="39" cy="44" r="0.82"/><circle cx="41.5" cy="44" r="0.82"/><circle cx="44" cy="44" r="0.82"/><circle cx="46.5" cy="44" r="0.82"/><circle cx="54" cy="44" r="0.82"/><circle cx="56.5" cy="44" r="0.82"/><circle cx="19" cy="46.5" r="0.82"/><circle cx="21.5" cy="46.5" r="0.82"/><circle cx="24" cy="46.5" r="0.82"/><circle cx="26.5" cy="46.5" r="0.82"/><circle cx="29" cy="46.5" r="0.82"/><circle cx="31.5" cy="46.5" r="0.82"/><circle cx="34" cy="46.5" r="0.82"/><circle cx="36.5" cy="46.5" r="0.82"/><circle cx="39" cy="46.5" r="0.82"/><circle cx="41.5" cy="46.5" r="0.82"/><circle cx="44" cy="46.5" r="0.82"/><circle cx="46.5" cy="46.5" r="0.82"/><circle cx="49" cy="46.5" r="0.82"/><circle cx="56.5" cy="46.5" r="0.82"/><circle cx="19" cy="49" r="0.82"/><circle cx="21.5" cy="49" r="0.82"/><circle cx="24" cy="49" r="0.82"/><circle cx="26.5" cy="49" r="0.82"/><circle cx="29" cy="49" r="0.82"/><circle cx="31.5" cy="49" r="0.82"/><circle cx="34" cy="49" r="0.82"/><circle cx="36.5" cy="49" r="0.82"/><circle cx="39" cy="49" r="0.82"/><circle cx="41.5" cy="49" r="0.82"/><circle cx="44" cy="49" r="0.82"/><circle cx="46.5" cy="49" r="0.82"/><circle cx="49" cy="49" r="0.82"/><circle cx="51.5" cy="49" r="0.82"/><circle cx="24" cy="51.5" r="0.82"/><circle cx="26.5" cy="51.5" r="0.82"/><circle cx="29" cy="51.5" r="0.82"/><circle cx="31.5" cy="51.5" r="0.82"/><circle cx="34" cy="51.5" r="0.82"/><circle cx="36.5" cy="51.5" r="0.82"/><circle cx="39" cy="51.5" r="0.82"/><circle cx="41.5" cy="51.5" r="0.82"/><circle cx="44" cy="51.5" r="0.82"/><circle cx="46.5" cy="51.5" r="0.82"/><circle cx="49" cy="51.5" r="0.82"/><circle cx="51.5" cy="51.5" r="0.82"/><circle cx="54" cy="51.5" r="0.82"/><circle cx="26.5" cy="54" r="0.82"/><circle cx="29" cy="54" r="0.82"/><circle cx="31.5" cy="54" r="0.82"/><circle cx="34" cy="54" r="0.82"/><circle cx="36.5" cy="54" r="0.82"/><circle cx="39" cy="54" r="0.82"/><circle cx="41.5" cy="54" r="0.82"/><circle cx="44" cy="54" r="0.82"/><circle cx="46.5" cy="54" r="0.82"/><circle cx="49" cy="54" r="0.82"/><circle cx="51.5" cy="54" r="0.82"/><circle cx="54" cy="54" r="0.82"/><circle cx="56.5" cy="54" r="0.82"/><circle cx="34" cy="56.5" r="0.82"/><circle cx="36.5" cy="56.5" r="0.82"/><circle cx="39" cy="56.5" r="0.82"/><circle cx="41.5" cy="56.5" r="0.82"/><circle cx="44" cy="56.5" r="0.82"/><circle cx="46.5" cy="56.5" r="0.82"/><circle cx="49" cy="56.5" r="0.82"/><circle cx="51.5" cy="56.5" r="0.82"/><circle cx="54" cy="56.5" r="0.82"/><circle cx="56.5" cy="56.5" r="0.82"/><circle cx="59" cy="59" r="0.82"/></g></svg><canvas class="dotted-leaf-canvas" aria-hidden="true"></canvas></span><h1 class="front-hero-title">Refine your mind.</h1><p class="front-hero-line">Run your agents as a team, talk to a bot of your own, and read every file — all on your machine.</p></div><figure class="front-hero-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><div class="front-hero-get"><p class="front-downloads"><a class="leaf-md-button" href="#">Download for Windows</a> <a class="leaf-md-button" href="#">Download for macOS</a></p><p class="front-small">Free · Windows 10+ and macOS Universal</p></div></section><section class="front-cards"><article class="front-card"><h2 class="front-card-title">Read your files</h2><p class="front-card-lead">A Markdown page, a sitemap, a saved email, each drawn as a page to read.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article><article class="front-card"><h2 class="front-card-title">Write where you read</h2><p class="front-card-lead">A sentence typed straight into the page.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article></section><section class="front-install"><p>Leaftext is free.</p></section><footer class="front-foot"><p><a href="#">Read the docs</a></p></footer></article></div></div>
 </section>
 <section class="part">
