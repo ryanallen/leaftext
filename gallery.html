@@ -16693,10 +16693,141 @@ body.table-resizing.is-row button {
 }
 /* One line says what is running: the place's name, the note's own heading, the counts, then the filter, the order and the three presses. */
 .chat-board-head {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: var(--lt-space-6) var(--lt-space-12);
   align-items: center;
+}
+/* The board's own name, pressed to switch boards: a pill in the header with a chevron. */
+.chat-board-name {
+  display: inline-flex;
+  gap: var(--lt-space-4);
+  align-items: center;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13);
+}
+.chat-board-pill.is-primary {
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+}
+/* The switcher hangs under the header's board name: every board found, then New board and Open a file as a board. */
+.chat-board-switch {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  z-index: var(--lt-z-30);
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  padding: var(--lt-space-4);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow-hairline);
+}
+.chat-board-switch-item {
+  padding: var(--lt-space-6) var(--lt-space-8);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  text-align: start;
+}
+.chat-board-switch-gap {
+  margin: var(--lt-space-4) 0;
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+}
+/* Pick a board: what a board is, the boards found, and the two ways to start one, in a column the width of a short form. */
+.chat-board-start {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-8);
+  max-width: 640px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.chat-board-start-title {
+  margin: 0;
+  font-size: var(--lt-text-16);
+  font-weight: var(--lt-weight-600);
+}
+.chat-board-start-words {
+  margin: 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-13);
+}
+.chat-board-start-label {
+  margin-top: var(--lt-space-8);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+}
+.chat-board-start-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-8);
+  margin-top: var(--lt-space-4);
+}
+.chat-board-choice {
+  display: flex;
+  gap: var(--lt-space-10);
+  align-items: center;
+  padding: var(--lt-space-8) var(--lt-space-10);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-markdown-background);
+  box-shadow: var(--lt-shadow-hairline);
+  font-size: var(--lt-text-13);
+}
+.chat-board-choice-name {
+  font-weight: var(--lt-weight-600);
+}
+.chat-board-choice-where {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-board-choice-empty {
+  color: var(--lt-muted-foreground);
+}
+/* A file that could not be a board says so above everything else on Pick a board. */
+.chat-board-refusal {
+  border-inline-start: var(--lt-stroke-2) solid var(--lt-warning);
+  color: var(--lt-foreground);
+}
+.chat-board-new {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-8);
+  padding: var(--lt-space-10) var(--lt-space-12);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-markdown-background);
+  box-shadow: var(--lt-shadow-hairline);
+}
+.chat-board-new-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-8);
+  align-items: center;
+  font-size: var(--lt-text-13);
+}
+.chat-board-new-row input {
+  min-width: 220px;
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+}
+.chat-board-new-folder {
+  color: var(--lt-muted-foreground);
 }
 .chat-board-title {
   font-size: var(--lt-text-16);
@@ -16736,6 +16867,7 @@ body.table-resizing.is-row button {
 }
 @media (hover: hover) {
   .chat-board-pill:hover,
+  .chat-board-switch-item:hover,
   .chat-board-card-title:hover,
   .chat-board-chat-open:hover {
     background: var(--lt-wash-hover);
@@ -24132,7 +24264,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 225 values that do not change with the theme, all 120 icons, and all 221 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 225 values that do not change with the theme, all 120 icons, and all 224 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -24167,7 +24299,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>225</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>120</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>221</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>224</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -24678,7 +24810,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">221 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">224 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -25546,6 +25678,18 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Chat board</h3><code class="built">.chat-board</code><span class="built">chat-board.js</span></header>
 <div class="stage"><section class="chat-board" style="position:relative;height:360px"><header class="chat-board-head"><span class="chat-board-title">Board</span><span class="chat-board-note">The board</span><span class="chat-board-counts">1 working · 3 tickets · 1 blocked</span><span class="chat-board-tools"><button type="button" class="chat-board-pill is-on">All</button><button type="button" class="chat-board-pill">Bugs</button><span class="chat-board-gap"></span><button type="button" class="chat-board-pill">Refresh</button></span></header><div class="chat-board-columns"><section class="chat-board-column"><div class="chat-board-column-head"><span class="table-lens-column-mark doc-badge--gray"></span><span class="chat-board-column-name">Ready</span><span class="table-lens-column-count">1</span></div><div class="chat-board-cards"><div class="chat-board-card is-waiting"><button type="button" class="chat-board-card-title">Sparkle and glitter</button><div class="table-lens-card-meta"><span>#6 · Progress</span></div><div class="table-lens-card-blocked">Blocked by Action effects</div></div></div></section><section class="chat-board-column"><div class="chat-board-column-head"><span class="table-lens-column-mark doc-badge--gray" style="--lane-fill:0.5"></span><span class="chat-board-column-name">Dev</span><span class="table-lens-column-count">1</span></div><div class="chat-board-cards"><div class="chat-board-card"><button type="button" class="chat-board-card-title">The running order reads as a board</button><div class="table-lens-card-meta"><span class="doc-badge doc-badge--red">BUG</span><span>#3 · Table lens · 1 chat</span></div><div class="table-lens-card-who"><div class="chat-board-chat is-working"><button type="button" class="chat-board-chat-open"><span class="chat-board-dot"></span><span class="chat-board-chat-title">Running order board</span><span class="chat-board-chat-meta">Claude · working · now</span><span class="chat-board-unread"></span><span class="chat-board-lines">+12 −3</span></button><button type="button" class="chat-board-stop">Stop</button></div></div></div><button type="button" class="chat-board-more">Show 40 more (2 hidden)</button></div></section><section class="chat-board-column"><div class="chat-board-column-head"><span class="table-lens-column-mark doc-badge--gray" style="--lane-fill:1"><span class="lt-icon lt-icon-check"></span></span><span class="chat-board-column-name">Released</span><span class="table-lens-column-count">0</span></div><div class="chat-board-cards"><div class="chat-board-none">None</div><button type="button" class="chat-board-retire">Retire</button></div></section></div></section></div>
+</section>
+<section class="part">
+<header><h3>Board start</h3><code class="built">.chat-board-start</code><span class="built">chat-board.js</span></header>
+<div class="stage"><section class="chat-board" style="position:relative;height:420px"><header class="chat-board-head"><span class="chat-board-title">Board</span></header><div class="chat-board-start"><div class="chat-board-none chat-board-refusal">note.md's table has no column to make lanes from, like Status. Pick another board, or add a column of choices to that table.</div><h2 class="chat-board-start-title">Pick a board</h2><p class="chat-board-start-words">A board shows a Markdown table as lanes of cards, one lane for each value in a column like Status.</p><div class="chat-board-start-label">Your boards</div><div class="chat-board-choice"><span class="chat-board-choice-name">The board</span><span class="chat-board-choice-where">docs/BOARD.md</span><button type="button" class="chat-board-pill">Open</button></div><div class="chat-board-choice chat-board-choice-empty">No boards yet. Make one, or open a Markdown file that has a table.</div><div class="chat-board-start-tools"><button type="button" class="chat-board-pill is-primary">New board</button><button type="button" class="chat-board-pill">Open a file as a board…</button></div></div></section></div>
+</section>
+<section class="part">
+<header><h3>New board form</h3><code class="built">.chat-board-new</code><span class="built">chat-board.js</span></header>
+<div class="stage"><form class="chat-board-new"><div class="chat-board-start-label">New board</div><label class="chat-board-new-row"><span>Name</span><input type="text" value="Board"></label><label class="chat-board-new-row"><span>Lanes</span><input type="text" value="To do, Doing, Done"></label><div class="chat-board-new-row"><span>Saved in</span><span class="chat-board-new-folder">…\Documents\Notes</span><button type="button" class="chat-board-pill">Change…</button></div><div class="chat-board-new-row"><button type="submit" class="chat-board-pill is-primary">Make the board</button><button type="button" class="chat-board-pill">Cancel</button></div></form></div>
+</section>
+<section class="part">
+<header><h3>Board switcher</h3><code class="built">.chat-board-switch</code><span class="built">chat-board.js</span></header>
+<div class="stage"><header class="chat-board-head" style="height:200px;align-items:flex-start"><span class="chat-board-title">Board</span><button type="button" class="chat-board-pill chat-board-name">The board <span class="lt-icon lt-icon-chevron-down"></span></button><div class="chat-board-switch" role="menu"><button type="button" class="chat-board-switch-item">✓ The board</button><button type="button" class="chat-board-switch-item">Reading list</button><div class="chat-board-switch-gap"></div><button type="button" class="chat-board-switch-item">New board…</button><button type="button" class="chat-board-switch-item">Open a file as a board…</button></div></header></div>
 </section>
 <section class="part">
 <header><h3>Full-window table</h3><code class="built">.table-sheet</code><span class="built">table-sheet.js</span></header>

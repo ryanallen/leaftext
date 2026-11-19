@@ -49059,6 +49059,8 @@ window.leafNewMenuFolderListed = (request, listing) => {
 };
 
 window.leafNewMenuFolderChosen = (request, path) => {
+  
+  if (typeof chatBoardFolderChosen === 'function' && chatBoardFolderChosen(request, path)) return;
   if (path && request === newMenuFolder.request) openNewMenuFolder(path);
 };
 function newMenuMainRows() {
@@ -50263,7 +50265,8 @@ const CHAT_BOARD_PAGE = 40;
 
 const chatBoardShell = document.getElementById('libraryShell');
 const chatBoardNewButton = document.getElementById('newButton');
-const chatBoard = { open: false, token: 0, note: null, error: '', rows: [], chats: new Map(), chatsToken: 0, filter: 'all', order: 'rank', shown: new Map(), element: null };
+
+const chatBoard = { open: false, token: 0, note: null, error: '', rows: [], chats: new Map(), chatsToken: 0, filter: 'all', order: 'rank', shown: new Map(), element: null, trying: '', boards: null, listToken: 0, refusal: '', making: false, switching: false, folder: null, folderRequest: 0, focused: false };
 
 
 function chatBoardNotePath() {
@@ -50275,7 +50278,7 @@ function chatBoardRowHtml() {
   if (!hostAnswers('boardNote')) return '';
   const lit = chatBoard.open ? ' console-agent-front' : '';
   const count = chatBoard.note ? String(chatBoard.rows.length) : '';
-  return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent chat-board-row${lit}" data-chat-board="open" title="The board of every ticket by its stage"><span class="console-agent-icon" aria-hidden="true"><span class="chat-board-mark"></span></span><span class="console-agent-name">Board</span><span class="console-agent-state">${escapeText(count)}</span></button></div>`;
+  return `<div class="console-recent-row" role="listitem"><button type="button" class="console-agent chat-board-row${lit}" data-chat-board="open" title="Your boards"><span class="console-agent-icon" aria-hidden="true"><span class="chat-board-mark"></span></span><span class="console-agent-name">Board</span><span class="console-agent-state">${escapeText(count)}</span></button></div>`;
 }
 
 
@@ -50288,23 +50291,23 @@ function chatBoardElement() {
   made.setAttribute('aria-label', 'Board');
   made.hidden = true;
   made.addEventListener('click', pressChatBoard);
+  made.addEventListener('submit', submitChatBoardNew);
   made.addEventListener('pointerdown', liftChatBoardCard);
   shell.appendChild(made);
   chatBoard.element = made;
   return made;
 }
 
+
 function openChatBoard() {
-  const path = chatBoardNotePath();
-  if (!path) {
-    send({ command: 'boardChooseNote' });
-    return;
-  }
   chatBoard.open = true;
+  chatBoard.switching = false;
   const element = chatBoardElement();
   if (element) element.hidden = false;
   document.body.classList.add('has-chat-board');
-  askChatBoardNote();
+  const path = chatBoardNotePath();
+  if (path) askChatBoardNote(path);
+  askChatBoardList();
   drawChatBoard();
   drawConsoleRecents();
 }
@@ -50317,28 +50320,86 @@ function closeChatBoard() {
   drawConsoleRecents();
 }
 
-function askChatBoardNote() {
+
+function askChatBoardNote(path = chatBoardNotePath()) {
   chatBoard.token += 1;
-  send({ command: 'boardNote', path: chatBoardNotePath(), token: chatBoard.token });
+  chatBoard.trying = String(path || '');
+  if (!chatBoard.trying) return;
+  send({ command: 'boardNote', path: chatBoard.trying, token: chatBoard.token });
 }
+
+
+function askChatBoardList() {
+  if (!hostAnswers('boardList')) return;
+  chatBoard.listToken += 1;
+  send({ command: 'boardList', token: chatBoard.listToken });
+}
+
+window.leafBoardList = (answer) => {
+  if (!answer || answer.token !== chatBoard.listToken) return;
+  chatBoard.boards = Array.isArray(answer.boards) ? answer.boards : [];
+  drawChatBoard();
+};
 
 
 window.leafChatBoardChosen = (path) => {
   if (!path) return;
-  LEAF_SETTINGS.chatBoard = String(path);
-  send({ command: 'setChatBoard', path: String(path) });
-  openChatBoard();
+  chatBoard.switching = false;
+  if (!chatBoard.open) openChatBoard();
+  askChatBoardNote(String(path));
 };
 
 window.leafBoardNote = (answer) => {
   if (!answer || answer.token !== chatBoard.token) return;
-  chatBoard.error = answer.error ? String(answer.error) : '';
-  chatBoard.note = answer.note || null;
-  chatBoard.rows = chatBoard.note ? chatBoardRows(chatBoard.note) : [];
+  const tried = chatBoard.trying;
+  const kept = chatBoardNotePath();
+  if (answer.note) {
+    if (tried !== kept) {
+      LEAF_SETTINGS.chatBoard = tried;
+      send({ command: 'setChatBoard', path: tried });
+    }
+    chatBoard.refusal = '';
+    chatBoard.error = '';
+    chatBoard.making = false;
+    chatBoard.note = answer.note;
+    chatBoard.rows = chatBoardRows(chatBoard.note);
+    chatBoard.chats = new Map();
+    chatBoard.shown = new Map();
+  } else {
+    const sentence = String(answer.error || 'That file cannot be shown as a board.');
+    if (tried === kept) {
+      
+      LEAF_SETTINGS.chatBoard = '';
+      send({ command: 'setChatBoard', path: '' });
+      chatBoard.note = null;
+      chatBoard.rows = [];
+    }
+    if (chatBoard.note) leafToast(sentence);
+    else chatBoard.refusal = sentence;
+  }
   drawChatBoard();
   drawConsoleRecents();
   askChatBoardChats();
 };
+
+
+window.leafBoardMade = (answer) => {
+  if (!answer) return;
+  if (answer.error) {
+    chatBoard.refusal = String(answer.error);
+    return drawChatBoard();
+  }
+  askChatBoardNote(String(answer.path));
+  askChatBoardList();
+};
+
+
+function chatBoardFolderChosen(request, path) {
+  if (!path || request !== chatBoard.folderRequest) return false;
+  chatBoard.folder = String(path);
+  drawChatBoard();
+  return true;
+}
 
 function askChatBoardChats() {
   if (!chatBoard.rows.length) return;
@@ -50381,12 +50442,15 @@ function chatBoardRows(note) {
   if (!table) return [];
   const names = Array.from(table.querySelectorAll('thead th, tr:first-child th')).map((cell) => (cell.textContent || '').trim().toLowerCase());
   const at = (name) => names.indexOf(name.toLowerCase());
+  
   const group = at(note.board || 'Stage');
+  
+  const titleAt = at('Ticket') >= 0 ? at('Ticket') : names.findIndex((name, place) => place !== group && name !== '#');
   return Array.from(table.querySelectorAll('tbody tr')).map((line) => {
     const cells = Array.from(line.children);
     const cell = (name) => cells[at(name)] || null;
     const words = (name) => ((cell(name) || {}).textContent || '').trim();
-    const title = cell('Ticket') || cells[1] || null;
+    const title = cells[titleAt] || null;
     const link = title ? title.querySelector('a[href]') : null;
     const kind = cell('Kind');
     return {
@@ -50424,7 +50488,10 @@ function chatBoardCounts() {
   const chats = chatBoard.rows.flatMap(chatBoardChatsOf);
   const states = chats.map(chatBoardChatState);
   const count = (state) => states.filter((one) => one === state).length;
-  const parts = [`${count('working')} working`, `${chatBoard.rows.length} tickets`];
+  
+  const tickets = chatBoard.rows.length && chatBoard.rows.every((row) => row.path);
+  const many = chatBoard.rows.length !== 1;
+  const parts = [`${count('working')} working`, `${chatBoard.rows.length} ${tickets ? (many ? 'tickets' : 'ticket') : many ? 'cards' : 'card'}`];
   const needs = count('needs');
   if (needs) parts.push(`${needs} need you`);
   const error = count('error');
@@ -50490,16 +50557,61 @@ function chatBoardCardHtml(row, last) {
 }
 
 
+function chatBoardIsRunningOrder() {
+  return !!(chatBoard.note && chatBoard.note.moves);
+}
+
+
+function chatBoardChoices() {
+  return Array.isArray(chatBoard.boards) ? chatBoard.boards : [];
+}
+
+
+function chatBoardSwitchHtml() {
+  if (!chatBoard.switching) return '';
+  const kept = chatBoardNotePath();
+  const items = chatBoardChoices().map((board) => `<button type="button" class="chat-board-switch-item" data-chat-board-open="${escapeAttr(board.path)}" title="${escapeAttr(board.path)}">${board.path === kept ? '✓ ' : ''}${escapeText(board.heading)} <span class="chat-board-choice-where">${escapeText(board.shown)}</span></button>`).join('');
+  return `<div class="chat-board-switch" role="menu">${items}${items ? '<div class="chat-board-switch-gap"></div>' : ''}<button type="button" class="chat-board-switch-item" data-chat-board-do="make">New board…</button><button type="button" class="chat-board-switch-item" data-chat-board-do="file">Open a file as a board…</button></div>`;
+}
+
+
+function chatBoardStartHtml() {
+  const kept = chatBoardNotePath();
+  const choices = chatBoardChoices();
+  const list = chatBoard.boards === null ? '' : choices.length
+    ? `<div class="chat-board-start-label">Your boards</div>${choices.map((board) => `<div class="chat-board-choice"><span class="chat-board-choice-name">${escapeText(board.heading)}</span><span class="chat-board-choice-where" title="${escapeAttr(board.path)}">${escapeText(board.shown)}${board.path === kept ? ' · open now' : ''}</span><button type="button" class="chat-board-pill" data-chat-board-open="${escapeAttr(board.path)}">Open</button></div>`).join('')}`
+    : '<div class="chat-board-choice chat-board-choice-empty">No boards yet. Make one, or open a Markdown file that has a table.</div>';
+  const refusal = chatBoard.refusal ? `<div class="chat-board-none chat-board-refusal" role="status">${escapeText(chatBoard.refusal)}</div>` : '';
+  const folder = chatBoard.folder === null ? newMenuFolderPath() : chatBoard.folder;
+  const form = chatBoard.making
+    ? `<form class="chat-board-new" data-chat-board-form="new"><div class="chat-board-start-label">New board</div><label class="chat-board-new-row"><span>Name</span><input type="text" name="name" value="Board" spellcheck="false"></label><label class="chat-board-new-row"><span>Lanes</span><input type="text" name="lanes" value="To do, Doing, Done" spellcheck="false"></label><div class="chat-board-new-row"><span>Saved in</span><span class="chat-board-new-folder" title="${escapeAttr(folder || '')}">${escapeText(folder ? newMenuFolderTail(folder) : 'your home folder')}</span>${hostAnswers('newMenuChooseFolder') ? '<button type="button" class="chat-board-pill" data-chat-board-do="folder">Change…</button>' : ''}</div><div class="chat-board-new-row"><button type="submit" class="chat-board-pill is-primary">Make the board</button><button type="button" class="chat-board-pill" data-chat-board-do="cancel">Cancel</button></div></form>`
+    : '';
+  const make = hostAnswers('boardNew') ? `<button type="button" class="chat-board-pill is-primary" data-chat-board-do="make">New board</button>` : '';
+  const file = hostAnswers('boardChooseNote') ? `<button type="button" class="chat-board-pill" data-chat-board-do="file">Open a file as a board…</button>` : '';
+  return `<div class="chat-board-start leaf-scroll">${refusal}<h2 class="chat-board-start-title">Pick a board</h2><p class="chat-board-start-words">A board shows a Markdown table as lanes of cards, one lane for each value in a column like Status.</p>${list}<div class="chat-board-start-tools">${make}${file}</div>${form}</div>`;
+}
+
+
 function drawChatBoard() {
   const element = chatBoardElement();
   if (!element || !chatBoard.open) return;
   const note = chatBoard.note;
   const pill = (group, value, words, on) => `<button type="button" class="chat-board-pill${on ? ' is-on' : ''}" data-chat-board-${group}="${value}" aria-pressed="${on}">${words}</button>`;
-  const head = `<header class="chat-board-head"><span class="chat-board-title">Board</span><span class="chat-board-note">${escapeText(note ? note.heading : '')}</span><span class="chat-board-counts">${escapeText(note ? chatBoardCounts() : '')}</span><span class="chat-board-tools">${pill('filter', 'all', 'All', chatBoard.filter === 'all')}${pill('filter', 'bugs', 'Bugs', chatBoard.filter === 'bugs')}${pill('filter', 'chats', 'With a chat', chatBoard.filter === 'chats')}<span class="chat-board-gap"></span>${pill('order', 'rank', 'Rank', chatBoard.order === 'rank')}${pill('order', 'activity', 'Activity', chatBoard.order === 'activity')}<span class="chat-board-gap"></span><button type="button" class="chat-board-pill" data-chat-board-do="refresh">Refresh</button><button type="button" class="chat-board-pill" data-chat-board-do="new">New chat</button><button type="button" class="chat-board-pill" data-chat-board-do="add">Add to board</button></span></header>`;
   if (!note) {
-    element.innerHTML = `${head}<div class="chat-board-none">${escapeText(chatBoard.error || 'Reading the board…')}</div>`;
+    
+    const reading = chatBoard.trying && chatBoard.trying === chatBoardNotePath() && !chatBoard.refusal;
+    element.innerHTML = `<header class="chat-board-head"><span class="chat-board-title">Board</span></header>${reading ? '' : chatBoardStartHtml()}`;
+    const name = element.querySelector('[data-chat-board-form] input[name="name"]');
+    if (name && chatBoard.making && !chatBoard.focused) {
+      chatBoard.focused = true;
+      name.focus();
+      name.select();
+    }
     return;
   }
+  const add = chatBoardIsRunningOrder() ? 'Add to board' : 'Add a card';
+  const ticketTools = `${pill('filter', 'bugs', 'Bugs', chatBoard.filter === 'bugs')}${pill('filter', 'chats', 'With a chat', chatBoard.filter === 'chats')}<span class="chat-board-gap"></span>${pill('order', 'rank', 'Rank', chatBoard.order === 'rank')}${pill('order', 'activity', 'Activity', chatBoard.order === 'activity')}<span class="chat-board-gap"></span>`;
+  const head = `<header class="chat-board-head"><span class="chat-board-title">Board</span><button type="button" class="chat-board-pill chat-board-name" data-chat-board-do="switch" aria-haspopup="menu" aria-expanded="${chatBoard.switching}">${escapeText(note.heading || 'Board')} <span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></button><span class="chat-board-counts">${escapeText(chatBoardCounts())}</span><span class="chat-board-tools">${pill('filter', 'all', 'All', chatBoard.filter === 'all')}${ticketTools}<button type="button" class="chat-board-pill" data-chat-board-do="refresh">Refresh</button><button type="button" class="chat-board-pill" data-chat-board-do="new">New chat</button><button type="button" class="chat-board-pill" data-chat-board-do="add">${add}</button></span>${chatBoardSwitchHtml()}</header>`;
   const shown = chatBoardShown();
   const stages = Array.isArray(note.columns) && note.columns.length ? note.columns : [...new Set(chatBoard.rows.map((row) => row.stage))];
   const columns = stages.map((stage, place) => {
@@ -50567,12 +50679,50 @@ function pressChatBoard(event) {
     chatBoard.order = order.dataset.chatBoardOrder;
     return drawChatBoard();
   }
+  const open = target.closest('[data-chat-board-open]');
+  if (open) {
+    chatBoard.switching = false;
+    chatBoard.refusal = '';
+    askChatBoardNote(open.dataset.chatBoardOpen);
+    return drawChatBoard();
+  }
   const action = target.closest('[data-chat-board-do]');
   if (action) {
     const what = action.dataset.chatBoardDo;
     if (what === 'refresh') return askChatBoardNote();
     if (what === 'new') return chatBoardNewButton?.click();
-    if (what === 'add') return startChatHolding('/ticket ');
+    
+    if (what === 'add') return chatBoardIsRunningOrder() ? startChatHolding('/ticket ') : openChatBoardFile();
+    if (what === 'switch') {
+      chatBoard.switching = !chatBoard.switching;
+      if (chatBoard.switching) askChatBoardList();
+      return drawChatBoard();
+    }
+    if (what === 'file') {
+      chatBoard.switching = false;
+      drawChatBoard();
+      return send({ command: 'boardChooseNote', folder: chatBoardNotePath().replace(/[\\/][^\\/]*$/, '') });
+    }
+    if (what === 'make') {
+      
+      chatBoard.switching = false;
+      chatBoard.making = true;
+      chatBoard.focused = false;
+      chatBoard.refusal = '';
+      chatBoard.note = null;
+      chatBoard.rows = [];
+      chatBoard.trying = '';
+      return drawChatBoard();
+    }
+    if (what === 'cancel') {
+      chatBoard.making = false;
+      if (chatBoardNotePath()) return askChatBoardNote();
+      return drawChatBoard();
+    }
+    if (what === 'folder') {
+      chatBoard.folderRequest = ++newMenuFolder.request;
+      return send({ command: 'newMenuChooseFolder', request: chatBoard.folderRequest });
+    }
   }
   const more = target.closest('[data-chat-board-more]');
   if (more) {
@@ -50620,11 +50770,34 @@ function liftChatBoardCard(event) {
     document.removeEventListener('pointercancel', end, true);
     if (!card.classList.contains('is-dragging')) return;
     card.classList.remove('is-dragging');
-    leafToast(String((chatBoard.note && chatBoard.note.moves) || 'Stages move when the ticket does.'));
+    
+    if (!chatBoardIsRunningOrder()) return openChatBoardFile();
+    leafToast(String(chatBoard.note.moves));
   };
   document.addEventListener('pointermove', move, true);
   document.addEventListener('pointerup', end, true);
   document.addEventListener('pointercancel', end, true);
+}
+
+
+function openChatBoardFile() {
+  const path = chatBoardNotePath();
+  if (!path) return;
+  closeChatBoard();
+  send({ command: 'openPaths', paths: [path] });
+}
+
+
+function submitChatBoardNew(event) {
+  const form = event.target.closest && event.target.closest('[data-chat-board-form="new"]');
+  if (!form) return;
+  event.preventDefault();
+  const field = (named) => form.querySelector(`input[name="${named}"]`);
+  const name = String((field('name') || {}).value || '').trim();
+  const lanes = String((field('lanes') || {}).value || '');
+  const folder = chatBoard.folder === null ? newMenuFolderPath() : chatBoard.folder;
+  chatBoard.refusal = '';
+  send({ command: 'boardNew', folder: folder || '', name, lanes });
 }
 
 

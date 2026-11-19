@@ -244,6 +244,8 @@ export const COMMANDS = {
   tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
   boardNote: [REFUSED, 'a published site has no chats and no plan tree; the Board place stands only in the Conversations list of the desktop app'],
   boardChats: [REFUSED, 'a published site has no chats and no plan tree; the Board place stands only in the Conversations list of the desktop app'],
+  boardList: [REFUSED, 'there is no Board place to list boards for outside the desktop app'],
+  boardNew: [REFUSED, 'there is no Board place to make a board for outside the desktop app'],
   boardChooseNote: [REFUSED, 'there is no Board place to choose a note for outside the desktop app'],
   setChatBoard: [REFUSED, 'there is no Board place to keep a note for outside the desktop app'],
   boardCardMoved: [REFUSED, 'a browser host has no consoles, so no agent reading the note is there to tell'],

@@ -226,7 +226,7 @@ Move or close a Home box from the quiet controls on its heading; the small plus 
 
 ### The board
 
-- **The note the [board](10-agents.md#the-board) draws**, chosen in the file window the first time **Board** is pressed with none chosen, and kept across launches. Only a Markdown note is kept; a note deleted since reads as none chosen, so the next press asks again. Saved as `chat_board`
+- **The board the [Board place](10-agents.md#the-board) shows**, picked on Pick a board, made with New board or opened as a file, and kept across launches. A file is kept only once it draws as a board; one deleted or no longer a board since is forgotten, and the next press opens Pick a board saying why. Saved as `chat_board`
 
 ### Pager
 
