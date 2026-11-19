@@ -30,6 +30,8 @@ const BOOK = DEMO_FILES[1].path;
 
 /** No drawn page for this long and the window says so, by the site's rule that nothing waits without a deadline. */
 const DEADLINE_MS = 10000;
+// How long a drawn file waits for its bar before it is shown without one.
+const BAR_GRACE_MS = 3000;
 
 /** What the demo agent answers, first match wins; a reply naming a file opens it. Nothing here is an AI. */
 const REPLIES = [
@@ -57,6 +59,12 @@ export const CARRIER_PAGE = 'docs/03-quickstart.html';
 /** Where a file's page is, from the site's root. */
 export function addressOf(path, root) {
   return /\.md$/i.test(path) ? new URL(path.replace(/\.md$/i, '.html'), root).href : `${new URL(CARRIER_PAGE, root).href}#${path}`;
+}
+
+/** Whether a tab's page has drawn its bottom bar with a view in use. On a slow machine the document was in a second and a half before the bar was, and a tab shown in that gap had Read, Source and Graph with nothing chipped. A page that draws no bar at all is shown once the grace below has passed, so the wait never turns into a tab that will not open. */
+export function barHasDrawn(doc) {
+  const bar = doc.getElementById('readerToolbar');
+  return Boolean(bar && !bar.hidden && bar.querySelector('.reader-tool-group .reader-tool.is-active'));
 }
 
 /** Whether a tab's page is drawing the file the tab was opened on. A Markdown file is its page's own first response; anything else arrives over `CARRIER_PAGE`, whose own document is drawn first, and the host says the asked file is in by pointing the page's canonical address at it (`web/preview/host.js` `repointHead`) — until then the tab stays behind the launch leaf rather than flashing the carrier's words. */
@@ -183,7 +191,8 @@ function buildWindow(root, marketing) {
   const say = element('form', 'front-window-say');
   const input = element('input', 'front-window-input');
   input.type = 'text';
-  input.placeholder = 'Message the demo agent (scripted)';
+  // The note above already says it is a script; the longer words were cut off in the box at every desktop width.
+  input.placeholder = 'Message the demo agent';
   input.setAttribute('aria-label', 'Message the demo agent, which is a script');
   const send = iconButton('front-window-send', 'forward-long', 'Send');
   send.type = 'submit';
@@ -265,7 +274,9 @@ function buildWindow(root, marketing) {
         // The carrier's own baked document is always the first one seen, since the host draws nothing until its module has loaded; the asked file is in once the page points at it and something else stands in that place.
         if (drawn && !tab.carrier) tab.carrier = { node: drawn, words: drawn.textContent };
         const replaced = /\.md$/i.test(tab.path) || (drawn && (drawn !== tab.carrier.node || drawn.textContent !== tab.carrier.words));
-        if (drawn && drawn.textContent.trim() && replaced && showsAsked(doc, tab.path)) {
+        const fileIn = Boolean(drawn && drawn.textContent.trim() && replaced && showsAsked(doc, tab.path));
+        if (fileIn && !tab.fileInAt) tab.fileInAt = performance.now();
+        if (fileIn && (barHasDrawn(doc) || performance.now() - tab.fileInAt > BAR_GRACE_MS)) {
           tab.ready = true;
           tab.frame.classList.add('is-ready');
           if (active === tab.path) launch.classList.remove('is-shown');

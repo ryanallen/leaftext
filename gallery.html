@@ -18788,9 +18788,11 @@ header.front-window-bar {
   overflow-x: auto;
   scrollbar-width: none;
 }
+/* Tabs give up width before the strip scrolls, the way the app's own strip does: seven tabs at 1440 and two on a phone scrolled the first one half under the brand. Never below a few letters and the close mark, so seven on a phone scroll as readable tabs rather than crushing to slivers. */
 .front-window-tab {
   display: flex;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 11ch;
   align-items: center;
   gap: var(--lt-space-2);
   height: calc(var(--lt-front-window-bar) - var(--lt-space-8));
@@ -18818,6 +18820,9 @@ header.front-window-bar {
   cursor: pointer;
 }
 button.front-window-tab-name {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 22ch;
   overflow: hidden;
   text-overflow: ellipsis;

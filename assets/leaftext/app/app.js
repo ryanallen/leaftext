@@ -19632,6 +19632,11 @@ function drawPageHeadSteps(path, { id, entry, steps }) {
   if (holding) hideCrumbMenu();
 }
 
+let readerToolTrayView = '';
+let readerViewDrawn = 'reading';
+
+let heldTrayPress = null;
+
 function renderReaderToolbar(viewsStand) {
   const consoleEntry = viewsStand ? consoleViewsEntry() : null;
   const savedFront = Boolean(viewsStand && !consoleEntry && savedChatTab());
@@ -19656,6 +19661,8 @@ function renderReaderToolbar(viewsStand) {
   const rendered = graphViewOpen ? 'graph' : codeViewActive ? 'code' : 'reading';
   if (pendingReaderView === rendered) pendingReaderView = null;
   const current = pendingReaderView || rendered;
+  readerViewDrawn = current;
+  if (readerToolTrayView === current) readerToolTrayView = '';
   
   if (readerToolTrayTouchOpen && readerToolTrayTouchOpen !== readerToolTrayKey(current)) readerToolTrayTouchOpen = '';
   for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
@@ -19664,19 +19671,27 @@ function renderReaderToolbar(viewsStand) {
     button.setAttribute('aria-pressed', String(on));
     button.classList.toggle('is-active', on);
   }
-  const activeButton = [viewReadingButton, viewCodeButton, viewGraphButton].find(
-    (button) => button && button.dataset.view === current
-  );
-  if (activeButton && activeButton.parentElement) {
-    activeButton.parentElement.style.setProperty('--reader-tool-chip-x', `${Math.round(activeButton.offsetLeft)}px`);
-    activeButton.parentElement.style.setProperty('--reader-tool-chip-w', `${Math.round(activeButton.offsetWidth)}px`);
-  }
-  renderViewTools(current);
+  placeReaderChip();
+  renderViewTools(readerToolTrayView || current);
   drawPageHead();
   syncReaderToolTrayState();
   syncReaderToolDividerState();
+  pressHeldTrayTool(rendered);
   coverLivePageWithReaderToolbar();
   refreshSourcePairEditor();
+}
+
+function placeReaderChip() {
+  const activeButton = [viewReadingButton, viewCodeButton, viewGraphButton].find(
+    (button) => button && button.dataset.view === readerViewDrawn
+  );
+  if (!activeButton || !activeButton.parentElement) return;
+  activeButton.parentElement.style.setProperty('--reader-tool-chip-x', `${Math.round(activeButton.offsetLeft)}px`);
+  activeButton.parentElement.style.setProperty('--reader-tool-chip-w', `${Math.round(activeButton.offsetWidth)}px`);
+}
+if (typeof ResizeObserver === 'function') {
+  const chipWatch = new ResizeObserver(() => placeReaderChip());
+  for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) if (button) chipWatch.observe(button);
 }
 
 function coverLivePageWithReaderToolbar() {
@@ -19751,8 +19766,9 @@ document.addEventListener('pointerdown', (event) => {
 });
 function syncReaderToolTrayState() {
   if (!readerToolbar) return;
-  const activeButtonHovered = hoveredReaderTool && hoveredReaderTool.classList.contains('is-active');
-  const open = Boolean(activeButtonHovered || readerToolTrayHovered || readerToolTrayKeyboardFocus || readerToolTrayTouchOpen);
+  const open = Boolean(hoveredReaderTool || readerToolTrayHovered || readerToolTrayKeyboardFocus || readerToolTrayTouchOpen);
+  
+  if (!open && readerToolTrayView) window.setTimeout(putTrayToolsBack, 0);
   if (open !== readerToolbar.classList.contains('has-open-tray') && activeWebTab()) followWebSurfaceMotion();
   readerToolbar.classList.toggle('has-open-tray', open);
 }
@@ -19844,7 +19860,8 @@ function renderViewTools(current) {
   const editable = (!onWebTab || onLocalSite) && (current === 'reading' || current === 'code');
   const onGraph = current === 'graph';
   if (splitViewButton) {
-    splitViewButton.hidden = !activeDocumentPath() || onWebTab || onGraph || readingIsContainedPage() || (splitOpen() && !besideIsTheSameTab());
+    
+    splitViewButton.hidden = !activeDocumentPath() || onWebTab || onGraph || readingIsContainedPage() || (splitOpen() && !besideIsTheSameTab()) || !hostAnswers('openSourceBeside');
     setSubtoolState(splitViewButton, besideIsTheSameTab(), 'Source beside the page');
   }
   if (graphScopeTool) graphScopeTool.hidden = !onGraph || onWebTab;
@@ -19891,13 +19908,48 @@ function anyViewToolShowing() {
   }
   return false;
 }
+
+function showTrayToolsFor(view) {
+  if (view === readerToolTrayView) return;
+  readerToolTrayView = view;
+  renderViewTools(view || readerViewDrawn);
+}
+function putTrayToolsBack() {
+  if (readerToolTrayView && readerToolbar && !readerToolbar.classList.contains('has-open-tray')) showTrayToolsFor('');
+}
+
+if (readerViewTools) {
+  readerViewTools.addEventListener(
+    'click',
+    (event) => {
+      const view = readerToolTrayView;
+      if (!view || view === readerViewDrawn) return;
+      const tool = event.target && typeof event.target.closest === 'function' ? event.target.closest('button') : null;
+      if (!tool) return;
+      event.stopImmediatePropagation();
+      heldTrayPress = { view, tool };
+      readerToolTrayView = '';
+      setReaderView(view);
+    },
+    true
+  );
+}
+function pressHeldTrayTool(rendered) {
+  if (!heldTrayPress || heldTrayPress.view !== rendered || pendingReaderView) return;
+  const { tool } = heldTrayPress;
+  heldTrayPress = null;
+  tool.click();
+}
 function retireViewToolsHint() {
   retireHint('viewTools');
 }
 for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
   if (button) {
     button.addEventListener('pointerenter', (event) => {
-      if (!isTouch(event)) hoveredReaderTool = button;
+      if (!isTouch(event)) {
+        hoveredReaderTool = button;
+        showTrayToolsFor(button.dataset.view === readerViewDrawn ? '' : button.dataset.view);
+      }
       retireViewToolsHint();
       syncReaderToolTrayState();
     });

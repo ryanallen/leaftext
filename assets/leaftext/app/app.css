@@ -18730,9 +18730,11 @@ header.front-window-bar {
   overflow-x: auto;
   scrollbar-width: none;
 }
+
 .front-window-tab {
   display: flex;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 11ch;
   align-items: center;
   gap: var(--lt-space-2);
   height: calc(var(--lt-front-window-bar) - var(--lt-space-8));
@@ -18760,6 +18762,9 @@ header.front-window-bar {
   cursor: pointer;
 }
 button.front-window-tab-name {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 22ch;
   overflow: hidden;
   text-overflow: ellipsis;
