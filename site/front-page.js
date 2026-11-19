@@ -5,7 +5,7 @@
 // A reader who asked for less motion gets neither: every card starts in place and every box keeps its poster, and no clip is ever fetched. The page is whole without this file — the layout already put a poster with words in every box.
 // ---------------------------------------------------------------------------
 
-import { DEMO_DIR } from './front-page-layout.js';
+import { DEMO_DIR, FRONT_LAYOUT_CLASS } from './front-page-layout.js';
 import { startDottedLeaf } from './dotted-leaf.js';
 
 /** How far ahead of the window a clip starts arriving, so it is playing by the time it is seen. */
@@ -55,12 +55,42 @@ function heldOn(cards, boxes) {
   return { risen: new Set(risen), clips };
 }
 
+/** The class the front page's body wears while the landing is what the reading column holds: `front-page.css` draws the page under it with none of the app's chrome. The bake (`scripts/site-assets.mjs`) reads this name and writes it into the first response; this keeps it true once the app is running. */
+export const MARKETING_CLASS = 'front-marketing';
+
+/** The theme families the marketing page draws from when the visitor's theme is Random: the clean, good-looking ones, never the terminal green (`ivy`), on the owner's word of 18 November 2026, 6:29pm. A visitor who chose a family keeps it. The bake writes this list into the front page ahead of the theme bootstrap. */
+export const MARKETING_FAMILIES = ['sage', 'halcyon', 'pippin', 'bluebell', 'github', 'camellia', 'copperleaf', 'amaranth', 'artemisia'];
+
+/** The one watch on the reading column, kept across redraws of the landing so a redraw never starts a second. */
+let marketingWatch = null;
+
+/**
+ * Wear the marketing class while the landing is drawn, and take it off the moment the reading column holds anything else — the visitor pressed Try the app or any link — so the app's bar, pane and rail come back around the page they went to. The host stops the landing's motion only when the landing is drawn again, never when the visitor leaves it, so leaving is read off the column itself.
+ */
+export function holdMarketingPage(root) {
+  // A page the script never mounted in a document — a check's stand-in, a detached copy — has no column to watch and no body to dress.
+  if (!root || typeof root.closest !== 'function') return;
+  const body = root.ownerDocument && root.ownerDocument.body;
+  const column = root.closest('.reader-column');
+  if (!body || !column) return;
+  body.classList.add(MARKETING_CLASS);
+  if (marketingWatch || typeof MutationObserver !== 'function') return;
+  marketingWatch = new MutationObserver(() => {
+    if (column.querySelector(`.document-body.${FRONT_LAYOUT_CLASS}`)) return;
+    body.classList.remove(MARKETING_CLASS);
+    marketingWatch.disconnect();
+    marketingWatch = null;
+  });
+  marketingWatch.observe(column, { childList: true, subtree: true });
+}
+
 /**
  * Start the front page's motion over the laid-out page inside `root`, which is the reading column's own article, and answer how to stop it and what it has reached.
  *
  * `held` is what the page this one replaces had reached, so a redraw of the standing page carries its motion across rather than starting it over: a risen card is put straight in place, and a clip already made moves into the fresh box in place of the poster and plays on from where it was, with nothing fetched again.
  */
 export function installFrontMotion(root, held = null) {
+  holdMarketingPage(root);
   const cards = [...root.querySelectorAll('.front-card')];
   const leaf = [...root.querySelectorAll('.dotted-leaf')].find((mark) => !mark.closest('.document-minimap, .document-minimap-preview'));
   // Only the reading column's boxes: the rail's copy of the page keeps its posters, since a clip there would fetch and decode the same file again for a picture too small to watch.

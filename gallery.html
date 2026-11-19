@@ -5131,6 +5131,15 @@
   --lt-shadow-edge-strong: inset 0 0 0 1px var(--lt-border-strong);
   --lt-shadow-edge-accent: inset 0 0 0 2px var(--lt-accent);
   --lt-shadow-edge-link: inset 0 0 0 1px var(--lt-link);
+  /* The front page's light */
+  --lt-front-measure: 1120px;
+  --lt-front-glow: radial-gradient(ellipse 60% 70% at 30% 0%, color-mix(in srgb, var(--lt-primary) 30%, transparent), transparent 70%), radial-gradient(ellipse 55% 65% at 75% 5%, color-mix(in srgb, var(--lt-link) 26%, transparent), transparent 70%);
+  --lt-front-title-ink: linear-gradient(100deg, var(--lt-primary-ink), var(--lt-link));
+  --lt-front-glow-size: 100% 1100px;
+  --lt-front-clip-width: 960px;
+  --lt-front-bar: color-mix(in srgb, var(--lt-markdown-background) 72%, transparent);
+  --lt-front-bar-blur: blur(14px) saturate(1.4);
+  --lt-front-panel-glow: radial-gradient(ellipse 60% 90% at 50% 100%, color-mix(in srgb, var(--lt-link) 20%, transparent), transparent 70%);
 }
 
 /* Generated from design/icons.md by `just bundle-icons`. Do not edit. */
@@ -8235,6 +8244,13 @@ body.is-site {
 }
 body.is-site .tab-bar {
   display: none;
+}
+/* With no tab strip the hairline under it is a stroke on the sheet's top edge alone, beside side and bottom edges that draw none, and the bar's own top border is a line across the top of a browser window that already has an edge: the site draws the sheet one way all round, by its ground alone. */
+body.is-site .app-bar::after {
+  display: none;
+}
+body.is-site .app-bar {
+  border-top: 0;
 }
 body.is-embedded .app-bar,
 body.is-embedded .library-pane,
@@ -14714,7 +14730,7 @@ body.is-block-dragging .document-body [data-src-start] {
   margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
 }
 /* A board or a list takes the whole measure rather than the table's width, so the column does too. */
-/* And it takes the reader's whole lane, the block controls' strip included: a board's lanes divide the width between them, and every pixel the strip held back was taken from each lane. */
+/* And it takes the reader's whole lane, the block controls' strip included, so a board shows more of its lanes before it scrolls. */
 .document-run > .table-bay.table-bay-is-drawn {
   grid-template-columns: minmax(0, 1fr);
   width: max(100%, 100cqi);
@@ -17805,6 +17821,445 @@ body.is-home-box-dragging button {
 }
 /* leaftext.com's landing: the README laid out by `site/front-page-layout.js` inside the reading column — one band holding the promise, the app recorded moving and both downloads, then the comparison, six cards, the install line and the foot. The app's own bar, pane and rail stand around it as they do around every page, and the desktop never draws this layout; the dotted leaf the hero shows is the start screen's too, so its own rules are in `home.css`. Each element the layout styles wears a class of its own, and a rule that has to outrank the document's own names the tag beside it. */
 
+/* The front page as a marketing page, on the owner's word of 18 November 2026, 5:26pm: while the body wears `front-marketing` — written by the bake into the first response, kept by `site/front-page.js` while the landing is drawn — none of the app's chrome is drawn and the reading column is the whole window. The starting card goes too, so the first paint is the page rather than a spinner over it. The moment the visitor goes into the app the class comes off and every piece is back. */
+.leaf-app.front-marketing :is(.app-bar, .library-pane, .reader-minimap, .reader-toolbar, .startup-card, .window-band) {
+  display: none;
+}
+.leaf-app.front-marketing .library-shell {
+  display: block;
+}
+.leaf-app.front-marketing .reader-shell.reader-column {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.leaf-app.front-marketing .reader-column .reader-layout {
+  display: block;
+  width: auto;
+  padding: 0 var(--lt-space-24);
+}
+/* The page runs the window's whole width so the bar and the hero's light reach both edges; everything else keeps to one measure, centered. */
+.leaf-app.front-marketing .reader-column .document-body.front-layout {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+.leaf-app.front-marketing .front-layout :is(.front-hero-words, .front-hero-get, figure.front-hero-clip, .front-compare, .front-cards, .front-install, .front-foot, .docs-pager) {
+  width: 100%;
+  max-width: var(--lt-front-measure);
+  margin-inline: auto;
+}
+
+/* The documentation's Previous and Next strip stays in the page, so Next still walks on once the visitor is in the app, but a marketing page ends on its own links rather than on "Next: 01-introduction". */
+.leaf-app.front-marketing .front-layout .docs-pager { display: none; }
+
+/* A part the bar's links jump to stops clear of the bar that stays over the top of the page, rather than with its heading under it. */
+.leaf-app.front-marketing .front-layout [id] {
+  scroll-margin-top: calc(var(--lt-space-48) + var(--lt-space-24));
+}
+
+/* The front page's own bar: the leaf and the name at the start, the page's parts and the documentation, then Try the app and Download at the end. It stays at the top of the window as the page scrolls under it. */
+.front-nav {
+  position: sticky;
+  top: 0;
+  z-index: var(--lt-z-20);
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-24);
+  /* Edge to edge of the window: out past the page's measure to the column's own padding. */
+  margin-inline: calc(50% - 50cqi - var(--lt-space-24));
+  padding: var(--lt-space-12) calc(50cqi + var(--lt-space-24) - 50%);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-front-bar);
+  -webkit-backdrop-filter: var(--lt-front-bar-blur);
+  backdrop-filter: var(--lt-front-bar-blur);
+  font-size: var(--lt-text-14);
+}
+.front-nav a {
+  color: var(--lt-muted-foreground);
+  text-decoration: none;
+}
+.front-nav a.front-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  color: var(--lt-foreground);
+  font-size: var(--type-h5-size);
+  font-weight: var(--lt-weight-600);
+}
+.front-nav-brand .lt-icon { color: var(--lt-primary-ink); }
+.front-nav-links {
+  display: flex;
+  gap: var(--lt-space-24);
+  margin-inline-start: auto;
+}
+.front-nav :is(a.front-nav-try, a.front-nav-get) {
+  padding: var(--lt-space-6) var(--lt-space-14);
+  border: var(--lt-stroke-1) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-pill);
+  color: var(--lt-foreground);
+  white-space: nowrap;
+}
+.front-nav a.front-nav-get {
+  border-color: var(--lt-foreground);
+  background: var(--lt-foreground);
+  color: var(--lt-background);
+}
+@media (hover: hover) {
+  .front-nav a:hover { color: var(--lt-foreground); }
+  .front-nav a.front-nav-try:hover { background: var(--lt-wash-hover); }
+  .front-nav a.front-nav-get:hover { color: var(--lt-background); opacity: var(--lt-opacity-85); }
+}
+@media (max-width: 720px) {
+  .front-nav-links,
+  .front-nav a.front-nav-get { display: none; }
+  .front-nav a.front-nav-try { margin-inline-start: auto; }
+}
+
+/* The hero's light, on the owner's word of 18 November 2026, 5:08pm that the site be beautiful with gradients: two soft lights in the theme's own colors behind the top of the page, edge to edge, the title's last word filled with the theme's gradient and the clip sitting in a colored glow. */
+.leaf-app.front-marketing .front-hero {
+  /* Up under the bar, across the gap the page's parts stand apart by, so the light starts where the bar ends. */
+  margin-top: calc(var(--lt-space-16) * -1);
+  margin-inline: calc(50% - 50cqi - var(--lt-space-24));
+  padding-inline: calc(50cqi + var(--lt-space-24) - 50%);
+}
+.front-hero-accent {
+  background: var(--lt-front-title-ink);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+/* The recording stands in the page's own light rather than casting a glow of its own: the app throws no blurred shadow anywhere (`every_box_shadow_is_a_stroke_a_ring_or_a_recess`). */
+.leaf-app.front-marketing .front-hero figure.front-hero-clip {
+  max-width: var(--lt-front-clip-width);
+}
+/* The light is painted on the page itself from its very top, so it runs up behind the see-through bar as Equin's does; the hero draws none of its own. */
+.leaf-app.front-marketing .reader-column .reader-layout {
+  background: var(--lt-front-glow) center top / var(--lt-front-glow-size) no-repeat;
+}
+
+/* The three principles under the hero, Equin's three cards: a hairline card each on the raised surface, a colored mark before each name, the line quiet under it; three across where there is room, stacked on a phone. */
+ul.front-principles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-16);
+  width: 100%;
+  max-width: var(--lt-front-measure);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+@container (min-width: 720px) {
+  ul.front-principles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+li.front-principle {
+  margin: 0;
+  padding: var(--lt-space-20);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-2xl);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+  line-height: var(--lt-leading-1-55);
+}
+strong.front-principle-name {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-10);
+  margin-bottom: var(--lt-space-6);
+  color: var(--lt-foreground);
+  font-weight: var(--lt-weight-600);
+}
+strong.front-principle-name::before {
+  content: "";
+  width: var(--lt-space-14);
+  height: var(--lt-space-14);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-primary);
+}
+li.front-principle:nth-child(2) strong.front-principle-name::before { background: var(--lt-link); }
+li.front-principle:nth-child(3) strong.front-principle-name::before { background: var(--lt-accent); }
+
+/* Leaftext runs right here: Equin's demo panel, one rounded card with a light rising from its foot, the heading and its line centered, and Try the app filled beside two quiet buttons. */
+.front-running {
+  width: 100%;
+  max-width: var(--lt-front-measure);
+  margin: var(--lt-space-48) auto 0;
+  padding: var(--lt-space-48) var(--lt-space-24);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-2xl);
+  background: var(--lt-front-panel-glow), var(--lt-surface-elevated);
+  text-align: center;
+}
+h2.front-running-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--lt-foreground);
+  font-size: var(--type-h2-size);
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-tight-01);
+}
+p.front-running-line {
+  max-width: 46ch;
+  margin: var(--lt-space-12) auto 0;
+  color: var(--lt-muted-foreground);
+}
+p.front-running-go {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--lt-space-10);
+  margin: var(--lt-space-24) 0 0;
+}
+p.front-running-go a {
+  padding: var(--lt-space-8) var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-background);
+  color: var(--lt-foreground);
+  text-decoration: none;
+}
+p.front-running-go a.front-running-try {
+  border-color: var(--lt-foreground);
+  background: var(--lt-foreground);
+  color: var(--lt-background);
+}
+@media (hover: hover) {
+  p.front-running-go a:hover { background: var(--lt-wash-hover); }
+  p.front-running-go a.front-running-try:hover { background: var(--lt-foreground); opacity: var(--lt-opacity-85); }
+}
+
+/* Every feature as an app, Equin's grid: the heading and its line centered, the six recorded apps as tiles three across — the clip on top with Try it live over its corner, the name and the line under it on the raised surface — and every other app a chip with its own colored mark. */
+.front-apps-section {
+  width: 100%;
+  max-width: var(--lt-front-measure);
+  margin: var(--lt-space-48) auto 0;
+}
+h2.front-apps-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--lt-foreground);
+  font-size: var(--type-h2-size);
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-tight-01);
+  text-align: center;
+}
+p.front-apps-line {
+  margin: var(--lt-space-8) 0 0;
+  color: var(--lt-muted-foreground);
+  text-align: center;
+}
+.front-apps-section .front-cards {
+  gap: var(--lt-space-16);
+  padding: var(--lt-space-32) 0 var(--lt-space-16);
+}
+@container (min-width: 720px) {
+  .front-apps-section .front-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.front-apps-section .front-card,
+.front-apps-section .front-card.is-featured {
+  display: flex;
+  flex-direction: column;
+  grid-column: auto;
+  overflow: hidden;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-2xl);
+  background: var(--lt-surface-elevated);
+}
+.front-apps-section .front-card figure.front-card-clip,
+.front-apps-section .front-card figure.front-card-clip.is-beside {
+  position: relative;
+  order: -1;
+  margin: 0;
+  border: 0;
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: 0;
+}
+a.front-card-try {
+  position: absolute;
+  right: var(--lt-space-10);
+  bottom: var(--lt-space-10);
+  padding: var(--lt-space-4) var(--lt-space-10);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-foreground);
+  color: var(--lt-background);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  text-decoration: none;
+}
+/* A tile's mark is painted behind the start of its title rather than drawn as a box before it, so nothing stands before a heading where the drop cap's frame floats. */
+.front-apps-section .front-card,
+li.front-app { --front-app-hue: var(--lt-primary); }
+.front-apps-section h2.front-card-title {
+  margin: var(--lt-space-14) var(--lt-space-16) var(--lt-space-4);
+  padding-inline-start: calc(var(--lt-space-14) + var(--lt-space-8));
+  background: linear-gradient(var(--front-app-hue), var(--front-app-hue)) left center / var(--lt-space-14) var(--lt-space-14) no-repeat;
+  font-size: var(--type-h5-size);
+}
+.front-app-mark {
+  flex: none;
+  width: var(--lt-space-14);
+  height: var(--lt-space-14);
+  border-radius: var(--lt-radius-sm);
+  background: var(--front-app-hue);
+}
+/* A tile says one thing: its lead held to three lines, the rest a press away on its page. */
+.front-apps-section p.front-card-lead {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0 var(--lt-space-16);
+  font-size: var(--lt-text-14);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+.front-apps-section p.front-card-lead + p.front-card-lead { display: none; }
+.front-apps-section .front-card p.front-more {
+  margin: 0;
+  padding: var(--lt-space-10) var(--lt-space-16) var(--lt-space-14);
+  font-size: var(--lt-text-14);
+}
+ul.front-apps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+li.front-app { margin: 0; }
+li.front-app a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  padding: var(--lt-space-6) var(--lt-space-12);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-14);
+  text-decoration: none;
+}
+/* Under the pointer a tile, a principle or a closing card lifts a little onto a stronger edge, as Equin's cards do; the rise is the cards' own curve, and a reader who asked for less motion gets the edge alone. */
+.front-apps-section .front-card,
+li.front-principle,
+.front-closing > section {
+  transition:
+    border-color var(--lt-duration-200) var(--lt-ease-decelerate),
+    translate var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+@media (hover: hover) {
+  li.front-app a:hover,
+  .front-apps-section .front-card:hover,
+  li.front-principle:hover,
+  .front-closing > section:hover { border-color: var(--lt-border-strong); }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .front-apps-section .front-card:hover,
+  li.front-principle:hover,
+  .front-closing > section:hover { translate: 0 calc(var(--lt-space-4) * -1); }
+}
+/* Each app's mark in its own color, cycling through the theme's six named hues so every theme colors its apps from its own palette. */
+.front-apps-section .front-card:nth-child(6n + 2),
+li.front-app:nth-child(6n + 2) { --front-app-hue: var(--lt-link); }
+.front-apps-section .front-card:nth-child(6n + 3),
+li.front-app:nth-child(6n + 3) { --front-app-hue: var(--lt-success); }
+.front-apps-section .front-card:nth-child(6n + 4),
+li.front-app:nth-child(6n + 4) { --front-app-hue: var(--lt-warning); }
+.front-apps-section .front-card:nth-child(6n + 5),
+li.front-app:nth-child(6n + 5) { --front-app-hue: var(--lt-danger); }
+.front-apps-section .front-card:nth-child(6n),
+li.front-app:nth-child(6n) { --front-app-hue: var(--lt-accent); }
+
+/* The comparison the owner likes and called ugly, redrawn on the marketing page: one rounded card on the raised surface with a quiet header row, Leaftext's column tinted, rows on hairlines; the feature groups under it as rounded rows that open out. */
+.leaf-app.front-marketing .front-compare {
+  margin-top: var(--lt-space-48);
+}
+.leaf-app.front-marketing .front-compare > h2 {
+  font-size: var(--type-h2-size);
+  font-weight: var(--lt-weight-600);
+  text-align: center;
+}
+.leaf-app.front-marketing .front-compare table.compare-glance {
+  overflow: hidden;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--lt-radius-2xl);
+  background: var(--lt-surface-elevated);
+}
+.leaf-app.front-marketing .front-compare table.compare-glance th {
+  background: var(--lt-wash-rest);
+}
+.leaf-app.front-marketing .front-compare table.compare-glance :is(th, td):first-child,
+.leaf-app.front-marketing .front-compare table.compare-glance tr:nth-child(n) td:first-child {
+  padding-inline-start: var(--lt-space-20);
+}
+.leaf-app.front-marketing .front-compare table.compare-glance tr:last-child td { border-bottom: 0; }
+.leaf-app.front-marketing .front-compare table.compare-glance :is(th, td):nth-child(2) {
+  background: var(--lt-wash-rest);
+  color: var(--lt-foreground);
+}
+.leaf-app.front-marketing .front-compare .compare-group {
+  margin: var(--lt-space-8) 0 0;
+  padding: var(--lt-space-10) var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+}
+
+/* The two closing cards, side by side where there is room: Get Leaftext with the downloads, and Tell us what to build. */
+.front-closing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-16);
+  width: 100%;
+  max-width: var(--lt-front-measure);
+  margin: var(--lt-space-48) auto 0;
+}
+@container (min-width: 720px) {
+  .front-closing { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.front-closing > section {
+  margin: 0;
+  padding: var(--lt-space-24);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-2xl);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+  text-align: start;
+}
+h3.front-closing-title {
+  margin: 0 0 var(--lt-space-8);
+  color: var(--lt-foreground);
+  font-size: var(--type-h4-size);
+  font-weight: var(--lt-weight-600);
+}
+.front-closing p { margin: 0 0 var(--lt-space-16); }
+.front-closing p.front-downloads { margin: 0; }
+p.front-closing-go {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-10);
+  margin: 0;
+}
+p.front-closing-go a {
+  padding: var(--lt-space-8) var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-pill);
+  color: var(--lt-foreground);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  p.front-closing-go a:hover { background: var(--lt-wash-hover); }
+}
+
 /* On the article for the baked page, and on the run the reading page moves its blocks into once it draws it. */
 .front-layout,
 .front-layout > .document-run {
@@ -17813,60 +18268,54 @@ body.is-home-box-dragging button {
   gap: var(--lt-space-16);
 }
 
-/* The hero, in Franz von Holzhausen's reduced language on the owner's word of 14 November 2026: one solid surface across the whole reading sheet, holding only the mark, the title, one line, the downloads and the app recorded beside them. It is painted in the page's own ink with the page's color as its words — the inverse of the page in every theme — so no color is written here and none is added. Square, with no border or shadow: nothing on it but the form. */
+/* The hero, in Franz von Holzhausen's reduced language on the owner's word of 18 November 2026, 3:39pm: drawn on the page's own ground in the page's own theme — never the inverse — and stacked on one centered axis at every width: the title, one quiet line, the two downloads, then the app recorded as the picture under them. Nothing on it but the form: no band, no border, no shadow. The clip comes last in the stack whatever the source order, so the downloads sit right under the promise. */
 .front-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: var(--lt-space-32);
-  margin-inline: calc(50% - 50cqi - var(--reader-layout-padding-inline, 0px));
-  padding: var(--lt-space-48) var(--reader-layout-padding-inline, var(--lt-space-24));
-  background: var(--lt-foreground);
-  color: var(--lt-background);
+  padding: var(--lt-space-48) 0 var(--lt-space-32);
   text-align: center;
 }
-.front-hero-words > .dotted-leaf { margin: 0 auto var(--lt-space-24); }
-/* Wide, the words and the downloads stand in the first column and the app fills the second; narrow, the clip sits between the line and the downloads, so the downloads stay directly over the chart. */
-@container (min-width: 900px) {
-  .front-hero {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
-    align-items: center;
-    column-gap: var(--lt-space-48);
-    text-align: start;
-  }
-  .front-hero-words { grid-column: 1; grid-row: 1; }
-  .front-hero-get { grid-column: 1; grid-row: 2; align-self: start; }
-  figure.front-hero-clip { grid-column: 2; grid-row: 1 / -1; }
-  .front-hero p.front-downloads { margin: 0; }
-  .front-hero-words > .dotted-leaf { margin-inline: 0; }
-  .front-hero p.front-hero-line { margin-inline: 0; }
-}
+.front-hero-words { order: 1; }
+.front-hero-get { order: 2; }
+.front-hero figure.front-hero-clip { order: 3; width: 100%; }
+.front-hero-words > .dotted-leaf { width: 112px; height: 112px; margin: 0 auto var(--lt-space-24); }
+/* On a phone the first screen is the promise and the downloads alone, centered on it, and the app recorded starts below the fold: placed where the screen ends it sat under the bottom fade and the Read, Source and Graph switch the moment the page opened. The words take the upper share of the screen and the downloads the lower, so together they fill it; a short screen lets the content's own height win. */
 @media (max-width: 720px) {
-  .front-hero-words > .dotted-leaf { width: 160px; height: 160px; }
+  .front-hero { gap: 0; padding-top: 0; }
+  .front-hero-words {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: calc(55svh - var(--app-bar-height));
+    padding-bottom: var(--lt-space-32);
+  }
+  .front-hero-get { min-height: 45svh; width: 100%; padding-bottom: var(--lt-space-24); }
 }
 .document-minimap-preview .dotted-leaf-canvas { display: none; }
 .document-minimap-preview .dotted-leaf-still { visibility: visible !important; }
+/* The title is the largest thing on the page and the lightest weight that still reads as a headline: big, quiet, tight. */
 h1.front-hero-title {
   margin: 0;
   padding: 0;
   border: 0;
-  color: inherit;
+  color: var(--lt-foreground);
+  font-size: var(--type-display-size);
+  font-weight: var(--lt-weight-500);
+  line-height: var(--lt-leading-1-04);
   letter-spacing: var(--lt-tracking-tight-01);
 }
 p.front-hero-line {
   margin: var(--lt-space-16) auto 0;
   max-width: 34ch;
-  color: inherit;
-  opacity: var(--lt-opacity-75);
+  color: var(--lt-muted-foreground);
   font-size: var(--type-h5-size);
-  line-height: var(--lt-leading-1-35);
+  line-height: var(--lt-leading-1-45);
 }
-/* The small print's install link takes the band's own ink, underlined, since the page's link color is drawn for the page's own ground. */
-.front-hero p.front-small { color: inherit; opacity: var(--lt-opacity-75); }
-.front-hero p.front-small a { color: inherit; text-decoration: underline; }
-/* The app recorded is the picture: it sits on the band with no frame of its own. */
-.front-hero figure.front-hero-clip { border: 0; background: transparent; }
-/* The two downloads are one width: a grid as wide as the wider button, its columns equal shares, side by side and stacked alike. */
+/* The app recorded is the picture: one soft-cornered frame on a hairline, no shadow. */
+.front-hero figure.front-hero-clip { border-radius: var(--lt-radius-xl); }
+/* The two downloads are one width: a grid as wide as the wider button, its columns equal shares, side by side and stacked alike. The second is the quiet one beside the first, a neutral fill rather than a second accent. */
 p.front-downloads {
   display: grid;
   grid-auto-flow: column;
@@ -17875,8 +18324,37 @@ p.front-downloads {
   width: fit-content;
   margin: 0 auto;
 }
+/* No accent on the downloads: a theme's accent filling one button is a colored slab that shouts over the title. Both are drawn in the page's own ink — the first filled with it, the second outlined in it — the same shape, size and weight, so they read as one pair in every theme. */
+.front-downloads a.leaf-md-button {
+  margin: 0;
+  padding: var(--lt-space-12) var(--lt-space-24);
+  border: var(--lt-stroke-1) solid var(--lt-foreground);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-foreground);
+  color: var(--lt-background);
+  font-weight: var(--lt-weight-500);
+}
+.front-downloads a.leaf-md-button + a.leaf-md-button {
+  background: transparent;
+  color: var(--lt-foreground);
+}
+@media (hover: hover) {
+  .front-downloads a.leaf-md-button:hover {
+    border-color: var(--lt-foreground);
+    background: var(--lt-foreground);
+    color: var(--lt-background);
+    opacity: var(--lt-opacity-85);
+  }
+  .front-downloads a.leaf-md-button + a.leaf-md-button:hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-foreground);
+    opacity: 1;
+  }
+}
+/* The small print's link in the page's ink, underlined, rather than a second spot of accent under the buttons. */
+.front-hero p.front-small a { color: var(--lt-foreground); text-decoration: underline; text-underline-offset: 0.2em; font-weight: var(--lt-weight-400); }
 @container (max-width: 520px) {
-  p.front-downloads { grid-auto-flow: row; }
+  p.front-downloads { grid-auto-flow: row; width: 100%; }
 }
 p.front-small {
   margin: var(--lt-space-16) 0 0;
@@ -17895,13 +18373,83 @@ p.front-small {
     width: 100%;
   }
 }
+/* The section heading stands on space alone, without the rule a document's h2 draws under it. */
+/* Under the heading, the one line that says what the chart is stays at body size; the key to its marks and the dates it was read on are fine print, small and muted, so the chart is what the eye lands on. */
+.front-compare .compare-chart > p {
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+  line-height: var(--lt-leading-1-55);
+}
+.front-compare > h2 {
+  color: var(--lt-foreground);
+  border-bottom: 0;
+  padding-bottom: 0;
+  font-weight: var(--lt-weight-500);
+  letter-spacing: var(--lt-tracking-tight-01);
+}
+/* The chart reads as a spec sheet: no grid, no banding, no grain — one hairline under each row, the column names small and quiet, the marks centered under them. */
+.front-compare table.compare-glance :is(th, td),
+.front-compare table.compare-glance tr:nth-child(n) td {
+  border: 0;
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  background: none;
+  padding: var(--lt-space-14) var(--lt-space-12);
+}
+.front-compare table.compare-glance th {
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+  font-weight: var(--lt-weight-500);
+  letter-spacing: var(--lt-tracking-040);
+  text-transform: uppercase;
+}
+.front-compare table.compare-glance :is(th, td):not(:first-child) { text-align: center; }
+.front-compare table.compare-glance :is(th, td):first-child,
+.front-compare table.compare-glance tr:nth-child(n) td:first-child { padding-inline-start: 0; text-align: start; }
+.front-compare table.compare-glance td:first-child,
+.front-compare table.compare-glance td:first-child strong { font-weight: var(--lt-weight-500); }
+/* Narrow, every document's table turns into a stack of cards; this one stays the spec sheet — five columns fit a phone once the marks sit in tight columns — so a phone reads the same chart a desktop does. */
+@media screen and (max-width: 720px) {
+  .document-body .front-compare table.compare-glance {
+    display: table;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    border-collapse: collapse;
+    font-size: var(--type-caption-size);
+  }
+  .document-body .front-compare table.compare-glance thead { display: table-header-group; }
+  .document-body .front-compare table.compare-glance tbody { display: table-row-group; }
+  .document-body .front-compare table.compare-glance tr {
+    display: table-row;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .document-body .front-compare table.compare-glance :is(td, th) {
+    display: table-cell;
+    padding: var(--lt-space-12) var(--lt-space-4);
+    border: 0;
+    border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  }
+  .document-body .front-compare table.compare-glance :is(td, th):first-child { padding-inline-start: 0; }
+  .document-body .front-compare table.compare-glance th { font-size: var(--lt-text-9); letter-spacing: var(--lt-tracking-020); }
+  .document-body .front-compare table.compare-glance td:not(:first-child) { text-align: center; }
+  .document-body .front-compare table.compare-glance td::before { display: none; }
+}
+/* The feature groups under the chart: each a quiet line, its count muted, rather than a column of bold. */
+.front-compare .compare-group > summary { font-weight: var(--lt-weight-400); }
+.front-compare .compare-group-title { font-weight: var(--lt-weight-500); }
+.front-compare :is(.compare-group-subtitle, .compare-group-count) { color: var(--lt-muted-foreground); font-weight: var(--lt-weight-400); }
 
 /* A recorded clip: one frame. It throws no shadow of its own, because the app's one light casts none under a box in the page. */
 figure.front-clip {
   margin: 0;
   overflow: hidden;
   border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-radius-xl);
   background: var(--lt-surface-elevated);
 }
 :is(img, video).front-clip-media {
@@ -17916,8 +18464,8 @@ figure.front-clip {
 .front-cards {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--lt-space-24);
-  padding: var(--lt-space-32) 0;
+  gap: var(--lt-space-48) var(--lt-space-32);
+  padding: var(--lt-space-48) 0;
 }
 .front-card.is-featured {
   grid-column: 1 / -1;
@@ -17931,23 +18479,29 @@ figure.front-clip {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: repeat(6, auto) 1fr;
-    column-gap: var(--lt-space-24);
+    /* The grid's own column gap, so a featured card's picture stands exactly over the second column's. */
+    column-gap: var(--lt-space-32);
     align-items: start;
   }
-  figure.front-card-clip.is-beside {
+  .front-card figure.front-card-clip.is-beside {
     grid-column: 2;
     grid-row: 1 / -1;
-    margin-top: 0;
+    margin: 0;
   }
 }
+/* A card is no box: the picture, then the words under it, standing on the page's own ground and set apart by space alone. */
 .front-card {
   display: flex;
   flex-direction: column;
-  padding: var(--lt-space-24);
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-xl);
-  background: var(--lt-surface-elevated);
+  padding: 0;
+  border: 0;
+  background: none;
 }
+.front-card figure.front-card-clip {
+  order: -1;
+  margin: 0 0 var(--lt-space-20);
+}
+.front-card p.front-more { margin-top: auto; padding-top: var(--lt-space-12); }
 
 /* The hero's clip settles into place once as the page first paints: the product arriving, on the same length and curve the cards rise on. The stylesheet runs it, so the first response settles before any script arrives, and only where motion is welcome; a redraw of the landing puts the clip straight in place with `is-in`, and the rail's copy never moves. */
 @keyframes front-settle {
@@ -17986,13 +18540,13 @@ figure.front-clip {
 }
 /* The README's own section heading, so it is an h2 and is written back as one; drawn as the card title it stood as before, without the rule a document's h2 wears. */
 h2.front-card-title {
-  color: var(--lt-markdown-heading-3);
+  color: var(--lt-foreground);
   border-bottom: none;
   padding-bottom: 0;
   line-height: var(--type-h3-line);
   margin: 0 0 var(--lt-space-8);
-  font-size: var(--type-h4-size);
-  font-weight: var(--lt-weight-600);
+  font-size: var(--type-h3-size);
+  font-weight: var(--lt-weight-500);
   letter-spacing: var(--lt-tracking-tight-01);
 }
 p.front-card-lead {
@@ -18025,6 +18579,20 @@ p.front-more {
 .front-foot {
   padding: var(--lt-space-16) 0 var(--lt-space-32);
   color: var(--lt-muted-foreground);
+}
+/* The last lines are quiet: links in the page's ink at body weight, underlined, rather than a row of bold accent. */
+:is(.front-install, .front-foot) a,
+:is(.front-install, .front-foot) a strong,
+.front-card p.front-more a {
+  color: var(--lt-foreground);
+  font-weight: var(--lt-weight-500);
+  text-decoration: underline;
+  text-decoration-color: var(--lt-border-strong);
+  text-underline-offset: 0.25em;
+}
+@media (hover: hover) {
+  :is(.front-install, .front-foot) a:hover,
+  .front-card p.front-more a:hover { text-decoration-color: var(--lt-foreground); }
 }
 /* A shelf, the Arthurian shelf and any other the site lays out as one: `index.md` laid out by `site/shelf-layout.js` inside the reading column as a bookshelf — the hero, the switch between its orders, the finder, the key, the case of bays and spines, the book opened off it and the list it was drawn from. The app's bar, pane and rail stand around it as around every page, and the desktop never draws it. Every color is the theme's; the six tradition tones are the page's own categorical scale, which `site/shelf.js` sets on the shelf as `--shelf-tone-*` and `--shelf-ink-*` and sets again on every theme change. A spine's width and height are its own geometry, written on it by the layout from its reach and its title. */
 
@@ -23210,7 +23778,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 204 values that do not change with the theme, all 120 icons, and all 221 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 212 values that do not change with the theme, all 120 icons, and all 221 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -23243,7 +23811,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>204</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>212</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>120</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>221</b></button>
 </div>
@@ -23360,7 +23928,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">204 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">212 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -23606,6 +24174,16 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="value"><code>lt-shadow-edge-strong</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-edge-strong)"></i><code>inset 0 0 0 1px var(--lt-border-strong)</code></div>
 <div class="value"><code>lt-shadow-edge-accent</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-edge-accent)"></i><code>inset 0 0 0 2px var(--lt-accent)</code></div>
 <div class="value"><code>lt-shadow-edge-link</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-edge-link)"></i><code>inset 0 0 0 1px var(--lt-link)</code></div>
+</div>
+<h3>The front page's light</h3><div class="wall wide">
+<div class="value"><code>lt-front-measure</code><code>1120px</code></div>
+<div class="value"><code>lt-front-glow</code><code>radial-gradient(ellipse 60% 70% at 30% 0%, color-mix(in srgb, var(--lt-primary) 30%, transparent), transparent 70%), radial-gradient(ellipse 55% 65% at 75% 5%, color-mix(in srgb, var(--lt-link) 26%, transparent), transparent 70%)</code></div>
+<div class="value"><code>lt-front-title-ink</code><code>linear-gradient(100deg, var(--lt-primary-ink), var(--lt-link))</code></div>
+<div class="value"><code>lt-front-glow-size</code><i class="demo type" style="font-size:var(--lt-front-glow-size)">Ag</i><code>100% 1100px</code></div>
+<div class="value"><code>lt-front-clip-width</code><code>960px</code></div>
+<div class="value"><code>lt-front-bar</code><code>color-mix(in srgb, var(--lt-markdown-background) 72%, transparent)</code></div>
+<div class="value"><code>lt-front-bar-blur</code><code>blur(14px) saturate(1.4)</code></div>
+<div class="value"><code>lt-front-panel-glow</code><code>radial-gradient(ellipse 60% 90% at 50% 100%, color-mix(in srgb, var(--lt-link) 20%, transparent), transparent 70%)</code></div>
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
@@ -24159,7 +24737,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="document-body"><nav class="docs-pager"><a class="docs-pager-prev" href="#"><span class="docs-pager-label">Previous</span>Gauge Maintenance</a><a class="docs-pager-next" href="#"><span class="docs-pager-label">Next</span>Weir Crest Survey</a></nav></div></div>
 </section>
 <section class="part">
-<header><h3>Front page</h3><code class="built">.front</code><span class="built">site/front-page-layout.js lays the README out — the hero one band in the page's own ink holding front-hero-words, the app recorded in front-hero-clip and the downloads in front-hero-get — site/front-page.js swaps in the clips, raises the cards, and front-page.css settles the hero clip once on first paint by its front-settle keyframes, a redraw putting it straight in place with is-in, and only leaftext.com draws it</span></header>
+<header><h3>Front page</h3><code class="built">.front</code><span class="built">site/front-page-layout.js lays the README out — the hero one band in the page's own ink holding front-hero-words, the app recorded in front-hero-clip and the downloads in front-hero-get — site/front-page.js swaps in the clips, raises the cards, and front-page.css settles the hero clip once on first paint by its front-settle keyframes, a redraw putting it straight in place with is-in, and only leaftext.com draws it. It opens on its own bar, front-nav (the leaf, Apps, Compare, Docs, front-nav-try into the app and front-nav-get), and while the body wears front-marketing — written by the bake, kept by site/front-page.js while the landing is drawn — none of the app's chrome is drawn around it</span></header>
 <div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body front-layout"><section class="front-hero"><div class="front-hero-words"><span class="dotted-leaf" role="img" aria-label="Leaftext leaf" data-dotted-leaf="front"><svg class="dotted-leaf-still" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor"><circle cx="6.5" cy="9" r="0.82"/><circle cx="6.5" cy="11.5" r="0.82"/><circle cx="9" cy="11.5" r="0.82"/><circle cx="6.5" cy="14" r="0.82"/><circle cx="9" cy="14" r="0.82"/><circle cx="11.5" cy="14" r="0.82"/><circle cx="6.5" cy="16.5" r="0.82"/><circle cx="9" cy="16.5" r="0.82"/><circle cx="11.5" cy="16.5" r="0.82"/><circle cx="14" cy="16.5" r="0.82"/><circle cx="6.5" cy="19" r="0.82"/><circle cx="9" cy="19" r="0.82"/><circle cx="11.5" cy="19" r="0.82"/><circle cx="14" cy="19" r="0.82"/><circle cx="16.5" cy="19" r="0.82"/><circle cx="19" cy="19" r="0.82"/><circle cx="6.5" cy="21.5" r="0.82"/><circle cx="9" cy="21.5" r="0.82"/><circle cx="11.5" cy="21.5" r="0.82"/><circle cx="14" cy="21.5" r="0.82"/><circle cx="16.5" cy="21.5" r="0.82"/><circle cx="19" cy="21.5" r="0.82"/><circle cx="21.5" cy="21.5" r="0.82"/><circle cx="24" cy="21.5" r="0.82"/><circle cx="26.5" cy="21.5" r="0.82"/><circle cx="6.5" cy="24" r="0.82"/><circle cx="9" cy="24" r="0.82"/><circle cx="11.5" cy="24" r="0.82"/><circle cx="14" cy="24" r="0.82"/><circle cx="16.5" cy="24" r="0.82"/><circle cx="19" cy="24" r="0.82"/><circle cx="21.5" cy="24" r="0.82"/><circle cx="24" cy="24" r="0.82"/><circle cx="26.5" cy="24" r="0.82"/><circle cx="29" cy="24" r="0.82"/><circle cx="31.5" cy="24" r="0.82"/><circle cx="34" cy="24" r="0.82"/><circle cx="36.5" cy="24" r="0.82"/><circle cx="39" cy="24" r="0.82"/><circle cx="6.5" cy="26.5" r="0.82"/><circle cx="9" cy="26.5" r="0.82"/><circle cx="11.5" cy="26.5" r="0.82"/><circle cx="16.5" cy="26.5" r="0.82"/><circle cx="19" cy="26.5" r="0.82"/><circle cx="21.5" cy="26.5" r="0.82"/><circle cx="24" cy="26.5" r="0.82"/><circle cx="26.5" cy="26.5" r="0.82"/><circle cx="29" cy="26.5" r="0.82"/><circle cx="31.5" cy="26.5" r="0.82"/><circle cx="34" cy="26.5" r="0.82"/><circle cx="36.5" cy="26.5" r="0.82"/><circle cx="39" cy="26.5" r="0.82"/><circle cx="41.5" cy="26.5" r="0.82"/><circle cx="44" cy="26.5" r="0.82"/><circle cx="9" cy="29" r="0.82"/><circle cx="11.5" cy="29" r="0.82"/><circle cx="14" cy="29" r="0.82"/><circle cx="16.5" cy="29" r="0.82"/><circle cx="19" cy="29" r="0.82"/><circle cx="21.5" cy="29" r="0.82"/><circle cx="24" cy="29" r="0.82"/><circle cx="26.5" cy="29" r="0.82"/><circle cx="29" cy="29" r="0.82"/><circle cx="31.5" cy="29" r="0.82"/><circle cx="34" cy="29" r="0.82"/><circle cx="36.5" cy="29" r="0.82"/><circle cx="39" cy="29" r="0.82"/><circle cx="41.5" cy="29" r="0.82"/><circle cx="44" cy="29" r="0.82"/><circle cx="46.5" cy="29" r="0.82"/><circle cx="9" cy="31.5" r="0.82"/><circle cx="11.5" cy="31.5" r="0.82"/><circle cx="14" cy="31.5" r="0.82"/><circle cx="16.5" cy="31.5" r="0.82"/><circle cx="19" cy="31.5" r="0.82"/><circle cx="24" cy="31.5" r="0.82"/><circle cx="26.5" cy="31.5" r="0.82"/><circle cx="29" cy="31.5" r="0.82"/><circle cx="31.5" cy="31.5" r="0.82"/><circle cx="34" cy="31.5" r="0.82"/><circle cx="36.5" cy="31.5" r="0.82"/><circle cx="39" cy="31.5" r="0.82"/><circle cx="41.5" cy="31.5" r="0.82"/><circle cx="44" cy="31.5" r="0.82"/><circle cx="46.5" cy="31.5" r="0.82"/><circle cx="49" cy="31.5" r="0.82"/><circle cx="9" cy="34" r="0.82"/><circle cx="11.5" cy="34" r="0.82"/><circle cx="14" cy="34" r="0.82"/><circle cx="16.5" cy="34" r="0.82"/><circle cx="19" cy="34" r="0.82"/><circle cx="21.5" cy="34" r="0.82"/><circle cx="24" cy="34" r="0.82"/><circle cx="31.5" cy="34" r="0.82"/><circle cx="34" cy="34" r="0.82"/><circle cx="36.5" cy="34" r="0.82"/><circle cx="39" cy="34" r="0.82"/><circle cx="41.5" cy="34" r="0.82"/><circle cx="44" cy="34" r="0.82"/><circle cx="46.5" cy="34" r="0.82"/><circle cx="49" cy="34" r="0.82"/><circle cx="51.5" cy="34" r="0.82"/><circle cx="11.5" cy="36.5" r="0.82"/><circle cx="14" cy="36.5" r="0.82"/><circle cx="16.5" cy="36.5" r="0.82"/><circle cx="19" cy="36.5" r="0.82"/><circle cx="21.5" cy="36.5" r="0.82"/><circle cx="24" cy="36.5" r="0.82"/><circle cx="26.5" cy="36.5" r="0.82"/><circle cx="29" cy="36.5" r="0.82"/><circle cx="44" cy="36.5" r="0.82"/><circle cx="46.5" cy="36.5" r="0.82"/><circle cx="49" cy="36.5" r="0.82"/><circle cx="51.5" cy="36.5" r="0.82"/><circle cx="11.5" cy="39" r="0.82"/><circle cx="14" cy="39" r="0.82"/><circle cx="16.5" cy="39" r="0.82"/><circle cx="19" cy="39" r="0.82"/><circle cx="21.5" cy="39" r="0.82"/><circle cx="24" cy="39" r="0.82"/><circle cx="26.5" cy="39" r="0.82"/><circle cx="29" cy="39" r="0.82"/><circle cx="31.5" cy="39" r="0.82"/><circle cx="34" cy="39" r="0.82"/><circle cx="36.5" cy="39" r="0.82"/><circle cx="49" cy="39" r="0.82"/><circle cx="51.5" cy="39" r="0.82"/><circle cx="54" cy="39" r="0.82"/><circle cx="14" cy="41.5" r="0.82"/><circle cx="16.5" cy="41.5" r="0.82"/><circle cx="19" cy="41.5" r="0.82"/><circle cx="21.5" cy="41.5" r="0.82"/><circle cx="24" cy="41.5" r="0.82"/><circle cx="26.5" cy="41.5" r="0.82"/><circle cx="29" cy="41.5" r="0.82"/><circle cx="31.5" cy="41.5" r="0.82"/><circle cx="34" cy="41.5" r="0.82"/><circle cx="36.5" cy="41.5" r="0.82"/><circle cx="39" cy="41.5" r="0.82"/><circle cx="41.5" cy="41.5" r="0.82"/><circle cx="44" cy="41.5" r="0.82"/><circle cx="51.5" cy="41.5" r="0.82"/><circle cx="54" cy="41.5" r="0.82"/><circle cx="16.5" cy="44" r="0.82"/><circle cx="19" cy="44" r="0.82"/><circle cx="21.5" cy="44" r="0.82"/><circle cx="24" cy="44" r="0.82"/><circle cx="26.5" cy="44" r="0.82"/><circle cx="29" cy="44" r="0.82"/><circle cx="31.5" cy="44" r="0.82"/><circle cx="34" cy="44" r="0.82"/><circle cx="36.5" cy="44" r="0.82"/><circle cx="39" cy="44" r="0.82"/><circle cx="41.5" cy="44" r="0.82"/><circle cx="44" cy="44" r="0.82"/><circle cx="46.5" cy="44" r="0.82"/><circle cx="54" cy="44" r="0.82"/><circle cx="56.5" cy="44" r="0.82"/><circle cx="19" cy="46.5" r="0.82"/><circle cx="21.5" cy="46.5" r="0.82"/><circle cx="24" cy="46.5" r="0.82"/><circle cx="26.5" cy="46.5" r="0.82"/><circle cx="29" cy="46.5" r="0.82"/><circle cx="31.5" cy="46.5" r="0.82"/><circle cx="34" cy="46.5" r="0.82"/><circle cx="36.5" cy="46.5" r="0.82"/><circle cx="39" cy="46.5" r="0.82"/><circle cx="41.5" cy="46.5" r="0.82"/><circle cx="44" cy="46.5" r="0.82"/><circle cx="46.5" cy="46.5" r="0.82"/><circle cx="49" cy="46.5" r="0.82"/><circle cx="56.5" cy="46.5" r="0.82"/><circle cx="19" cy="49" r="0.82"/><circle cx="21.5" cy="49" r="0.82"/><circle cx="24" cy="49" r="0.82"/><circle cx="26.5" cy="49" r="0.82"/><circle cx="29" cy="49" r="0.82"/><circle cx="31.5" cy="49" r="0.82"/><circle cx="34" cy="49" r="0.82"/><circle cx="36.5" cy="49" r="0.82"/><circle cx="39" cy="49" r="0.82"/><circle cx="41.5" cy="49" r="0.82"/><circle cx="44" cy="49" r="0.82"/><circle cx="46.5" cy="49" r="0.82"/><circle cx="49" cy="49" r="0.82"/><circle cx="51.5" cy="49" r="0.82"/><circle cx="24" cy="51.5" r="0.82"/><circle cx="26.5" cy="51.5" r="0.82"/><circle cx="29" cy="51.5" r="0.82"/><circle cx="31.5" cy="51.5" r="0.82"/><circle cx="34" cy="51.5" r="0.82"/><circle cx="36.5" cy="51.5" r="0.82"/><circle cx="39" cy="51.5" r="0.82"/><circle cx="41.5" cy="51.5" r="0.82"/><circle cx="44" cy="51.5" r="0.82"/><circle cx="46.5" cy="51.5" r="0.82"/><circle cx="49" cy="51.5" r="0.82"/><circle cx="51.5" cy="51.5" r="0.82"/><circle cx="54" cy="51.5" r="0.82"/><circle cx="26.5" cy="54" r="0.82"/><circle cx="29" cy="54" r="0.82"/><circle cx="31.5" cy="54" r="0.82"/><circle cx="34" cy="54" r="0.82"/><circle cx="36.5" cy="54" r="0.82"/><circle cx="39" cy="54" r="0.82"/><circle cx="41.5" cy="54" r="0.82"/><circle cx="44" cy="54" r="0.82"/><circle cx="46.5" cy="54" r="0.82"/><circle cx="49" cy="54" r="0.82"/><circle cx="51.5" cy="54" r="0.82"/><circle cx="54" cy="54" r="0.82"/><circle cx="56.5" cy="54" r="0.82"/><circle cx="34" cy="56.5" r="0.82"/><circle cx="36.5" cy="56.5" r="0.82"/><circle cx="39" cy="56.5" r="0.82"/><circle cx="41.5" cy="56.5" r="0.82"/><circle cx="44" cy="56.5" r="0.82"/><circle cx="46.5" cy="56.5" r="0.82"/><circle cx="49" cy="56.5" r="0.82"/><circle cx="51.5" cy="56.5" r="0.82"/><circle cx="54" cy="56.5" r="0.82"/><circle cx="56.5" cy="56.5" r="0.82"/><circle cx="59" cy="59" r="0.82"/></g></svg><canvas class="dotted-leaf-canvas" aria-hidden="true"></canvas></span><h1 class="front-hero-title">Refine your mind.</h1><p class="front-hero-line">Run your agents as a team, talk to a bot of your own, and read every file — all on your machine.</p></div><figure class="front-hero-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><div class="front-hero-get"><p class="front-downloads"><a class="leaf-md-button" href="#">Download for Windows</a> <a class="leaf-md-button" href="#">Download for macOS</a></p><p class="front-small">Free · Windows 10+ and macOS Universal</p></div></section><section class="front-cards"><article class="front-card"><h2 class="front-card-title">Read your files</h2><p class="front-card-lead">A Markdown page, a sitemap, a saved email, each drawn as a page to read.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article><article class="front-card"><h2 class="front-card-title">Write where you read</h2><p class="front-card-lead">A sentence typed straight into the page.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article></section><section class="front-install"><p>Leaftext is free.</p></section><footer class="front-foot"><p><a href="#">Read the docs</a></p></footer></article></div></div>
 </section>
 <section class="part">

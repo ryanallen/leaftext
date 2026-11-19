@@ -14,6 +14,34 @@ Free · Windows 10+ and macOS Universal · **[Installation help](docs/02-install
 
 **[Get started →](docs/03-quickstart.md)** · **[Read the docs →](docs/)** · **[This site on GitHub →](https://github.com/ryanallen/leaftext)**
 
+## What it stands for
+
+- **On your machine.** No account and no cloud: your files [never leave your computer](docs/07-privacy.md).
+- **Every file.** Markdown, web pages, Word, Excel, EPUB books, email and code, [each drawn as a page](docs/01-features/01-rendering.md) to read.
+- **Agents as a team.** Claude Code, Codex and Antigravity in consoles that [message each other](docs/01-features/10-agents.md).
+
+## Running in your browser
+
+Leaftext runs right here: the whole app opens in this tab on its own documentation, with nothing to install. **[Try the app →](docs/03-quickstart.md)**
+
+## Everything in it
+
+Every feature is an app you open in the same window.
+
+- [Agents](docs/01-features/10-agents.md) — Claude Code, Codex and Antigravity working as a team
+- [Wisp](docs/01-features/05-settings.md#your-wisp) — your own bot on Slack, Discord and iMessage
+- [Reader](docs/01-features/01-rendering.md) — every file drawn as a page
+- [Editor](docs/01-features/07-editing.md) — type into the rendered page
+- [Library](docs/01-features/03-library.md) — vaults, search and the graph of links
+- [Themes](docs/01-features/06-themes.md) — fifteen themes, light and dark
+- [Books](docs/01-features/01-rendering.md#epub-books) — EPUB books read as one document
+- [Office files](docs/01-features/01-rendering.md#office-and-opendocument-files) — Word, Excel and PowerPoint as pages
+- [Tables](docs/01-features/08-relational-tables.md) — tables that link, add up and turn into boards
+- [Minimap](docs/01-features/04-minimap.md) — the whole page at a glance
+- [Tabs and history](docs/01-features/02-navigation.md) — never lose your place
+- [Grove](docs/01-features/09-progress.md) — a record of your reading that grows
+- [Settings](docs/01-features/05-settings.md) — settings you can read, where you need them
+
 ## How Leaftext compares
 
 Every feature, checked against Obsidian, Typora and Calibre. **[The whole chart, with its sources →](docs/05-compare.md)**

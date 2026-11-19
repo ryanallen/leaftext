@@ -22,6 +22,7 @@ import { project } from './project.mjs';
 import { CARD_DIR, PAGE_FOLDERS, SITE_FRAGMENT, cardOf, forwardingMarkdown, forwardingPage, hasPage, inPlaceSite, originOf, pageOf, writeDocsList } from './site-page.mjs';
 import { COMPARE_INDEX, chartPagePaths, frontWithChart } from '../site/compare-chart.js';
 import { FRONT_LAYOUT_CLASS, layoutFrontPage } from '../site/front-page-layout.js';
+import { MARKETING_CLASS, MARKETING_FAMILIES } from '../site/front-page.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -176,6 +177,19 @@ export function frontLayout(leaf, from = root) {
   return (html) => layoutFrontPage(frontWithChart(html, index, bodies, render));
 }
 
+/** The class the front page's body wears from its first byte, under which `front-page.css` draws it as a marketing page with none of the app's chrome, on the owner's word of 18 November 2026, 5:26pm. `site/front-page.js` owns the name, keeps it on while the landing is drawn and takes it off once the visitor goes into the app. */
+export { MARKETING_CLASS };
+
+/** The baked front page with its body wearing the marketing class, refused where the page carries no body the app's shell writes. */
+export function marketingPage(page) {
+  const body = /<body class="leaf-app"/;
+  if (!body.test(page)) throw new Error(`${FRONT_PAGE} carries no app body for the marketing class to go on`);
+  const head = /<head\b[^>]*>/;
+  if (!head.test(page)) throw new Error(`${FRONT_PAGE} carries no head for the marketing page's theme families to go in`);
+  // First in the head, so the theme bootstrap reads it before it draws a family.
+  return page.replace(head, (opened) => `${opened}<script>window.__leafRandomFamilies=${JSON.stringify(MARKETING_FAMILIES)};</script>`).replace(body, `<body class="leaf-app ${MARKETING_CLASS}"`);
+}
+
 /**
  * The front page and its listing: the app's own page with the site's lines in it and the README laid out into it, and the documents it walks — what the deploy uploads, never what the repository holds.
  *
@@ -201,7 +215,7 @@ export async function bakeSite(leaf, project, from = root, { layout = frontLayou
   // The front page is the one page whose job is to get somebody to press Download, so a publish that lost its layout stops rather than going out as the README drawn plain.
   if (!page.includes(`<article class="document-body ${FRONT_LAYOUT_CLASS}">`)) throw new Error(`${FRONT_PAGE} came out of the bake with ${FRONT_DOCUMENT} drawn plain rather than laid out as the front page`);
   return new Map([
-    [FRONT_PAGE, fillMarks(page, project)],
+    [FRONT_PAGE, fillMarks(marketingPage(page), project)],
     [LISTING, `${JSON.stringify(listing, null, 2)}\n`],
     ...[...pages].map(([path, html]) => [path, fillMarks(html, project)]),
     ...forwards(originOf(readFileSync(fragmentFile, 'utf8')), from),

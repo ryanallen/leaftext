@@ -13,6 +13,18 @@ export const HERO_ID = 'refine-your-mind';
 /** The README heading the comparison is drawn under. */
 export const COMPARE_ID = 'how-leaftext-compares';
 
+/** The README heading the three principles under the hero are read from: a list of `**Name.** One line.` items. */
+export const PRINCIPLES_ID = 'what-it-stands-for';
+
+/** The README heading the running-in-your-browser panel is read from: one paragraph saying the whole app opens in the tab. */
+export const RUNNING_ID = 'running-in-your-browser';
+
+/** The README heading every feature is listed under as an app, Equin's apps grid in Leaftext's words: a line, then `[Name](page) — one line` items. */
+export const APPS_ID = 'everything-in-it';
+
+/** A book to open in the app from the panel: Malory, with its glossary beside it. */
+export const SAMPLE_BOOK = 'docs/08-examples/le-morte-darthur/le-morte-darthur.epub';
+
 /** The README heading the install line is read from. */
 export const INSTALL_ID = 'install-it';
 
@@ -96,6 +108,14 @@ function clipBox(clip, shows, className) {
 /** The installation guide, which the hero's small print links. */
 export const INSTALL_GUIDE = 'docs/02-installation.md';
 
+/** Where Try the app takes a visitor: a page of the app's own documentation, drawn with the whole app around it, on the owner's word of 18 November 2026, 5:26pm that the front page be a marketing page and the app a demo you are taken to. */
+export const APP_DEMO = 'docs/03-quickstart.md';
+
+/** The front page's own bar, standing where the app's bar stands on every other page: the leaf and the name, the page's own parts, the documentation, the app and the downloads. */
+function navOf() {
+  return `<nav class="front-nav" aria-label="Leaftext"><a class="front-nav-brand" href="#download"><span class="lt-icon lt-icon-leaf" aria-hidden="true"></span>leaftext</a><span class="front-nav-links"><a href="#features">Apps</a><a href="#${COMPARE_ID}">Compare</a><a href="docs/">Docs</a></span><a class="front-nav-try" href="${APP_DEMO}">Try the app →</a><a class="front-nav-get" href="#download">Download</a></nav>`;
+}
+
 /** The hero: one band holding the title, the one line under it, the downloads and the small print beside them, and the app recorded beside those words. */
 function heroOf(intro) {
   const title = /<h1\b[^>]*>[\s\S]*?<\/h1>/.exec(intro);
@@ -107,9 +127,54 @@ function heroOf(intro) {
   const small = said[downloads + 1] || '';
   // The one link beside the buttons is the install guide, which the Mac's first launch needs.
   if (!small.includes(`href="${INSTALL_GUIDE}`)) throw new Error('the small print under the download buttons in the README no longer links the installation guide');
-  const heading = title[0].replace(/^<h1\b/, '<h1 class="front-hero-title"');
+  // The title's last word is lit with the theme's gradient, the way Equin lights the end of its headline; the words are the README's, only wrapped.
+  const heading = title[0].replace(/^<h1\b/, '<h1 class="front-hero-title"').replace(/([^\s<>]+)(\s*<\/h1>)$/, '<span class="front-hero-accent">$1</span>$2');
   // The clip sits between the line and the downloads in the source order, so a narrow page keeps the downloads directly over the chart; a wide one moves it beside the words.
   return `<section class="front-hero" id="download"><div class="front-hero-words">${dottedLeafMarkup('front')}${heading}${classed(line, 'front-hero-line')}</div>${clipBox(HERO_CLIP, HERO_SHOWS, 'front-hero-clip')}<div class="front-hero-get">${classed(said[downloads], 'front-downloads')}${classed(small, 'front-small')}</div></section>`;
+}
+
+/** The principles under the hero, Equin's three cards in Leaftext's words: the README section's list, each item a card whose bold opening is its name. Refused where the section has no list of named items. */
+function principlesOf(section) {
+  const list = /<ul\b[^>]*>([\s\S]*?)<\/ul>/.exec(section);
+  const items = list ? list[1].match(/<li\b[^>]*>[\s\S]*?<\/li>/g) || [] : [];
+  if (!items.length || items.some((item) => !/<strong>/.test(item))) throw new Error(`the README's "${PRINCIPLES_ID}" section has no list of named principles for the front page`);
+  const cards = items.map((item) => item.replace(/^<li\b/, '<li class="front-principle"').replace('<strong>', '<strong class="front-principle-name">')).join('');
+  return `<ul class="front-principles" aria-label="What Leaftext stands for">${cards}</ul>`;
+}
+
+/** The running-in-your-browser panel, Equin's demo panel in Leaftext's words: the section's heading and its first paragraph, then Try the app, a book and the docs as buttons. The app it opens is already loaded, so it starts at once. */
+function runningOf(section) {
+  const heading = /^<h2\b[^>]*>[\s\S]*?<\/h2>/.exec(section);
+  const said = paragraphs(section)[0];
+  if (!heading || !said) throw new Error(`the README's "${RUNNING_ID}" section has no line for the running-in-your-browser panel`);
+  // The line loses its own Try the app link to the buttons, so it is no longer the README's paragraph byte for byte and is not offered for typing.
+  const line = unproved(classed(said.replace(/\s*<strong><a\b[^>]*>[^<]*<\/a><\/strong>\s*/, ' ').replace(/\s+<\/p>$/, '</p>'), 'front-running-line'));
+  const buttons = `<p class="front-running-go"><a class="front-running-try" href="${APP_DEMO}">Try the app →</a><a href="${SAMPLE_BOOK}">Open a book</a><a href="docs/">Read the docs</a></p>`;
+  return `<section class="front-running" id="${RUNNING_ID}">${heading[0].replace(/^<h2\b/, '<h2 class="front-running-title"')}${line}${buttons}</section>`;
+}
+
+/** Every feature as an app, Equin's grid: the section's heading and its line over the six recorded apps as tiles (`cards`, already drawn), then every app the README lists as a chip with its mark, each opening its page in the app. Refused where the list names no app with a page. */
+function appsOf(section, cards) {
+  const heading = /^<h2\b[^>]*>[\s\S]*?<\/h2>/.exec(section);
+  const said = paragraphs(section)[0];
+  const list = /<ul\b[^>]*>([\s\S]*?)<\/ul>/.exec(section);
+  const items = list ? list[1].match(/<li\b[^>]*>[\s\S]*?<\/li>/g) || [] : [];
+  const apps = items.map((item) => /<a href="([^"]+)"[^>]*>([^<]+)<\/a>\s*(?:—|&mdash;)?\s*([\s\S]*?)<\/li>$/.exec(item)).filter(Boolean);
+  if (!heading || !apps.length || apps.length !== items.length) throw new Error(`the README's "${APPS_ID}" section lists no apps, each a link to its page, for the front page`);
+  const chips = apps.map(([, href, name, line]) => `<li class="front-app"><a href="${href}" title="${line.replace(/<[^>]*>/g, '').replace(/"/g, '&quot;').trim()}"><span class="front-app-mark" aria-hidden="true"></span>${name}</a></li>`).join('');
+  const lead = said ? unproved(classed(said, 'front-apps-line')) : '';
+  return `<section class="front-apps-section" id="features">${unproved(heading[0].replace(/^<h2\b/, '<h2 class="front-apps-title"'))}${lead}<section class="front-cards">${cards}</section><ul class="front-apps" aria-label="Every app in Leaftext">${chips}</ul></section>`;
+}
+
+/** The two closing cards, Equin's support and feedback cards in Leaftext's words: Get Leaftext — the README's install line over both downloads again — and Tell us what to build, which opens an issue on the repository the README's foot links. */
+function closingOf(intro, installLine) {
+  const said = paragraphs(intro);
+  const downloads = said.find(isDownloads);
+  const repository = /href="(https:\/\/github\.com\/[^/"]+\/[^/"#?]+)\/?"/.exec(said.join(''));
+  if (!downloads || !repository) throw new Error('the README carries no downloads or no repository link for the closing cards');
+  const get = `<section class="front-install" id="${INSTALL_ID}"><h3 class="front-closing-title">Get Leaftext</h3>${installLine}${unproved(classed(downloads, 'front-downloads'))}</section>`;
+  const tell = `<section class="front-feedback"><h3 class="front-closing-title">Tell us what to build</h3><p>Send a bug or a wish on GitHub, or read how every part of it works.</p><p class="front-closing-go"><a href="${repository[1]}/issues/new">Open an issue</a><a href="docs/">Read the docs</a></p></section>`;
+  return `<section class="front-closing">${get}${tell}</section>`;
 }
 
 /** The links at the foot: the paragraph above the first section that points into the documentation. */
@@ -132,7 +197,9 @@ function cardOf(card, section) {
   const lead = leadOf(section);
   if (!lead.length) throw new Error(`the README's "${card.section}" section has no lead paragraph for its card`);
   const featured = card.featured ? ' is-featured' : '';
-  return `<article class="front-card${featured}" data-clip-card="${card.clip}">${heading[0].replace(/^<h2\b/, '<h2 class="front-card-title"')}${lead.join('')}${clipBox(card.clip, card.shows, card.featured ? 'front-card-clip is-beside' : 'front-card-clip')}<p class="front-more"><a href="${card.more}">More →</a></p></article>`;
+  // Each card is an app tile, its clip carrying Equin's "Try it live" into the app's page for it.
+  const clip = clipBox(card.clip, card.shows, card.featured ? 'front-card-clip is-beside' : 'front-card-clip').replace(/<\/figure>$/, `<a class="front-card-try" href="${card.more}">&#9654;&#xFE0E; Try it live</a></figure>`);
+  return `<article class="front-card${featured}" data-clip-card="${card.clip}">${heading[0].replace(/^<h2\b/, '<h2 class="front-card-title"')}${lead.join('')}${clip}<p class="front-more"><a href="${card.more}">More →</a></p></article>`;
 }
 
 /**
@@ -152,7 +219,7 @@ export function paragraphPlace(classes, html) {
  * The README's section headings with the ids the layout finds its parts by held where they were, so a visitor typing a word into the comparison heading or a card title does not rename the section out from under the layout. `held` is the list this answered last time, or nothing; a README with a different number of sections starts the list again. Only the ids the layout reads are held, and each stays on the heading at its own place in the README.
  */
 export function holdLaidOutIds(html, held) {
-  const laidOut = new Set([COMPARE_ID, INSTALL_ID, ...FRONT_CARDS.map((card) => card.section)]);
+  const laidOut = new Set([COMPARE_ID, INSTALL_ID, PRINCIPLES_ID, RUNNING_ID, APPS_ID, ...FRONT_CARDS.map((card) => card.section)]);
   const ids = [...html.matchAll(/<h2 id="([^"]*)"/g)].map((found) => found[1]);
   if (!held || held.length !== ids.length) return { html, ids };
   let at = 0;
@@ -172,16 +239,24 @@ export function layoutFrontPage(html) {
   const { body, pager } = inner(html);
   const all = sections(body);
   const intro = all.get('');
+  // Read in the order the page stands in, so a README missing a part is told about the first one a visitor would miss.
+  const principles = principlesOf(sectionOf(all, PRINCIPLES_ID));
+  const running = runningOf(sectionOf(all, RUNNING_ID));
+  const appsSection = sectionOf(all, APPS_ID);
   const install = sectionOf(all, INSTALL_ID);
   const installLine = paragraphs(install)[0];
   if (!installLine) throw new Error('the README says nothing under its install heading');
   const cards = FRONT_CARDS.map((card) => cardOf(card, sectionOf(all, card.section))).join('');
+  const apps = appsOf(appsSection, cards);
   return [
     `<article class="document-body ${FRONT_LAYOUT_CLASS}">`,
+    navOf(),
     heroOf(intro),
+    principles,
+    running,
+    apps,
     compareOf(sectionOf(all, COMPARE_ID)),
-    `<section class="front-cards" id="features">${cards}</section>`,
-    `<section class="front-install" id="${INSTALL_ID}">${installLine}</section>`,
+    closingOf(intro, installLine),
     footOf(intro),
     unproved(pager),
     '</article>',
