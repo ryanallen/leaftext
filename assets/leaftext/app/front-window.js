@@ -15,7 +15,7 @@ export const APP_WINDOW_ATTRIBUTE = 'data-app-window';
 /** The class the page inside a tab wears: its own chrome off, the window's chrome around it. */
 export const WINDOWED_CLASS = 'front-windowed';
 
-/** The demo folder the files pane lists, in the order it lists them. Markdown has a published page of its own; anything else is the site's root with its path after `#`, the address the site host reads (`web/preview/host.js` `addressFor`). */
+/** The demo folder the files pane lists, in the order it lists them. Markdown has a published page of its own; anything else is `CARRIER_PAGE` with its path after `#`, an address the site host reads (`web/preview/host.js` `addressFor`). */
 export const DEMO_FILES = [
   { path: 'docs/03-quickstart.md', kind: 'Markdown' },
   { path: 'docs/08-examples/le-morte-darthur/le-morte-darthur.epub', kind: 'Book' },
@@ -51,9 +51,26 @@ function nameOf(path) {
   return path.split('/').pop();
 }
 
+/** The small published page a file with no page of its own is opened over. The host draws the file the address names after `#` in place of the page's own document (`web/preview/host.js` `openAddress`), so the book's tab parses this page's 142 KB rather than the root's 1.1 MB baked landing. */
+export const CARRIER_PAGE = 'docs/03-quickstart.html';
+
 /** Where a file's page is, from the site's root. */
-function addressOf(path, root) {
-  return /\.md$/i.test(path) ? new URL(path.replace(/\.md$/i, '.html'), root).href : `${new URL('./', root).href}#${path}`;
+export function addressOf(path, root) {
+  return /\.md$/i.test(path) ? new URL(path.replace(/\.md$/i, '.html'), root).href : `${new URL(CARRIER_PAGE, root).href}#${path}`;
+}
+
+/** Whether a tab's page is drawing the file the tab was opened on. A Markdown file is its page's own first response; anything else arrives over `CARRIER_PAGE`, whose own document is drawn first, and the host says the asked file is in by pointing the page's canonical address at it (`web/preview/host.js` `repointHead`) — until then the tab stays behind the launch leaf rather than flashing the carrier's words. */
+export function showsAsked(doc, path) {
+  if (/\.md$/i.test(path)) return true;
+  const canonical = doc.querySelector('link[rel="canonical"]');
+  const href = canonical ? canonical.getAttribute('href') || '' : '';
+  let hash = '';
+  try {
+    hash = decodeURIComponent(new URL(href, 'https://leaftext.invalid/').hash.slice(1));
+  } catch {
+    return false;
+  }
+  return hash === path || hash.startsWith(`${path}#`);
 }
 
 /** Which file a page inside a tab is showing now, read off its address, so a link followed inside renames the tab. */
@@ -101,6 +118,12 @@ function duration(token, fallback) {
 }
 
 let shown = null;
+
+/** The body wears this while the window stands: the page behind is held and unpainted under the opaque ground (`front-page.css`). */
+export const OPEN_CLASS = 'front-window-open';
+
+/** What the window tells the page behind as it opens and closes, set by `installAppWindow`. */
+const hooks = { onShow: () => {}, onHide: () => {} };
 
 /** Build the window once, the first time it is asked for. */
 function buildWindow(root, marketing) {
@@ -237,9 +260,12 @@ function buildWindow(root, marketing) {
       if (body && doc.location.href !== 'about:blank') {
         body.classList.add(WINDOWED_CLASS);
         const drawn = doc.querySelector('.reader-column .document-body:not(.front-layout)');
-        // A file with no page of its own opens over the site's root, whose first response is the marketing page; once the file is drawn in its place, the app's own layout comes back.
+        // Kept for a link followed inside a tab back to the site's root, whose first response is the marketing page: once a file is drawn in its place, the app's own layout comes back.
         if (drawn && marketing) body.classList.remove(marketing);
-        if (drawn && drawn.textContent.trim()) {
+        // The carrier's own baked document is always the first one seen, since the host draws nothing until its module has loaded; the asked file is in once the page points at it and something else stands in that place.
+        if (drawn && !tab.carrier) tab.carrier = { node: drawn, words: drawn.textContent };
+        const replaced = /\.md$/i.test(tab.path) || (drawn && (drawn !== tab.carrier.node || drawn.textContent !== tab.carrier.words));
+        if (drawn && drawn.textContent.trim() && replaced && showsAsked(doc, tab.path)) {
           tab.ready = true;
           tab.frame.classList.add('is-ready');
           if (active === tab.path) launch.classList.remove('is-shown');
@@ -356,6 +382,8 @@ function buildWindow(root, marketing) {
   const show = (from) => {
     opener = from || null;
     scrim.classList.add('is-open');
+    document.body.classList.add(OPEN_CLASS);
+    hooks.onShow();
     showFiles(!narrow());
     showAgent(innerWidth >= 1100);
     if (!chat.childElementCount) addLine('agent', GREETING);
@@ -378,6 +406,8 @@ function buildWindow(root, marketing) {
 
   const hide = () => {
     scrim.classList.remove('is-open');
+    document.body.classList.remove(OPEN_CLASS);
+    hooks.onHide();
     removeEventListener('keydown', keys);
     clearInterval(watch);
     if (opener) opener.focus({ preventScroll: true });
@@ -405,7 +435,7 @@ function buildWindow(root, marketing) {
 /**
  * Turn every Try the app link inside `root` — the landing's laid-out page — into the window's opener, and answer how to stop. The press is caught on the way down, ahead of the host's own link handling, so the host never takes the visitor to the page; a press with a modifier, or a middle press, still goes there.
  */
-export function installAppWindow(root, { marketing = '', selector = 'a[data-app-window]' } = {}) {
+export function installAppWindow(root, { marketing = '', selector = 'a[data-app-window]', onShow = () => {}, onHide = () => {} } = {}) {
   if (!root || typeof root.contains !== 'function' || typeof addEventListener !== 'function' || typeof document === 'undefined') return () => {};
   const press = (event) => {
     const link = event.target && typeof event.target.closest === 'function' ? event.target.closest(selector) : null;
@@ -413,6 +443,9 @@ export function installAppWindow(root, { marketing = '', selector = 'a[data-app-
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     event.stopPropagation();
+    // The page behind is held through whichever landing installed the window last, so a redrawn landing is the one paused and resumed.
+    hooks.onShow = onShow;
+    hooks.onHide = onHide;
     if (!shown) shown = buildWindow(new URL(window.__leafSiteRoot || '/', location.href).href, marketing);
     shown.show(link);
   };

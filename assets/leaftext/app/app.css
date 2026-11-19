@@ -5143,8 +5143,7 @@
   --lt-front-window-rail: 48px;
   --lt-front-window-files: 200px;
   --lt-front-window-agent: 280px;
-  --lt-front-window-scrim: color-mix(in srgb, var(--lt-foreground) 34%, transparent);
-  --lt-front-window-scrim-blur: blur(6px) saturate(1.1);
+  --lt-front-window-ground: linear-gradient(135deg, color-mix(in srgb, var(--lt-primary) 14%, var(--lt-background)), var(--lt-markdown-background) 55%, color-mix(in srgb, var(--lt-link) 12%, var(--lt-background)));
 }
 
 /* Generated from design/icons.md by `just bundle-icons`. Do not edit. */
@@ -18684,11 +18683,11 @@ p.front-more {
   display: none;
   place-items: center;
   padding: var(--lt-space-32);
-  background: var(--lt-front-window-scrim);
-  -webkit-backdrop-filter: var(--lt-front-window-scrim-blur);
-  backdrop-filter: var(--lt-front-window-scrim-blur);
+  background: var(--lt-front-window-ground);
 }
 .front-window-scrim.is-open { display: grid; }
+
+.leaf-app.front-window-open > :not(.front-window-scrim) { visibility: hidden; }
 section.front-window {
   display: grid;
   grid-template-rows: var(--lt-front-window-bar) minmax(0, 1fr);

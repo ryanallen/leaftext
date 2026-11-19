@@ -92,8 +92,10 @@ export function holdMarketingPage(root) {
  */
 export function installFrontMotion(root, held = null) {
   holdMarketingPage(root);
+  // While the window stands the page behind is unpainted, so nothing on it may go on playing: the clips and the leaf stop on show, and on close whatever is in view starts again. The motion below fills these in; a still page has nothing to hold.
+  const behind = { hold: () => {}, resume: () => {} };
   // Try the app opens the app in a window over the page whether or not the reader asked for less motion; only its growing in is left out then.
-  const stopWindow = installAppWindow(root, { marketing: MARKETING_CLASS });
+  const stopWindow = installAppWindow(root, { marketing: MARKETING_CLASS, onShow: () => behind.hold(), onHide: () => behind.resume() });
   const cards = [...root.querySelectorAll('.front-card')];
   const leaf = [...root.querySelectorAll('.dotted-leaf')].find((mark) => !mark.closest('.document-minimap, .document-minimap-preview'));
   // Only the reading column's boxes: the rail's copy of the page keeps its posters, since a clip there would fetch and decode the same file again for a picture too small to watch.
@@ -154,6 +156,20 @@ export function installFrontMotion(root, held = null) {
     }
   });
   if (leafInView) leafInView.observe(leaf);
+  behind.hold = () => {
+    near.disconnect();
+    for (const box of boxes) pauseIn(box);
+    if (leafInView) leafInView.disconnect();
+    stopLeaf();
+    stopLeaf = () => {};
+    leafRunning = false;
+    if (leaf) leaf.classList.remove('is-running');
+  };
+  // Observing again reports every box and the leaf as they stand now, which plays exactly what is in view.
+  behind.resume = () => {
+    for (const box of boxes) near.observe(box);
+    if (leafInView) leafInView.observe(leaf);
+  };
   // A redraw puts a fresh page in, so the page it replaced is let go of rather than watched for ever.
   const stop = () => {
     stopWindow();
