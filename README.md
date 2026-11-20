@@ -418,5 +418,5 @@ Each of these links onward to the rest of its own set, so nothing published here
 |:--|:--|
 | [Documentation](docs/README.md) | Every page published at [leaftext.com/docs](https://leaftext.com/docs), listed above |
 | [Glossary](docs/GLOSSARY.md) | Every word Leaftext uses for a part of itself |
-| [Themes](themes/README.md) | The fifteen free families and the six earned ones, one Markdown file each, with the colors they set and the icon set they wear |
+| [Themes](themes/README.md) | The eighteen free families and the six earned ones, one Markdown file each, with the colors they set and the icon set they wear |
 | Crawler files | [`robots.txt`](robots.txt), [`sitemap.xml`](sitemap.xml), [`sitemap-md.txt`](sitemap-md.txt), [`llms.txt`](llms.txt), [`llms-full.txt`](llms-full.txt) — generated from this file and `docs/` |

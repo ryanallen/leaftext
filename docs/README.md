@@ -1,110 +1,66 @@
 # Leaftext documentation
 
-> Everything in `docs/` — what each page covers, how the pages fit together, and how the folder becomes [leaftext.com/docs](https://leaftext.com/docs).
+> Everything you can do in Leaftext, one page at a time
 
-Leaftext is a free desktop app for reading and writing your own documents. Open a local Markdown, HTML, XML, JSON, YAML, plain text (`.txt`), config (`.ini`), stylesheet (`.css`), spreadsheet table (`.csv`, `.tsv`), source, email (`.eml`), Word, Excel, PowerPoint or OpenDocument (`.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`), or EPUB book (`.epub`) file, get a clean rendered view, write straight into the page, and keep your place with tabs, history, a minimap, and a searchable library. Nothing leaves your device. These docs cover the whole app, from installing it to the startup-validated theme contract behind the scenes.
-
-## Map
-
-```mermaid
-flowchart LR
-    A[Introduction] --> B[Installation]
-    B --> C[Quickstart]
-    C --> D[Features]
-    C --> Z[Get help]
-    A --> Y[How it compares]
-    D --> E[Rendering]
-    D --> F[Navigation]
-    D --> G[Library]
-    D --> H[Minimap]
-    D --> I[Settings]
-    D --> J[Themes]
-    D --> K[Editing]
-    K --> Q[Relational tables]
-```
+Leaftext is a free app for reading and writing your own files, with AI agents working beside you. Start with the quickstart, then open the page for whatever you want to do next.
 
 ## Start here
 
 | Page | What it covers |
 | --- | --- |
-| [Introduction](01-introduction.md) | What Leaftext is, the feature overview, and where to go for each task |
-| [Installation](02-installation.md) | Step-by-step installs for macOS (`.dmg`) and Windows (`.exe`), how to get past the [first-launch block on a Mac](02-installation.md#mac-blocks-the-first-launch), [file associations](02-installation.md#file-associations), [updates](01-features/05-settings.md#updates), and data paths |
-| [Quickstart](03-quickstart.md) | The smallest useful path through the app: open a file, read, jump, and reopen — with the core shortcuts |
-| [Get help](04-help.md) | Where to ask a question and read what other people already asked, what to say when you ask, and what the pages here already answer |
-| [Privacy](07-privacy.md) | What the app reads, where it keeps it and who it talks to, how Google Drive shortcuts open in your browser |
-| [Le Morte d'Arthur](08-examples/le-morte-darthur/le-morte-darthur.epub) | A whole book to open and read, Standard Ebooks' edition of Malory, with [its glossary](08-examples/le-morte-darthur/GLOSSARY.md) underlining the old words, the names and the places |
-| [How it compares](05-compare.md) | Leaftext beside Obsidian, Typora and Calibre, row by row with a source for each cell, how it works beside AI, and what is on the roadmap; every feature sits on one of the ten [comparison chart](06-comparison-chart/01-files-and-formats.md) pages it lists |
+| [Introduction](01-introduction.md) | What Leaftext is and what it can do |
+| [Installation](02-installation.md) | Install it on Windows or macOS |
+| [Quickstart](03-quickstart.md) | Open a file, read it, edit it and come back to it |
+| [Get help](04-help.md) | Where to ask a question |
+| [Privacy](07-privacy.md) | What stays on your computer, and what does not |
+| [How it compares](05-compare.md) | Leaftext beside Obsidian, Typora and Calibre |
+| [Le Morte d'Arthur](08-examples/le-morte-darthur/le-morte-darthur.epub) | A whole book to open and read, with [its glossary](08-examples/le-morte-darthur/GLOSSARY.md) |
 
-## Features
-
-How the app behaves, page by page. They are numbered in reading order, and each one ends with where to go next.
+## What you can do
 
 | Page | What it covers |
 | --- | --- |
-| [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, Leaf buttons, local images, XML (any file, plus TEI documents), JSON/YAML, email (`.eml`), and file encodings |
-| [Navigation](01-features/02-navigation.md) | Tabs, Back/Forward history, the toolbar, the outline, scroll anchors, live reload, recent files, the glossary sheet, link hints, the pager, and the single-window rule |
-| [Library](01-features/03-library.md) | The left-side pane: vaults, the file tree and its breadcrumb, Books online, search, the filter syntax, the graph view, GitHub sync, file actions, live updates, and narrow-window layout |
-| [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, the code view's own rail, responsive widths, and why it is always present |
-| [Settings](01-features/05-settings.md) | Every preference, its default, and the JSON files on disk that store them — including [updates](01-features/05-settings.md#updates) and [paths](01-features/05-settings.md#paths) |
-| [Themes](01-features/06-themes.md) | The fifteen free families (Amaranth, Arabica, Bloodleaf, Camellia, Eucalyptus, Fern, Foxglove, Ginger, GitHub, Goldenrod, Halcyon, Ivy, Nightshade, Pippin, Sage) and the six earned in the Grove (Birch, Laurel, Lavender, Saffron, Sumac, Woad), light/dark/System/Daylight appearance, on-demand Google Fonts, diagram colors, and the semantic token contract. All twenty-one are drawn on one page at [leaftext.com/gallery.html](https://leaftext.com/gallery.html) |
-| [Editing](01-features/07-editing.md) | Writing in the rendered page (blocks, the gutter, the format bar, flowcharts and sequence diagrams), source beside the page, the raw-source code view with typing help, and the explicit Save flow |
-| [Relational tables](01-features/08-relational-tables.md) | RDB views over Markdown tables: cards, boards, sorting, filtering, relations, and optional descriptions |
-| [Your Grove](01-features/09-progress.md) | The reading record: the Grove pill at the library's foot, the thirteen Growth areas and seeds, where `profile.json` is kept, and the switch that turns it off |
-| [Your own AI agent](01-features/10-agents.md) | Connect an agent on your computer to the document open in Leaftext |
+| [Your own AI agent](01-features/10-agents.md) | Run Claude Code, Codex or Antigravity beside your files |
+| [Rendering](01-features/01-rendering.md) | Every kind of file Leaftext draws as a page |
+| [Editing](01-features/07-editing.md) | Write straight into the page, or in its source |
+| [Navigation](01-features/02-navigation.md) | Tabs, history, shortcuts and finding your place |
+| [Library](01-features/03-library.md) | Your folders, search, filters and the link graph |
+| [Minimap](01-features/04-minimap.md) | The whole page drawn small down the side |
+| [Relational tables](01-features/08-relational-tables.md) | Turn a Markdown table into cards or a board |
+| [Themes](01-features/06-themes.md) | Twenty-four color families, light and dark |
+| [Settings](01-features/05-settings.md) | Every preference, updates and where files are kept |
+| [Your Grove](01-features/09-progress.md) | A record of your reading that grows as you use the app |
 
-### Which page answers which question
+## Every detail
 
-| Question | Page |
+Each page above links to a details page holding its full behavior, every edge case and limit included.
+
+| Page | Details of |
 | --- | --- |
-| Does it render *this* syntax? | [Rendering](01-features/01-rendering.md#summary) |
-| Can it open my `.xml` / `.json` / `.yaml` / `.eml`? | [Rendering](01-features/01-rendering.md#xml) |
-| How do I keep several documents open? | [Navigation → Tabs](01-features/02-navigation.md#tabs) |
-| What are the keyboard shortcuts? | [Navigation → Shortcuts](01-features/02-navigation.md#shortcuts) |
-| How do I search my notes? | [Library → Search](01-features/03-library.md#search) |
-| Can I filter by tag, field or date? | [Library → Filtering](01-features/03-library.md#filtering) |
-| What is a vault, and do I need one? | [Library → Vaults](01-features/03-library.md#vaults) |
-| How do I push my notes to GitHub? | [Library → GitHub sync](01-features/03-library.md#github-sync) |
-| How do I edit without leaving the page? | [Editing → Inline editing](01-features/07-editing.md#inline-editing-the-reading-view) |
-| Why can't I click into this block? | [Editing → Formats](01-features/07-editing.md#formats) |
-| How do I draw a flowchart? | [Editing → The flowchart editor](01-features/07-editing.md#the-flowchart-editor) |
-| How do I turn a Markdown table into cards or a board? | [Relational tables](01-features/08-relational-tables.md) |
-| What is the Grove, and how do I turn it off? | [Your Grove → Turn it off](01-features/09-progress.md#turn-it-off) |
-| Where are my settings stored? | [Settings → Paths](01-features/05-settings.md#paths) |
-| How do updates work? | [Settings → Updates](01-features/05-settings.md#updates) |
-| How do I change the look? | [Themes → Choose](01-features/06-themes.md#choose) |
-| Where do I ask a question? | [Get help](04-help.md) |
-| How does it compare with Obsidian? | [How it compares](05-compare.md) |
-| What do the themes actually look like? | [leaftext.com/gallery.html](https://leaftext.com/gallery.html) — every theme, color, icon and control on one page |
+| [Agents in detail](09-details/agents.md) | [Your own AI agent](01-features/10-agents.md) |
+| [Rendering in detail](09-details/rendering.md) | [Rendering](01-features/01-rendering.md) |
+| [Editing in detail](09-details/editing.md) | [Editing](01-features/07-editing.md) |
+| [Navigation in detail](09-details/navigation.md) | [Navigation](01-features/02-navigation.md) |
+| [Library in detail](09-details/library.md) | [Library](01-features/03-library.md) |
+| [Minimap in detail](09-details/minimap.md) | [Minimap](01-features/04-minimap.md) |
+| [Relational tables in detail](09-details/relational-tables.md) | [Relational tables](01-features/08-relational-tables.md) |
+| [Themes in detail](09-details/themes.md) | [Themes](01-features/06-themes.md) |
+| [Settings in detail](09-details/settings.md) | [Settings](01-features/05-settings.md) and [Installation](02-installation.md) |
+| [Your Grove in detail](09-details/progress.md) | [Your Grove](01-features/09-progress.md) |
 
 ## Shared reference
 
-| Page | What it covers |
-| --- | --- |
-| [Glossary](GLOSSARY.md) | Every word Leaftext uses for a part of itself, alphabetically — one entry per feature and subfeature |
-
-The glossary is not an ordinary page: every term in it is matched automatically wherever it appears across these docs, and clicking one opens that entry in a bottom sheet over the page you are reading rather than navigating away. Linking one by hand works too — `[minimap](GLOSSARY.md#minimap)`.
-
-leaftext.com's pages link every glossary word to this same file, so this is the only copy and it stays here.
+The [glossary](GLOSSARY.md) names every part of Leaftext. Any of its words on these pages opens its entry in a sheet over the page you are reading.
 
 ## How this folder ships
 
-These pages are plain Markdown, and leaftext.com reads them in the app itself: every address on the site is Leaftext's own page, with these files served where they sit and the library pane listing them.
+These pages are plain Markdown. leaftext.com draws them with the app itself, so every page on the site is Leaftext's own page.
+
+Every page a visitor reaches from the front page is written to one standard: a tagline, a short lead and short paragraphs.
 
 | File | Role |
 | --- | --- |
-| `index.html` | leaftext.com/docs — sends a link written for the old documentation reader, `#/features/editing`, on to the same page in the app. Its file list is written in when the site publishes |
-| `render-docs-check.mjs` | Headless smoke test — renders every `.md` file here through the app's own renderer and fails loudly on errors or empty output. It needs `just build-web` first, which is why it is not part of `just verify` |
+| `index.html` | Sends an old `#/features/editing` link on to the page it meant |
+| `render-docs-check.mjs` | Draws every page here through the app's renderer and fails on an error. It needs `just build-web` first |
 
-### Page order and file names
-
-A leading number orders a file or folder in the library pane. An old link names a page with those numbers taken off — `01-features/07-editing.md` was `#/features/editing` — and `index.html` finds the file that matches, so an old link still lands on a page that has been renumbered since.
-
-Before shipping doc changes, run the check from the repo root:
-
-```sh
-just build-web
-node docs/render-docs-check.mjs
-```
-
-> [!TIP]
-> Every page here is readable two ways: rendered on the website, or opened directly in Leaftext itself — the app these docs describe.
+A number at the front of a file name orders it in the library pane. An old link without the numbers still lands on the right page.

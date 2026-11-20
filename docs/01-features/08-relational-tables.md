@@ -1,107 +1,69 @@
 # Relational tables
 
-> Turn an ordinary Markdown table into cards, a board or a linked record view without giving up the file.
+> Turn an ordinary Markdown table into cards or linked records
 
-Put each row's key in the first column and write a relation as a link to the row with that key in another note, and Leaftext reads the table as linked records.
-
-Leaftext calls this **RDB**: a [relational table](../GLOSSARY.md#relational-table) view over a Markdown table. The table remains ordinary [GFM](../GLOSSARY.md#gfm), so it opens everywhere it did before. Leaftext adds the view while you read it — in the desktop app, on a published Leaftext site and in a document embedded in another product — it does not move your records into a separate database or create a companion file.
-
-## Open a relational table
-
-Point at a [table](01-rendering.md#tables) with a header row and at least two body rows. A quiet bar appears above it with **Table**, **Cards**, **Board**, **Sort**, **Filter** and **Describe**, centered over the table, and the copy and whole-window buttons at the same bar's right end. The layout on screen is marked. A smaller table stays an ordinary table, with only those two buttons in the bar.
+Put each row's name in the first column, and Leaftext can show the table as records. Lay it out as cards, sort and filter it, and link rows across notes. The table stays plain Markdown, so it opens everywhere it did before.
 
 ![A reading-list table in the page with its bar above it: Table, Cards and Board in one segmented control with Table raised, then Sort and Filter, and the copy and whole-window buttons at its right end, over a table of id, title, author, status, pages, read and due columns whose author cells are green links](../../imgs/relational-table-bar-3.png)
 
-The view works from the values already in the table. Leaftext recognizes numbers, ISO dates, task checkboxes, short repeated values, lone images and links to another table. A column it cannot recognize stays text.
+- **Cards** from the same table.
+- **Sort and filter** by any column.
+- **Relations** that link a row to a row in another note.
+- **Nothing extra** on disk: your table is the record.
+
+[Every detail of relational tables →](../09-details/relational-tables.md)
+
+## Open a relational table
+
+Point at a table with a header row and at least two rows. A quiet bar appears above it with Table, Cards, Sort, Filter and Describe.
+
+[Details →](../09-details/relational-tables.md#open-a-relational-table)
 
 ## Views, sort and filter
 
-**Table** is the Markdown table as written. **Cards** shows one card per record, as many side by side as the page holds. **Board** lays the records out as a kanban board: a lane per value of a short-list column such as a status or stage, side by side across the window, each lane headed by a small ring in its cards' color, filled further the further along the lanes it stands, and each card showing its title, one quiet line of what it is, its sentence and its other fields as small chips. Lanes keep their width and the board scrolls sideways, fading the edge with more lanes past it; a card held near that edge rolls the board toward them. The field button beside a view says which columns it is using for as long as the document stays open.
-
 ![The same records as a grid of cards two across, each led by its id with its title, author, status, pages, read and due listed under it, and Cards raised in the layout control with a Card fields button beside it](../../imgs/relational-cards-2.png)
 
-![The same records as a board: finished, reading and reference lanes side by side with their counts, each card the book's title over its other fields as small chips, the third lane fading where the column ends, and Board raised in the layout control](../../imgs/relational-board-3.png)
+Show the records as cards. Sort and filter without changing the file.
 
-### Working a board
-
-On an unlocked page a board is edited where it stands, and every change is an ordinary edit that waits for Save and comes back with one Undo:
-
-- **Drag a card** to another lane to change its value, or above another card to move its row in the table.
-- **From the keyboard**, with a card focused: Alt and Left or Right moves it to the lane beside it, and Alt and Up or Down moves it past the card above or below it (Option on a Mac).
-- **The plus** at the top of a lane adds a card there: type its title and press Enter.
-- **Press a card** to edit every field of it in place, or remove it.
-- **Add a lane** from the last lane on the board. **Press a lane's name** to rename it, which renames every card in it, or **drag a lane by its head** to move it among the others. An empty lane you added can be removed from its foot.
-
-### What a card says
-
-- **Its title**, from the column that names the record. A table led by a column of whole numbers is ranked rather than keyed, so the title is the first column of words after it; a link in the title cell opens what it points at on a locked page.
-- **One quiet line**: a bug's red badge, then the rank as `#4`, then the record's short repeating choice, such as a track — `BUG #4 · Progress`.
-- **What it waits on**: a `Blocked by` column's words, on a line of their own in the warning color.
-- **Its sentence**: the first column most of whose cells are three words or more and that is not a short repeating choice, two lines at most.
-- **Its other fields** as chips. A dash says nothing and draws none, and a cell drawn as a badge stays that badge.
-
-### A board that stays a board
-
-A note can say its tables open as a board. Put the column to group by in the frontmatter, and the lanes in the order you want them:
-
-```yaml
----
-board: Status
-board-columns: [Backlog, Doing, Review, Done]
----
-```
-
-Every table in the note with a `Status` column opens as a board grouped by it, every time. That holds from the first card, and before it: a heading row with no rows under it opens as the kept lanes, empty, ready for a card. `board-columns` orders the lanes and keeps a lane with no cards in it. Adding a lane on a board writes both fields for you. Switching a kept board to Table or Cards from the bar lasts until the note is opened again.
-
-A board whose stages are written somewhere else says so with `board-moves`, a sentence:
-
-```yaml
----
-board: Stage
-board-moves: "Stages move when the ticket does: /design, /dev, /test and /done write it."
----
-```
-
-That board offers no plus, no new lane, no rename and no removal, and a card dragged or moved from the keyboard goes back where it stood while the sentence shows.
-
-A view you set stays set while the document is open, including when the file changes underneath. Editing a cell, dragging a card between board columns, or another program writing the file all redraw the page, and the layout, sort, filters and chosen fields come back with it — with any record that changed drawn as it now reads. Adding or deleting a table above the one you are looking at is the exception: the view is a table's place in the document, so the table you set it on is no longer at that place and it comes back as an ordinary table.
-
-Sorting, filtering and changing the layout only change what is drawn. They write no file, setting or saved view, and reopening the document restores the table as written. Sorting from a cell's right-click menu in [Editing](07-editing.md#editing-a-table) is different: that action deliberately reorders the file.
-
-Sort a column once for ascending order, again for descending order and a third time to restore the file's order. Numbers, ISO dates and task checkboxes sort by their values; other columns sort as words. A filter offers a value list for a short-choice column, a range for a number or date, and words for other columns. More than one filter can apply at once. Filtering hides excluded records in every view, including cards, while keeping them in the file. Clear the filter to show them again.
+[Details →](../09-details/relational-tables.md#views-sort-and-filter)
 
 ## Relations
 
-A Markdown link in a cell can point to a row in another table. For example, `[Le Guin](authors.md#le-guin)` points to the row whose first-column value is `le-guin` in `authors.md`. The row can be in any table of that note, so a note keeping two lists can be pointed into either; where two of its tables hold the same first-column value, the relation lands on the first one, the same row the link opens on. The link continues to open normally in GitHub, Obsidian and other Markdown readers; Leaftext adds the row lookup when it can read the target.
+Link a cell to a row in another note, written `[name](other.md#name)`, and it becomes a relation. Point at it to see the row; press it to open it.
 
-A relation is labeled by the target row's name. Where the first column is written as words — `| Name | Born |` with `Le Guin | 1929` — the name is that first cell, so the link above reads Le Guin. Where the first column is written as its own address — `| id | Name |` with `le-guin | Ursula K. Le Guin` — the label is the next filled cell, Ursula K. Le Guin. The same name is shown when you point at the relation, offered in a relation cell's picker, and listed in a column that shows which rows point back.
-
-Point at the relation to see the row it found, and press it to open the target file on that row — the first row whose first cell reads as the address, unless a heading of the same name comes first. A red relation means the target row is not there. A dashed gray relation means the target file is outside the set Leaftext has read, so it may still contain the row.
+[Details →](../09-details/relational-tables.md#relations)
 
 ## Show a row in another note
 
-Write a link to a row alone on its own line — `[why-1](made-with.md#why-1)` — and Leaftext draws the row's words there instead of the link: the same next filled cell a relation is labeled with, in the note's own body text. Edit the row in its table and save, and every open note that shows it redraws with the new words, keeping your place. Nothing is copied into the note; the file still holds the link, so GitHub, Obsidian and other readers show a working link to the row. Point at the words to see where they come from, and press them to open the table on that row. A link with other words beside it, inside a list or a table cell, or to a heading rather than a row stays a link. A note shows rows from at most 16 other files.
+A link to a row, alone on its own line, draws that row's words in place.
+
+[Details →](../09-details/relational-tables.md#show-a-row-in-another-note)
 
 ## Describe a table
 
-You do not have to set up a relational table. If Leaftext guesses a column wrong, press **Describe**. It writes an optional `leaf:table` HTML comment directly above the table with the type, key or relation correction. The comment is hidden in Leaftext, GitHub, Obsidian and VS Code; a malformed comment is ignored rather than partly applied.
+If Leaftext guesses a column wrong, **Describe** corrects it with a comment above the table that other apps never show.
+
+[Details →](../09-details/relational-tables.md#describe-a-table)
 
 ## Editing a relational table
 
-Open the [reading-view padlock](07-editing.md#the-padlock) to edit. A date, a value from a short list or a relation can open a picker instead of a caret. Dragging a board card to another column changes that row's grouping cell. Each action writes only the cell that changed and is one Undo step.
+Type in any cell, as in any table. The view you chose comes back after each edit.
+
+[Details →](../09-details/relational-tables.md#editing-a-relational-table)
 
 ### Point at a row without typing its address
 
-Press an empty cell in a column that holds only relations or nothing yet. A menu opens under the cell with a search box: type part of a name, and the rows of every table in the vault — or, outside a vault, in the notes around this one — whose name holds those words are listed under the note they come from. Pick one and the cell becomes a link to that row, written relative to this note so it opens anywhere. Press Enter without picking a row to type the words into the cell instead, or Escape to leave it. A cell that already holds a relation opens that row when you press it — middle-click or Control-click (Command-click on a Mac) to open it as a page behind — and never opens the search box.
+In a relation column, start typing a row's name and pick it from a list.
 
-To point words that are already written at a row — a cell holding plain words, or a phrase in a paragraph — select them and press the link button on the format bar. Type part of a name instead of an address and the same rows are listed under the box; pick one to link the words to it. An address typed or pasted into the box is written as it always was.
+[Details →](../09-details/relational-tables.md#point-at-a-row-without-typing-its-address)
 
 ## On a published site and in an embed
 
-The same bar works on a Leaftext site published to the web and on a document embedded in another product: **Table**, **Cards**, **Board**, **Sort**, **Filter** and **Describe** all do what they do in the desktop app.
+The same bar, views and relations work on a published Leaftext site and in an embedded document.
 
-A published site resolves relations only among the pages it serves. A link to a row in another page of the site becomes a relation; a link to a page the site does not publish reads as a red relation, because that page is not there. A site reads at most 64 pages for one table, and a relation into a page past that reads as a dashed gray relation rather than a broken one. A row shown in a note is fetched from the site before the page is drawn; a row in a page the site does not serve stays a link.
+[Details →](../09-details/relational-tables.md#on-a-published-site-and-in-an-embed)
 
-An embedded document holds only itself, so it reads no other document: its link columns stay ordinary links, and every other view, sort and filter works as usual.
+## Next
 
-The search box that lists rows from other notes is the desktop app's: on a site or in an embed the menu offers the rows the column already points into, and typed words filter those.
+- [Editing](07-editing.md)
+- [Rendering → Tables](01-rendering.md#tables)

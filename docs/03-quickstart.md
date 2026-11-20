@@ -1,16 +1,16 @@
 # Quickstart
 
-> Open your first file and get comfortable with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), the [minimap](01-features/04-minimap.md), and the [library](01-features/03-library.md) — a few minutes, start to finish.
+> Open a file, read it, edit it and come back to it, in five minutes
 
-There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaftext at a file you already have and start reading. This page walks the shortest useful path: open a file, read it, move around, edit a line, and come back to it later.
+There is nothing to set up: no account, no folder to choose, no plugins. Open a file you already have and start reading.
 
 > [!NOTE]
-> Not installed yet? [Install it first](02-installation.md#install) — three steps per platform. On a Mac, macOS refuses the first launch until you [let it through once](02-installation.md#mac-blocks-the-first-launch).
+> Not installed yet? [Install it first](02-installation.md#install). On a Mac, [let it through once](02-installation.md#mac-blocks-the-first-launch) the first time it opens.
 
 ## The five minutes
 
 1. Press `Ctrl+O` on Windows or `Cmd+O` on macOS.
-2. Pick any `.md`, `.html`, `.xml`, `.json`, `.yaml`, `.txt`, `.ini`, `.css`, `.csv`, `.tsv`, `.eml`, `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`, `.epub`, `.azw`, `.mobi`, `.azw3`, or [source](01-features/01-rendering.md#source-files) file.
+2. Pick a file: a note, a web page, a data file, an email, an Office document or a book. [Rendering](01-features/01-rendering.md) lists every kind.
 3. Scroll the document, and use the [minimap](#jump) on the right to jump.
 4. Open another file to create a [new tab](#a-second-tab).
 5. Click into a sentence and [type](#4-edit-a-line).
@@ -32,14 +32,14 @@ flowchart LR
 | Method | How |
 | --- | --- |
 | Keyboard | `Ctrl+O` / `Cmd+O` |
-| Drag and drop | Drop a `.md`, `.html`, `.xml`, `.json`, `.yaml`, `.txt`, `.ini`, `.css`, `.csv`, `.tsv`, `.eml`, `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`, `.epub`, `.azw`, `.mobi`, `.azw3`, or [source](01-features/01-rendering.md#source-files) file onto the window |
+| Drag and drop | Drop any file Leaftext reads onto the window |
 | Recent files | Click a file on the no-file home screen |
 | Command line / Open with | Launch Leaftext with a file path, or double-click an [associated file](02-installation.md#file-associations) |
 | Start a blank one | **New** at the top of the library pane, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document). To make it in a folder you can see instead, right-click that folder in the library and pick [**New file**](01-features/03-library.md#folders-and-the-space-around-them) |
 | Point it at a folder | **Add your notes folder** on the home screen, until you have a [vault](01-features/03-library.md#your-first-vault) |
 
 > [!TIP]
-> Recent files keeps the last 50 opened files, so reopening a doc is usually one click — and inside a [vault](01-features/03-library.md#vaults) the list is that vault's own. Keep the ones you come back to and they get a column of their own beside it — see [Favorites](01-features/02-navigation.md#favorites).
+> Recent files keeps the last 50 files you opened, so reopening one is usually a single click. Keep the ones you come back to as [favorites](01-features/02-navigation.md#favorites).
 
 ## 2. Know what you are looking at
 
@@ -83,7 +83,7 @@ Press `Ctrl+O` / `Cmd+O` again. Leaftext opens the next file in a new tab instea
 
 ### A link, without leaving the page
 
-Hold `Ctrl` (`Cmd` on macOS) and click a link to another document, or click it with the middle button, and it opens as a tab behind the one you are reading — you keep your place, and it waits for you in the tab strip. Right-click a link for [the same by name](01-features/02-navigation.md#opening-a-link-in-a-new-page), plus copying it or finding the file it points at.
+Hold `Ctrl` (`Cmd` on macOS) and click a link, or click it with the middle button. It opens in a tab behind the one you are reading, so you keep your place. Right-click a link for [more ways to open it](01-features/02-navigation.md#opening-a-link-in-a-new-page).
 
 ### Jump
 
@@ -120,7 +120,7 @@ Mouse side buttons also trigger Back and Forward on Windows.
 
 ## 4. Edit a line
 
-Documents open **locked**, so a stray click never changes a file. Open the [padlock](01-features/07-editing.md#the-padlock) on the floating toolbar, then click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), and the green **Save** button appears. Leaftext remembers the answer, so you only do this once.
+Documents open locked, so a stray click never changes a file. Open the [padlock](01-features/07-editing.md#the-padlock) on the floating toolbar, then click into any sentence and type. The page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view) and the green **Save** button appears. Leaftext remembers the padlock, so you do this once.
 
 - Highlight words for a [format bar](01-features/07-editing.md#the-format-bar). Copy, highlight, annotate and [comment](01-features/07-editing.md#comments) are on it whether the page is locked or not.
 - Use the handle and plus in the left [margin](01-features/07-editing.md#the-block-gutter) to drag a block or [add one](01-features/07-editing.md#adding-a-block).

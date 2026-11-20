@@ -1,0 +1,354 @@
+# Themes in detail
+
+> Everything about themes, colors and type, one fact at a time
+
+This page holds the full behavior behind [Themes](../01-features/06-themes.md). Each section matches a section there.
+
+## Overview
+
+- From your side, themes are simple: open the picker, tap a family, pick an appearance, and the app updates at once.
+- Under the hood, every family covers the full `--lt-*` token set and names the icon set it wears.
+- Its font is loaded from Google Fonts the moment you switch to it.
+
+## Families
+
+Pick a family in the theme picker.
+
+Eighteen ship free, and six more are earned with seeds in [the Grove](../01-features/09-progress.md). They are listed in color order: reds first, round through orange, yellow, green, blue and purple to rose, with gray last. A family not yet earned stands dimmed in the picker with its price in seeds, and pressing it opens that family in the Grove.
+
+Beside the cards stands a color bar running from white through each family's main color to black. Drag it, or focus it and use ↑ ↓ Home End, and the card under the thumb is marked and scrolled into view.
+
+A family goes on when the thumb rests on it, so a slow drag walks through the looks and a fast one lands where you let go. Dragging into the white end sets Light, and into the black end sets Dark, on the last family under the thumb.
+
+A family you have not earned has no place on the bar until you have it. A fresh install opens on [Random](#random) family with a [Daylight](#appearance) appearance; **Fern** is the fallback family if a saved choice can't be read.
+
+To see them rather than read them, open [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every family drawn on one page, in light and dark, along with every color, icon and part of the interface.
+
+Each family is also a plain Markdown file that opens with a screenshot of its own palette. Browse them in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview and a light-and-dark swatch table per family, or open one below:
+
+| Family | Palette | Icons |
+| --- | --- | --- |
+| [Amaranth](https://github.com/ryanallen/leaftext/blob/main/themes/amaranth.md) | Clean light/dark base ramps with a violet accent | Heroicons |
+| [Arabica](https://github.com/ryanallen/leaftext/blob/main/themes/arabica.md) | A coffee palette — creamy latte light, dark-roast espresso dark — with an AnuPpuccin mauve accent | Remix |
+| [Artemisia](https://github.com/ryanallen/leaftext/blob/main/themes/artemisia.md) | Structured silver with graphite controls — the one mid-tone family, set in IBM Plex Sans | Feather |
+| [Bloodleaf](https://github.com/ryanallen/leaftext/blob/main/themes/bloodleaf.md) | Blood-red veins on a white ground — an over-exposed white light with a red accent and a sky-blue second hue, against a blue-black night dark | Remix |
+| [Bluebell](https://github.com/ryanallen/leaftext/blob/main/themes/bluebell.md) | Deep blue with a periwinkle accent, Manrope headings over Sora | Phosphor |
+| [Camellia](https://github.com/ryanallen/leaftext/blob/main/themes/camellia.md) | A rose palette — blush paper and wine ink light, deep plum dark — with a camellia-pink accent and Cormorant Garamond headings | Phosphor |
+| [Copperleaf](https://github.com/ryanallen/leaftext/blob/main/themes/copperleaf.md) | Warm graphite with a copper accent and Fraunces headings | Heroicons |
+| [Eucalyptus](https://github.com/ryanallen/leaftext/blob/main/themes/eucalyptus.md) | A teal palette — cool blue-green paper light, near-black blue-green dark — with a eucalyptus-teal accent, set in Lato | Remix |
+| [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md) | **Fallback family.** An Amaranth-based palette with a fern-green cast | Tabler |
+| [Ginger](https://github.com/ryanallen/leaftext/blob/main/themes/ginger.md) | A warm palette — cream light, cool slate dark — with a ginger-orange accent | Tabler |
+| [GitHub](https://github.com/ryanallen/leaftext/blob/main/themes/github.md) | GitHub's light/dark palette, in its own system-font stack | Feather |
+| [Goldenrod](https://github.com/ryanallen/leaftext/blob/main/themes/goldenrod.md) | A stark black-and-gold palette — honey-on-white light, near-black dark — with a golden-yellow accent | Lucide |
+| [Halcyon](https://github.com/ryanallen/leaftext/blob/main/themes/halcyon.md) | A calm, clean palette with one blue accent and a cool blue-gray dark mode | Heroicons |
+| [Ivy](https://github.com/ryanallen/leaftext/blob/main/themes/ivy.md) | A terminal palette set in monospace throughout — green ink on near-black dark, green-bar paper light | Feather |
+| [Nightshade](https://github.com/ryanallen/leaftext/blob/main/themes/nightshade.md) | The classic Dracula palette (light "Alucard" and dark) | Phosphor |
+| [Pippin](https://github.com/ryanallen/leaftext/blob/main/themes/pippin.md) | A crisp, macOS-style palette — clean neutral grays with a system-blue accent | Lucide |
+| [Sage](https://github.com/ryanallen/leaftext/blob/main/themes/sage.md) | A neutral grayscale palette with a muted-blue (Minimal-style) accent | Leaftext |
+| [Spearmint](https://github.com/ryanallen/leaftext/blob/main/themes/spearmint.md) | Ceramic dark with a mint accent, Inter headings over Lexend | Tabler |
+
+A nineteenth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
+
+In every family, the icon rail on the left, the side pane beside it and the page are three different tones. So the three read apart at a glance, in light and dark alike.
+
+**Foxglove is gone.** A window that was wearing it opens on Fern in the same appearance, and Random no longer draws it.
+
+## Previews
+
+Every family rendering the same reference document, split diagonally so the light variant sits above the dark one. These are the previews each family file carries at the top.
+
+### Amaranth
+
+![Amaranth — the same document in the light and dark variants](../../imgs/themes/amaranth-v2.png)
+
+### Arabica
+
+![Arabica — the same document in the light and dark variants](../../imgs/themes/arabica-v2.png)
+
+### Artemisia
+
+![Artemisia — the same document in the light and dark variants](../../imgs/themes/artemisia-v2.png)
+
+### Bloodleaf
+
+![Bloodleaf — the same document in the light and dark variants](../../imgs/themes/bloodleaf-v2.png)
+
+### Bluebell
+
+![Bluebell — the same document in the light and dark variants](../../imgs/themes/bluebell-v2.png)
+
+### Camellia
+
+![Camellia — the same document in the light and dark variants](../../imgs/themes/camellia-v2.png)
+
+### Copperleaf
+
+![Copperleaf — the same document in the light and dark variants](../../imgs/themes/copperleaf-v2.png)
+
+### Eucalyptus
+
+![Eucalyptus — the same document in the light and dark variants](../../imgs/themes/eucalyptus-v2.png)
+
+### Fern
+
+![Fern — the same document in the light and dark variants](../../imgs/themes/fern-v2.png)
+
+### Ginger
+
+![Ginger — the same document in the light and dark variants](../../imgs/themes/ginger-v2.png)
+
+### GitHub
+
+![GitHub — the same document in the light and dark variants](../../imgs/themes/github-v2.png)
+
+### Goldenrod
+
+![Goldenrod — the same document in the light and dark variants](../../imgs/themes/goldenrod-v2.png)
+
+### Halcyon
+
+![Halcyon — the same document in the light and dark variants](../../imgs/themes/halcyon-v2.png)
+
+### Ivy
+
+![Ivy — the same document in the light and dark variants](../../imgs/themes/ivy-v2.png)
+
+### Nightshade
+
+![Nightshade — the same document in the light and dark variants](../../imgs/themes/nightshade-v2.png)
+
+### Pippin
+
+![Pippin — the same document in the light and dark variants](../../imgs/themes/pippin-v2.png)
+
+### Sage
+
+![Sage — the same document in the light and dark variants](../../imgs/themes/sage-v2.png)
+
+### Spearmint
+
+![Spearmint — the same document in the light and dark variants](../../imgs/themes/spearmint-v2.png)
+
+### Earned families
+
+The six one-color families are bought with seeds in the Grove's Foraging area. Until one is yours, its card in the picker is dimmed and shows its price. Pressing it opens the Grove's Tree tab on that family; once bought, it is worn like any other.
+
+### Birch
+
+![Birch — the same document in the light and dark variants](../../imgs/themes/birch-v2.png)
+
+### Laurel
+
+![Laurel — the same document in the light and dark variants](../../imgs/themes/laurel-v2.png)
+
+### Lavender
+
+![Lavender — the same document in the light and dark variants](../../imgs/themes/lavender-v2.png)
+
+### Saffron
+
+![Saffron — the same document in the light and dark variants](../../imgs/themes/saffron-v2.png)
+
+### Sumac
+
+![Sumac — the same document in the light and dark variants](../../imgs/themes/sumac-v2.png)
+
+### Woad
+
+![Woad — the same document in the light and dark variants](../../imgs/themes/woad-v2.png)
+
+## Random
+
+The last entry in the theme picker is **Random**. It is not a palette; it is a preference that draws a concrete family at each launch, so the app opens in a different theme every time.
+
+The draw is a no-repeat cycle: every family shows once before any repeats, and when the cycle resets it avoids immediately repeating the family you just saw. The families already used in the current cycle are remembered across restarts (saved as `theme_random_used` in `settings.json`), so quitting and relaunching keeps the rotation going rather than starting over.
+
+The picker keeps Random selected and says what it drew. The Random card wears that family's colors and font, with a second line such as *Wearing Camellia*. The color bar's thumb sits on Camellia, and the palette button's tooltip reads `Themes — Random: Camellia · Light`.
+
+While Random is not your choice and the picker is open, the Random card previews its pool instead. It morphs through every theme's colors and font, one every half second, with only its name staying "Random". The preview rests while [another app is in front](../01-features/02-navigation.md#when-another-app-is-in-front) and resumes when you return with the picker still open.
+
+## Appearance
+
+Each family has a light and a dark variant; the Appearance control picks which:
+
+| Appearance | What it does |
+| --- | --- |
+| System | Follows the OS light/dark preference, updating live |
+| Light | Forces the family's light variant |
+| Dark | Forces the family's dark variant |
+| Daylight | Light between 09:00 and 18:00 local time, dark otherwise |
+
+## Model
+
+```mermaid
+flowchart LR
+    A[Family] --> C[Theme source]
+    B[Appearance] --> C
+    C --> D[Semantic tokens]
+    D --> E[Reader UI]
+    D --> F[Code blocks]
+    D --> G[Alerts]
+    D --> H[Minimap]
+```
+
+## Choose
+
+![The theme picker open as a bottom sheet: the appearance control across the top, then a scrolling grid of family cards, each wearing its own paper, ink, five-swatch strip and heading font, with the current family ringed and ticked](../../imgs/theme-picker-v2.png)
+
+Press **More** at the foot of the icon rail and choose **Themes** to slide up the theme picker. That works whatever is in front: a document, a chat, a web page or nothing. It lists every family as a preview card — plus [Random](#random) at the end — with an Appearance control (System / Light / Dark / Daylight) at the top.
+
+Each card wears its own theme: its paper and ink, a strip of five swatches, and its heading font, all following the current appearance. The swatches are background, text, brand and two code colors.
+
+Changes apply at once, to the window the picker was opened in and no other. So two windows can wear two themes, family and appearance both, and be told apart at a glance.
+
+A tab pulled out into its own window opens wearing what its window wore, Random's draw included, and every window comes back in its own theme after a restart. The first window's is saved as `theme_family` and `theme_mode` in `settings.json`, and every other window's beside its tabs (see [Settings](../01-features/05-settings.md#theme)).
+
+Close the picker with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards — the same [bottom sheet](../GLOSSARY.md#bottom-sheet) the glossary uses.
+
+## Fonts
+
+Leaftext does not bundle fonts. Instead, the active theme's font is fetched from **Google Fonts** when the theme activates, and the WebView caches it on disk so later launches are instant:
+
+- Each family carries its own type.
+- **Fern** uses Noto (Sans, Serif and Sans Mono), and **Nightshade** pairs Fraunces headings with Inter and Fira Code.
+- **Halcyon** uses IBM Plex Sans and Mono.
+- **Amaranth** uses the Source family: Source Serif 4 for its documents, Source Sans 3 for its controls, and Source Code Pro for code.
+- **Sage** uses Inter with JetBrains Mono, and **Arabica** pairs Rubik with JetBrains Mono.
+- **Goldenrod** pairs Space Grotesk with Space Mono, and **Ginger** pairs Nunito with Inconsolata.
+- **Pippin** pairs DM Sans with DM Mono, and **Bloodleaf** pairs Archivo with Roboto Mono.
+- **Ivy** sets every word in IBM Plex Mono, headings included.
+- **Foxglove** sets Instrument Serif headings over IBM Plex Sans and Mono.
+- Instrument Serif has one weight, so its heading levels differ by size alone.
+- **Eucalyptus** sets Lato over IBM Plex Mono.
+- **Camellia** sets Cormorant Garamond headings over Karla, with IBM Plex Mono for code.
+- The **GitHub** family is the exception: it uses your OS's native font stack (like github.com) and fetches nothing.
+- Switching families swaps the font link, so the font changes with the theme.
+- The theme picker is the one exception to loading only the active font. While open, it loads every theme's font so each card shows its real type. It drops them all on close, so the app never carries them at rest. A card keeps the app font (and shows a spinner) until its own font arrives, then swaps.
+- Every font stack lists system fallbacks, so text is readable immediately while the web font loads — and stays readable offline, falling back until you have loaded the font online once.
+
+## Icons
+
+A family brings its own drawings as well as its own colors. Switch family, and the back arrow, the folder, the padlock and every other control change with the palette. There is no separate icon setting, and nothing to pick.
+
+Every right-click menu wears the same set, a drawing beside each row, so a row can be found by its picture as well as its words.
+
+Seven icon sets are drawn on, and the **Icons** column in [Families](#families) says which one each family wears:
+
+| Set | Where it comes from |
+|---|---|
+| Leaftext | Drawn for this app. **Sage** wears it |
+| [Feather](https://feathericons.com) | **GitHub**, **Ivy**, **Foxglove** |
+| [Lucide](https://lucide.dev) | **Goldenrod**, **Pippin** |
+| [Tabler](https://tabler.io/icons) | **Fern**, **Ginger** |
+| [Remix Icon](https://remixicon.com) | **Arabica**, **Bloodleaf**, **Eucalyptus** |
+| [Phosphor](https://phosphoricons.com) | **Nightshade**, **Camellia** |
+| [Heroicons](https://heroicons.com) | **Amaranth**, **Halcyon** |
+
+The drawings ship inside the app, so nothing is fetched when you switch. Where an outside set has no drawing for a control, that control keeps Leaftext's own — a set is never partly blank.
+
+Diagrams are deliberately left out of this: a [Mermaid diagram](../01-features/01-rendering.md#mermaid-diagrams) takes the theme's colors but always the same icons, so a document looks the same to everyone.
+
+Every drawing, under every set, is on [leaftext.com/gallery.html](https://leaftext.com/gallery.html).
+
+## Tokens
+
+The semantic token set covers:
+
+- app chrome
+- document text
+- headings (a base color plus a per-level color for `h2`–`h6`, so a theme can tint deeper headings) and links
+- blockquotes and alerts
+- [table](../01-features/01-rendering.md#tables) bands and a grid that stays distinct from both neighboring row fills
+- code surfaces and syntax colors
+- minimap colors
+- focus and selection styling
+- the hover ink, plus separate foreground and ink colors for action and state fills
+
+An action or state fill can be bright while its words and thin marks stay readable. The foreground prints on the solid fill, and the ink carries the same role over a page or panel.
+
+A family may omit either ink when its fill already reads on every surface, in which case Leaftext copies the fill value into the compiled theme. If a theme source misses any other required token, Leaftext fails the contract check instead of silently rendering with broken fallback colors.
+
+### What is under the pointer
+
+Every fill under the pointer is one wash, mixed from the family's hover ink and left transparent. That covers a menu row, a toolbar button, a library file and a step in the folder path.
+
+Being transparent, it lightens a dark family and darkens a light one, whatever it sits over. So a hovered row never comes out the same tone as the panel behind it.
+
+A family that names no hover ink gets its own quiet-text color, the normal case. **Goldenrod** names its own, so its hovers wash in gold rather than gray.
+
+## Diagrams
+
+![One page of diagrams shown twice under two different themes: the same flowchart and pie chart, each drawn in that theme's own surfaces, ink and categorical color scale](../../imgs/theme-diagrams-v2.png)
+
+[Mermaid diagrams](../01-features/01-rendering.md#mermaid-diagrams) are drawn in the theme's own colors, so every family themes every kind of diagram without saying anything about diagrams at all:
+
+- **Boxes and subgraphs** take the theme's muted and sunken surfaces, with document ink for their labels. So a large flowchart reads as part of the page, not a foreign object.
+- **Arrows, axis lines and borders** take the muted ink and border colors.
+- **Categorical colors** are the twelve a pie chart, timeline, mind map, kanban board or git graph cycles through. They are the theme's primary hue turned around the color wheel in twelve steps of 150°. So neighboring items land on opposite colors, not near-identical ones.
+
+  Every entry is held to the same weight, not the same lightness, which is what lets one ink read on all twelve.
+- **State colors** mean what they mean elsewhere in the app. A Gantt chart's active bar is the accent, its done bar the success color, and its critical bar the danger color, as is today's line.
+- **Labels** are set in the face the theme reads its documents in, the same face as the words around the diagram.
+- **Text printed inside a colored fill** — a Gantt bar's label, a plotted point — takes whichever of the theme's inks reads best on that fill, measured for contrast rather than assumed. A brand color is often a mid tone that neither white nor black sits comfortably on, so the ink is chosen per color and per theme.
+
+Switching theme redraws the diagrams on the page: an SVG already drawn holds its colors as literal values, so the only way to recolor one is to draw it again. The ones still waiting as blocks are simply drawn in the new theme when you reach them.
+
+The little pictures on the [flowchart sheet](../01-features/07-editing.md#the-flowchart-editor)'s shape buttons are drawings of the same kind, kept for the session, so they go too. An open sheet draws them again in the new theme; a shut one draws them on its next opening.
+
+Every theme is gated on this. `theme_compiler_gates_diagram_colors_for_every_source` re-derives the pairs a diagram makes across all 22 sources. It requires labels at 4.5:1, arrows at 3:1, and a readable ink for every colored fill. So a palette that would make diagrams unreadable fails `just verify` instead of shipping.
+
+One known rough edge: a **mindmap** can clip a long node label. Mermaid sizes that box from its own measurement of the text, and it comes out short of the theme's font. The other diagram types are unaffected.
+
+## Add your own
+
+The theme picker links to the project on GitHub for making your own theme. A theme is pure data: a map of contract tokens to values, a font block, and the name of an [icon set](#icons). It is authored as a file under `themes/` and compiled into the bundle, so it is validated against the contract without injecting third-party CSS.
+
+## See them all
+
+[**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) draws every theme on one page — all 96 colors, every icon, and every part of the interface — with a switcher for the family and for light or dark. It is built from the same files the app is, by `just bundle-gallery`, so it cannot show you a theme the app does not have.
+
+## CSS
+
+The compiled stylesheet is assembled in this order:
+
+1. Compiled `--lt-*` theme mappings (each family's palette, plus its font-family stacks)
+2. The stylesheet's own `:root` block — the radius scale, the type scale, the layout metrics: one value each, whatever theme is on
+3. App CSS for layout and components
+
+Every palette is pure data, compiled from the theme sources; the font *files* still load separately from Google Fonts per the active theme. The ordering keeps one stable semantic layer so the app can swap themes quickly.
+
+The app's own copy carries every family's [icon pack](#icons), since a theme can be changed at any moment. A page [written out as a web page](../01-features/02-navigation.md#export-the-page) pins one theme and has no picker, so the stylesheet beside it carries that theme's drawings alone.
+
+## Windows
+
+On Windows, Leaftext uses a frameless window with its own title bar rather than the native one, so nothing the OS draws sits above the app.
+
+The app bar doubles as the title bar: drag it to move the window, and double-click to maximize or restore. Its right edge carries minimize, maximize and close, with the same rounded hover chip as other toolbar icons. Close turns red instead of the accent color.
+
+They quiet with the rest of the window while [another app is in front](../01-features/02-navigation.md#when-another-app-is-in-front). Press `F11` for full screen, with the taskbar, shadow band, edge and corner gone; the middle square becomes the way back out, then means maximize again in the ordinary window. The taskbar still shows the leaf icon outside full screen.
+
+The window has no border or system shadow of its own; the app draws both. A hairline in the theme's divider color runs around a rounded surface. Outside it falls the same dot-grain shadow every floating surface throws, curving round each corner at the sides' weight. It stays black on every family, since a band on the desktop is read against whatever lies behind. So the app's own language, not the platform's, separates it from the desktop.
+
+Where two floating surfaces overlap inside the window, such as a popup from the view bar or a link card over a menu, their shadows meet at one weight. They do not darken where they cross.
+
+## macOS
+
+On a Mac the app bar reaches the top of the window too. The title strip goes empty and see-through, and the page runs up underneath it. Three dots sit at the bar's left end, where a Mac's always are: close, minimize and zoom, centered in the bar. The mark inside each appears as you point at it.
+
+**They are Leaftext's, not Apple's**, which is why they take the theme. Close is the theme's red, minimize its yellow and zoom its green, so they change with the family like the rest of the bar.
+
+Drawing them also lets them fold into the [chevron menu](../01-features/02-navigation.md#when-the-bar-runs-out-of-room) when the bar runs out of room. Apple's are pinned to the window, so the bar had to hold room for them whether it had any or not.
+
+All three quiet with the rest of the window while [another app is in front](../01-features/02-navigation.md#when-another-app-is-in-front), keeping their red, yellow and green at half strength rather than losing them.
+
+Press the green dot, and the window goes properly full screen in a space of its own. The menu bar and Dock get out of the way, and a sideways swipe returns to the desktop.
+
+Press it again to come back. The three dots stay on the bar in full screen, because Apple's return when you push the pointer at the top edge, and ours cannot.
+
+Hold `Option` and press it to zoom instead, filling the room the menu bar and Dock leave. Drag empty bar space to move the window, or double-click it to zoom, as on Windows. The cost of drawing our own dots is the green one's tiling menu: it has none.
+
+The window keeps its native frame but not its system shadow. In its place is the app's dot-grain band, the same as on Windows. In full screen it is gone, since nothing lies behind the window to cast onto.
+
+## Next
+
+- [Settings](../01-features/05-settings.md)

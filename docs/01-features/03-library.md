@@ -1,743 +1,366 @@
 # Library
 
-> Point Leaftext at a folder and it becomes a vault: a browsable file tree, a searchable body of text, and a map of how those documents link to each other. Opening a vault adds no files to your folder. Edits and confirmed tag renames write only the notes you chose to change, and a vault can sync itself to GitHub.
+> Your folders, search, filters and a map of how your notes link
 
-The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in the one vault picker at the top of the window and in the side pane beside the icon rail, and everything it shows is read from disk when you ask for it.
+Point Leaftext at a folder, and it becomes a vault: a file tree to browse, text to search, and a map of how its documents link. Opening a vault adds no files to your folder.
 
 ![The vault picker in the app bar with its browse sheet open under it: the vaults down the left, then the path to the folder and the row saying how it is sorted, and the folder's rows; the document stays in front under its own tab](../../imgs/library-v7.png)
 
+- **Browse** a folder at a time, with every file action you expect.
+- **Search** names and words across the whole vault.
+- **Filter** by tag, field or date.
+- **See the map** of how your documents link.
+- **Sync** a vault to GitHub.
+
 ## The icon rail and the side pane
 
-A narrow rail runs down the window's left edge whether the pane is open or shut, each press an icon. The rail, the pane, a [chat](10-agents.md) and the page each stand as a card with the page's rounded corners, 4 pixels from each other and from the window's edges:
+The icon rail down the left opens the side pane on your conversations, your documents, or search.
 
-- **New** opens the menu for a new page, a console or an agent. Its **Starts in** row names the folder the new chat starts in — the folder of the document or chat in front, or a folder you browsed to in the [vault picker](#the-vault-picker) since — and pressing it picks another before you start.
-- **Search** opens the find bar on the whole vault, or on the document when there is no vault, and with an agent in front it puts the keyboard in the chat list's own filter. There is no search field standing in the pane.
-- **Conversations**, a speech bubble, opens the pane on your chats: [pinned chats](#past-conversations-in-the-sidebar) and then **All chats**, with the agents running now at the top and each chat's folder beside its name. Press a chat to bring it forward or pick a saved one up again; agents have no tabs.
-- **Scheduled**, an alarm clock, opens the [Scheduled page](10-agents.md#scheduled) in the main area: the tasks Leaftext starts an agent for on a clock, and the form that makes one.
-- **Documents** opens the pane on the document in front's **Outline** — [its headings](#the-open-documents-headings) — whose Back shows **Pinned** and **Recent**: your favorite documents and folders, and what you opened last, the same rows as the home screen's.
-
-The pane holds one list at a time. A document opens it on its Outline, a page with no headings on Pinned and Recent, and a chat on the chats. The rail, the pane and the page are three different tones in every [theme](06-themes.md#families).
+[Every detail of the library →](../09-details/library.md)
 
 ### The vault picker
 
-The one vault control stands in the app bar after Forward. It names the folder of whatever is in front — `vault · folder` inside a vault, the folder's own name outside one, with its whole place on disk in its tooltip — and moves as you switch between documents and chats in different folders, without moving any of them. While work has not reached GitHub, the closed picker wears its count.
+The picker in the middle of the app bar names the folder in front. Press it to switch vaults or browse folders.
 
-Press it and the **browse sheet** hangs under the bar. Down its left are your vaults, the one you are in ticked, each with its settings, then **New vault**, which offers a folder, Clone and Google Drive, and Books online. Across the top are the path to the folder you are in, each step a press, then the row saying [how the folder is sorted](#sorting-and-drawing-a-folder), which opens its view menu, and **Sync** with its count while there is work to send; under them the folder's own rows, with every [file action](#file-actions), picking several files, cut, copy and paste, dragging out and walking with the keys. A folder steps in right there, the sheet staying open, and New then starts in it; a file opens in a tab and the sheet closes. A folder of more than 400 items is drawn a window at a time, every row reachable. Press the picker again, press Escape or press anywhere else to close it.
+[Details →](../09-details/library.md#the-vault-picker)
 
 ## Summary
 
-| Feature | What you get |
+| You want to | Where |
 | --- | --- |
-| [The icon rail and the side pane](#the-icon-rail-and-the-side-pane) | **New**, **Search**, **Conversations**, **Scheduled** and **Documents** stand in a rail down the left edge; the pane beside it holds the document's Outline, your Pinned and Recent documents, or your chats, one list at a time |
-| [The vault picker](#the-vault-picker) | One control in the app bar names the folder of whatever is in front and opens a browse sheet holding your vaults, the folder's trail, View and Sync, and its rows |
-| [Vaults](#vaults) | A folder you name as a library root. The vault picker's browse sheet creates, edits and moves between them |
-| [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the vault picker the first time you open the pane, and goes for good the moment you point at it. A sheet takes it down, unmet, and it returns once the last one closes |
-| [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
-| [File tree](#file-tree) | One folder at a time, with a row that steps back out; every folder you open appears at once |
-| [The open document's headings](#the-open-documents-headings) | Open a document and the sidebar holds its outline above the chats, the page's own title first and the heading you are reading lit; its heading folds it away |
-| [Breadcrumb](#file-tree) | On a published site, the page's path under the app bar; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
-| [Search](#search) | Filename and content search across the active vault, from the [find bar](02-navigation.md#find-in-this-document)'s **All files** |
-| [Books online](#books-online) | One vault searches Internet Archive, Open Library, Project Gutenberg and Standard Ebooks, and opens available EPUBs |
-| [Skipped folders](#skipped-folders) | A folder a machine filled — build output, a package cache — is listed and openable, and not read or watched. The search line says when one was left out |
-| [Filtering](#filtering) | More than words in the search field: `#work status:open due:<friday -draft` |
-| [Tags](#tags) | Press a tag in a Markdown note to find its notes; right-click to rename it across the vault after confirming the file count |
-| [Other names](#other-names) | A note's `aliases` field: every name in it works wherever the file's own name works |
-| [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
-| [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud, Google Drive and the Kindle app's books become vaults on their own when their app is on this machine, and their rows wear a cloud |
-| [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, manually from its header or automatically once local changes stop when that vault opts in — and a repository can be [cloned](#clone-a-repository) into a new vault |
-| [File actions](#file-actions) | Right-click a file or the page you are reading for the actions that fit it |
-| [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
-| [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
-| [Folder actions](#folders-and-the-space-around-them) | Right-click a folder on this computer — or the empty space in its pane — to make a file or a folder in it, paste, export it as a site, reveal it, or see its properties. A Books online category offers Open folder only |
-| [Calendar](#calendar) | A month, week or day of the vault's documents by when they were changed, made or dated; pick a day and its documents are listed under the month |
-| [Where the launchers went](#where-the-launchers-went) | Themes, Scheduled tasks, Calendar and your Grove are rows of More on the floating bar; Favorites and Recent are the pane's Pinned and Recent |
-| [Console](#console) | A command line for the folder shown in the library, opened from the + menu above the tabs |
-| [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
+| Make a folder a vault | [Your first vault](#your-first-vault) |
+| Browse files | [File tree](#file-tree) |
+| Find words | [Search](#search) |
+| Narrow by tag or date | [Filtering](#filtering) |
+| See links between notes | [Graph](#graph) |
+| Back up to GitHub | [GitHub sync](#github-sync) |
 
 ## Vaults
 
+A vault is a folder you work in. Search, the map and sync all work across the whole vault.
+
 ![The vault switcher open, with Library and vaults above one New vault row](../../imgs/vault-switcher-v4.png)
 
-A **vault** is a folder you have told Leaftext to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
-
-Press the [vault picker](#the-vault-picker), which names the folder you are in and its vault, to open its browse sheet; the vaults stand down its left. Press the picker again to close it; moving the pointer past it or away from the open sheet leaves the sheet as it is. A switch button appears over the start screen whenever a vault exists, so switching to Library never leaves you there. What that button wears says what you are in: **this machine** for the whole library, a **box** for a vault whose files only live here, and a **cloud** when saving in that vault also reaches somewhere else — [GitHub](#github-sync), or a [cloud folder](#your-cloud-is-already-a-folder). Its mark stays the regular weight and sits apart from its name.
-
-While the list is open, the button stays lit. Vaults read A to Z, ignoring capitals.
-
-Each Leaftext window opens its own vault. Picking one in a window changes that window's pane, search and map and leaves every other window where it was, while the list of vaults is the same in every window: one added, renamed or removed anywhere shows everywhere, and a window standing in a vault removed elsewhere goes back to Library. A window dragged out of another starts in the vault it came from, and two windows in the same vault read its files once between them. The vault the next launch opens on is the first window's; every other window comes back on its own.
-
-- **Library** is the no-vault state, marked with the machine rather than a box because it is not a collection — the pane starts at your drive roots and browses anywhere. Search is unavailable, because it has no bounded set of words to read. The graph still works: it maps the open document instead of a vault.
-- **A vault** roots the pane at that folder. Everything below it is browsable, searchable and mappable.
-- **New vault…** opens the kinds of vault: a folder on this computer, a [cloned repository](#clone-a-repository), or [Google Drive](#your-cloud-is-already-a-folder) when its app is missing or one of its accounts needs adding back. Under **New vault…** the switcher has a [Books online](#books-online) section of its own. Press **Back** to return to your vaults. Choosing a folder opens the folder picker; its name becomes the vault's name.
-- The settings button appears when you point at a vault row or reach it with the keyboard, and opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync). A [sync app's own folder](#your-cloud-is-already-a-folder) cannot be pointed elsewhere or made a repository, since the sync app already copies it, and [Books online](#books-online) offers only Refresh the catalog.
-
-
-> [!NOTE]
-> **Nothing is written into your folder.** A vault is a row in Leaftext's own database, not a marker file. Removing a vault forgets it; the folder and its files are untouched.
+[Details →](../09-details/library.md#vaults)
 
 ### The bubble on your first launch
 
-A name and a caret is not much to go on, so the first time you open Leaftext with the pane showing, a small bubble floats over the window with a chevron aimed at the vault picker, saying **"Choose a vault and browse its folders here."**
+The first time you open Leaftext, a small bubble points to the vault picker.
 
-It goes the moment you point at the row, and it never comes back — pressing the row does the same. The bubble itself ignores the pointer, so moving across it on the way somewhere else neither takes the words away nor gets in the way of what is under it, and a [menu](#file-actions) opened into the space it is standing in is drawn over it rather than under. There is no close button and no timer.
-
-One bubble per launch at most, with a quiet launch in between, and nothing at all once you have met them. With the pane shut there is no bubble, and that launch is not spent — you get it the next time the pane is open.
-
-Anything that stands over the whole window takes it down while it is up. The glossary, the theme picker, the start screen's list and the flowchart editor all slide over the window, and a [picture](01-rendering.md#images), a [table](07-editing.md#inline-editing-the-reading-view) or a [diagram](01-rendering.md#mermaid-diagrams) opened on the whole window covers it the same way — so a bubble left standing would point at a button that view is covering, with no way to reach it and no way to put the bubble away. It steps aside instead, unmet, and comes back against wherever its button now is once the last of them has gone — one opened on top of another keeps it away until both have gone. The launch is not spent, and the promise is still there to meet.
+[Details →](../09-details/library.md#the-bubble-on-your-first-launch)
 
 ### Your first vault
 
-Until there is a vault, the start screen carries a third button beside Choose file and New document: **Add your notes folder**, with one line under the row saying what a folder buys — search across all of it, a map of how the notes link, and the folder in the pane. It opens the folder picker directly. Once a vault exists the button goes, because from then on the name over the headline is the [switcher](#vaults) and **New vault…** opens its kinds there.
+Press **Add your notes folder** on the start screen, and pick a folder.
 
-The pane says it once too. A reader who has met the [bubble](#the-bubble-on-your-first-launch) and still has no vault of their own finds a short box at the top of the file list: what a vault is, what it buys, and the same button. It sits inside the list, so nothing above it moves. Picking a folder retires it, and so does opening the vault list — either way it never comes back.
-
-A [cloud folder](#your-cloud-is-already-a-folder) that made itself a vault does not count as one you made, so the box still shows. A folder you picked yourself out of your Dropbox reads the same way, so that one reader may meet the box once.
+[Details →](../09-details/library.md#your-first-vault)
 
 ### Your cloud is already a folder
 
-If you have the Dropbox, OneDrive, iCloud Drive, Box, Nextcloud, Google Drive or Kindle app installed, that cloud is a real folder on this machine — so **Leaftext makes it a vault for you**. There is nothing to press: the folders are there in the switcher the first time you open it, named after themselves, and each wears a cloud because saving in one goes wherever that client sends it.
+Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive keep a real folder on your computer. Leaftext finds each one and makes it a vault for you.
 
-Leaftext holds no account and no password for any of them. **Their app does the syncing; Leaftext only reads and writes the files** — so there is no refresh to wait for here, and a file that has not arrived yet is one their app has not finished with.
-
-Only what is really there is added: a client you do not have is not listed, and neither is one whose folder has been deleted. Where a client records having been moved — Dropbox, OneDrive, Nextcloud — that record is what gets read, so a Dropbox living somewhere other than the default is still found. Nothing is scanned to do it; each is a named place, checked.
-
-Leaftext looks when it starts and whenever you come back to its window, so a client installed while Leaftext is open is found on that return, because leaving the window is what you did to install it. Remove one and it stays removed: Leaftext remembers the folder. Add it yourself with **Folder on this computer…**, or use **Google Drive…** for a detected Google Drive account.
-
-On Windows the Google Drive app mounts each signed-in account as a drive of its own, labeled with the account. Leaftext finds every one and adds its **My Drive** as a vault named for the account — **My Drive (you@example.com)** — so two accounts are two vaults you can tell apart; Shared drives and Other computers stay in the library. A name you give one is kept. These drives download a file the moment anything reads it, so in them Leaftext lists every note by name, time and size without reading any: rows carry no title or preview, a field rule hides nothing there, and search, the map, fields and Home's tasks do not look inside them. A note is fetched when you open it. On a Mac the same holds for a file Google Drive keeps only in the cloud: the first open asks macOS to fetch it and the document appears once it arrives, instead of a refusal that clears only after another program has read the file.
-
-No Google Drive app yet? **New vault… → Google Drive…** gets it for you. Leaftext downloads Google's own installer from Google and opens it, so your computer asks whether to let Google's app install; then you sign in to Google Drive in its own window, and your **My Drive** opens in Leaftext by itself the moment its folder appears. If the app is already installed but signed out, the same row just starts it. If the download fails, Google's download page opens in your browser instead. Cancel stops the wait. On Windows and Mac, if you removed an account's vault while its Drive remains mounted, **New vault… → Google Drive…** adds it back without an installer. When several accounts are missing, choose the one to restore by its account name. The other removed accounts stay removed. When every detected account is already a vault, the setup row is hidden.
-
-A vault *inside* one of these folders wears the cloud too. Where the files end up is what the mark is about, and a folder under Dropbox syncs exactly as Dropbox does.
+[Details →](../09-details/library.md#your-cloud-is-already-a-folder)
 
 #### Google Docs, Sheets and Slides
 
-The Google Drive app keeps Google Docs, Sheets and Slides in its folder as shortcuts ending `.gdoc`, `.gsheet` and `.gslides`. When you open one, Leaftext says what it is and offers **Open in Google Docs**, **Open in Google Sheets** or **Open in Google Slides**. The press opens that document in your browser. Leaftext does not sign in to Google or fetch the document through Google's API. If the shortcut does not identify a document, the message says so without an open button.
+A Google Docs, Sheets or Slides shortcut opens its document in your browser.
+
+[Details →](../09-details/library.md#google-docs-sheets-and-slides)
 
 ### Books online
 
-**Books online** is one vault for free libraries on the web, Internet Archive, Open Library, Project Gutenberg and Standard Ebooks together. The Books online box on Home can be moved or closed from its [heading controls](02-navigation.md#recent-files). Choose **Books online** in the vault switcher, under **New vault…**, to open the list of libraries, then choose a library. **Browse free books** on an [empty new page](02-navigation.md#web-tabs) opens Gutenberg directly, and each library's card in the [Books online box on Home](02-navigation.md#recent-files) opens that library. Each entry adds or switches to the same Books online vault. It is not listed among your own vaults, and the Books online row's own button opens its settings.
+Search free books from Internet Archive, Open Library, Project Gutenberg and Standard Ebooks, then read them offline.
 
-- **Libraries.** The top of the vault lists every library it holds, in name order, each with how many books it has where the library can say. Each library added later takes its place by name.
-- **Browsing.** Opening Internet Archive shows 25 EPUB candidates not marked access-restricted at a time in the chosen order, most downloaded first by default, with **Next page** below the list. No item's files are fetched while browsing or searching. The first 10,000 items can be browsed; use **All files** to narrow a larger list. A failed page says why, and returning to Books online and opening Internet Archive again retries it. Project Gutenberg lists its categories, each with how many books it holds, and **All books**, which includes the books no category names. A category shows a hundred books at a time, most popular first, with a row to the next hundred: the most downloaded books on Gutenberg over the last 30 days come first, and a book with no count comes after every counted one. Each book row shows its title and author. Standard Ebooks opens directly on 48 books at a time, with **Next page** after the books when another page is available. Its library row has no count because its public listings do not give a whole-catalog total. Loading or a failed request keeps the way back to Books online; go back and open Standard Ebooks again to retry.
-- **Searching.** With the vault open, the find bar's **All files** searches every library at once from the top of the vault, and only that library from inside one of its rows. Each library's matches arrive on their own, under a line naming the library and how many it found; the same title from two libraries is two rows, because what a press does can differ. A library that fails or takes longer than ten seconds says so in its own place and the others stay. In Project Gutenberg plain words look in the title and the author, and `title:` and `author:` look in one. Standard Ebooks searches its public book listings as you type; it does not use the patrons-only catalog feed. Internet Archive searches titles and creators in pages of 25 items; `title:` and `author:` narrow the words to one. Up to a hundred matches from each other library are shown, in the same order the folders list in, so the best-known matches come first.
-- **Order.** The button at the end of the folder trail picks the order for the whole of Books online: **Most popular**, or **Title** **A to Z** or **Z to A**. The choice is kept, and every library and the find bar answer in it. A library that publishes no reader count lists its own best matches first under Most popular. Standard Ebooks offers popularity and relevance sorts; because it has no title sort, both title directions use relevance. Internet Archive asks for most downloaded first, or title in the chosen direction.
-- **Internet Archive.** A result says **Check this item** until pressed. The press checks that item's files for a public, unencrypted EPUB under the download limit, preferring an original EPUB. An eligible file is downloaded and checked as a readable EPUB before it is saved. A missing first cover page leaves a short sentence in its place while the rest of the book opens. A private item, an item without an eligible EPUB, or a failed check or download shows its explanation in Leaftext; press the row again to retry. The catalog does not offer borrowing or sign-in pages. A saved copy opens offline.
-- **Open Library.** Opening Open Library shows 20 works at a time in the chosen order, most read first by default, with **Next page** below the list; the first 10,000 can be browsed. Only works whose best edition Open Library says is free and held by the Internet Archive are listed, so borrow-only books never appear. Title **Z to A** has no Open Library order, so it shows the library's best match. Each row is named after that edition's Internet Archive item and says **Check this item**; a press checks it exactly as an Internet Archive press does, so an audio recording or a scan with no EPUB says so in Leaftext and a readable EPUB is saved and opened. Leaftext asks Open Library at most once a second and reuses a page it already fetched in the same session.
-- **Reading.** Each match says its library and what a press does: **Read in Leaftext**, **On this computer** once fetched, or **Check this item** while Internet Archive still needs to check its files. Press a book Leaftext can read and it fetches its EPUB and opens it. The row says **on this computer** once it has been fetched, and the Books online box on Home lists every book you have fetched, newest first. With a fetched book open, the pane stays with its own library, including Standard Ebooks. A fetched book opens without the internet; a book that could not be fetched leaves nothing behind and can be pressed again.
-- **The catalog.** Gutenberg publishes its catalog once a week for apps to read, so Leaftext fetches that one file, and the download counts leaftext.com reads out of Gutenberg each week, when the vault is added and again when the copy it holds is a week old. Searching and browsing it needs no internet after that. **Refresh the catalog** in the vault's settings fetches it straight away. A fetch that fails leaves the catalog you had; with none held, the pane says why and opening Project Gutenberg again tries once more. Download counts that cannot be had leave the books in title order.
-
-Books online is the app's own, so it cannot be renamed, removed or put on GitHub; its settings hold **Refresh the catalog** alone.
+[Details →](../09-details/library.md#books-online)
 
 ## Browsing
 
 ### File tree
 
-The browse sheet lists one folder at a time — the folder you are in, not a whole hierarchy.
+The pane lists the folder you are in, like Explorer or Finder. Press a folder to step in, and the path above to step out.
 
-- Click a folder row — or its `›` chevron — to go into it. The folder you open is on screen in one frame, with nothing fading and nothing sliding.
-- The row above the list steps back out one level.
-- A folder whose name Windows keeps but cannot spell as ordinary text shows `�` where the odd letter is, and still opens and keeps its own [sort and grouping](#sorting-and-drawing-a-folder). Two such folders spelled alike in one place are both left shut rather than one opening in the other's place.
-- Folders sort before files, each alphabetized unless you [sort the folder another way](#sorting-and-drawing-a-folder). Every folder is listed, including the ones whose names start with a dot and the ones a shortcut points at.
-- A folder starts with one line a row, the name and nothing else. With **Show details** on, each file sits in a softly filled card that says what the file is: its name on disk and when it last changed, then its title — a `title` in its [field block](07-editing.md#the-fields-at-the-top-of-a-note) — where that says more than the name, then two lines describing it — a `description` or `summary` in its field block, else its opening lines, with buttons, badges and alert markers read as their words. A folder row says how many documents sit directly inside it. A folder of more than five hundred files reads the first five hundred and draws the rest as one line each. On a slow disk, such as a network share or a synced drive, the names come up first as one line each and the titles and prose fill in once they are read; a folder hiding notes by a field waits for them, since the fields decide which names show. A note kept only online — OneDrive's Files On-Demand on Windows, iCloud's Optimize Mac Storage on a Mac — shows its name, time and size on one line and is never read to draw its row, so browsing a synced folder downloads nothing; a folder kept only online shows no count. Opening the note downloads it as usual, and a rule hiding notes by a field cannot hide one whose fields were never read. Search, the map, including a single note's map, field names, typing help's note names and Home's tasks leave such a note out until it has been downloaded, so arriving in a synced vault downloads nothing either. A file with no ending kept only online is not listed until it is downloaded, since Leaftext cannot tell whether its contents are text without opening it.
-- A favorite that lives in the folder you are in comes first, under a **Favorites** heading, with **Files** over the rest.
-- Pointing at a row washes it and nothing else — no shadow, no change of shape, nothing sliding — [what a control does under the pointer](02-navigation.md#what-a-control-does-under-the-pointer). The row you have open keeps its own tint instead, so what is open still reads as open.
-- Opening a file moves the picker to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.
-- The folder you are in is saved, so a restart reopens it. If the folder has gone, the sheet falls back to the top of the vault.
-
-On a published site, a **breadcrumb** heads the pane in place of the rows and follows the open page, including when a link opens a page in another folder: `Fieldwork › docs › features`. Folder crumbs open their folders; the current page ends the trail. It shows as much of the path as fits the band, and whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders. The site has no vault switcher or Sync button.
-
-Each call reads exactly one directory, so nothing below what you opened is ever touched.
+[Details →](../09-details/library.md#file-tree)
 
 ### Walking the pane from the keyboard
 
-Tab into the list and a ring marks the row you are on — separate from the tint on the document you have open, and never drawn under the mouse.
+Arrow keys move through the rows, and Enter opens one.
 
-- **Up** and **Down** move a row; **Home** and **End** go to the first and last; **Page Up** and **Page Down** move a pane's height.
-- A **letter** jumps to the next row whose name starts with it.
-- **Right** or **Enter** on a folder goes into it; **Left** steps back out, and lands on the folder you came from. **Enter** on a file opens it.
-- When the folder is read again under you — a paste, a rename, a change on disk — the ring stays on the same file.
-- The same keys walk the search results under the find bar, and the Tags and Fields lists, where **Right** and **Left** open and shut a branch.
+[Details →](../09-details/library.md#walking-the-pane-from-the-keyboard)
 
 ### Sorting and drawing a folder
 
-The browse sheet says how the folder you are in is drawn, on the row under its path — "Sorted by name, a to z" — and pressing that row opens the view menu for the folder. On a published site the same menu is the button at the end of the breadcrumb, lit whenever the folder is drawn any way but the default.
+Sort a folder by name, date or size, and choose whether rows show titles and previews.
 
-- **Sort by** name, date modified, date created or size, either way round. Folders stay above files in every order.
-- **Group by date** puts headings between the files — Today, Yesterday, Previous 7 days, Previous 30 days, then a month at a time — while the folder is sorted by a date.
-- **Show details** draws each file with its title, when it changed and its opening lines; off, each row is one line, the name and nothing else.
-- **Show hidden**, two fields that hide names like `draft-*` and notes whose field says `status:done`, and a **Stop hiding** row for each rule standing. **Hide from the pane** on a row's right-click menu hides that one; nothing on disk moves, and **Show hidden** draws them dimmed.
-- **Arrangements** keep what is on screen under a name. The arrangement in use is how every folder with no choice of its own is drawn, and it brings the list it was saved on with it; deleting the last one goes back to the defaults.
-
-Each folder keeps its own choice, so a restart draws it the same way.
+[Details →](../09-details/library.md#sorting-and-drawing-a-folder)
 
 ### Tags and Fields
 
-In a vault, the top of the same menu switches the pane between **Folders**, **Tags** and **Fields**.
+Group a folder's notes by tag or by any field in their front matter.
 
-- **Tags** is every tag in the vault, nested, each with how many notes carry it. The mark before a tag opens the tags under it; pressing the tag searches it through the [find bar](02-navigation.md#find-in-this-document)'s **All files**, the same as pressing a tag in a note. Right-click one to hide it from the list.
-- **Fields** is every field the vault's notes set. Pressing one opens the values it holds; pressing a value searches `field:value`.
-
-Neither list is a filter of its own: every press goes to the one search box.
+[Details →](../09-details/library.md#tags-and-fields)
 
 ### The open document's headings
 
-While a document is in front, the sidebar holds its [outline](02-navigation.md#outline) above the chats — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit as you scroll. Clicking a row jumps to that heading.
+With a document in front, the pane lists its headings, and the one you are reading is lit.
 
-- The **Outline** heading counts the headings at its right. Each level reads a step smaller than the one above it, and the levels below the second sit in quieter ink, so the shape of the document shows without counting the indents.
-- Press the **Outline** heading to fold the list away and again to open it; it stays the way you left it.
-- With a console or anything else without a document in front, there is no Outline section.
-- An HTML file, and a web page opened by its address, lists its own headings too, read out of the page as it is drawn and read again whenever the page changes size, so a page that builds its headings as it runs lists them once they are there. Clicking a row scrolls the page to that heading, and the row under the top of the page is lit as you scroll.
-- A document with only a title, or none, has no outline, so the files stay where they are.
+[Details →](../09-details/library.md#the-open-documents-headings)
 
 ### File types
 
-The pane lists every file in the folder, the way Explorer or Finder does, in the folder's own order. The ones Leaftext opens read normally: Markdown (`.md`, `.markdown`, `.mdown`, `.mdc` — a [Cursor](https://cursor.com) project rule is Markdown with a [field block](07-editing.md#the-fields-at-the-top-of-a-note) at the top), [HTML](01-rendering.md#html-files) (`.html`, `.htm`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), [plain text](01-rendering.md#plain-text-files) (`.txt`), [INI](01-rendering.md#ini-files) (`.ini`), [CSS](01-rendering.md#css-files) (`.css`), [CSV](01-rendering.md#csv-files) (`.csv`, `.tsv`), [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`), [Word, Excel, PowerPoint and OpenDocument](01-rendering.md#office-and-opendocument-files) (`.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`), [EPUB books](01-rendering.md#epub-books) (`.epub`), [Kindle books](01-rendering.md#kindle-books) (`.azw`, `.mobi`, `.azw3`), and the Google Drive app's [shortcuts to Google Docs, Sheets and Slides](#google-docs-sheets-and-slides) (`.gsheet`, `.gdoc`, `.gslides`). [Source files](01-rendering.md#source-files) are ordinary rows too, and open from the pane without becoming vault-search text, graph nodes, or Previous/Next pages. A file with no ending at all — `CHANGELOG`, `LICENSE`, `AUTHORS`, `.gitignore` — opens when its opening bytes are text, and is searched, mapped and paged like any note; nothing inside a `.git` folder is ever read.
+Files Leaftext reads open normally. Any other file is listed, dimmed, with every file action still available.
 
-Everything else — a PDF, a picture, a recording, an installer, a file with no ending that holds a binary — is listed dimmed, still wearing its ending. Resting on it says why it does not open, and so does pressing it, which opens nothing. Its right-click menu keeps every file action: Copy path, Cut, Copy, Rename, Duplicate, Hide from the pane, Reveal, Properties and Delete; Open is there, grayed out, with the reason under it. A Mac app is a folder, so it is listed as one. A dimmed file that is only in the cloud is not downloaded to be listed, and a file with no ending there is dimmed, since only its bytes could say whether it opens.
-
-Data files are searchable by name and title but draw no [graph](#graph) edges at all — not even to [web addresses](#web-addresses). A string inside a `.json`, `.yaml`, `.ini`, `.css`, `.csv` or `.tsv` is a value, and scanning one as prose would invent links nobody wrote. A `.txt` draws none for the other half of the same reason: its words are the words somebody typed, not Markdown to be scanned for links. Emails draw none either — their bodies are transfer-coded in the file, so a scan would read base64, not links. They still appear as nodes.
+[Details →](../09-details/library.md#file-types)
 
 ### Skipped folders
 
-The pane lists every folder there is. A name starting with a dot, a build folder, a shortcut to somewhere else — all of them are rows you can open, because a folder you can see in Explorer or Finder should be a folder you can open here. A shortcut opens onto whatever it points at, the same as it does there.
+System folders at the top of a drive are skipped. Build and cache folders are listed, but search does not read inside them.
 
-Two things are left out. At the top of a drive, the operating system's own folders — `Windows`, `Program Files`, `AppData`, `Library` and the rest — are skipped, and only there: a folder of yours with one of those names, anywhere else, is listed. And a shortcut pointing at nothing is not a folder to open.
-
-Search and the [graph](#graph) go almost as wide. A note in a folder whose name starts with a dot is findable and on the map, and a shortcut is refused, because one can point back at a folder above it and make the walk run forever.
-
-The other thing that walk refuses is a folder a machine filled: one that declares itself a cache, or one named `target`, `node_modules`, `build`, `dist`, `vendor`, `venv`, `.venv`, `__pycache__`, `.next`, `.gradle` or `Pods`. A vault that is also a folder you build in can hold a hundred generated files for every note you wrote, and reading and watching all of them costs a third of your computer while you sit still. The pane still lists these folders and you can still open one; what changes is that search does not read inside them, and a change inside one is not something Leaftext goes and looks at. When a search leaves any of them out, the line above the results says how many and names them if you rest on it. A document you have actually opened from inside one still updates when it changes on disk.
-
-A folder a tool filled without saying so — a cache of thousands of tiny data files under a name of its own — is read like any other, and it cannot crowd out your notes: a vault too big to read whole reads the files written to be read first and data files such as JSON, YAML and XML after, and every file in it, read or not, is still found by its name.
+[Details →](../09-details/library.md#skipped-folders)
 
 ## File actions
 
 ![A right-click context menu open on a file row in the library pane, listing Open, Favorite, Open beside, Cut, Copy, Copy path, Rename, Reveal file, Properties and Delete](../../imgs/file-actions.png)
 
-Right-click a file row for a context menu of file actions:
+Right-click a file to open, rename, duplicate, reveal, copy or delete it.
 
-| Action | What it does |
-| --- | --- |
-| Open | Opens the file in the reader |
-| Favorite | Pins the file to the top of the pane, and reads **Unfavorite** on one already there |
-| Open beside | Stands the file in a column of its own beside the document you are reading, which keeps the keys. There while a document is open and nothing is split — see [two documents side by side](02-navigation.md#two-documents-side-by-side) |
-| Cut | Puts the file on the system clipboard to move on paste |
-| Copy | Puts the file on the system clipboard to copy on paste |
-| Copy path | Copies the file's full path as text |
-| Duplicate | Makes a copy beside the file, named `… copy`, then `… copy 2` |
-| Hide from the pane | Keeps the row out of the pane without touching the file; **Show in the pane** takes it back while [Show hidden](#sorting-and-drawing-a-folder) is on |
-| Rename | Edits the name inline; press Enter to apply, Escape to cancel. A name another file in the folder already has is refused; changing only the capitals of the file's own name is not, so `notes.md` can become `Notes.md`. A name holding `<`, `>`, `:`, `"`, `\|`, `?` or `*`, or one Windows keeps for a device such as `CON`, is refused on both platforms, so a file can always travel to a Windows machine. The same box opens over a page [headed with its own file name](07-editing.md#renaming-from-the-heading) |
-| Reveal file | Shows the file in your OS file manager |
-| Properties | Opens the OS file-properties view |
-| Delete | Asks first, then moves the file to the Recycle Bin / Trash — and offers it back |
-
-Right-click anywhere on the rendered page, including the blank space around its text, for the actions about the document you are reading: **Favorite** or **Unfavorite**, **Copy path**, **Reveal file**, **Properties**, and **Delete**. Over a saved web page — an `.html` or `.htm` file — **Open in browser** stands above **Copy path** and sends the page to your browser, where its own layout, type and color are drawn. With words highlighted, **Copy** leads the menu and puts exactly those words on the clipboard — `Ctrl+C`, or `Cmd+C` on a Mac, does the same thing without the menu. **Open**, **Cut**, **Copy** and **Rename** stay on a file row because they act on a row in a folder. A link inside a document has [its own menu](02-navigation.md#opening-a-link-in-a-new-page), and a block being typed in keeps its text menu.
-
-Reveal and Properties map to each OS:
-
-- Windows: Explorer; the file Properties dialog.
-- macOS: Finder; Get Info, which brings Finder to the front so its window is the one you are looking at.
+[Details →](../09-details/library.md#file-actions)
 
 ### Right-click a picture
 
+A picture in a document has its own menu: open it, copy it, or reveal its file.
+
 ![The right-click menu open over a picture in a document: Open picture, then Copy picture and Copy path, then Reveal file and Properties](../../imgs/picture-menu.png)
 
-A picture kept on your own disk answers for itself. Right-click one in the page and the menu is about the picture, not the note around it:
-
-| Action | What it does |
-| --- | --- |
-| Open picture | Opens it on the whole window, the same view the expand button over a picture opens — including a picture sitting inside a sentence, which has no button of its own |
-| Copy picture | Puts the picture itself on the clipboard, as pixels to paste into a message or a document. Every kind the page can draw copies, because what crosses is a PNG the page's own drawing wrote |
-| Copy path | Copies the picture's full path as text |
-| Reveal file | Shows the picture in your OS file manager, sitting where it is kept |
-| Properties | Opens the OS file-properties view for the picture |
-| Delete picture | Takes the picture out of the document. Only while the [padlock](07-editing.md) is open, and only for a picture on a line of its own |
-
-- **Delete picture leaves the file alone.** It removes the picture from the note, as one press of undo, and nothing is written until you save. The picture on your disk is untouched.
-- **A picture inside a sentence has no Delete row.** The only piece of source it belongs to is the sentence around it, so removing it would take the words with it.
-- **A picture already open on the whole window** keeps Copy picture, Copy path, Reveal file and Properties, and loses the two rows that have nowhere left to go.
-- **A picture from the web, one written into the document as data, and one Leaftext cannot find** get no picture menu, because none of these rows has a file to act on.
-- **A picture wrapped in a link** keeps the link's own menu, because the link is what a click on it opens.
-
-Where either window will not open, a message in the bottom-right corner says so, so the menu item never just appears to do nothing. **Cut, Copy and Copy path say so the same way.** A clipboard another program is holding open is an ordinary thing for a machine to be doing, and a copy that did not happen is otherwise only discovered at a paste in another app, minutes later, with nothing to connect it back.
+[Details →](../09-details/library.md#right-click-a-picture)
 
 ### Deleting asks first, and can be taken back
 
 ![The confirmation over a dimmed page: "Delete “Reading list.md”?", the line saying it goes to the Recycle Bin, then Cancel and a red Delete](../../imgs/delete-confirm.png)
 
-Delete does not act on the click. It asks — naming the file and saying where it goes — and the safe answer is where the pointer already is. Escape or a click on the dimmed page cancels; Enter deletes.
+Delete asks first, and the file goes to the Recycle Bin or Trash. A message offers **Undo**.
 
 ![A message in the bottom-right corner reading "Deleted Reading list.md", with an Undo button on it](../../imgs/delete-undo.png)
 
-Once the file has gone, a message in the bottom-right corner says so and carries an **Undo** button. Press it and the file goes back to the folder it came from, under its own name. **Ctrl+Z** does the same thing while that message is up, unless you are typing — anything you are editing keeps the key.
-
-The offer lasts as long as the message and covers one delete. After it goes the file is still in the Recycle Bin or the Trash, so nothing is lost by letting it pass; you just put it back the way you would any other file.
-
-Two things stop an undo, and it says which: the file is no longer in the bin, or something else has taken its name in the meantime. It never writes over the newer file.
+[Details →](../09-details/library.md#deleting-asks-first-and-can-be-taken-back)
 
 ### Folders, and the space around them
 
-Right-clicking a **folder on this computer** — or the empty space below its rows, which stands for the folder you are browsing — offers these actions. Both make in the folder that was right-clicked, and a name already taken there is refused rather than written over. In Books online, a category's right-click menu offers **Open folder** only; the empty space in a category has no folder menu.
+Right-click a folder, or the empty space under the rows, to make a new file or folder there.
 
-| Action | What it does |
-| --- | --- |
-| Open folder | Goes into it. Only on a folder row; the empty space is already the folder you are in |
-| Favorite | Pins the folder to the top of the pane, and reads **Unfavorite** on one already there. Only on a folder row |
-| New file | Makes an empty file in this folder and opens it. The name comes up as `Untitled.md` with `Untitled` selected, so typing replaces the name and keeps the extension; press Enter to make it, Escape to change your mind. A name with no extension is made as Markdown, and an extension Leaftext cannot read is refused in words rather than made into a file Leaftext could not open |
-| New folder | Makes a folder in this folder, from the same box, prefilled `New folder`. Nothing opens — the pane shows it where you made it |
-| Hide from the pane | Keeps the folder out of the pane without touching it on disk; **Show in the pane** takes it back while [Show hidden](#sorting-and-drawing-a-folder) is on. Only on a folder row |
-| Paste | Puts what you last cut or copied into this folder. Only shown when there is something to paste |
-| Export as site… | Writes this folder's readable documents as linked web pages in a folder you choose |
-| Copy path | Copies the folder's full path as text — on the empty space, the path of the folder you are in |
-| Reveal folder | Shows the folder in your OS file manager |
-| Properties | Opens the OS folder-properties view |
-
-The site's `index.html` opens directly from your disk and works on a static web host. It keeps links between exported documents, their pictures, diagrams and Previous and Next links, with one shared `assets` folder. A folder with a README uses it as its index; another folder gets a contents page. To put the site in team-docs, copy the exported folder into `public/docs/<slug>/` and point that repository's `staticPath` at its `index.html`.
+[Details →](../09-details/library.md#folders-and-the-space-around-them)
 
 ### Picking several files
 
-Hold Ctrl (Cmd on a Mac) and click rows to pick them one at a time, or hold Shift and click to pick every row from the last one you clicked. Picked rows are tinted and outlined; the row of the document you have open keeps its own tint as well. A plain click, Escape, opening another folder, opening a document or clicking the empty space below the rows lets them go.
+`Ctrl`+click picks rows one at a time, and `Shift`+click picks a range.
 
-With rows picked and the pane in use, Ctrl+X and Ctrl+C cut and copy all of them, Ctrl+V pastes into the folder you are looking at, and Delete sends them to the Recycle Bin (Cmd+X, Cmd+C, Cmd+V and Cmd+Backspace on a Mac). Right-clicking a picked row acts on every picked row. Ctrl+C anywhere else still copies the words highlighted in the document.
+[Details →](../09-details/library.md#picking-several-files)
 
 ### Carrying files onto a folder
 
-Press a row and drag it: a small tag follows the pointer naming the file, or how many you are carrying when the row is one of several picked. Let go over a folder row, a folder in the path at the top of the pane, or the empty space of the pane itself, and the files move there. Hold Ctrl as you let go to copy instead (Option on a Mac). A folder does not light up for itself or for a folder inside it, and neither does the folder the files are already in. Escape puts them down where they were.
+Drag files onto a folder in the pane to move them there.
 
-Keep going past the edge of the window and the files come with you: let go over an Explorer or Finder window, the desktop, or a mail being written, and that program takes them the way it takes a file dragged from one of its own windows.
+[Details →](../09-details/library.md#carrying-files-onto-a-folder)
 
 ### Dropping files in from outside
 
-Drag files in from Explorer or Finder and they land on whatever you let go over. Over a folder row or the pane, they are copied into that folder; hold Shift as you let go to move them instead. Over the tab strip, or anywhere that is not one of these, they open as tabs, the way a drop always has.
+Drop files from Explorer or Finder onto a folder to copy them in, or onto a document to link them.
 
-Over the open document, a dropped file is written into it as a reference, at the place you let go, spelled the way that kind of document names another file. The path is relative to the document's own folder, and absolute only when the file is on another drive.
-
-| The open document | A file | A picture |
-| --- | --- | --- |
-| Markdown | `[name](path)` | `![name](path)` |
-| HTML | `<a href="path">name</a>` | `<img src="path" alt="name">` |
-| XML | `<link href="path"/>` | `<img src="path"/>` |
-| JSON | `{ "$ref": "path" }` | the same |
-| YAML | `{ $ref: path }` | the same |
-| Text, INI, source code | the path on its own | the same |
-| Email, Word, Excel, PowerPoint, OpenDocument, EPUB, a service page | nothing: the drop is refused and says why | the same |
-
-In JSON and YAML there is nowhere between two values to put one, so a file dropped on a text value replaces that value, and a drop anywhere else is refused. In the source view the reference goes in at the cursor. A path in an XML, JSON or YAML value draws as a link you can click, and so does any `$ref`.
-
-A file Leaftext cannot read can still be dropped into a folder or written into a document as a link; dropped on the tab strip, it is refused with the reason.
+[Details →](../09-details/library.md#dropping-files-in-from-outside)
 
 ### Cut, copy, paste
 
-Cut or Copy a file, then Paste it into a folder to move or copy it there. A cut is used up by the paste; a copy can be pasted again. When some of several files cannot go — a name already taken — the rest still land, and one message says which did not and why.
+Cut, copy and paste files between folders, with the usual keys.
 
-Two things are worth knowing:
-
-- **Nothing is overwritten.** Pasting where the name is already taken refuses and says so, rather than replacing what is there.
-- **This clipboard is Leaftext's own.** Cut and Copy also put the file on the *system* clipboard, so you can paste it in Explorer or Finder — but the reverse does not hold: a file you copied in your file manager is not what Paste here acts on.
-
-Copying a whole folder is not supported; a folder can be pasted only as a move (Cut, then Paste).
+[Details →](../09-details/library.md#cut-copy-paste)
 
 ## Search
 
 ![All-files search results hanging under the find bar: a filename match ranked at the top, then content matches showing the document name and highlighted terms, with the pane's outline still behind them](../../imgs/search-v2.png)
 
-Search covers the active vault, and it is one of the two things the [find bar](02-navigation.md#find-in-this-document) searches. Press `Ctrl+F` anywhere and pick **All files** from the menu at the left end of the field; on the start screen, where there is no document, the bar comes up on All files already. The results hang under the bar, so the pane goes on showing your files or your [outline](02-navigation.md#the-documents-outline) while you read them. With no vault, All files searches the folder the pane is showing, and the field says which — **Search all files in scholar** — with the cursor already in it. That folder is read again each time the bar opens, so a note changed since is found by its new words. Your home folder, a folder holding it and the top of a drive are too wide to read, so there the bar asks for a folder inside your home folder; at the very top of the library, where the pane lists drives, the field says to open a folder.
+Press `Ctrl+F` and pick **All files** to search names and words across the vault. Results appear as you type, and nothing is uploaded or indexed on disk.
 
-On a published site, **All files** searches every page the site serves. The first search holds up to 32 MB of pages; each search reads the remaining pages when it needs them, without keeping their text. Adding letters to a completed plain search reads only the pages that matched it and retries pages that could not be read; deleting letters or changing the search another way reads all remaining pages again. A page the browser could not read or search is named with the results. Open a result to go to that page.
-
-`Escape` closes the bar and takes the results with it. Nothing about the pane changes either way — it is not where the answer lands.
-
-| Search type | Behavior |
-| --- | --- |
-| Name matches | Ranked first, and by how much of the name you typed: the whole name, then the start of it, then the start of a word in it, then buried inside one |
-| Its [other names](#other-names) | Counted as names, on the same scale — a note's `aliases` entry matched end to end is worth what its file name matched end to end is worth. The row says which name matched |
-| Folder names | Counted, and weakly — everything under `notes/` matches "notes" |
-| Content matches | Ranked by how often the terms appear **for the document's size**, so a long file cannot out-count a one-page note by being long |
-| A word in the text | Found where it starts a word, so a note holding `working` is not found by `king` and `fut` still finds `future` while you type. A word in Chinese or Japanese, written without spaces, is found anywhere |
-| An HTML page | Found for its title and the words it shows, never for a tag, a class name, a comment or a style sheet, and its row shows those words without markup |
-| A match in a heading | Outranks the same word in a paragraph |
-| Multiple terms | Every term must appear, in a name, the folder or the body |
-| More than words | The box takes a [filter](#filtering) — `#work status:open due:<friday -draft` |
-| Rows per file | Up to three, one per line the words are on — a word found twice on one line is one row with both places marked |
-| Two files of one name | Each row says its folder beside the name, so a `README` at the top and one in `docs/` read `README leaftext` and `README docs`. A file whose name no other result shares carries none. A file answering with more than one row names the line each row is on, `line 380`, so the rows can be told apart |
-| Result limit | The best 50 files. Past that the count says so — "84 results in the first 50 files" |
-| Folders left out | Named in the same line, with how many — "12 results · 1 folder of generated files not read". Rest on the line to see which. See [Skipped folders](#skipped-folders) |
-| Text left out | A vault too big to read whole reads its notes first — Markdown, text, web pages, mail, Word, PowerPoint, OpenDocument and books — and its data files after, and searches the text past what it holds after the rest, straight off the disk, so those rows arrive under the first ones. The same line says "12 results · part of the vault's text not read" until every file has been searched, then goes. See **Documents read** under [Facts](#facts) |
-| A file too far down to read | Found by the words inside it, read off the disk after the rest of the vault has answered, and by its name, when every word you typed starts a word in it — or all but one, in a search of three words or more, so `the once and future king` finds `white-once-and-future-king`. A file kept only online is found by its name alone, because reading it would download it |
-| While the vault is still being read | Rows arrive in batches, a turning ring sits in the count line, and the count says what it has so far. Before the first row arrives, three result-shaped rows stand in their place — a name with the two lines of matched words under it — and they go the moment one real row exists, whether it is this query's first batch or the query before it |
-
-Opening a result lands on the line the match is on. Documents whose source Leaftext cannot place a line in — anything but Markdown — fall back to the nearest heading above the match.
-
-Asking the same thing twice costs nothing: the last answer is kept and handed straight back while the query and the vault's text are both unchanged, which is what happens when you walk the folder tree with a search still in the box. Typing one more letter costs almost nothing either — only the files that matched the shorter word can match the longer one, so those are the only ones read again, and the same holds for the names a file is found by. A box that held no word yet — a lone quote mark, say — narrows nothing, so the first word typed after it reads every file. Anything else, including a letter deleted or a file saved while you type, reads the vault afresh.
-
-To search **inside** the document you are reading rather than across the vault, switch the same bar to **This file** — see [Find in this document](02-navigation.md#find-in-this-document).
-
-The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time when you save the note you are reading, tick a box in it, or the [watcher](#live-updates) sees another file change, and dropped when you move to a different folder or quit. A read still running is stopped at the same moment, so leaving a big folder hands the machine straight back rather than finishing a pass nobody is waiting on, and the vault you switched to starts reading right away. Naming the folder you are already in — **New vault…** on a folder that is already a vault, or **Change folder…** accepting the folder it already shows — is not moving, so that vault keeps what it has read and a read still running carries on. There is no index on disk, so nothing can go stale relative to your files.
-
-That pass starts as you arrive in the vault rather than waiting to be asked, so the field names offered under the search field are ready before you type — and a search made while it is still running is the one that pays for the rest of it. Arriving while another vault is still being read starts it too: only one vault is read at a time, so the arrival waits, and the moment the vault you left gives up its read the one you are in takes it up without being asked again. How long that takes is your disk rather than the matching — a vault read once already answers in milliseconds, and the same vault untouched since the machine started can take a minute. So the first one answers as it reads. Even the folder listing that has to finish before the vault can be read smallest-first no longer holds everything up: the first handful of documents the listing walks past are read straight away, so matches can be on screen before Leaftext has finished finding out what is in the folder. Those early rows are a taste rather than an answer, and one of them can vanish when the settled list arrives. A line above the results carries a turning ring while the vault is still being read, matches appear underneath as batches of documents land, and the count says what it has so far. Rows already on screen keep their place while more arrive, and keep being the same rows: a match that is still a match is left where it is rather than rebuilt, so a press half-way through it lands and the keyboard focus ring stays on the row you put it on instead of falling back out of the list. Only the rows the answer actually changed are redrawn. The list never grows past what a single answer can hold: while the vault is still being read it stops at the first fifty documents, the same ceiling every answer is ranked and cut at, so the count climbs to that ceiling and stays there instead of past it. The ranking is settled once, on the last answer, which is when the ring goes. A search you run while an older query's results are still up is marked the same way, so the results never show an answer to a question you have moved on from. The [map](#graph) still waits for the whole read, because a picture redrawn three times a second is not one anybody can look at.
+[Details →](../09-details/library.md#search)
 
 ## Filtering
 
-See [Tags](#tags) for the tags a note carries and how to rename them.
+Type `tag:`, a field name, or a date such as `due:friday` into the search box to narrow the results.
 
-The search field takes more than words.
-
-| You type | You get |
-| --- | --- |
-| `harvest` | the word, in a name, one of its [other names](#other-names), the folder path or the text |
-| `"the second draft"` | those words in that order |
-| `-draft` | not that. It goes in front of anything, not just a word — `-status:open` works |
-| `#work` | the note carries that tag, or one under it like `#work/reports` |
-| `status:open` | a [frontmatter field](01-rendering.md#frontmatter) with that value |
-| `status:` | the field is set, whatever it says |
-| `due:<friday` | a date field before that day |
-| `rating:>4` | a number field over that. `<`, `>`, `<=` and `>=` all work |
-| `ext:md` | a file of that kind |
-| `in:notes/2026` | inside that folder, or anything under it |
-| `task:open` | the document holds an unfinished `- [ ]`; `task:done` wants every box in it ticked |
-| `a OR b` | either. `OR` and `AND` are the only reserved words, and only in capitals — a note called `or` is still found by typing `or` |
-| `(a OR b) -c` | grouped |
-
-A date can be `today`, `tomorrow`, `yesterday`, a weekday name (`friday` means the next one, and today when today is a Friday), `2026-08-10`, or `last7d` / `next7d` for any number of days. The day it counts from is your machine's, not a server's.
-
-**Nothing you type is an error.** A search box spends most of its life holding half a filter, so every unfinished shape means something: an unclosed quote runs to the end of what you typed, an unclosed bracket groups to the end, a stray `)` is ignored, and a trailing `OR` drops with the side you did type still standing. Inside quotes nothing is special, so `"-draft"` and `"#work"` find those characters.
-
-A colon only starts a field when what is in front of it looks like a field name and what follows does not start with a slash — so `C:\Users\me`, `https://leaftext.com` and `12:30` are all still findable text rather than filters that match nothing.
-
-**It says what it understood.** Type anything past plain words and a line appears under the box reading the filter back — `tagged work, status is open, due before 2026-08-07, not draft` — and naming any field the vault has never set. A filter on a field nobody uses matches nothing, and an empty list that really means "there is no such field" is the one thing a filter must not do quietly.
-
-**It completes as you type.** The field names your vault actually uses, and the values each one holds, are offered under the box. Arrows walk the list, Enter or Tab takes one, Escape closes it — and only then does a second Escape clear the field. The list is what the vault sets now, not what it set when it was opened: add a field to a note and it is offered, and when the last note using a field drops it the name stops being offered.
+[Details →](../09-details/library.md#filtering)
 
 ## Scheduled tasks
 
-A checkbox in a note can carry [a date](01-rendering.md#task-lists). Every one of them that is still open shows up in one box on the home screen, above Recent and Favorites, with the nearest due at the top.
+Notes with dated checkboxes appear on a list of what is due.
 
-With an agent in front, the Scheduled tasks row of [More](02-navigation.md#more) opens the same list over it.
-
-The box is about the vault you are in, the same as Recent and Favorites. Leave the vault and its rows go with it; the new vault's own arrive once its text has been read.
-
-| A row shows | Where it comes from |
-| --- | --- |
-| The words on the checkbox line | The line itself, without its date |
-| The note and the folder holding it | The path |
-| The date | Red once it is past, green on the day itself, amber from tomorrow through the next seven days, gray after that. Today is your machine's |
-
-Overdue work is at the top, because a past date is the nearest one. Two tasks due the same day settle by note and then by the line they sit on, so the order does not shuffle between one look and the next. Pressing a row opens that note and lands on the checkbox.
-
-A ticked box is not in the list, and neither is a checkbox with no date on it — those stay in their notes. With nothing open and dated, the box is not on the screen at all.
+[Details →](../09-details/library.md#scheduled-tasks)
 
 ## Calendar
 
-Inside a vault, the Calendar row of [More](02-navigation.md#more), with a document in front, opens a month of the vault's documents in a sheet from the bottom of the window. Each day wears up to three marks for the documents dated to it, and its full date and count are read out to a screen reader.
+A month view shows which documents belong to each day.
 
-| Control | What it does |
-| --- | --- |
-| Changed, Made, or a field | Which date is counted: when a file was last changed, when it was made, or any date field the vault's notes write in their [frontmatter](#filtering). Written dates are grouped under **Written in your notes**, with how many notes carry each. The calendar starts on Due where the vault writes one and remembers your last choice. A written date and time belongs to the day it names. A field that disappears from every note falls back to Changed for that vault without replacing your choice |
-| Month, Week, Day | How long a stretch is shown. The choice is kept until the app closes |
-| The arrows and Today | Step back or forward by the stretch shown, or jump to today |
-
-Pressing a day rings it and lists that day's documents under the month, up to 50, with the folder each sits in; the month and the list scroll together inside the sheet. Pressing a document opens it and puts the sheet away, and the day stays picked, so the calendar opens on it again. The cross beside the day's name clears the day and leaves the month up. A search from the [find bar](02-navigation.md#find-in-this-document) leaves the day where it is.
-
-The keyboard works the month too: the arrows move a day or a week, Home and End reach the week's edges, Page Up and Page Down turn the month, Enter or Space picks, and Escape closes the sheet.
-
-The calendar reads only the vault's text already held in memory, and it stays current: a file changed, made or re-dated while the sheet is open is counted again. Outside a vault there is no Calendar button.
+[Details →](../09-details/library.md#calendar)
 
 ## Other names
 
-A note can answer to more than the name of its file. Give it an `aliases` field and every name in the list works everywhere the file's own name works:
+Give a note other names in its fields, and `[[links]]` using any of them reach it.
 
-```markdown
----
-aliases:
-  - Mozart
-  - W. A. Mozart
----
-```
-
-Now `[[Mozart]]` reaches `Wolfgang Amadeus Mozart.md` — it draws that edge on the map, finds the note in [search](#search), previews it on hover, and appears in the `[[` popup with the file it opens named beside it. Written `aliases: [Mozart, W. A. Mozart]` on one line, or as a single `aliases: Mozart`, it reads the same. This is the same field [Obsidian](https://obsidian.md/help/properties) uses, so a vault written there opens here with its links intact.
-
-**A name with a comma in it goes in quotes.** On one line, `aliases: ["Smith, John", Jack]` is two names — the quotes run until their pair, so the comma inside belongs to the name and `[[Smith, John]]` finds it. An apostrophe is left alone: `[a, don't, b]` is three names, because a quote only opens a run where a name starts. A list written a line each needs no quotes at all.
-
-A few rules, so a preferred name can never quietly take a real one:
-
-- **A file name always wins.** If one note is called `Mozart.md` and another prefers the name, `[[Mozart]]` opens the file.
-- **Between two notes preferring one name**, the first found wins, and the code view's [broken-link check](07-editing.md#typing-help) says which note the link opens and which others wanted it.
-- **A node on the map keeps its file's name** — a node labeled with a preferred name is one you cannot find by the name on disk. Hover it to see the rest.
-- **Thirty-two per note.** Past that they are ignored, and the check marks the `aliases` line to say how many there were.
-
-It works outside a vault too: for a document in a plain folder, Leaftext reads the top of each file beside it — the field block and no further — for up to 500 files. One folder, never the tree below it.
+[Details →](../09-details/library.md#other-names)
 
 ## Tags
 
 ![Tags in a note's field block and prose, with All files showing the two notes carrying the renamed parent tag; the code span and link words still carry their original hashtag](../../imgs/tags-search-after-rename-2-v2.png)
 
-A [tag](../GLOSSARY.md#tag) such as `#work` or `#work/reports` draws as a small pill in a Markdown note's prose and in its `tags` field. Press it to search the active vault through the [find bar](02-navigation.md#find-in-this-document)'s **All files**. A parent tag finds its children: `#work` finds `#work/reports`, while `#workshop` is a different subject. Matching ignores capitals.
-
-Tags in prose and the field block belong to the same set. A field value may include its leading `#` or leave it out. Tags inside code, link words, addresses, brace syntax and heading-only wiki references stay text. A tag needs a letter: a number on its own, or held together by slashes or dashes as in `#2/` or `#2-`, is not a tag, and a slash at the end of a tag is not part of it. Outside a vault, tags still draw as tags.
-
-![Searching for a parent tag finds both the note with that tag and a note with a nested tag](../../imgs/tags-search-after-rename-v2.png)
-
-In the desktop app, right-click a tag for **Search for this tag** or **Rename everywhere…**. Enter the new name and choose whether to include nested tags. Leaftext counts the files before asking you to confirm. A rename keeps each note's encoding, line endings, quotes and other words. Save or discard unsaved edits in affected notes first. A read-only file or a file changed since confirmation stops the run; a stopped run lists the files changed and the files left unchanged.
+Press a tag to find its notes. Rename it across the whole vault after confirming how many files will change.
 
 ![Confirming a tag rename in two files, including nested tags](../../imgs/tags-rename-confirmation-v2.png)
 
-The browser readers offer tag search where their host has a vault; they cannot rename files on your disk.
+[Details →](../09-details/library.md#tags)
 
 ## Graph
 
 ![The graph view filling the page: dozens of document nodes joined by arrowed lines, the open document highlighted larger in the accent color, names floating in dim gray beneath the nodes](../../imgs/graph-v2.png)
 
-A force-directed relationship map. Each **node** is one of your documents or a [web address](#web-addresses) one of them links to; each **edge** is a link that resolves — a Markdown link, an `<a href>`, a `[[wiki]]` link matched by file name or by one of the note's [other names](#other-names), a TEI `target=`, or a bare URL in the text.
+The graph draws your documents as dots and their links as lines. Click a dot to open that document.
 
-It is a **view of the page**, not a panel — reach it from the [floating toolbar](02-navigation.md#the-floating-toolbar) under a document or web tab, beside reading and the source view. It does **not** need a vault.
+[Details →](../09-details/library.md#graph)
 
 ### What it maps
 
-What it draws over depends on where the open document lives, and you never choose between them:
+Every document in the vault, the links between them, and the web addresses they cite.
 
-- **Inside your active vault** — the map is of the whole vault. Every document in it is a node, so you see what links *to* the document you are on as well as what it links to, and `[[wiki]]` names resolve against the whole collection.
-- **Anywhere else** — the map is of that document: itself, the documents in its folder, and whatever it links to, wherever those live. A link is followed one hop out; nothing below the folder is read.
-- **On leaftext.com and Emptyguru** — the map uses the links published with the site's document list. It draws the open page, other pages in its folder, and pages it links to without fetching those pages when you open the map.
-- **In a live web tab** — the map draws the current page and up to 499 distinct pages it links to. Pages on the same site are filled and named by path; pages on another site are rings named by site. Press a page to visit it in the tab and redraw the map around it.
-
-The second map is **smaller, not wrong**. A document only ever records what it links to — what links *back* is written in somebody else's file — so reading the folder is what recovers incoming links, and it stops there. A link to a *document* outside the set simply draws no line. [Web addresses](#web-addresses) are unaffected — those are nodes in their own right, so a document's outbound links show up either way. Put the folder in a vault and the map widens.
-
-> [!NOTE]
-> Neither map reads anything you did not point at. The vault's map reads the folder you named. A document's map reads that document, one folder listing, and one file per link. Opening the map on a file sitting at `C:\` does not walk your drive.
+[Details →](../09-details/library.md#what-it-maps)
 
 ### Moving around it
 
-- The map **opens framed on everything it drew** — the tightest zoom that still holds the whole layout, centered. Two documents fill the view; two thousand shrink to fit. The first pan, zoom, drag or flight hands the view over to you, and it stops reframing — including across leaving it: go and read a document, come back, and you are looking at the same corner at the same zoom. A framing you never touched is framed afresh, and so is a map of something else.
-- While the layout settles the view **follows only what leaves the frame**, then frames everything once more when it comes to rest. A force layout breathes as it works, and a camera refitting on every frame of that put the pumping on screen. The layout is drawn in the view's own shape and framed clear of the bar and the status line at its foot, and once it has settled every node keeps a slow drift rather than freezing — left out on a map of more than 400 documents and when the system asks for less motion.
-- A map whose drawing could not load is **tried again on its own**, up to three times, before it says `The map could not be drawn.`; pressing **Graph** again tries once more.
-- The document you are reading is highlighted in the accent color and pulled larger.
-- **Names** float in dim gray beneath the nodes. They stay a fixed size as you zoom and are decluttered by fit: where the layout is open every name shows, and where nodes crowd only the ones that clear their neighbors do. The document you are on always keeps its name, and hovering shows the hovered node's name and its neighbors'.
-- **Edges point the way the link was written.** An arrowhead sits where the line meets the document being linked *to*. Two documents that link each other get one line with a head at both ends, not two lines on top of each other. Heads are left off a very dense map, and while you are zoomed far out — at that size they are ink and nothing else.
-- **Click** a node to open that document and **keep the map** — it redraws around what you opened and flies to its node, so you can carry on following links from there. **Hover** to light up a node's direct links and dim the rest.
-- **Drag** a node to reposition it, **drag the background** to pan, **scroll** to zoom.
-- Opening a document from the pane while the map is up **keeps the map up** too, and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.
-- Closing the last tab closes the map with it: the start screen is not one of a document's views.
-- Editing a document the map covers **redraws it in place**: every node keeps its position, your pan and zoom are kept, and the layout eases into what changed rather than laying itself out again. An edit that draws the same map — a word typed into a document that links nowhere new — changes nothing on screen at all.
-- **Coming back to the map shows it at once.** Leaving it for another view keeps the drawing, paused, so switching back is the same picture at the same corner with no wait — a layout that was still settling picks up where it stopped. It is drawn again only when something could have changed it: a different graph size, a document whose map is a different map, a vault switch, or a file behind it being edited, saved or changed on disk.
-- Leaving the map puts the page back where you were reading. Press **Reading** and you are on the paragraph you left; press **Source** and it opens on the lines that were on screen rather than at line 1, and a source view you were already in comes back to the same scroll. That holds whichever view the map was opened from: open it from the source view and **Reading** lands on the paragraph those lines were, rather than at the top of the page.
-- Building the map shows the same waiting page a slow document does — including the redraw after a node click, which builds a new map. Leaving the map shows it too: open a search hit or switch to the [source](07-editing.md#code-view) and the map holds until its replacement is ready rather than dropping to a half-drawn page, with the wait shown on top of it.
+Drag to pan, scroll to zoom, and drag a dot to move it.
+
+[Details →](../09-details/library.md#moving-around-it)
 
 ### How much it draws
 
-How many documents it draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything**. Smaller sizes render faster; larger ones stay responsive by easing the layout and repainting less often as it settles.
+Choose whether the map shows the whole vault or one document's neighbors.
 
-A [vault](#vaults) stops reading at its [limit](#facts), so a very large one can hold a document it never read. That document is mapped from its own links rather than drawn empty, the way it would be outside any vault. Where a **Focus** map inside a vault still comes back with nothing, it says the document is not in that vault's map — not that the document has no links.
+[Details →](../09-details/library.md#how-much-it-draws)
 
 ### Web addresses
 
-A `http`/`https` link is a node too, drawn as a **ring with a dot at its center** rather than a filled disc, and labeled by its domain — `reddit.com`, not the whole URL, which stays in the tooltip. **Clicking one opens your browser and leaves the map exactly as it is** — no redraw, because nothing here replaced the document you are on.
+A web address a note links to appears as a ring, labeled by its site.
 
-They are found wherever the reader can click one: written out as `[text](https://…)`, in `<https://…>` angle brackets, in an `<a href>`, and **bare in the text**, by the same finder that turns bare URLs into links when the document is rendered. So the graph and the page can't disagree about what a link is.
-
-**Two documents citing one page share one node** — the point of drawing them. The scheme and host are matched case-insensitively and a `#fragment` or trailing slash is ignored, so `https://Example.org/a/`, `https://example.org/a` and `https://example.org/a#notes` are one page.
-
-- Email addresses are not nodes. Neither is any other scheme — `mailto:`, `file:`, a custom one.
-- One document contributes at most **25** web addresses. A bibliography is a real document, and without a cap it would bury the notes around it.
+[Details →](../09-details/library.md#web-addresses)
 
 ## GitHub sync
 
 ![A vault's settings panel showing the connected GitHub repository address with Sync, Sync automatically and Change repo under it, and the sync button at the end of the Library row carrying a count of changes waiting to be pushed](../../imgs/github-sync-v2.png)
 
-A vault can be a git repository that pushes to GitHub. Open a vault's settings from the switcher to see where it stands. The panel stays open while you go elsewhere — the row that opens a browser leaves it standing, and switching away and back leaves it there with whatever you had typed in it — so pasting an address you had to fetch is one trip rather than two. The lists it opens over, the vaults and the folders the path swallowed, close with the window the way any menu does.
+Connect a vault to a GitHub repository, and **Sync** sends your changes there and brings others back. It can also sync by itself.
+
+[Details →](../09-details/library.md#github-sync)
 
 ### What it needs
 
-**git is the only requirement.** Leaftext never holds a token: it runs the `git` already on your machine, which already knows who you are and how to sign in.
+The `git` already on your computer, signed in to GitHub.
 
-| What is installed | What the panel offers |
-| --- | --- |
-| git and [`gh`](https://cli.github.com) | **Create a private repo** — one click, made and pushed |
-| git alone | **Create it on GitHub ↗** — opens GitHub with the name filled in; paste the address back and the panel points the vault at it |
-| neither | A link to install git, and nothing else |
-
-On Windows, Git for Windows installs Git Credential Manager and sets it as the default, so the first push opens a browser once and never asks again. On macOS the bundled credential helper cannot sign in to GitHub any more, so `gh` or Git Credential Manager has to be installed; the panel says so rather than letting a push fail.
-
-Leaftext uses the account saved by the repository's configured Git credential helper. Tokens inherited from a program that launched Leaftext do not replace that saved desktop login. If a fetch or push fails after the local commit, the message says the work is saved on this computer and names the step GitHub refused; pressing Sync after fixing the login sends the saved commit without making another one.
-
-The panel also warns before the fact about the two things git needs and often lacks, and each warning carries its own way out rather than stopping at the diagnosis.
-
-**No identity.** Two fields and a **Set who I am** button under the warning. What you type is written to git's settings for the whole machine — the same place the warning is read from, so a press that works is a press that clears it, and somebody with no identity at all sets it once rather than once per vault. An empty field, or one starting with a dash, is refused before git is run.
-
-**No way to sign in.** A sentence naming what fixes it — install [`gh`](https://cli.github.com) and run `gh auth login`, or a credential manager — and **How to sign in ↗**, which opens GitHub's own page on it. It is a link and never a button: Leaftext's own git requests have their prompts shut off, so signing in is something you do in a console, never something the app's sync request does for you.
-
-**And a failed sync says which of them to press.** Where git's own words name the cause — nothing signed in, or nobody to commit as — the panel says so and points at the fix above it, instead of handing over git's first printed line untranslated. Where they name neither, git's line stands as it is: a network that is down has no button here, and pointing at one would send you to press the wrong thing. Where git printed nothing at all, the line names the step and how it ended — `git add stopped without saying why (exit 128)` — rather than the step alone.
+[Details →](../09-details/library.md#what-it-needs)
 
 ### Clone a repository
 
-**Clone a repository…** under **New vault…** in the switcher takes a git address, asks where it should go, and makes the clone a vault. Paste `https://github.com/owner/repo.git` or the `git@` form; the folder you pick is the *parent*, and the repository gets its own folder inside it named after itself.
+Make a vault from a GitHub repository by its address.
 
-Nothing of yours is at risk if it goes wrong: git makes that folder and removes it again if the clone fails, so a broken clone leaves nothing behind and no vault is registered. A name already taken in the folder you picked is refused rather than cloned into.
-
-Again there is no sign-in of Leaftext's own. A public repository just works; a private one works when your own git can already reach it, and says what is missing when it cannot — Leaftext never puts up a password box, because a prompt behind a window it cannot show is the one thing worse than a clear refusal.
+[Details →](../09-details/library.md#clone-a-repository)
 
 ### Changing the repository
 
-The settings panel names the address the vault points at now. **Change repo…** opens a field for a new one, with **Save** and **Cancel**: nothing changes until you press Save, and the address it replaces is offered back with one press in case the change was a mistake.
+**Change repo…** points a vault at another repository.
 
-Setting or changing the address only points the vault — it never pushes on its own. Sending your files starts with a separate, deliberate [Sync](#syncing), so naming a repository can never overwrite what is already in it. Leaftext also refuses to act on a repository the vault folder merely sits *inside*; it works only on a repository the folder is the root of.
+[Details →](../09-details/library.md#changing-the-repository)
 
 ### Syncing
 
-**Sync** commits everything changed, asks GitHub whether it holds anything the vault lacks, and pushes. Only when it does is the vault rebased onto it, after committing anything written since the first commit — so a file another program or a second window writes while a sync runs never stops the push. Commit messages describe the change — `Update README.md`, or `Update 4 files` — and carry no mention of the app.
+The sync button shows how many changes are waiting. A failed sync says why.
 
-GitHub sync starts manually unless this vault's settings has **Sync automatically** turned on. The switch belongs to one vault and starts off, so private notes can wait for a press while another vault sends itself. An automatic sync waits for the vault to stop changing: it starts ten seconds after the last change, so a run of saves — yours, or an agent's, or another program's — goes to GitHub as one sync rather than one per file. A vault that never goes quiet is sent anyway after two minutes. Once a sync finishes, whether it started itself or you pressed Sync, the next automatic sync of that vault waits until a minute has passed since it finished, so saves spread over a few minutes go out as a few pushes rather than one every ten seconds; saves during that minute do not push its end back. The minute is counted only while the app is open, so a fresh launch waits the usual ten seconds. Pressing Sync during any of these waits starts at once. Automatic sync uses the same Sync turn, count and result growl as the button. After a failure, later saves leave the header's Sync button waiting instead of trying again, the switch stays on, and the panel says **Automatic sync stopped. Press Sync to start it again.** The button says so too, for as long as it lasts: it turns red and reads **Stopped** before its count, its tooltip carries what went wrong, and the failure's growl adds that automatic sync is off until a sync works. Pressing Sync or completing another GitHub action allows automatic sync to start again. **A sync is never given up on for taking too long.** Sending a large vault the first time can run for as long as the connection needs; what stops a transfer is going quiet, and it is stopped only after two minutes with nothing arriving, which the panel and the growl say in those words rather than blaming the network. Every failed sync also writes one line into the [journal](05-settings.md#journal) naming the vault, the step, how git ended and everything git said, so a sync that stopped while you were away leaves something to read; a sync that worked writes nothing.
-
-A **sync button appears at the end of the Library row** whenever there is work that has not reached GitHub, carrying the count. It spins for as long as the sync is really running — opening the vault's settings mid-sync leaves it spinning and the panel's rows dimmed, so a second sync cannot start over the first — and a vault too large to stage quickly is never cut off part way, since stopping git there would leave the repository locked against every later sync. **Resting on it while it spins shows how far along the upload is**, in a bar under the Library row reading the count and the percentage git itself is reporting — `283 of 827 · 34%`; a keyboard focus opens the same bar, a press on the spinning button still does nothing, and a step with nothing to count draws no bar. It fades out still spinning — more slowly under [Reduce Motion](05-settings.md#reduce-motion), which slows every spinner rather than stopping it — and a growl in the corner says where the push landed. Where GitHub held commits the vault lacked, that growl and the panel's note count them at the end of the same sentence — **Synced to the repository; 3 came down.** — which is the only record you get that the vault changed under you, since the panel's standing above it reads as up to date by then.
-
-The button counts changed files, including individual files in new folders. If no file has changed, it counts saved commits still waiting to send. Its title names changed files and waiting commits separately. Whether the *remote* has moved needs a fetch, so it is not checked in the background; behind-counts appear in the vault's settings panel and after a sync, where you have asked for them.
-
-A tracked repository inside the vault is left to itself: work still uncommitted inside it is not counted as waiting and is never committed from the outer vault. When that inner repository moves to a new commit, the changed recorded commit belongs to the outer vault and is counted and synced.
-
-> [!IMPORTANT]
-> A conflict that is only a note rewrapped or re-spelled on one machine and edited on the other is settled by what each paragraph says: the note keeps the edit, laid out on the rewrapped lines, and the sync's growl ends **merged 1 note**, because the note changed under you. Any other conflict — a paragraph both machines edited, or a file that is not Markdown — undoes the sync before it returns. There is no merge view in a reader, so the panel says what happened and leaves the folder as it found it, for you to resolve in git.
+[Details →](../09-details/library.md#syncing)
 
 ### Repositories inside repositories
 
-A vault whose folder already holds a repository somewhere below it — a project vault with the code in `app/` — has that named in the panel, whether or not the vault is a repository itself. Creating a repository at the vault root adds those nested ones to a new `.gitignore`, with the reason written beside them: each has its own remote, and tracking one from outside records a pointer nobody else can resolve.
+A project folder holding other repositories is warned about, so a sync does not swallow them.
 
-A vault that already **is** a repository gets the same warning and one press to act on it. Where one of the repositories inside it is neither tracked by the vault nor already named in the vault's own `.gitignore` — a project you cloned in yesterday — the panel says the next sync would swallow it as a pointer nobody else can resolve, and **Ignore them** writes those folders into the `.gitignore` with the same reason beside them. Pressing it a second time adds nothing, because a path the file already names is skipped.
-
-The offer names only the ones nothing is holding back. A repository the vault already tracks is left exactly as it is: it is named in the panel, kept out of the offer — an ignore line for a tracked path does nothing — and its moved commit is still committed and pushed the way [syncing](#syncing) describes.
-
-A vault sitting *inside* someone else's repository is told so too. Creating a repository there is legal and common, but it should not be a surprise afterwards.
+[Details →](../09-details/library.md#repositories-inside-repositories)
 
 ## Live updates
 
-While [another app is in front](02-navigation.md#when-another-app-is-in-front), the documents on screen and the folder list keep updating. The vault's changed-file count, search index and map catch up once when you return; any unsaved edits stay in place.
+When a file changes on disk, the pane and search update by themselves.
 
-The pane keeps up with changes on disk, so a file you just created shows up without a refresh.
-
-- The same file watcher that drives live reload watches the active vault **recursively**, plus the open document's folder when it sits outside the vault. With no vault, only the folder you are browsing is watched, and not recursively — browsing a drive root should not subscribe to the whole drive.
-- A file added, renamed or removed in the folder you are looking at refreshes the list. A read that describes exactly what is already on screen leaves the rows where they are, so a row can never be replaced under your finger mid-click.
-- A change inside a `.git` folder is ignored outright. Nothing in there is a document to open or a row to draw, and reading a repository's state runs `git`, which writes there — so treating those writes as news is the app answering itself for ever.
-- A change inside a folder that holds generated files is ignored the same way, for the same reason: it is not a document and not a row, and a build rewriting tens of thousands of files at once is the one thing measured taking a third of a computer while nobody was touching the window. See [Skipped folders](#skipped-folders) for which folders those are. The exception is the folder the open document sits in, so a file you are actually reading out of one still reloads when it changes.
-- Something *you* did — a [paste, rename or delete](#file-actions) — refreshes the list the moment it lands, rather than waiting on the watcher to notice.
-- The vault's in-memory text is patched for the one file that changed, so [search](#search), the [graph](#graph) and the completion menu under the [filter box](#filtering) stay current without re-reading the vault. Saving the note you are reading takes the same path, so the words you just wrote are findable at once rather than after the vault has been read again. So does a checkbox you tick in the page, in a list or inside a table, which writes the file straight away and with no press of Save behind it. Only a document whose text actually moved counts: a vault is a folder you work in, and git writing to itself, a saved image or an editor's temp file are not changes to your documents.
-- A folder rewritten wholesale under the window — a branch switch, a folder sync, a pull — arrives as one debounced batch, and the pane is re-read once for the batch rather than once per file. Only one read of the pane runs at a time: a change that lands while one is under way earns exactly one more after it, which waits as long as the last read took, so a document opened out of a folder of many thousands of files, such as a temporary folder or a crowded Downloads, never leaves the window waiting on its listing. Each changed file's text is still patched into the vault, and the [graph](#graph) is redrawn at most once for the whole batch.
-- A change that lands while the vault is still being read is held until that read finishes, then applied once. The pass under way is reading every file as it was when it started, so a change folded into it would either be thrown away by the batch that replaces the first rows or carried back stale by a later one. Search can answer with the old words for the rest of that read; the answer it settles on when the ring goes has the change in it.
-- A [graph of one document](#graph) rather than a vault holds nothing in memory to patch, so it is simply read again — a folder listing and a file per link, which is cheap enough not to cache. It cannot go stale, and a redraw that produces the same picture never reaches the screen.
-- The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault — and again whenever the window is focused, which is what catches a commit you made in a terminal: that writes nothing but the repository's own bookkeeping, which the watcher ignores.
+[Details →](../09-details/library.md#live-updates)
 
 ## Where the launchers went
 
-Themes, Scheduled tasks, the Calendar and the Grove are rows of [More](02-navigation.md#more), at the right end of the floating bar, sorted by what is in front: the Calendar beside a document inside a vault, Scheduled tasks beside an agent while a dated checkbox is still open, and Themes and the Grove everywhere. Favorites and Recent are the side pane's **Pinned** and **Recent**, behind the Outline's Back. Opening any of them never leaves the document: close it and you are where you were.
+Themes, the Calendar, Scheduled tasks and the Grove now live in **More** on the floating bar.
+
+[Details →](../09-details/library.md#where-the-launchers-went)
 
 ### On a published site
 
-A site made with [Export as site](#folders-and-the-space-around-them) has no rows. Its pane keeps the folder trail at the top and a small page at the bottom holding Themes and **Search**, which opens the [find bar](02-navigation.md#find-in-this-document). Drag that pane narrower and whatever no longer fits folds under a chevron, the same one the app bar folds into, and opens upward as a menu.
+A site made with Export as site keeps the folder trail at the top of its pane, with Themes and Search at the foot.
+
+[Details →](../09-details/library.md#on-a-published-site)
 
 ## Console
 
-**New**, the first row of the pane, opens a menu: **New page**, **Console**, and the agents **Claude**, **Codex** and **Antigravity**, which [start straight onto a console](10-agents.md#run-the-agent-in-a-console). **Console** opens a console in the folder shown by the library. On a Mac it starts your account's shell as a login shell, the way Terminal does, and tells it what kind of terminal it is in, so your own path, prompt and colors are there and programs installed through Homebrew are found. Its tooltip names that folder, even when the library pane is closed. Opening an untitled document leaves that folder in place. With no folder chosen, including at the drive list, it starts in your home folder. If that folder is unavailable, it uses the system drive root on Windows or / on a Mac. Each press opens another console; with a page in front it stands in the [chat column](02-navigation.md#the-chat-column) beside the page, and otherwise it takes the window. With the [Leaftext plugin](10-agents.md#install-the-plugin), a Codex or Claude console uses the topic the agent saved for its conversation, even when its own terminal titles are off. Until a topic arrives, the tab reads a few words from the first prompt. Answering one of the agent's own questions — trusting the folder, reviewing its hooks, approving a command — never names it, and a console still titled with the command that started the agent takes its name from that first prompt too. Ask the agent to name its console to replace the automatic topic. Hover the tab or its Agents row to read the prompt as sent. Starting over clears the old name. A plain shell keeps the name its program supplies; where it supplies none, the tab reads the folder name, numbered when several consoles share that folder, and hovering shows its full path. Its [map rail](04-minimap.md) shows the console's scrollback, and closing the tab stops that console. An open console follows the app's light and dark themes without losing its output. Drag a console tab off the window and it stands in a [window of its own](02-navigation.md#tabs), or let go over another Leaftext window and it joins that one; either way its command keeps running and the last megabyte of what it printed is on screen there. A program drawing over the whole console, such as Claude Code or an editor, arrives in that same full-screen mode, so its screens are not piled up above it. Console tabs are not restored when Leaftext opens again.
+A console is a terminal inside Leaftext, in the library's folder. Run any command there, or start an agent.
 
-With the plugin installed, [the agent's status row](10-agents.md#the-agents-status-under-its-console) shows the model, context and limits its own session reports.
-
-Type an installed agent's command into the console and it keeps its own settings: its model and gateway, and the project rules, skills, hooks and plugins it loads in any other terminal. [Connect the agent to Leaftext](10-agents.md) in the agent's settings if you want it to work with the open document.
-
-The console draws with Ghostty's terminal core, the same code the Ghostty terminal runs, built for the page on Windows and the Mac alike. Scrolled back through a console's output, you keep your place while the program goes on printing. A console behind another tab keeps everything it prints but draws none of it until you come back to it, so a long build printing away costs the document you are reading nothing. While a console is working, its tab icon pulses gray; when it finishes, the icon turns the theme's main color and holds still. The mark stays visible while you read another tab or bring the finished console forward.
-
-The console sizes each letter and row from the font's full line and keeps every cell on whole screen pixels as the window scale changes. Braille dots, blocks and box borders are drawn inside those cells, so their edges meet across columns and rows while ordinary text keeps even spacing.
-
-Alt chords reach the program the way a terminal sends them: on Windows, `Alt+B`, `Alt+F` and every other Alt letter arrive as an escape followed by the letter, so a shell or editor that moves by word with them does; on a Mac, Option types the character it composes, as it does in Terminal. A console also tells the programs it starts that the terminal is Leaftext, the way a terminal names itself, so an agent run there knows where it is.
-
-A program that asks for the mouse — Claude Code, Codex, an editor, a pager — gets your clicks: press in its prompt box and the cursor lands where you pressed, and a drag or a wheel reaches it as it would in Windows Terminal or Terminal. Hold `Shift` to select text instead, and the right button still opens the console's own menu.
-
-On Windows, highlight text in a console and `Ctrl+C` copies it, the way it does in Windows Terminal; with nothing highlighted, `Ctrl+C` goes to the program and interrupts it as usual. On a Mac, `Cmd+C` copies and `Ctrl+C` always interrupts.
-
-A screenshot on the clipboard pastes into a console as a picture file: `Ctrl+V` or `Alt+V` on Windows, and `Cmd+V`, `Ctrl+V` or `Option+V` on a Mac, write it to a PNG in the system's temporary folder and paste that file's path, which Claude Code and Codex attach to the message you are writing. Text on the clipboard pastes as text. The folder keeps only the twenty newest pictures.
-
-A web or mail address a console prints — `https://`, `http://` or `mailto:` — opens in your own browser or mail program when you `Ctrl`-click it on Windows or `Cmd`-click it on a Mac, whether the address is written out or sits behind words the program printed as a link. An address of any other kind opens nothing, so a program cannot get the app to open a file or start another program by printing a link to it.
+[Details →](../09-details/library.md#console)
 
 ### A finished console says so
 
-While a plain console is working, its tab's mark is gray and a soft glow pulses behind it; when it finishes, the icon turns the theme's main color and holds still, and a plain shell at rest stays gray. A console holding an agent has no tab, so its mark is on its row in All chats: while the agent works the mark is the theme's main color with the glow pulsing behind it, and the moment it finishes, rests or asks for you the mark is the same color as the chat's name and holds still, so with several agents running the busy ones are the only colored marks in the list. A saved chat's mark is the color of its name too, and a pinned chat whose agent is working pulses like its running row. Claude Code says it is working and when it has finished in its title, and Leaftext reads that; Codex and Antigravity report their state from their own screens. A plain shell counts as finished once it has printed for a while and then gone quiet for five seconds, or rings the terminal bell. Typing into a finished plain shell takes the color off; looking at the tab alone does not. Typing to Claude Code, Codex or Antigravity while its row in All chats says **Working** leaves the tab glowing — in the terminal or by sending a message from the chat box — until the agent reports another state. Under [Reduce Motion](05-settings.md#reduce-motion) the glow holds still.
+A console's mark glows while it works and changes color when it finishes.
+
+[Details →](../09-details/library.md#a-finished-console-says-so)
 
 ### Every agent in one list
 
-While Claude Code, Codex or Antigravity runs in any console in this window, its chat stays one row in **All chats**, in its own place among the past chats — another Leaftext window lists its own — with what it is doing where a past chat shows its age: **Needs you** while it is asking a question or waiting for permission, then **Done**, **Working** and **At rest**. An agent asking for you moves to the top in the theme's main color, and so does a new chat until its agent has saved it; the row of the chat you are on — the console in front, or the one standing in the chat column beside the page — is lit the way its tab is. Press a row and that console comes to the front, in the [chat column](02-navigation.md#the-chat-column) beside the page when a page is in front; the list holds still while the pointer is over it, and a chat that starts meanwhile still arrives at the top. A console holding an agent has no tab of its own, so its row is where it is picked: its three dots and a right-click open **Open beside**, **Move to a new window**, **Stop** and, for Claude Code and Codex, the folder move. **Stop** ends the agent and leaves the chat's row where it is. A plain console keeps its tab until an agent starts in it. A pinned chat its agent is running stays in its pinned place and reads that agent's state there. An agent started from **New** leaves the top of the list the moment it ends, and its tab goes back to the console's own mark. Leaftext recognizes Claude Code by the title it gives itself or its complete folder trust question, including before its title names Claude on a Mac, and Codex by its command title, the live prompt or its welcome and sign-in screen on its full-screen console, then reads whether either is asking off the last lines of its screen. Codex waiting for sign-in or asking whether to update reads **Needs you**, and so does Claude Code asking for its first-run text style or how to sign in, showing its security notes, or warning before it runs with bypass permissions. A Claude Code just started reads **At rest** until it is given something to do. A Codex self-update reads **Working** until installation ends, including while the installer is quiet; restart Codex after the update to return to **At rest** on its ready prompt. Codex reads **Working** while its answer streams, and **Done** once it draws its `Worked for` line, stops on its interrupted mark, or has been quiet for five seconds. A Codex that starts a fresh chat with `/clear` or `/new` goes back to **At rest**.
+**All chats** lists every running agent with what it is doing, such as Working or Needs you.
+
+[Details →](../09-details/library.md#every-agent-in-one-list)
 
 ### Past conversations in the sidebar
 
-Under the pane's rows, **All chats** holds the running agents and then every past Claude Code, Codex and Antigravity conversation, newest first, each with its agent's mark, its title and how long ago it was, whether a console or a document is in front. Press one and its whole conversation shows at once, read from the agent's own record, with nothing started; type in its box and the agent starts behind it in the folder it ran in, carrying on where it left off, and a message sent before it is ready waits under the conversation and goes in once it is. A chat whose agent is still running brings that console forward instead. Nothing has to be closed: a chat left at rest and out of sight for ten minutes, with its answer seen, is stopped for you, unless another agent is still waiting on it, and its row stays where it was. Press **Library** for the files, and again for the chats; the files come back just where you left them. An agent whose saved list cannot be read says so in a line of its own rather than leaving its conversations out without a word.
+Your past agent conversations are listed newest first. Press one to read it, or type to carry on.
 
-Each row has a three-dot button that shows when the pointer is over it, and the same menu opens on a right-click. Every entry carries its letter at the right, and pressing that letter while the menu is open picks it:
-
-| Entry | What it does |
-| --- | --- |
-| **Mark as unread**, U | The row reads bold until you open the chat again; **Mark as read** takes it off |
-| **Pin**, P | Puts the chat in the first section over All chats, making a **Pinned** section where none stands; **Unpin** sends it back |
-| **Rename**, R | Changes the chat's name in All chats. For Claude Code and Codex the new name is written where the agent keeps its own, so the agent's own resume list shows it too |
-| **Archive**, A | Takes the chat out of the list. The **Filter** button on the All chats heading picks **Active**, **Archived** or **All** under **Status**; under Archived, **Unarchive** brings one back |
-| **Delete**, D | Asks first, naming the chat, then moves every file the agent keeps for that conversation to the Recycle Bin or the Trash, so it can be brought back from there |
-
-**Filter** narrows and orders the list with five rows, each naming what it holds: **Type** (all, chats or tasks), **Status** (active, archived or all), **Last activity** (all, or the last 1, 3, 7 or 30 days), then **Group by** (date, type, unread, your own sections, agent, or none) and **Sort by** (last activity, date created or name). The button stands pressed while any of them differs from all, active, all, none and last activity. Press the **All chats** heading to fold the list to its heading and again to open it; the pinned sections above it stay.
-
-Unread, archived and pinned are Leaftext's own marks, kept in its settings, since no agent has them. Carry a chat out of All chats and a Pinned section appears to take it, with **New section** under the last one while the chat is carried; a section heading's own menu has **Rename section** and **Remove section**, which sends its chats back to All chats, and a section goes away with its last chat. A chat whose agent is working is carried the same way and stands in Pinned with its state, its console coming forward when a press is let go rather than when it goes down; a console whose agent has not yet started a conversation has nothing to pin, and its row only brings it forward. Carry a chat past the edge of the window instead and it stands in a Leaftext window of its own, or beside the page in the Leaftext window you let it go over, the way a page tab does: a running agent goes on running there, still signed in, with the conversation it had on screen and everything it was told, and a past chat opens there from its own record. A pinned chat whose agent has since deleted it stays in its section, its title gray and its age reading *gone*, rather than vanishing.
-
-Unlike a document, a console shows no soft fade at its top or bottom edge, so whatever a program puts there — the banner Claude Code prints as it starts, the prompt it holds at the top, the line you are typing at the bottom — reads at full strength.
+[Details →](../09-details/library.md#past-conversations-in-the-sidebar)
 
 ### The command you ran stays at the top
 
-Run something long at a console's shell prompt and, once the line you typed has scrolled off the top, that line stays held at the console's top edge while the output scrolls under it, so a long build or test run still says what it is. It is one row, in the console's own colors, with the output scrolling beneath it; a command too long for one row shows its first row and an ellipsis. Press the row and the console scrolls back to the command. The row goes away once the command is back on screen, once the next prompt comes into view, and while a full-screen program such as an editor fills the console. The console asks the shell where each command starts — Windows' own command prompt keeps whatever prompt you set and gains two invisible marks around it, and zsh on a Mac reads all of your own startup files first and then adds them — and in a shell that says nothing, such as one started from inside the console, the line you pressed Enter on is held instead.
+A long-running command stays pinned at the top of the console while its output scrolls.
+
+[Details →](../09-details/library.md#the-command-you-ran-stays-at-the-top)
 
 ### The prompt you sent an agent stays at the top
 
-Send Claude Code, Codex or another chat that fills the console a prompt, and once its work has pushed your prompt off the top, the prompt is held in that same row at the console's top edge, so you can read the work against what you asked. A prompt longer than the row ends in an ellipsis. Where the chat holds your prompt on its own first row while its answer scrolls under it, as Codex does, Leaftext's row stands over that one, so every chat shows its prompt the same way. The prompt counts only once the chat writes it into its conversation, so answering one of its menus leaves the last prompt in place, and the row goes away while the prompt is on screen and when the chat closes. Once you have sent more than one prompt, **Previous prompt** and **Next prompt** arrows stand at the row's ends with where you are between them, such as **2 of 3**: each press puts that prompt in the row and turns the agent's own screen back to it. A prompt sent from the chat's message box is held the same way as one typed at the agent's own line. An editor or any other full-screen program you have sent no prompt to gets no row.
+The prompt you sent stays pinned at the top while the agent works on it.
+
+[Details →](../09-details/library.md#the-prompt-you-sent-an-agent-stays-at-the-top)
 
 ## Layout
 
-| Behavior | Rule |
-| --- | --- |
-| Toggle | The panel button in the app bar, left of Back, opens and closes the pane. It never folds into the app bar's overflow menu, so it is reachable at every window size. Opening or closing it keeps what you were reading at the top of the page, and inside a long table that is the row you were reading, even though the page's new width wraps every row to a new height |
-| Long tables | Tables beyond the view take their new width one at a time after the pane lands. If you scroll while they settle, they wait until the scroll stops, then the nearest table settles first. |
-| Motion | Opening springs slightly past its width and settles; closing slams to the page's padding, bounces off it once and seats there, the pane's contents fading with the travel. The pane, the tabs above it, the page header under them and the page edge move as one, dragging the divider tracks the pointer exactly, and under [Reduce Motion](05-settings.md#reduce-motion) both land instantly |
-| Opening width | 240 px, or the width of the buttons at the left end of the app bar where those come to more — the leaf, the panel button and the history arrows, and on macOS the window's own three dots beside them. That group is sized to the pane so the tab strip begins at the pane's edge, and a pane opening inside it would leave the first tab over the page. A width you dragged to is restored exactly as you left it, at any size |
-| Snap shut | Drag narrower than 40 px to close the pane; press just left of the page and drag right to open it again |
-| Reader minimum | Reader stays at least 360 px wide |
-| Small window | At 720 pixels wide and under the pane stops taking room — see [Narrow windows](#narrow-windows) |
+The pane sits beside the icon rail, and you can widen it or close it.
 
-Saved library state includes:
-
-- `library_closed`
-- `library_width`
-- `graph_scope`
-- `calendar_field`
-- `library_project_path`
-
-The active vault is saved in `manifest.db` beside the vault list, not in [settings](05-settings.md).
+[Details →](../09-details/library.md#layout)
 
 ### Narrow windows
 
 ![A Leaftext window 700 pixels wide: the app bar with the picker naming the folder alone, the icon rail down the left edge, and the document beside it with the pane closed](../../imgs/library-narrow-v6.png)
 
-At 720 pixels wide and under — the same edge where the [minimap](04-minimap.md) gives way to scrollbars — the side pane closes to the icon rail, and the picker names the folder alone, its whole place in its tooltip. A press in the rail or on the pane button opens the pane over the page, and the next press anywhere else puts it away; picking a document dismisses it too, since the page you just opened is behind it. It slides in, or arrives in place under [Reduce Motion](05-settings.md#reduce-motion). The app bar stays above it, so the button that opened it also closes it.
+In a narrow window, the pane closes to the icon rail and opens over the page when you need it.
 
-The sheet is not saved. It describes the current view rather than a preference, so widening the window puts the pane back beside the page and there is no sheet to restore.
+[Details →](../09-details/library.md#narrow-windows)
 
 ## Facts
 
-| Item | Value |
-| --- | --- |
-| Vault registry | `manifest.db` — the vaults you have named, and which one is active |
-| Vault text | Held in memory for the active vault only; dropped when the folder you are in changes, and on quit |
-| Documents read | Up to 25,000 per vault, or 32 MB of text — whichever comes first, notes before data files and smallest first within each. A file past either is still [found by its name and its words](#search), up to 100,000 files listed, a folder level at a time so a cache deep in one corner cannot use them up before your own folders are reached |
-| Folders not read | A folder that declares itself a cache, and eleven names a build tool picks. See [Skipped folders](#skipped-folders) |
-| Repositories inside a vault | Found up to three folders deep, stopping at the first one on each branch. See [Repositories inside repositories](#repositories-inside-repositories) |
-| Scheduled tasks | The active vault's open dated checkboxes, nearest due first. See [Scheduled tasks](#scheduled-tasks) |
-| Search results | Top 50 |
-| A calendar day's documents | Top 50 |
-| Folder listing | One directory per click |
-| First-launch bubbles | One per launch at most, with a quiet launch between; each one shows until you point at what it points at, then never again. A [sheet](#the-bubble-on-your-first-launch) takes it down, unmet, until the last one closes |
-| The pane's vault introduction | Shown once, to a reader with no vault outside their cloud folders; retired by picking a folder or opening the vault list |
+Search returns the top 50 matches, and a vault reads up to 25,000 documents. A file past that is still found by its name.
 
-> [!NOTE]
-> `manifest.db` keeps its name from when it held a file index. It no longer does — anything that reads a document reads the disk. What it holds now is the list of folders you called vaults, which is why losing it loses that list.
+[Every fact →](../09-details/library.md#facts)
 
 ## Next
 
+- [Navigation](02-navigation.md)
+- [Editing](07-editing.md)
 - [Settings](05-settings.md)
-- [Navigation](02-navigation.md#the-floating-toolbar)

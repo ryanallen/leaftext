@@ -27,5 +27,15 @@ https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.m
 https://leaftext.com/docs/06-comparison-chart/10-coming.md
 https://leaftext.com/docs/07-privacy.md
 https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.md
+https://leaftext.com/docs/09-details/agents.md
+https://leaftext.com/docs/09-details/editing.md
+https://leaftext.com/docs/09-details/library.md
+https://leaftext.com/docs/09-details/minimap.md
+https://leaftext.com/docs/09-details/navigation.md
+https://leaftext.com/docs/09-details/progress.md
+https://leaftext.com/docs/09-details/relational-tables.md
+https://leaftext.com/docs/09-details/rendering.md
+https://leaftext.com/docs/09-details/settings.md
+https://leaftext.com/docs/09-details/themes.md
 https://leaftext.com/docs/GLOSSARY.md
 https://leaftext.com/docs/README.md

@@ -2,71 +2,71 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://leaftext.com/</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/01-rendering.html</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/02-navigation.html</loc>
-    <lastmod>2026-11-16</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/03-library.html</loc>
-    <lastmod>2026-11-17</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/04-minimap.html</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/05-settings.html</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/06-themes.html</loc>
-    <lastmod>2026-11-06</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/07-editing.html</loc>
-    <lastmod>2026-11-12</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/08-relational-tables.html</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/09-progress.html</loc>
-    <lastmod>2026-11-15</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/10-agents.html</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-introduction.html</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/02-installation.html</loc>
-    <lastmod>2026-11-06</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/03-quickstart.html</loc>
-    <lastmod>2026-11-06</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/04-help.html</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/05-compare.html</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/00-agents-and-the-harness.html</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-19</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.html</loc>
@@ -82,7 +82,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.html</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-19</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.html</loc>
@@ -110,11 +110,51 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/07-privacy.html</loc>
-    <lastmod>2026-10-12</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.html</loc>
     <lastmod>2026-09-30</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/09-details/agents.html</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/09-details/editing.html</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/09-details/library.html</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/09-details/minimap.html</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/09-details/navigation.html</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/09-details/progress.html</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/09-details/relational-tables.html</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/09-details/rendering.html</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/09-details/settings.html</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/09-details/themes.html</loc>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/GLOSSARY.html</loc>
@@ -122,10 +162,10 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/README.html</loc>
-    <lastmod>2026-10-19</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/gallery.html</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-19</lastmod>
   </url>
 </urlset>

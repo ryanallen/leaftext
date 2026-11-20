@@ -10,77 +10,77 @@
 ## Rendering
 - Page: https://leaftext.com/docs/01-features/01-rendering.html
 - Markdown: https://leaftext.com/docs/01-features/01-rendering.md
-- Summary: Leaftext picks a pipeline from the file extension, and from the file's own first words where its name carries no extension at all — .gitignore, LICENSE, Procfile and the rest. A nameless file that ...
+- Summary: Open a file and Leaftext draws it as a clean page in your theme. Markdown reads the way GitHub draws it, and data files, email, Office documents and books get pages of their own.
 
 ## Navigation
 - Page: https://leaftext.com/docs/01-features/02-navigation.html
 - Markdown: https://leaftext.com/docs/01-features/02-navigation.md
-- Summary: The navigation model is simple from the outside and fairly careful under the hood. Each tab keeps its own file history and its own in-document scroll history.
+- Summary: Keep many documents open, move back and forth between them, and find your way around a long one. Leaftext remembers where you were in every tab.
 
 ## Library
 - Page: https://leaftext.com/docs/01-features/03-library.html
 - Markdown: https://leaftext.com/docs/01-features/03-library.md
-- Summary: The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in the one vault picker at the top of the window and in the side pane beside th...
+- Summary: Point Leaftext at a folder, and it becomes a vault: a file tree to browse, text to search, and a map of how its documents link. Opening a vault adds no files to your folder.
 
 ## Minimap
 - Page: https://leaftext.com/docs/01-features/04-minimap.html
 - Markdown: https://leaftext.com/docs/01-features/04-minimap.md
-- Summary: A web tab keeps the same rail beside its live page. The rail draws a picture of the whole page after it paints and replaces the picture when the page changes height. Its position box follows scroll...
+- Summary: A tiny copy of your document runs down the right edge, real text rather than bars, with a box showing what is on screen. Click to jump, drag the box to scroll, or turn the wheel over it.
 
 ## Settings
 - Page: https://leaftext.com/docs/01-features/05-settings.html
 - Markdown: https://leaftext.com/docs/01-features/05-settings.md
-- Summary: Settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView.
+- Summary: There is no settings panel. Each control stands where it applies, and every choice is kept in a plain file on your computer that you can read.
 
 ## Themes
 - Page: https://leaftext.com/docs/01-features/06-themes.html
 - Markdown: https://leaftext.com/docs/01-features/06-themes.md
-- Summary: From the user side, themes are simple: open the theme picker, tap a family, pick an appearance, and the app updates immediately. Under the hood every family covers the full --lt- token set, names t...
+- Summary: Every theme changes the whole window: the page, the controls, code, diagrams and the minimap. Each family carries its own fonts, so it reads as a different book, not just a different color.
 
 ## Editing
 - Page: https://leaftext.com/docs/01-features/07-editing.html
 - Markdown: https://leaftext.com/docs/01-features/07-editing.md
-- Summary: Leaftext is reading-first, but it is also editable. You can edit in the reading view itself — click into a sentence and type, toggle a checkbox — and the change is written back into the source at e...
+- Summary: Click into a sentence and type, and your change is written back into the file at that exact spot. When you would rather see the raw text, the code view shows the file's source. Both write to the sa...
 
 ## Relational tables
 - Page: https://leaftext.com/docs/01-features/08-relational-tables.html
 - Markdown: https://leaftext.com/docs/01-features/08-relational-tables.md
-- Summary: Put each row's key in the first column and write a relation as a link to the row with that key in another note, and Leaftext reads the table as linked records.
+- Summary: Put each row's name in the first column, and Leaftext can show the table as records. Lay it out as cards, sort and filter it, and link rows across notes. The table stays plain Markdown, so it opens...
 
 ## Your Grove
 - Page: https://leaftext.com/docs/01-features/09-progress.html
 - Markdown: https://leaftext.com/docs/01-features/09-progress.md
-- Summary: Leaftext keeps a quiet record of what you do in it and shows it as your Grove: thirteen Growth areas, each leveled by its own kind of use, and one Grove level that everything you do fills. XP is ea...
+- Summary: Leaftext keeps a quiet record of what you do and shows it as your Grove. Reading, writing, searching and the rest each grow their own area, and everything fills one Grove level. Each level brings s...
 
 ## Your own AI agent in Leaftext
 - Page: https://leaftext.com/docs/01-features/10-agents.html
 - Markdown: https://leaftext.com/docs/01-features/10-agents.md
-- Summary: Leaftext's installed app can answer an agent through MCP. Keep Leaftext open, add the app as a tool server in your agent's settings, and the agent can read the document, edit and save it, tick task...
+- Summary: Each agent runs in a console next to the page you are reading. It uses your own account and model, sees what you see, and can read, edit and check the open document with you.
 
 ## Meet Leaftext
 - Page: https://leaftext.com/docs/01-introduction.html
 - Markdown: https://leaftext.com/docs/01-introduction.md
-- Summary: Leaftext is three things in one window. It is a harness for the AI agents you already use — Claude Code, Codex and Antigravity in consoles that message each other, start helpers and reach the page ...
+- Summary: Leaftext is a free app for Windows and macOS. It runs your AI agents as a team, gives you a bot of your own, and turns the files you already have into pages worth reading.
 
 ## Installation
 - Page: https://leaftext.com/docs/02-installation.html
 - Markdown: https://leaftext.com/docs/02-installation.md
-- Summary: Leaftext is free, and it ships ready to run on macOS and Windows. There's no account to create, no plugins to pick, and no runtime to install first — download it, open it, and it works.
+- Summary: Leaftext is free. There is no account to create and nothing else to install first. The first time you open it, macOS or Windows warns you once, and the steps below clear that in a few clicks.
 
 ## Quickstart
 - Page: https://leaftext.com/docs/03-quickstart.html
 - Markdown: https://leaftext.com/docs/03-quickstart.md
-- Summary: There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaftext at a file you already have and start reading. This page walks the shortest useful path: open a fi...
+- Summary: There is nothing to set up: no account, no folder to choose, no plugins. Open a file you already have and start reading.
 
 ## Get help
 - Page: https://leaftext.com/docs/04-help.html
 - Markdown: https://leaftext.com/docs/04-help.md
-- Summary: Leaftext is one app made by one person, and there is no support desk behind it. What there is instead is a public page where questions are asked and answered where everybody can read them, so the a...
+- Summary: Leaftext is made by one person, so there is no support desk. Questions are asked and answered in public, so the answer you get is the one the next person finds.
 
 ## How it compares
 - Page: https://leaftext.com/docs/05-compare.html
 - Markdown: https://leaftext.com/docs/05-compare.md
-- Summary: Each of these apps is good at something. Obsidian is a notebook of linked Markdown notes with a large plugin library; Typora writes Markdown in the finished page; Calibre manages and reads a whole ...
+- Summary: Each of these apps is good at something. Obsidian links Markdown notes and has a large plugin library. Typora writes Markdown in the finished page. Calibre manages and reads a library of ebooks.
 
 ## Agents and the harness
 - Page: https://leaftext.com/docs/06-comparison-chart/00-agents-and-the-harness.html
@@ -140,12 +140,62 @@
 ## Privacy
 - Page: https://leaftext.com/docs/07-privacy.html
 - Markdown: https://leaftext.com/docs/07-privacy.md
-- Summary: Leaftext is a desktop app for reading and writing your own documents, made by one person. There is no Leaftext account and no Leaftext server: nothing you open, write or connect is sent to the make...
+- Summary: Leaftext has no account and no server. Nothing you open, write or connect is ever sent to the maker of the app.
 
 ## Glossary for Le Morte d'Arthur
 - Page: https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.html
 - Markdown: https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.md
 - Summary: The terms below occur in the Standard Ebooks edition of Sir Thomas Malory's Le Morte d'Arthur beside this page. They explain the old words, the names and the places that can stop a first-time reade...
+
+## Agents in detail
+- Page: https://leaftext.com/docs/09-details/agents.html
+- Markdown: https://leaftext.com/docs/09-details/agents.md
+- Summary: This page holds the full behavior behind Your own AI agent in Leaftext. Each section matches a section there.
+
+## Editing in detail
+- Page: https://leaftext.com/docs/09-details/editing.html
+- Markdown: https://leaftext.com/docs/09-details/editing.md
+- Summary: This page holds the full behavior behind Editing. Each section matches a section there.
+
+## Library in detail
+- Page: https://leaftext.com/docs/09-details/library.html
+- Markdown: https://leaftext.com/docs/09-details/library.md
+- Summary: This page holds the full behavior behind Library. Each section matches a section there.
+
+## Minimap in detail
+- Page: https://leaftext.com/docs/09-details/minimap.html
+- Markdown: https://leaftext.com/docs/09-details/minimap.md
+- Summary: This page holds the full behavior behind Minimap. Each section matches a section there.
+
+## Navigation in detail
+- Page: https://leaftext.com/docs/09-details/navigation.html
+- Markdown: https://leaftext.com/docs/09-details/navigation.md
+- Summary: This page holds the full behavior behind Navigation. Each section matches a section there.
+
+## Your Grove in detail
+- Page: https://leaftext.com/docs/09-details/progress.html
+- Markdown: https://leaftext.com/docs/09-details/progress.md
+- Summary: This page holds the full behavior behind Your Grove. Each section matches a section there.
+
+## Relational tables in detail
+- Page: https://leaftext.com/docs/09-details/relational-tables.html
+- Markdown: https://leaftext.com/docs/09-details/relational-tables.md
+- Summary: This page holds the full behavior behind Relational tables. Each section matches a section there.
+
+## Rendering in detail
+- Page: https://leaftext.com/docs/09-details/rendering.html
+- Markdown: https://leaftext.com/docs/09-details/rendering.md
+- Summary: This page holds the full behavior behind Rendering. Each section matches a section there.
+
+## Settings in detail
+- Page: https://leaftext.com/docs/09-details/settings.html
+- Markdown: https://leaftext.com/docs/09-details/settings.md
+- Summary: This page holds the full behavior behind Settings. Each section matches a section there.
+
+## Themes in detail
+- Page: https://leaftext.com/docs/09-details/themes.html
+- Markdown: https://leaftext.com/docs/09-details/themes.md
+- Summary: This page holds the full behavior behind Themes. Each section matches a section there.
 
 ## Glossary
 - Page: https://leaftext.com/docs/GLOSSARY.html
@@ -155,4 +205,4 @@
 ## Leaftext documentation
 - Page: https://leaftext.com/docs/README.html
 - Markdown: https://leaftext.com/docs/README.md
-- Summary: Leaftext is a free desktop app for reading and writing your own documents. Open a local Markdown, HTML, XML, JSON, YAML, plain text (.txt), config (.ini), stylesheet (.css), spreadsheet table (.csv...
+- Summary: Leaftext is a free app for reading and writing your own files, with AI agents working beside you. Start with the quickstart, then open the page for whatever you want to do next.

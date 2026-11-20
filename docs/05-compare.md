@@ -1,12 +1,20 @@
 # How it compares
 
-> Every Leaftext feature beside three readers people already know — Obsidian, Typora and Calibre — with a source for every check and every cross, and the rows Leaftext has not reached yet marked as coming.
+> Leaftext beside Obsidian, Typora and Calibre, feature by feature, with a source for every mark
 
-Each of these apps is good at something. Obsidian is a notebook of linked Markdown notes with a large plugin library; Typora writes Markdown in the finished page; Calibre manages and reads a whole library of ebooks, looks a word up in a dictionary and remembers where you stopped. Leaftext reads all of those kinds of file in one window, writes in the page, and links a shared [glossary](01-features/02-navigation.md#glossary) through all of them.
+Each of these apps is good at something. Obsidian links Markdown notes and has a large plugin library. Typora writes Markdown in the finished page. Calibre manages and reads a library of ebooks.
+
+Leaftext reads all of those kinds of file in one window and lets you write in the page. It also runs your AI agents beside them.
 
 ## The chart
 
-**✅** the app does this, and the link in the cell is where it says so. **❌** it does not do this: it says it cannot, it only converts the file into something else first, or it is not the kind of app that would. A mark linking to [how the marks were checked](05-compare.md#how-the-marks-were-checked) was read off the app itself rather than off its pages. **?** neither its own pages nor the app settle it either way. A **bold** row also opens the chart on the front page.
+| Mark | Means |
+| --- | --- |
+| ✅ | The app does this, and the link is where it says so |
+| ❌ | It does not, only converts the file first, or is not that kind of app |
+| ? | Neither its pages nor the app settle it |
+
+A mark linking to [how the marks were checked](05-compare.md#how-the-marks-were-checked) was read off the app itself. A bold row also appears in the chart on the front page.
 
 Sources read 16 October 2026, 10:38pm. The apps themselves checked 23 September 2026, 10:14am.
 
@@ -22,11 +30,11 @@ Sources read 16 October 2026, 10:38pm. The apps themselves checked 23 September 
 10. [Export and the published site](06-comparison-chart/09-export-and-the-published-site.md)
 11. [Coming](06-comparison-chart/10-coming.md)
 
-Obsidian's cross for books and Office files is its own list of the formats it opens, which names neither and points to community plugins for the rest. Typora's is its import, which converts those files into Markdown through Pandoc rather than opening them as themselves. Calibre's is its list of conversion inputs, which converts a Word file into an ebook rather than opening it.
+### Notes on some marks
 
-The missed-response rows remain unknown for the other readers: [Obsidian's support account](https://obsidian.md/help/resources), [Typora's log guide](https://support.typora.io/Get-Logs/) and [Calibre's debug commands](https://manual.calibre-ebook.com/generated/en/calibre-debug.html) describe diagnostics without establishing an independent response monitor or paired recovery records.
-
-The agent-status rows remain unknown for the other readers: [Obsidian's core plugin list](https://obsidian.md/help/Plugins/Core%2Bplugins), [Typora's support index](https://support.typora.io/) and [Calibre's viewer guide](https://manual.calibre-ebook.com/viewer.html) do not establish a console row carrying an external agent's model, context and limits.
+- **Books and Office files.** Obsidian's own format list names neither. Typora converts them to Markdown through Pandoc. Calibre converts a Word file into an ebook rather than opening it.
+- **Missed responses.** [Obsidian](https://obsidian.md/help/resources), [Typora](https://support.typora.io/Get-Logs/) and [Calibre](https://manual.calibre-ebook.com/generated/en/calibre-debug.html) describe diagnostics, but no response monitor, so those rows stay unknown.
+- **Agent status.** [Obsidian](https://obsidian.md/help/Plugins/Core%2Bplugins), [Typora](https://support.typora.io/) and [Calibre](https://manual.calibre-ebook.com/viewer.html) show no console row with an agent's model and limits, so those rows stay unknown.
 
 ## How the marks were checked
 
@@ -46,11 +54,13 @@ calibre 9.15, read through its E-book viewer, what it registers with Windows, an
 
 ## Working beside AI
 
-A glossary is where Leaftext and an AI tool meet today. Ask the tool you already use to write a `GLOSSARY.md` beside a book, a manual or a folder of notes — one `##` heading per hard term, a short entry under each — and Leaftext underlines every one of those terms wherever it appears and opens its entry in a sheet over the page, so you read the definition without losing your place. The same file keeps a team's words from drifting: when everybody's notes link one entry, a term means one thing. [How to write one →](01-features/02-navigation.md#author-a-glossary)
+Leaftext runs [Claude Code, Codex and Antigravity](01-features/10-agents.md) beside your files, and they can read and edit the page you are on.
+
+An AI tool can also write you a glossary. Ask it for a `GLOSSARY.md` beside a book or a folder of notes, with one `##` heading per hard term. Leaftext then underlines each term wherever it appears and opens its entry over the page. [How to write one →](01-features/02-navigation.md#author-a-glossary)
 
 ## On our roadmap
 
-Every row in [Coming](06-comparison-chart/10-coming.md) is planned, or built and not yet switched on. One of them changes how Leaftext works beside AI. [Your own agent can already reach the open document](01-features/10-agents.md).
+Every row in [Coming](06-comparison-chart/10-coming.md) is planned, or built and not yet switched on.
 
 ### Outside tools through MCP
 
