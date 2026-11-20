@@ -20,7 +20,7 @@ The agent works exactly as it does in your own terminal. It uses its own model, 
 
 Drag a file or folder onto a console to type its path. When an agent finishes or needs you while its window is behind another program, a system notice says so.
 
-[Every detail of the console →](../09-details/agents.md#run-the-agent-in-a-console)
+See [every detail of the console →](../09-details/agents.md#run-the-agent-in-a-console)
 
 ### The conversation as a chat
 
@@ -32,37 +32,37 @@ Each edit the agent makes appears as a diff, with removed lines in red and added
 
 Type in the message box at the foot and press Enter. The **+** attaches a file, the microphone starts dictation, and More opens repeats, forks, rewinds and side questions.
 
-[Every detail of the chat →](../09-details/agents.md#the-conversation-as-a-chat)
+See [every detail of the chat →](../09-details/agents.md#the-conversation-as-a-chat)
 
 ### Fork and compare
 
 **Fork** copies a conversation into a new console, so you can try two directions from the same point. Compare agents sends one prompt to two agents side by side.
 
-[Details →](../09-details/agents.md#fork-and-compare)
+See [the details →](../09-details/agents.md#fork-and-compare)
 
 ### The agent's status under its console
 
 A row under each console shows the account, the model and its effort. Three rings show how much context and how much of each usage limit is used. Press the model or the effort to change it, or the context ring to compact or start a new conversation.
 
-[Details →](../09-details/agents.md#the-agents-status-under-its-console)
+See [the details →](../09-details/agents.md#the-agents-status-under-its-console)
 
 ### Ask an agent about a passage
 
 Highlight words in a note and press **Ask agent**. Pick a console, and the agent gets the passage with the note's path and line, ready to open the place.
 
-[Details →](../09-details/agents.md#ask-an-agent-about-a-passage)
+See [the details →](../09-details/agents.md#ask-an-agent-about-a-passage)
 
 ### Define a word in a book
 
 Highlight a word in a book and press **Define**. An agent writes an entry for it into the book's glossary, in the sense this book uses it. The word is then underlined in every chapter.
 
-[Details →](../09-details/agents.md#define-a-word-in-a-book)
+See [the details →](../09-details/agents.md#define-a-word-in-a-book)
 
 ### Agents in different consoles talk to each other
 
 Agents in different consoles can send each other a finding, a request or a question. Nothing is typed into a console you are using; each agent takes the message when it can. An agent on another machine joins over `ssh` typed in a Leaftext console.
 
-[Details →](../09-details/agents.md#agents-in-different-consoles-talk-to-each-other)
+See [the details →](../09-details/agents.md#agents-in-different-consoles-talk-to-each-other)
 
 #### A planner, a builder, reviewers and a scout
 
@@ -70,43 +70,43 @@ Ask one agent to plan the work, and it starts a builder, reviewers and a scout b
 
 Everything stays on your machine. Leaftext records who sent what to whom, never the words.
 
-[Details →](../09-details/agents.md#a-planner-a-builder-reviewers-and-a-scout)
+See [the details →](../09-details/agents.md#a-planner-a-builder-reviewers-and-a-scout)
 
 ### An agent starts another and waits on it
 
 An agent can hand part of its job to a helper in a console beside it, then wait for the answer. You can watch the helper work and step in at any time.
 
-[Details →](../09-details/agents.md#an-agent-starts-another-and-waits-on-it)
+See [the details →](../09-details/agents.md#an-agent-starts-another-and-waits-on-it)
 
 ### An agent drives your other windows
 
 An agent can look at another window on your computer and click and type in it, such as a browser you are signed in to. It asks you first, in a box only you can answer. A notice says which window it is driving, with a Stop button.
 
-[Details →](../09-details/agents.md#an-agent-drives-your-other-windows)
+See [the details →](../09-details/agents.md#an-agent-drives-your-other-windows)
 
 ### Closing the last window
 
 Closing Leaftext's last window keeps it running in the notification area or the menu bar, so your wisp and your agents keep working. Quit from that icon, or with `Ctrl+Q` (`Cmd+Q` on a Mac).
 
-[Details →](../09-details/agents.md#closing-the-last-window)
+See [the details →](../09-details/agents.md#closing-the-last-window)
 
 ### Scheduled
 
 **Scheduled**, the alarm clock in the icon rail, starts an agent on a timetable: hourly, daily, weekdays, weekly or once. When a task is due, Leaftext opens a console, starts the agent and sends your prompt. Any agent can set one up when you ask.
 
-[Details →](../09-details/agents.md#scheduled)
+See [the details →](../09-details/agents.md#scheduled)
 
 ### An agent going round in circles is told
 
 When an agent fails the same way three times on the same file, Leaftext tells it so and asks it to try something else.
 
-[Details →](../09-details/agents.md#an-agent-going-round-in-circles-is-told)
+See [the details →](../09-details/agents.md#an-agent-going-round-in-circles-is-told)
 
 ### Design on a canvas with comments
 
 **New design** in the New menu opens a canvas of boards you can pan, zoom and play at a phone's width. Drop a comment pin anywhere, and an agent beside it can answer in the thread.
 
-[Details →](../09-details/agents.md#design-on-a-canvas-with-comments)
+See [the details →](../09-details/agents.md#design-on-a-canvas-with-comments)
 
 ## Hold an agent to your checks
 
@@ -114,7 +114,7 @@ Put a `HARNESS.md` in a project, naming its checks in one table. When an agent t
 
 Nothing in the file runs until you trust it by typing `leaftext --harness trust` in a console. Every attempt is kept in a run note, and Leaftext never commits for you.
 
-[Details →](../09-details/agents.md#hold-an-agent-to-your-checks)
+See [the details →](../09-details/agents.md#hold-an-agent-to-your-checks)
 
 ## Install the plugin
 
@@ -129,7 +129,7 @@ The Leaftext plugin teaches your agent to work with the open document, browse in
 
 On a Mac, open Leaftext once before you start the agent. After installing, check that a tool such as `leaftext_doc` appears in the agent's tool list.
 
-[Details →](../09-details/agents.md#install-the-plugin)
+See [the details →](../09-details/agents.md#install-the-plugin)
 
 ## Connect on Windows
 
@@ -140,7 +140,7 @@ claude mcp add --scope user leaftext -- "%LOCALAPPDATA%\Programs\leaftext\bin\le
 codex mcp add leaftext -- "%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe" --mcp
 ```
 
-[Another agent's settings →](../09-details/agents.md#connect-on-windows)
+Set up [another agent →](../09-details/agents.md#connect-on-windows)
 
 ## Connect on a Mac
 
@@ -151,10 +151,10 @@ codex mcp add leaftext -- /Applications/leaftext.app/Contents/MacOS/leaftext --m
 
 Your agent's own settings decide which calls need your approval. Give an agent `leaftext_eval` only if you trust it with the open document.
 
-[Another agent's settings →](../09-details/agents.md#connect-on-a-mac)
+Set up [another agent →](../09-details/agents.md#connect-on-a-mac)
 
 ## Work on a document
 
 Ask the agent to open a file with `leaftext_doc`. It can then edit it, tick a task, check it for problems and save it, always against the version it read. It can also check every diagram in a file from its own prompt with `leaftext --diagrams notes.md`.
 
-[Every tool, step by step →](../09-details/agents.md#work-on-a-document)
+See [every tool, step by step →](../09-details/agents.md#work-on-a-document)

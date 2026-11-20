@@ -11,13 +11,13 @@ Put each row's name in the first column, and Leaftext can show the table as reco
 - **Relations** that link a row to a row in another note.
 - **Nothing extra** on disk: your table is the record.
 
-[Every detail of relational tables →](../09-details/relational-tables.md)
+See [every detail of relational tables →](../09-details/relational-tables.md)
 
 ## Open a relational table
 
 Point at a table with a header row and at least two rows. A quiet bar appears above it with Table, Cards, Sort, Filter and Describe.
 
-[Details →](../09-details/relational-tables.md#open-a-relational-table)
+See [the details →](../09-details/relational-tables.md#open-a-relational-table)
 
 ## Views, sort and filter
 
@@ -25,43 +25,43 @@ Point at a table with a header row and at least two rows. A quiet bar appears ab
 
 Show the records as cards. Sort and filter without changing the file.
 
-[Details →](../09-details/relational-tables.md#views-sort-and-filter)
+See [the details →](../09-details/relational-tables.md#views-sort-and-filter)
 
 ## Relations
 
 Link a cell to a row in another note, written `[name](other.md#name)`, and it becomes a relation. Point at it to see the row; press it to open it.
 
-[Details →](../09-details/relational-tables.md#relations)
+See [the details →](../09-details/relational-tables.md#relations)
 
 ## Show a row in another note
 
 A link to a row, alone on its own line, draws that row's words in place.
 
-[Details →](../09-details/relational-tables.md#show-a-row-in-another-note)
+See [the details →](../09-details/relational-tables.md#show-a-row-in-another-note)
 
 ## Describe a table
 
 If Leaftext guesses a column wrong, **Describe** corrects it with a comment above the table that other apps never show.
 
-[Details →](../09-details/relational-tables.md#describe-a-table)
+See [the details →](../09-details/relational-tables.md#describe-a-table)
 
 ## Editing a relational table
 
 Type in any cell, as in any table. The view you chose comes back after each edit.
 
-[Details →](../09-details/relational-tables.md#editing-a-relational-table)
+See [the details →](../09-details/relational-tables.md#editing-a-relational-table)
 
 ### Point at a row without typing its address
 
 In a relation column, start typing a row's name and pick it from a list.
 
-[Details →](../09-details/relational-tables.md#point-at-a-row-without-typing-its-address)
+See [the details →](../09-details/relational-tables.md#point-at-a-row-without-typing-its-address)
 
 ## On a published site and in an embed
 
 The same bar, views and relations work on a published Leaftext site and in an embedded document.
 
-[Details →](../09-details/relational-tables.md#on-a-published-site-and-in-an-embed)
+See [the details →](../09-details/relational-tables.md#on-a-published-site-and-in-an-embed)
 
 ## Next
 

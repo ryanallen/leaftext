@@ -11,31 +11,31 @@ Leaftext keeps a quiet record of what you do and shows it as your Grove. Reading
 - **Seeds** to grow rewards on the Grove's tree.
 - **Nothing leaves your computer**, and one switch turns it all off.
 
-[Every detail of the Grove →](../09-details/progress.md)
+See [every detail of the Grove →](../09-details/progress.md)
 
 ## Open your Grove
 
 The Grove is a row of [More](02-navigation.md#more), at the foot of the icon rail. Press it, and a sheet rises with your level, a year of days and every Growth area.
 
-[Details →](../09-details/progress.md#open-your-grove)
+See [the details →](../09-details/progress.md#open-your-grove)
 
 ## What it counts
 
 Each area lists exactly what pays it and how much, such as every 500 words read. A window left open with nobody there earns nothing.
 
-[Details →](../09-details/progress.md#what-it-counts)
+See [the details →](../09-details/progress.md#what-it-counts)
 
 ## See XP as it lands
 
 When something pays, the Grove row says so for a moment, such as **+1 Leafing**. The sheet keeps a list of everything you have earned.
 
-[Details →](../09-details/progress.md#see-xp-as-it-lands)
+See [the details →](../09-details/progress.md#see-xp-as-it-lands)
 
 ## Grow the whole Grove
 
 When the Grove's bar fills, press and hold to grow to the next level and take its seeds.
 
-[Details →](../09-details/progress.md#grow-the-whole-grove)
+See [the details →](../09-details/progress.md#grow-the-whole-grove)
 
 ## Grow with seeds
 
@@ -43,19 +43,19 @@ When the Grove's bar fills, press and hold to grow to the next level and take it
 
 The Tree tab lays out the rewards your seeds can grow: more themes, a drop cap, leaf bullets and other touches for the page. A reward asks for a Grove level, its earlier rewards, and its seeds.
 
-[Details →](../09-details/progress.md#grow-with-seeds)
+See [the details →](../09-details/progress.md#grow-with-seeds)
 
 ## Where it is kept
 
 Your Grove is kept in `profile.json` beside your settings. It holds counts only, never a file name or a word of a document.
 
-[Details →](../09-details/progress.md#where-it-is-kept)
+See [the details →](../09-details/progress.md#where-it-is-kept)
 
 ## Turn it off
 
 Press **Keep a record** in the Grove sheet's header to turn the record off. Nothing is counted while it is off, and the published site keeps no record at all.
 
-[Details →](../09-details/progress.md#turn-it-off)
+See [the details →](../09-details/progress.md#turn-it-off)
 
 ## Next
 

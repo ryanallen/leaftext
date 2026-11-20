@@ -22,19 +22,19 @@ Keep many documents open, move back and forth between them, and find your way ar
 | Save a page as a PDF or a book | [Export the page](#export-the-page) |
 | Learn the keys | [Shortcuts](#shortcuts) |
 
-[Every detail of navigation →](../09-details/navigation.md)
+See [every detail of navigation →](../09-details/navigation.md)
 
 ## Web tabs
 
 Press **New**, choose New page, and type an address or a search. The page opens in a tab beside your documents, and Back and Forward work inside it.
 
-[Details →](../09-details/navigation.md#web-tabs)
+See [the details →](../09-details/navigation.md#web-tabs)
 
 ## Model
 
 Each tab has its own history. Opening a document or jumping to a heading adds a step that Back can return to.
 
-[Details →](../09-details/navigation.md#model)
+See [the details →](../09-details/navigation.md#model)
 
 ## Shortcuts
 
@@ -77,55 +77,55 @@ Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side butto
 
 The leaf takes you home. Beside it are the pane button, Back, Refresh and Forward, and the vault picker sits in the middle of the bar.
 
-[Details →](../09-details/navigation.md#the-app-bar)
+See [the details →](../09-details/navigation.md#the-app-bar)
 
 ### Export the page
 
 **Export** saves the page you are reading as a PDF, a picture, a web page, a Markdown note with its pictures, or an EPUB book.
 
-[Details →](../09-details/navigation.md#export-the-page)
+See [the details →](../09-details/navigation.md#export-the-page)
 
 ### When another app is in front
 
 When you click into another app, the whole Leaftext window quietly steps back, so you can tell at a glance which window has your keys.
 
-[Details →](../09-details/navigation.md#when-another-app-is-in-front)
+See [the details →](../09-details/navigation.md#when-another-app-is-in-front)
 
 ### The floating toolbar
 
 The bar over the foot of the page switches between Read, Source and Graph. It also holds the padlock and each view's tools: point at Read, Source or Graph and that view's tools rise above it, and pressing one goes to that view.
 
-[Details →](../09-details/navigation.md#the-floating-toolbar)
+See [the details →](../09-details/navigation.md#the-floating-toolbar)
 
 ### More
 
 **More**, at the foot of the icon rail, holds themes, zoom, a new window and everything else that is not a control of the page.
 
-[Details →](../09-details/navigation.md#more)
+See [the details →](../09-details/navigation.md#more)
 
 ### Tabs
 
 Every document opens in a tab that keeps its own place and history. Drag a tab to reorder it, or off the window to open a second window.
 
-[Details →](../09-details/navigation.md#tabs)
+See [the details →](../09-details/navigation.md#tabs)
 
 #### Two documents side by side
 
 Press `Ctrl+\` (`Cmd+\` on a Mac), or drag a tab onto the right half of the page, to read two documents at once.
 
-[Details →](../09-details/navigation.md#two-documents-side-by-side)
+See [the details →](../09-details/navigation.md#two-documents-side-by-side)
 
 #### The chat column
 
 An agent's chat can stand in a column beside your pages, so you read what it writes while you read the pages it works on.
 
-[Details →](../09-details/navigation.md#the-chat-column)
+See [the details →](../09-details/navigation.md#the-chat-column)
 
 #### When the bar runs out of room
 
 On a narrow window, the bar's buttons fold into a chevron menu one at a time.
 
-[Details →](../09-details/navigation.md#when-the-bar-runs-out-of-room)
+See [the details →](../09-details/navigation.md#when-the-bar-runs-out-of-room)
 
 ## Moving between documents
 
@@ -133,19 +133,19 @@ On a narrow window, the bar's buttons fold into a chevron menu one at a time.
 
 A document can carry tabs of its own, each a named part of the same file.
 
-[Details →](../09-details/navigation.md#tabs-inside-a-document)
+See [the details →](../09-details/navigation.md#tabs-inside-a-document)
 
 ### History
 
 Back and Forward move through the documents you opened and the jumps you made within them. Mouse side buttons work too.
 
-[Details →](../09-details/navigation.md#history)
+See [the details →](../09-details/navigation.md#history)
 
 ### Restore
 
 Quit and reopen, and your tabs come back in order, each at its place, with unsaved edits still in them.
 
-[Details →](../09-details/navigation.md#restore)
+See [the details →](../09-details/navigation.md#restore)
 
 ### Recent files
 
@@ -153,7 +153,7 @@ Quit and reopen, and your tabs come back in order, each at its place, with unsav
 
 The home screen lists the files you opened most recently. Press one to open it again.
 
-[Details →](../09-details/navigation.md#recent-files)
+See [the details →](../09-details/navigation.md#recent-files)
 
 ### Favorites
 
@@ -161,19 +161,19 @@ Keep the files you return to as favorites, and they get a list of their own on t
 
 ![Home with a small plus below the boxes and compact move and close controls revealed on Favorites](../../imgs/home-box-controls-v2.png)
 
-[Details →](../09-details/navigation.md#favorites)
+See [the details →](../09-details/navigation.md#favorites)
 
 ### Loading
 
 A large document shows the shape of its page while it loads, so you are never left with a blank window.
 
-[Details →](../09-details/navigation.md#loading)
+See [the details →](../09-details/navigation.md#loading)
 
 ### When the page stops
 
 If a window's page ever stops, Leaftext draws it again with your tabs and unsaved edits intact.
 
-[Details →](../09-details/navigation.md#when-the-page-stops)
+See [the details →](../09-details/navigation.md#when-the-page-stops)
 
 ## Moving within a document
 
@@ -181,13 +181,13 @@ If a window's page ever stops, Leaftext draws it again with your tabs and unsave
 
 Scrollbars appear while you scroll and fade when you stop. On a wide window, the minimap does that job instead.
 
-[Details →](../09-details/navigation.md#scrollbars)
+See [the details →](../09-details/navigation.md#scrollbars)
 
 ### Find in this document
 
 Press `Ctrl+F` (`Cmd+F` on a Mac) to find words, and `Ctrl+H` to replace them. **All** puts a cursor on every match, so you can type into all of them at once.
 
-[Details →](../09-details/navigation.md#find-in-this-document)
+See [the details →](../09-details/navigation.md#find-in-this-document)
 
 ### Outline
 
@@ -195,7 +195,7 @@ Press `Ctrl+F` (`Cmd+F` on a Mac) to find words, and `Ctrl+H` to replace them. *
 
 The side pane lists the document's headings, and the one you are reading is lit. Click one to jump to it.
 
-[Details →](../09-details/navigation.md#outline)
+See [the details →](../09-details/navigation.md#outline)
 
 ### Pager
 
@@ -203,7 +203,7 @@ The side pane lists the document's headings, and the one you are reading is lit.
 
 In a folder of documents joined by `README.md` files, a Previous and Next bar at the foot of the page reads them in order.
 
-[Details →](../09-details/navigation.md#pager)
+See [the details →](../09-details/navigation.md#pager)
 
 ### Link hints
 
@@ -211,25 +211,25 @@ In a folder of documents joined by `README.md` files, a Previous and Next bar at
 
 Rest the pointer on a link, and a card shows where it goes, often with the opening of the page it leads to.
 
-[Details →](../09-details/navigation.md#link-hints)
+See [the details →](../09-details/navigation.md#link-hints)
 
 ### The pointer
 
 The pointer turns to a hand only over something that takes you somewhere.
 
-[Details →](../09-details/navigation.md#the-pointer)
+See [the details →](../09-details/navigation.md#the-pointer)
 
 ### What a control does under the pointer
 
 A button fills with the theme's color when you point at it, and nothing moves.
 
-[Details →](../09-details/navigation.md#what-a-control-does-under-the-pointer)
+See [the details →](../09-details/navigation.md#what-a-control-does-under-the-pointer)
 
 ### Opening a link in a new page
 
 `Ctrl`+click a link (`Cmd`+click on a Mac) to open it in a tab behind the one you are reading. Right-click a link for more ways to open it.
 
-[Details →](../09-details/navigation.md#opening-a-link-in-a-new-page)
+See [the details →](../09-details/navigation.md#opening-a-link-in-a-new-page)
 
 ## Glossary
 
@@ -237,19 +237,19 @@ A button fills with the theme's color when you point at it, and nothing moves.
 
 Put a `GLOSSARY.md` beside your documents, and every term in it is underlined wherever it appears. Press one, and its entry opens over the page.
 
-[Details →](../09-details/navigation.md#glossary)
+See [the details →](../09-details/navigation.md#glossary)
 
 ### Author a glossary
 
 Give each term a `##` heading and a short entry under it. An AI tool can write one for you.
 
-[Details →](../09-details/navigation.md#author-a-glossary)
+See [the details →](../09-details/navigation.md#author-a-glossary)
 
 ## Reload
 
 When a file changes on disk, the open document reloads by itself and keeps your place.
 
-[Details →](../09-details/navigation.md#reload)
+See [the details →](../09-details/navigation.md#reload)
 
 ## Next
 
