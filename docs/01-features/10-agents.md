@@ -30,7 +30,7 @@ Claude Code, Codex and Antigravity show the conversation as a chat. Your message
 
 Each edit the agent makes appears as a diff, with removed lines in red and added lines in green. The tools it ran fold under its Worked for line. Press **Console** on the floating toolbar at any time to get the agent's own terminal back.
 
-Type in the message box at the foot and press Enter. The **+** attaches a file, the microphone starts dictation, and More opens repeats, forks, rewinds and side questions.
+Type in the message box at the foot and press Enter. The **+** attaches files — pick as many as you want in its window with Shift-click or Ctrl-click (Command-click on a Mac), and each one becomes a chip — the microphone starts dictation, and More opens repeats, forks, rewinds and side questions.
 
 See [every detail of the chat →](../09-details/agents.md#the-conversation-as-a-chat)
 
