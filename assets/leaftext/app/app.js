@@ -713,6 +713,8 @@ function drawWebMinimap() {
   setMinimapMarkup(documentMinimapMarkup().replace(' is-loading', ''));
   const rail = currentMinimap();
   if (!rail) return;
+  
+  rail.dataset.webRail = '';
   const spinner = rail.querySelector('.document-minimap-spinner');
   if (spinner) spinner.remove();
   const track = rail.querySelector('.document-minimap-track');
@@ -43781,7 +43783,9 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     const arriving = renderedPath !== lastRenderedDocumentPath;
     lastRenderedDocumentPath = renderedPath;
     const minimapHtml = renderDocumentMinimap(state.document.has_visible_content);
-    const keepMinimap = !arriving && !!minimapHtml && !!currentMinimap();
+    
+    const standingRail = currentMinimap();
+    const keepMinimap = !arriving && !!minimapHtml && !!standingRail && !('webRail' in standingRail.dataset);
     writeReaderClasses(keepMinimap ? ['has-document', 'has-minimap'] : ['has-document']);
     const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
     
@@ -56861,7 +56865,8 @@ function markLinkCard(block) {
     if (block?.classList?.contains('link-card')) {
       block.__linkCardObserver?.unobserve(block);
       block.querySelector(':scope > .link-card-picture')?.remove();
-      block.classList.remove('link-card', 'is-page-card', 'is-row-start-3', 'is-row-start-2');
+      block.__linkCardLive = null;
+      block.classList.remove('link-card', 'is-page-card', 'is-row-start-3', 'is-row-start-2', 'is-live-page');
       delete block.dataset.linkCardKind;
       delete block.dataset.linkCardAddress;
     }
@@ -56882,6 +56887,7 @@ function markLinkCard(block) {
     block.__linkCardClickBound = true;
   }
   if (found.kind === 'Another page') {
+    block.__liveCardWanted = !block.__liveCardRefused && liveCardHref(found.link.getAttribute('href'));
     let picture = block.querySelector(':scope > .link-card-picture');
     if (!picture) {
       picture = document.createElement('div');
@@ -56935,8 +56941,9 @@ function askLinkCard(block) {
   const key = block.__linkCardKey;
   if (!key) return;
   linkCardLength(block, key);
-  if (linkPreviewCache.has(key) && !staleLinkAnswers.has(key)) drawLinkCardPicture(block, linkPreviewCache.get(key));
-  const wantsPicture = !linkPreviewCache.has(key) || staleLinkAnswers.has(key);
+  if (block.__liveCardWanted) askLiveCard(block);
+  else if (linkPreviewCache.has(key) && !staleLinkAnswers.has(key)) drawLinkCardPicture(block, linkPreviewCache.get(key));
+  const wantsPicture = !block.__liveCardWanted && (!linkPreviewCache.has(key) || staleLinkAnswers.has(key));
   const wantsLength = !documentLengthCache.has(key) || staleLinkAnswers.has(key);
   if (!wantsPicture && !wantsLength) return;
   let waiting = waitingLinkCards.get(key);
@@ -56977,6 +56984,95 @@ function linkCardTokenAnswered(token) {
   if (linkCardTokensAtHost.delete(token)) sendLinkCardQuestions();
 }
 
+
+const liveCardTokens = new Map();
+const liveCardFrames = new Set();
+const LIVE_CARD_SHORTEST = 120;
+const LIVE_CARD_TALLEST = 4000;
+
+function liveCardHref(href) {
+  const path = String(href || '').split(/[?#]/)[0];
+  return /\.html?$/i.test(path) && hostAnswers('liveCardAddress');
+}
+
+function askLiveCard(block) {
+  if (block.__liveCardAsked || block.__linkCardLive) return;
+  block.__liveCardAsked = true;
+  const token = nextLinkCardToken++;
+  liveCardTokens.set(token, block);
+  send({ command: 'liveCardAddress', href: block.__linkCardKey, token });
+}
+
+
+function refuseLiveCard(block) {
+  block.__liveCardWanted = false;
+  block.__liveCardRefused = true;
+  block.__linkCardLive = null;
+  block.classList.remove('is-live-page');
+  block.querySelector(':scope > .link-card-picture')?.remove();
+  markLinkCard(block);
+  countLinkCardRows(block.closest('.document-body'));
+  
+  if (block.__linkCardNear) askLinkCard(block);
+}
+
+function drawLiveCard(block, address) {
+  const link = block.querySelector(':scope > a');
+  if (!link) return;
+  const slot = document.createElement('div');
+  slot.className = 'link-card-picture';
+  const frame = document.createElement('iframe');
+  frame.className = 'link-card-live';
+  frame.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  frame.setAttribute('title', link.textContent || '');
+  frame.style.aspectRatio = '4 / 3';
+  
+  frame.addEventListener('load', () => {
+    let escaped = false;
+    try { escaped = !!frame.contentDocument; } catch { escaped = false; }
+    if (escaped) {
+      liveCardFrames.delete(frame);
+      refuseLiveCard(block);
+    }
+  });
+  frame.src = address;
+  slot.append(frame);
+  const old = block.querySelector(':scope > .link-card-picture');
+  if (old) old.replaceWith(slot);
+  else block.insertBefore(slot, link);
+  block.__linkCardPicture = slot;
+  block.__linkCardRoot = null;
+  block.__linkCardLive = frame;
+  block.classList.add('is-live-page');
+  liveCardFrames.add(frame);
+  countLinkCardRows(block.closest('.document-body'));
+}
+
+window.leafLiveCard = (token, address) => {
+  const block = liveCardTokens.get(token);
+  liveCardTokens.delete(token);
+  if (!block || !block.isConnected) return;
+  if (typeof address === 'string' && address) drawLiveCard(block, address);
+  else refuseLiveCard(block);
+};
+
+
+function liveCardHeight(event) {
+  const height = event.data && event.data.leaftextCardHeight;
+  if (typeof height !== 'number' || !Number.isFinite(height)) return;
+  for (const frame of liveCardFrames) {
+    if (!frame.isConnected) { liveCardFrames.delete(frame); continue; }
+    if (frame.contentWindow !== event.source) continue;
+    let origin = '';
+    try { origin = new URL(frame.src).origin; } catch { origin = ''; }
+    if (!origin || event.origin !== origin) return;
+    frame.style.aspectRatio = 'auto';
+    frame.style.height = `${Math.min(LIVE_CARD_TALLEST, Math.max(LIVE_CARD_SHORTEST, Math.round(height)))}px`;
+    return;
+  }
+}
+window.addEventListener('message', liveCardHeight);
+
 function watchLinkCard(block) {
   if (typeof IntersectionObserver === 'undefined') { block.__linkCardNear = true; askLinkCard(block); return; }
   const body = block.closest('.document-body');
@@ -57009,10 +57105,11 @@ function countLinkCardRows(body) {
   let count = 0;
   let previous = null;
   for (const block of documentBlocks(body)) {
-    if (!block.classList.contains('link-card') || block.parentElement !== previous?.parentElement) {
+    const live = block.classList.contains('is-live-page');
+    if (!block.classList.contains('link-card') || live || block.parentElement !== previous?.parentElement) {
       count = 0;
     }
-    if (block.classList.contains('link-card')) {
+    if (block.classList.contains('link-card') && !live) {
       block.classList.toggle('is-row-start-3', count % 3 === 0);
       block.classList.toggle('is-row-start-2', count % 2 === 0);
       if (previous && count > 0) {
@@ -64746,6 +64843,13 @@ function stripMinimapCloneContent(node) {
     if (clip.poster) still.src = clip.poster;
     still.alt = '';
     clip.replaceWith(still);
+  });
+  
+  node.querySelectorAll('iframe.link-card-live').forEach((frame) => {
+    const box = document.createElement('div');
+    box.className = frame.className;
+    box.style.cssText = frame.style.cssText;
+    frame.replaceWith(box);
   });
   node.querySelectorAll('img[src]').forEach(askRailPicture);
   fillMermaidClone(node);

@@ -123,6 +123,7 @@
 | file:// links followed | [✅][l-links] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Asks before running programs | [✅][l-links] | ? | ? | [❌][c-seen] |
 | Dead schemes shown dotted | [✅][l-links] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Live local HTML cards | [✅][l-links] | ? | ? | [❌][c-seen] |
 | Wiki links drawn | [✅][l-wiki] | [✅][o-links] | [❌][t-seen] | [❌][c-seen] |
 | Wiki link display text | [✅][l-wiki] | [✅][o-links] | [❌][t-seen] | [❌][c-seen] |
 | Wiki links to headings | [✅][l-wiki] | [✅][o-links] | [❌][t-seen] | [❌][c-seen] |

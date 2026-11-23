@@ -141,6 +141,7 @@ export const COMMANDS = {
   openPageInBrowser: [REFUSED, 'the page is already in a browser'],
   documentLength: [ANSWERED],
   previewLink: [ANSWERED],
+  liveCardAddress: [REFUSED, 'a browser host has no loopback server to run a linked page from, so the card stays the plain link card'],
   goBack: [REFUSED, 'the browser draws its own Back one row above, so a site draws no pair of its own and never sends this'],
   goForward: [REFUSED, 'the browser draws its own Forward one row above, so a site draws no pair of its own and never sends this'],
   refreshDocument: [ANSWERED],

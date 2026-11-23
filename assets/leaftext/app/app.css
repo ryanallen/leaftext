@@ -11895,6 +11895,22 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   }
 }
 
+.document-body .document-run > .link-card.is-live-page,
+.document-body > .link-card.is-live-page {
+  display: block;
+  width: 100%;
+  margin-left: 0;
+}
+.document-body .link-card.is-live-page > .link-card-picture {
+  height: auto;
+  padding-bottom: 0;
+}
+.document-body .link-card-live {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
 .document-run {
   position: relative;
 }

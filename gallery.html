@@ -11928,6 +11928,22 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
     .document-body > .link-card { width: 100%; margin-left: 0; }
   }
 }
+/* A card running its local page: the whole width of the text, out of the rows of cards beside it, the frame as tall as the page says it is. */
+.document-body .document-run > .link-card.is-live-page,
+.document-body > .link-card.is-live-page {
+  display: block;
+  width: 100%;
+  margin-left: 0;
+}
+.document-body .link-card.is-live-page > .link-card-picture {
+  height: auto;
+  padding-bottom: 0;
+}
+.document-body .link-card-live {
+  display: block;
+  width: 100%;
+  border: 0;
+}
 /* A stretch of the body's blocks, so a change lays out, paints and hit-tests one run rather than every block. No margin, border or padding, so the margins either side of its edge still collapse into one and the page is as tall as it was. Positioned so it is a paint layer of its own, which is what ends the walk over every block before paint; not `isolation`, which is as fast but makes each run a stacking context, and a menu raised inside a block would then sit under the next run's words. See reading-blocks.js. */
 .document-run {
   position: relative;
@@ -23489,7 +23505,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 224 values that do not change with the theme, all 120 icons, and all 219 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 224 values that do not change with the theme, all 120 icons, and all 220 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -23524,7 +23540,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>224</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>120</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>219</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>220</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -24034,7 +24050,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">219 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">220 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -24742,6 +24758,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Link card</h3><code class="built">.link-card</code><span class="built">link-cards.js</span></header>
 <div class="stage"><div class="document-body"><div class="document-run"><p class="link-card is-page-card is-row-start-3 is-row-start-2" data-link-card-kind="Another page" data-link-card-address="next.md"><div class="link-card-picture"></div><a href="next.md">Next note</a></p></div></div></div>
+</section>
+<section class="part">
+<header><h3>Live link card</h3><code class="built">.link-card-live</code><span class="built">link-cards.js</span></header>
+<div class="stage"><div class="document-body"><div class="document-run"><p class="link-card is-page-card is-live-page" data-link-card-kind="Another page" data-link-card-address="imgs/mani-wheel.html"><div class="link-card-picture"><div class="link-card-live" style="aspect-ratio:4 / 3;background:#141111"></div></div><a href="imgs/mani-wheel.html">Spin the wheel with a speed slider</a></p></div></div></div>
 </section>
 <section class="part">
 <header><h3>Link card picture</h3><code class="built">.link-card-picture</code><span class="built">link-cards.js</span></header>

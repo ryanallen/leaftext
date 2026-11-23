@@ -147,7 +147,9 @@ Tables keep their alignment and scroll sideways when they are wide. On a narrow 
 
 ### Links and autolinks
 
-Links open in the app, and a bare web address becomes a link by itself.
+Links open in the app, and a bare web address becomes a link by itself. A link alone on its line draws as a card, and a card to an HTML page on your disk plays that page live in the note.
+
+See [the details →](../09-details/rendering.md#links-and-autolinks)
 
 ### Wiki links
 

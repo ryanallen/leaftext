@@ -538,6 +538,10 @@ Pressing the badge opens a menu offering today, tomorrow and next Monday, a box 
 
 A link alone on its own line draws as a card with its name, the kind of link and its address. Links to another page show a small picture of that page when the card nears the screen. Cards sit three to a row when the reading column is wide, two on a narrower page and one on a phone.
 
+In the desktop app, a card that links an HTML page on your own disk plays that page live in the note instead of showing a picture. It spans the full width of the text, its scripts and controls work, and it grows to the height the page reports.
+
+The page runs from its own folder and cannot reach the app or other files. The link under it still opens the page in a tab of its own. On the published site and in an embed, the card stays a picture.
+
 A link inside a sentence stays a link.
 
 - Inline link: [the Leaftext repo](https://github.com/ryanallen/leaftext)
