@@ -50381,9 +50381,12 @@ function wispServicesHtml() {
     const said = wispServiceSaid(id);
     const open = wispKeys.open === id;
     const field = open ? `<input class="wisp-service-key" type="password" autocomplete="off" spellcheck="false" data-wisp-key="${id}" aria-label="${escapeAttr(`${name} key`)}" placeholder="Paste a token">` : '';
+    
     const press = wispKeys.stored[id]
       ? `<button type="button" class="theme-mode-btn" data-wisp-service-press="forget" data-wisp-service="${id}">Forget</button>`
-      : `<button type="button" class="theme-mode-btn" data-wisp-service-press="${open ? 'store' : 'enter'}" data-wisp-service="${id}">Enter token</button>`;
+      : WISP_GUIDES[id] && WISP_GUIDES[id].key
+        ? `<button type="button" class="theme-mode-btn" data-wisp-service-press="guide" data-wisp-service="${id}">Get token</button>`
+        : `<button type="button" class="theme-mode-btn" data-wisp-service-press="${open ? 'store' : 'enter'}" data-wisp-service="${id}">Enter token</button>`;
     
     const asks = WISP_MEMBERS[id];
     const member = asks && wispKeys.stored[id] ? `<input class="wisp-service-key wisp-member" type="text" autocomplete="off" spellcheck="false" data-wisp-member="${id}" aria-label="${escapeAttr(asks.label)}" placeholder="${escapeAttr(asks.placeholder)}" value="${escapeAttr(wisp.members[id])}">` : '';
@@ -50422,47 +50425,100 @@ const WISP_IMESSAGE_STEPS = [
   { title: 'Let Leaftext read Messages', words: 'Press Let Leaftext read Messages, turn Leaftext on under Full Disk Access, and allow it to control Messages when macOS asks.', presses: [{ words: 'Let Leaftext read Messages', privacy: true }] },
   { title: 'Name yourself and text it', words: 'Type your own phone number or Apple ID under Who may talk, turn the wisp on, then from your phone send one text to the wisp’s email address. It answers there.' },
 ];
-function wispImessageGuideHtml() {
+
+const WISP_DISCORD_STEPS = [
+  { title: 'Open your apps on Discord', words: 'Pick your bot, or press New Application to make one.', presses: [{ words: 'Open Discord', url: 'https://discord.com/developers/applications' }] },
+  { title: 'Copy the bot token', words: 'Press Bot on the left, then Reset Token, and copy the token it shows. It is not the Application ID or the Public Key.' },
+  { title: 'Let it read messages', words: 'On the same page, switch on Message Content Intent and press Save Changes. Without it the wisp cannot read what is written in a server.' },
+  { title: 'Paste it here', words: 'Paste the token below and press Keep.' },
+];
+
+const WISP_GUIDES = {
+  imessage: { title: 'How to set up iMessage', steps: WISP_IMESSAGE_STEPS, mac: true },
+  discord: { title: 'Get your Discord bot token', steps: WISP_DISCORD_STEPS, key: 'discord', field: 'Paste the bot token', empty: 'Paste the bot token first.' },
+};
+function wispGuideHtml(guide) {
   const press = (one) => one.privacy
     ? `<button type="button" class="theme-mode-btn" data-wisp-guide-privacy="true">${escapeText(one.words)}</button>`
     : `<button type="button" class="theme-mode-btn" data-wisp-guide-url="${escapeAttr(one.url)}">${escapeText(one.words)}</button>`;
-  const steps = WISP_IMESSAGE_STEPS.map((step) => `<li><p><strong>${escapeText(step.title)}</strong></p><p>${escapeText(step.words)}</p>${(step.presses || []).map(press).join(' ')}</li>`).join('');
-  return `<ol>${steps}</ol>`;
+  const steps = guide.steps.map((step) => `<li><p><strong>${escapeText(step.title)}</strong></p><p>${escapeText(step.words)}</p>${(step.presses || []).map(press).join(' ')}</li>`).join('');
+  if (!guide.key) return `<ol>${steps}</ol>`;
+  
+  const field = `<input class="wisp-service-key" type="password" autocomplete="off" spellcheck="false" data-wisp-guide-key="${guide.key}" aria-label="${escapeAttr(guide.title)}" placeholder="${escapeAttr(guide.field)}">`;
+  const keep = '<button type="button" class="theme-mode-btn" data-wisp-guide-keep="true">Keep</button>';
+  const said = wispGuideError ? `<p class="wisp-empty wisp-service-said is-bad" role="alert">${escapeText(wispGuideError)}</p>` : '';
+  return `<ol>${steps}</ol><div class="wisp-service">${field}${keep}</div>${said}`;
 }
 
-var wispImessageGuide = document.getElementById('wispImessageGuide');
-var wispImessageGuideBackdrop = document.getElementById('wispImessageGuideBackdrop');
-var wispImessageGuideBody = document.getElementById('wispImessageGuideBody');
-var wispImessageGuideClose = document.getElementById('wispImessageGuideClose');
-var wispImessageGuideWired = false;
-function openWispImessageGuide() {
-  if (!isMacPlatform || !wispImessageGuide) return;
-  if (!wispImessageGuideWired) {
-    wispImessageGuideWired = true;
-    wispImessageGuideBody.innerHTML = wispImessageGuideHtml();
-    wispImessageGuideClose.addEventListener('click', () => closeWispImessageGuide());
-    if (wispImessageGuideBackdrop) wispImessageGuideBackdrop.addEventListener('click', () => closeWispImessageGuide());
-    wispImessageGuide.addEventListener('click', (event) => {
+var wispGuide = document.getElementById('wispGuide');
+var wispGuideBackdrop = document.getElementById('wispGuideBackdrop');
+var wispGuideBody = document.getElementById('wispGuideBody');
+var wispGuideTitle = document.getElementById('wispGuideTitle');
+var wispGuideClose = document.getElementById('wispGuideClose');
+var wispGuideWired = false;
+var wispGuideShowing = '';
+var wispGuideError = '';
+function openWispGuide(name) {
+  const guide = WISP_GUIDES[name];
+  if (!guide || !wispGuide || (guide.mac && !isMacPlatform)) return;
+  if (!wispGuideWired) {
+    wispGuideWired = true;
+    wispGuideClose.addEventListener('click', () => closeWispGuide());
+    if (wispGuideBackdrop) wispGuideBackdrop.addEventListener('click', () => closeWispGuide());
+    wispGuide.addEventListener('click', (event) => {
       const link = event.target.closest('[data-wisp-guide-url]');
       if (link) send({ command: 'openExternal', url: link.dataset.wispGuideUrl });
       if (event.target.closest('[data-wisp-guide-privacy]')) send({ command: 'wispImessagePrivacy' });
+      if (event.target.closest('[data-wisp-guide-keep]')) keepWispGuideKey();
     });
-    makeSheetDraggable(wispImessageGuide, wispImessageGuide.querySelector('.leaf-sheet-grip'), closeWispImessageGuide);
+    wispGuide.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || !event.target.closest || !event.target.closest('[data-wisp-guide-key]')) return;
+      event.preventDefault();
+      keepWispGuideKey();
+    });
+    makeSheetDraggable(wispGuide, wispGuide.querySelector('.leaf-sheet-grip'), closeWispGuide);
   }
-  openSheet(wispImessageGuide, wispImessageGuideBackdrop);
-  document.addEventListener('keydown', onWispImessageGuideKey, true);
-  leafFocusForKeyboard(wispImessageGuideClose);
+  wispGuideShowing = name;
+  wispGuideError = '';
+  drawWispGuide();
+  wispGuide.setAttribute('aria-label', guide.title);
+  openSheet(wispGuide, wispGuideBackdrop);
+  document.addEventListener('keydown', onWispGuideKey, true);
+  leafFocusForKeyboard(wispGuideClose);
 }
-function closeWispImessageGuide(options) {
-  if (!wispImessageGuide || wispImessageGuide.hidden) return;
-  document.removeEventListener('keydown', onWispImessageGuideKey, true);
-  closeSheet(wispImessageGuide, wispImessageGuideBackdrop, options);
+function drawWispGuide() {
+  const guide = WISP_GUIDES[wispGuideShowing];
+  if (!guide) return;
+  if (wispGuideTitle) wispGuideTitle.textContent = guide.title;
+  wispGuideBody.innerHTML = wispGuideHtml(guide);
 }
 
-function onWispImessageGuideKey(event) {
+function keepWispGuideKey() {
+  const guide = WISP_GUIDES[wispGuideShowing];
+  const field = wispGuideBody.querySelector('[data-wisp-guide-key]');
+  if (!guide || !guide.key || !field) return;
+  if (!String(field.value || '').trim()) {
+    wispGuideError = guide.empty;
+    drawWispGuide();
+    const fresh = wispGuideBody.querySelector('[data-wisp-guide-key]');
+    if (fresh) fresh.focus();
+    return;
+  }
+  sendWispKey(guide.key, field);
+  closeWispGuide();
+}
+function closeWispGuide(options) {
+  if (!wispGuide || wispGuide.hidden) return;
+  document.removeEventListener('keydown', onWispGuideKey, true);
+  const field = wispGuideBody && wispGuideBody.querySelector('[data-wisp-guide-key]');
+  if (field) field.value = '';
+  closeSheet(wispGuide, wispGuideBackdrop, options);
+}
+
+function onWispGuideKey(event) {
   if (event.key !== 'Escape') return;
   event.stopPropagation();
-  closeWispImessageGuide();
+  closeWispGuide();
 }
 
 window.leafWispChecked = (answer) => {
@@ -50539,7 +50595,7 @@ function onWispServicePress(event) {
   } else if (how === 'privacy') {
     send({ command: 'wispImessagePrivacy' });
   } else if (how === 'guide') {
-    openWispImessageGuide();
+    openWispGuide(service);
   } else if (how === 'forget-member') {
     delete wispKeys.checks[service];
     wisp.members[service] = '';
@@ -50856,8 +50912,8 @@ function closeWispSheet(options) {
 function closeWispUnder(sheet) {
   if (!wispSheet || sheet === wispSheet) return;
   
-  if (sheet === wispImessageGuide) return;
-  closeWispImessageGuide();
+  if (sheet === wispGuide) return;
+  closeWispGuide();
   closeWispSheet();
 }
 

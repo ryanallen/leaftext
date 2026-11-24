@@ -245,7 +245,7 @@ Move or close a Home box from the quiet controls on its heading; the small plus 
   While your wisp is lit, a message from you in any conversation it is in reaches it with no @ and no command word. It answers there, in the message's thread where there is one. A channel named after one of the skills in **Works in** — **design** for a `design` skill — hands its messages to that skill.
 
   Messages from anybody else are ignored. Saved as `wisp_slack_member`; the token stays in the system's credential store
-- **Discord**: press **Make the Discord bot** on the Discord row. On Discord's page press **New Application**, then **Bot** and **Reset Token**. Switch on its **Message Content** intent, and paste the token on the row.
+- **Discord**: press **Make the Discord bot** on the Discord row. On Discord's page press **New Application**. Then press **Get token** on the row. A guide opens over the wisp's sheet with a press to Discord's page. There, press **Bot**, then **Reset Token**, and copy the token, not the Application ID or Public Key. Switch on **Message Content Intent**, paste the token in the guide's field and press **Keep**.
 
   **Add it to your server** then opens Discord's invite for that bot with the permissions it needs, so you only pick the server. Name yourself under **Who may talk** with your user ID, from **Copy User ID** on your profile with Developer Mode on.
 
@@ -261,7 +261,7 @@ Move or close a Home box from the quiet controls on its heading; the small plus 
 
   Saved as `wisp_people`; codes are never written down
 - Its light is the dot at the sheet's top right and at the end of its row. Unlit on every copy, and while it is unlit your wisp makes no outside call at all; press the dot to turn it on. Saved as `bot_enabled`
-- Its **Connections** tab has a row each for Slack and Discord, and on a Mac one for iMessage. **Enter token** takes a key into the system's credential store — never into `settings.json` — and the row then offers **Forget**.
+- Its **Connections** tab has a row each for Slack and Discord, and on a Mac one for iMessage. **Enter token** on Slack's row, and **Keep** in Discord's **Get token** guide, take a key into the system's credential store — never into `settings.json` — and the row then offers **Forget**.
 
   **Check everything** asks every service at once and writes what each said on its row, giving each ten seconds; while the wisp is unlit it checks nothing
 - **Keep running when you close the window**, the switch under its name, is on by default. Closing the last window hides Leaftext behind its icon in the notification area or menu bar, so your wisp keeps working. Quit on the icon, or the quit key, ends Leaftext. Off, closing the last window quits. Saved as `keep_running`
