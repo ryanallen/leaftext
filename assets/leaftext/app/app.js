@@ -19472,10 +19472,10 @@ function besideConsoleViewsEntry() {
 }
 function consoleViewsKey(entry) {
   const beside = entry ? null : besideConsoleViewsEntry();
-  if (beside) return `beside|${chatConsoleId()}|${beside.agent}|${Boolean(beside.chatHeldOff)}`;
+  if (beside) return `beside|${chatConsoleId()}|${beside.agent}|${consoleChatLit(beside)}`;
   
   if (!entry) return savedChatTab() ? 'saved' : chatSavedTab() ? `saved-beside|${chatSavedTab().url}` : '';
-  return `${consoleFrontId}|${entry.agent}|${Boolean(entry.chatHeldOff)}`;
+  return `${consoleFrontId}|${entry.agent}|${consoleChatLit(entry)}`;
 }
 
 function syncConsoleViewsBar() {
@@ -19517,8 +19517,12 @@ function renderConsoleViews(entry, saved = false) {
   coverLivePageWithReaderToolbar();
 }
 
+function consoleChatLit(entry) {
+  return !entry || (!entry.chatHeldOff && Boolean(entry.chat?.shown));
+}
+
 function lightConsoleViews(entry) {
-  const current = entry?.chatHeldOff ? consoleTerminalButton : consoleChatButton;
+  const current = consoleChatLit(entry) ? consoleChatButton : consoleTerminalButton;
   for (const button of [consoleChatButton, consoleTerminalButton]) {
     if (!button) continue;
     const on = button === current;
@@ -41615,7 +41619,8 @@ function siteFrameScroller(root = app) {
 
 function readerScrollElement() {
   const console = frontConsoleEntry();
-  if (console?.terminal) return consoleScrollElement();
+  
+  if (console?.terminal && consoleFrontId !== chatConsoleId()) return consoleScrollElement();
   return siteFrameScroller() || app;
 }
 
@@ -46068,9 +46073,11 @@ window.leafConsolePathsComposed = (id, text) => {
 };
 
 window.leafConsolePathsTyped = (id, needsSpace) => {
-  window.leafConsoleFront(id);
-  if (!needsSpace) return;
   const entry = consoleLayers.get(id);
+  
+  if (id === chatConsoleId()) entry?.terminal?.focus();
+  else window.leafConsoleFront(id);
+  if (!needsSpace) return;
   if (!entry) return;
   const pending = { text: '' };
   entry.pathPasteInput = pending;
@@ -51331,8 +51338,7 @@ function readConsoleChat(entry) {
     const footer = rows.slice(top + 1);
     const chat = { agent, screen, top, cover, base, to: base + cover, placeholder: consolePromptWords(rows[top]), footer };
     if (agent === 'codex') {
-      
-      if (footer.filter(line => line.trim()).length > 2) return null;
+      if (!consoleCodexFooter(footer)) return null;
       keepConsoleCodexAnswers(entry, base + cover);
       chat.from = 0;
       return chat;
@@ -51597,6 +51603,7 @@ function refreshConsoleChat(id, entry) {
   }
   renderConsolePin(entry);
   if (!was || moved) consoleChatRailChanged(id, entry);
+  if (!was) syncConsoleViewsBar();
   
   if (!was && entry.host?.contains(document.activeElement)) focusConsoleComposer(entry);
 }
@@ -51616,9 +51623,17 @@ function consoleCodexBoxStands(entry) {
   if (consolePromptQuestion(entry, rows)) return false;
   for (let top = rows.length - 2; top >= Math.max(1, rows.length - 8); top -= 1) {
     if (rows[top] !== '› Ask Codex to do anything' || rows[top - 1].trim() || rows[top + 1].trim()) continue;
-    if (rows.slice(top + 1).filter(row => row.trim()).length <= 2) return true;
+    if (consoleCodexFooter(rows.slice(top + 1))) return true;
   }
   return false;
+}
+
+
+const CONSOLE_CODEX_PANEL_HINT = /\besc (?:close|back)\b|\benter (?:select|to confirm)\b/i;
+function consoleCodexFooter(rows) {
+  const lines = rows.filter(row => row.trim());
+  if (lines.some(row => CONSOLE_CODEX_PANEL_HINT.test(row))) return false;
+  return lines.length <= 2 || /\S\s·\s/.test(lines.slice(0, 2).join(' '));
 }
 
 
@@ -51674,6 +51689,8 @@ function leaveConsoleChat(entry) {
   renderConsolePin(entry);
   if (composing) entry.terminal?.focus();
   for (const [id, each] of consoleLayers) if (each === entry) consoleChatRailChanged(id, entry);
+  
+  syncConsoleViewsBar();
 }
 
 
@@ -51685,8 +51702,24 @@ function setConsoleChatHeldOff(id, entry, held) {
   } else {
     refreshConsoleChat(id, entry);
     if (!focusConsoleComposer(entry)) entry.terminal?.focus();
+    
+    if (!entry.chat?.shown && entry.agent) leafToast(consoleChatRefusal(entry));
   }
   renderReaderToolbar(readerViewsStand());
+}
+
+
+function consoleChatRefusal(entry) {
+  const name = AGENT_LAUNCH_NAMES[entry.agent] || 'The agent';
+  const terminal = entry.terminal;
+  if (!terminal || !CONSOLE_CHAT_AGENTS[entry.agent]?.includes(terminal.buffer.active.type)) return `${name} has not drawn its message box yet, so the console shows its own screen.`;
+  const question = `${name} is asking something in its console. Answer it there, then press Chat.`;
+  if (/ needs$/.test(entry.agentSaid || '')) return question;
+  return readConsoleScreenOnce(terminal.wasmTerm, () => {
+    if (consolePromptQuestion(entry, consolePromptRows(entry))) return question;
+    if (consoleModelPrompt(entry, entry.agent).kind === 'draft') return `${name} has words typed in its own box. Send or clear them there, then press Chat.`;
+    return `${name} has a screen of its own open in the console. Close it there, then press Chat.`;
+  });
 }
 
 
