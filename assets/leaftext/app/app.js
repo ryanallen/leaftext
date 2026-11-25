@@ -15526,7 +15526,9 @@ function closeLibrarySheet() {
   applyPaneLayout();
 }
 
-let drawnMinimapColumn = '0px';
+const framedRailColumn = (window.__leafSite && appBar && Number.parseFloat(appBar.style.getPropertyValue('--reader-minimap-column'))) || 0;
+
+let drawnMinimapColumn = `${framedRailColumn}px`;
 
 let drawnBesideMinimapColumn = '0px';
 
@@ -15799,14 +15801,16 @@ function paneDrawingState() {
     
     toolbarRailOpen: hasMinimap || !!(window.leafMinimap && window.leafMinimap.getEnabled()),
     minimapWidth: null,
+    
+    framedColumn: !minimap && framedRailColumn && app.querySelector('.baked-page') ? framedRailColumn : null,
   };
 }
 
 function drawPaneWidths(drawing, paneWidth, minimapWidth) {
   drawing.minimapWidth = minimapWidth ?? monacoMinimapWidth();
-  const minimapColumn = drawing.minimapColumnOpen ? drawing.minimapWidth + drawing.gap : 0;
-  const keyedBarColumn = drawing.barColumnOpen ? drawing.minimapWidth + drawing.gap : 0;
-  const toolbarRail = drawing.toolbarRailOpen ? drawing.minimapWidth + drawing.gap : 0;
+  const minimapColumn = drawing.framedColumn ?? (drawing.minimapColumnOpen ? drawing.minimapWidth + drawing.gap : 0);
+  const keyedBarColumn = drawing.framedColumn ?? (drawing.barColumnOpen ? drawing.minimapWidth + drawing.gap : 0);
+  const toolbarRail = drawing.framedColumn ?? (drawing.toolbarRailOpen ? drawing.minimapWidth + drawing.gap : 0);
   
   const besideMinimapColumn = drawing.besideColumnOpen ? drawing.minimapWidth + drawing.gap : 0;
   
@@ -26143,7 +26147,10 @@ function isLaidOutParagraph(el) {
 
 function makeDocumentRuns(body) {
   if (!body || body.classList.contains('document-body-site')) return;
-  const title = Array.from(body.children).find((block) => block.tagName === 'H1');
+  
+  const arrived = Array.from(body.children);
+  if (arrived.length && arrived.every(isDocumentRun)) return;
+  const title = arrived.find((block) => block.tagName === 'H1');
   if (title) title.dataset.leadHeading = '';
   
   let run = null;
@@ -43766,6 +43773,42 @@ function keepMinimapForRedraw() {
   scheduleMinimapSpacerResize();
   bindDocumentMinimapPreview(minimap.querySelector('.document-minimap-track'));
 }
+
+function markupWithoutAttributes(el) {
+  return el.outerHTML.replace(/<([a-zA-Z][\w-]*)(?:"[^"]*"|'[^']*'|[^>"'])*>/g, '<$1>');
+}
+
+function takeDrawnAttributes(into, from) {
+  for (const name of into.getAttributeNames()) if (name !== 'data-lead-heading' && !from.hasAttribute(name)) into.removeAttribute(name);
+  for (const name of from.getAttributeNames()) if (into.getAttribute(name) !== from.getAttribute(name)) into.setAttribute(name, from.getAttribute(name));
+  const inside = into.children;
+  const drawn = from.children;
+  for (let at = 0; at < inside.length && at < drawn.length; at++) takeDrawnAttributes(inside[at], drawn[at]);
+}
+
+
+function keptBakedLayout(layoutClass, html) {
+  if (!window.__leafSite) return null;
+  const baked = app.firstElementChild;
+  if (!baked || !baked.classList.contains('baked-page') || baked.nextElementSibling) return null;
+  const bakedBody = baked.firstElementChild;
+  const runs = bakedBody ? Array.from(bakedBody.children) : [];
+  if (!bakedBody || !bakedBody.classList.contains('document-body') || !runs.length || !runs.every(isDocumentRun)) return null;
+  const holder = document.createElement('div');
+  holder.innerHTML = html;
+  const drawnBody = holder.firstElementChild;
+  if (!drawnBody || drawnBody.nextElementSibling || !drawnBody.classList.contains('document-body')) return null;
+  const kept = documentBlocks(bakedBody);
+  const drawn = Array.from(drawnBody.children);
+  if (kept.length !== drawn.length) return null;
+  for (const name of drawnBody.getAttributeNames()) bakedBody.setAttribute(name, drawnBody.getAttribute(name));
+  kept.forEach((block, at) => {
+    if (markupWithoutAttributes(block) === markupWithoutAttributes(drawn[at])) takeDrawnAttributes(block, drawn[at]);
+    else block.replaceWith(drawn[at]);
+  });
+  baked.className = layoutClass;
+  return baked;
+}
 function renderState(keepDetachedRender = false, landingAnchor = null) {
   closeTableFormulaPicker();
   
@@ -43797,7 +43840,9 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     const previousBody = app.querySelector('.document-body');
     const previousScrollOrigin = previousBody ? previousBody.style.getPropertyValue('--reader-scroll-origin') : '';
     
-    app.innerHTML = `<div class="${layoutClass}" style="display:none">${state.document.html}</div>`;
+    const keptLayout = keptBakedLayout(layoutClass, state.document.html);
+    
+    if (!keptLayout) app.innerHTML = `<div class="${layoutClass}" style="display:none">${state.document.html}</div>`;
     const readerLayout = app.firstElementChild;
     
     if (readerLayout) makeDocumentRuns(readerLayout.querySelector('.document-body'));
@@ -43843,7 +43888,8 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     
     repinSizedTables(renderedPath);
     renderDocumentTabs(readerLayout?.querySelector('.document-body'), renderedPath);
-    holdReadingBlocks(readerLayout);
+    
+    if (!keptLayout) holdReadingBlocks(readerLayout);
     
     if (readerLayout) {
       readerLayout.style.removeProperty('display');

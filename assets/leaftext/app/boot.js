@@ -2,9 +2,12 @@
 //
 // Everything above this line is the app's own — its page, its script, its stylesheet. This only answers, and it answers out of files sitting beside the page: there is no server behind any of it.
 
-import { landingPath, sayMissing, startLeaftext } from './host.js';
-import { fetchWatched } from './fetches.js';
-import { loadRenderer } from './renderer.js';
+import { assetBase, landingPath, sayMissing, startLeaftext } from './host.js';
+import { fetchWatched, fetchWatchedStream } from './fetches.js';
+import { compileRenderer, loadRenderer } from './renderer.js';
+
+/** Where a file the page names is fetched from: the site's root where the page says one, else the address as written. */
+const addressOf = (path) => (window.__leafSiteRoot ? new URL(path, new URL(window.__leafSiteRoot, location.origin)).href : path);
 
 /** One file, as a response the host can read, or an error naming it.
  *
@@ -13,7 +16,7 @@ import { loadRenderer } from './renderer.js';
 async function fetched(path) {
   let response;
   try {
-    response = await fetchWatched(window.__leafSiteRoot ? new URL(path, new URL(window.__leafSiteRoot, location.origin)).href : path);
+    response = await fetchWatched(addressOf(path));
   } catch (error) {
     throw Object.assign(new Error(String((error && error.message) || error)), { file: path });
   }
@@ -84,15 +87,28 @@ const SITE_LAYOUTS = {
   },
 };
 
+// The renderer, asked for before anything else and compiled as it arrives. It is 1.2 MB on the wire against a listing of a few hundred bytes, so asking for it only once the listing and the host were ready left a slow phone waiting on the largest file a site serves after everything else had come in. Caught on a branch of its own, because nothing reads it until the host does and a failure before then is still the host's to say.
+const RENDERER = assetBase() + 'leaftext.wasm';
+const rendererCompiling = fetchWatchedStream(addressOf(RENDERER), async (response) => {
+  if (!response.ok) throw new Error(`the server answered ${response.status}`);
+  return compileRenderer(response);
+}).catch((error) => {
+  throw Object.assign(new Error(String((error && error.message) || error)), { file: RENDERER });
+});
+rendererCompiling.catch(() => {});
+
 try {
   // The listing carries the site's own name beside its documents: the pane draws it as the trail's first word, where the desktop draws the vault it is standing in. It also says where the documents are: under `source/` for a folder export, or at their own addresses for a site served in place, where every `.md` a crawler was promised has to keep answering.
   const listing = await (await fetched('documents.json')).json();
   const base = typeof listing.documentBase === 'string' ? listing.documentBase : 'source';
   const at = (path) => (base ? `${base}/${path}` : path);
+  // Asked for only where the listing names one: leaftext.com's names its table, and a folder or a site written in place has none, so asking for the old default name was a 404 in every visitor's console.
   let imageSizes = {};
-  try {
-    imageSizes = await (await fetched(listing.imageSizes || 'image-sizes.json')).json();
-  } catch {}
+  if (typeof listing.imageSizes === 'string' && listing.imageSizes) {
+    try {
+      imageSizes = await (await fetched(listing.imageSizes)).json();
+    } catch {}
+  }
   const documents = listing.documents || [];
   // Only leaftext.com's listing names one; every other site draws its landing as the app draws any document.
   const frontPage = typeof listing.frontPage === 'string' && listing.frontPage ? await frontPageFor(listing.frontPage) : null;
@@ -106,7 +122,7 @@ try {
     imageSizes,
     frontPage,
     layouts,
-    loadRenderer,
+    loadRenderer: (url, fetchWith) => loadRenderer(url, fetchWith, url === RENDERER ? rendererCompiling : null),
     fetch: fetched,
     // Documents keep their bytes; the host decodes only a glossary it reads for terms.
     read: async (path) => new Uint8Array(await (await fetched(at(path))).arrayBuffer()),

@@ -17,6 +17,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { instantiateCore } from './web-module.mjs';
+import { firstSheet } from './web-page.mjs';
 import { imageSizes } from './site-images.mjs';
 import { project } from './project.mjs';
 import { CARD_DIR, PAGE_FOLDERS, SITE_FRAGMENT, cardOf, forwardingMarkdown, forwardingPage, hasPage, inPlaceSite, originOf, pageOf, writeDocsList } from './site-page.mjs';
@@ -48,6 +49,8 @@ export const APP_COLORS_PATH = `${APP_DIR}/leaftext-colors.wasm`;
 export const APP_BOOK_PATH = `${APP_DIR}/leaftext-book.wasm`;
 export const APP_SCRIPT_PATH = `${APP_DIR}/app.js`;
 export const APP_STYLES_PATH = `${APP_DIR}/app.css`;
+/** The part of that sheet a baked page waits for before its first paint (`firstSheet` in `scripts/web-page.mjs`). */
+export const APP_FIRST_STYLES_PATH = `${APP_DIR}/first.css`;
 
 /** The host a browser answers the page through, the bytes it speaks to its modules, its loader and its store, out of `web/preview/`; the deadline every fetch waits under; and the landing's layout, its chart and its motion, and the shelf's layout and what moves on it, which the loader hands the host — the website's own files. */
 export const HOST_FILES = [
@@ -92,6 +95,7 @@ export const PUBLISHED = [
   APP_BOOK_PATH,
   APP_SCRIPT_PATH,
   APP_STYLES_PATH,
+  APP_FIRST_STYLES_PATH,
   ...HOST_FILES.map(([path]) => path),
   ...(existsSync(join(root, VENDOR)) ? vendorFiles().map(([path]) => path) : []),
 ];
@@ -212,7 +216,7 @@ export async function bakeSite(leaf, project, from = root, { layout = frontLayou
   listing.frontPage = FRONT_DOCUMENT;
   listing.layouts = { ...SITE_LAYOUTS };
   if (listing.landing !== FRONT_DOCUMENT) throw new Error(`the site would open on ${listing.landing || 'nothing'} rather than ${FRONT_DOCUMENT}`);
-  if (!/class="reader-layout baked-page"><article class="document-body[^"]*">\s*\S/.test(page)) throw new Error(`the renderer drew no ${FRONT_DOCUMENT} into ${FRONT_PAGE}`);
+  if (!/class="reader-layout baked-page">(?:<script>[\s\S]*?<\/script>)?<article class="document-body[^"]*">\s*\S/.test(page)) throw new Error(`the renderer drew no ${FRONT_DOCUMENT} into ${FRONT_PAGE}`);
   // The front page is the one page whose job is to get somebody to press Download, so a publish that lost its layout stops rather than going out as the README drawn plain.
   if (!page.includes(`<article class="document-body ${FRONT_LAYOUT_CLASS}">`)) throw new Error(`${FRONT_PAGE} came out of the bake with ${FRONT_DOCUMENT} drawn plain rather than laid out as the front page`);
   return new Map([
@@ -285,6 +289,7 @@ export function publishedAssets(app, plainBytes, colorsBytes, bookBytes) {
     [APP_BOOK_PATH, bookBytes],
     [APP_SCRIPT_PATH, app.script()],
     [APP_STYLES_PATH, app.styles()],
+    [APP_FIRST_STYLES_PATH, firstSheet(app.styles(), (path) => readFileSync(join(root, path), 'utf8'))],
     ...HOST_FILES.map(([path, from]) => [path, readFileSync(join(root, from))]),
     ...vendorFiles().map(([path, from]) => [path, readFileSync(join(root, from))]),
   ]);

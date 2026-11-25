@@ -864,10 +864,19 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
   //
   // A static site has to keep its routing in the hash: a pushed path would 404 on a reload, and the result must stay a folder on a plain static host. So `#<path>` is the document and `#<path>#<anchor>` is a heading inside it, cut at the last `#`. Each open adds an entry rather than rewriting the one entry, which is what gives the browser's own Back somewhere to go — and the place the reader is leaving is stamped onto the entry they leave, so Back comes back to the paragraph rather than the top.
 
+  // The folder the site is served from: the one the page names, else the folder of the address it was opened at. A site written in place names none and is often served from a folder of its own — The Point at Infinity is `/the-point-at-infinity/` — and writing its documents under the domain's own root turned the address into `https://ryanallen.com/#script.md`, whose reload is the domain's home page.
+  const siteRoot = window.__leafSiteRoot || location.pathname.replace(/[^/]*$/, '') || '/';
+  // The canonical address the page was served with, which is the landing's own: the site wrote it, and a crawler reading the landing is handed it rather than an address with a document in its hash.
+  const servedCanonical = (() => {
+    const link = typeof document === 'undefined' || !document.head ? null : document.head.querySelector('link[rel="canonical"]');
+    return link ? link.getAttribute('href') : null;
+  })();
+  let landingDocument = '';
+
   /** The address a document, and a heading inside it, is read at. */
   function addressFor(path, anchor) {
     const page = pageByPath.get(path);
-    return page ? `${page}${anchor ? `#${encodeURIComponent(anchor)}` : ''}` : `${window.__leafSiteRoot || '/'}#${path}${anchor ? `#${anchor}` : ''}`;
+    return page ? `${page}${anchor ? `#${encodeURIComponent(anchor)}` : ''}` : `${siteRoot}#${path}${anchor ? `#${anchor}` : ''}`;
   }
 
   function decodeAddressPart(text) {
@@ -1092,11 +1101,15 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
     if (handed) (typeof requestIdleCallback === 'function' ? requestIdleCallback : setTimeout)(() => core.indexGlossary());
     // The pane follows the document, the way it does in the app.
     showFolder(path.includes('/') ? path.split('/').slice(0, -1).join('/') : '');
-    repointHead(path, anchor, pageByPath.get(path));
+    if (path === landingDocument && !anchor && servedCanonical && !pageByPath.get(path)) {
+      const canonical = document.head.querySelector('link[rel="canonical"]');
+      if (canonical) canonical.setAttribute('href', servedCanonical);
+    } else repointHead(path, anchor, pageByPath.get(path));
   }
 
   /** The document the reader arrived on: whatever the address names, or the fallback. Its entry is replaced rather than added to. */
   async function openAddress(fallback) {
+    landingDocument = fallback || '';
     const asked = addressParts(location.hash);
     const onPage = pathByPage.get(location.pathname);
     const wanted = known.has(asked.path) ? asked : onPage ? { path: onPage, anchor: decodeAddressPart(location.hash.slice(1)) } : { path: fallback, anchor: '' };
@@ -1637,7 +1650,8 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
             ? 'the table says this host answers it, and there is no arm'
             : 'no line in the command table';
     refused.push({ command: command.command, kind: kind || null, reason });
-    console.info('this host does not answer', command.command, '—', reason);
+    // A refusal the table expects is the browser being a browser, said on every load of every site — `frontEndReady`, `startupReady` and `setWindowChrome` among them — so it is kept on the record and not said. A command still owed, or one the table has no line for, is work somebody has to see.
+    if (kind !== REFUSED) console.info('this host does not answer', command.command, '—', reason);
   }
 
   // What this host can write the page out as. A browser has no save window and no disk, so PDF is the browser's own print and the other two rows are downloads the page builds here. Said out loud rather than left empty, because the page draws this list as a menu on a Mac and an unnamed row would offer a reader something nothing behind it can make.

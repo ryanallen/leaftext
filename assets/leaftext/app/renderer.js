@@ -1,9 +1,25 @@
 // The bytes between the published page's host and its three modules — the renderer, the book packer and the fence colors. Its own file because the host carries no `import`: the loader imports this and hands it over.
 
-export async function loadRenderer(url, fetchWith = fetch) {
-  const response = await fetchWith(url);
-  if (!response.ok) throw new Error(`no renderer at ${url}`);
-  const { instance } = await WebAssembly.instantiate(await response.arrayBuffer(), {});
+/**
+ * The module compiled while its bytes are still arriving, where the answer is one a browser can compile as a stream, else compiled once they are all here. `response` is a real `Response` — the published loader's watched one — so a host handing the whole body over at once, or serving the module under another type, takes the second road.
+ */
+export async function compileRenderer(response) {
+  const type = response && response.headers && typeof response.headers.get === 'function' ? response.headers.get('content-type') || '' : '';
+  if (typeof WebAssembly.instantiateStreaming === 'function' && typeof Response === 'function' && response instanceof Response && /^application\/wasm\b/i.test(type)) {
+    return (await WebAssembly.instantiateStreaming(response, {})).instance;
+  }
+  return (await WebAssembly.instantiate(await response.arrayBuffer(), {})).instance;
+}
+
+/** The module at `url` as the calls the host makes on it. `compiling` is the instance already on its way, where the loader asked for it before the host was ready to: the renderer is the largest thing a site fetches, so it is asked for first. */
+export async function loadRenderer(url, fetchWith = fetch, compiling = null) {
+  let instance;
+  if (compiling) instance = await compiling;
+  else {
+    const response = await fetchWith(url);
+    if (!response.ok) throw new Error(`no renderer at ${url}`);
+    instance = (await WebAssembly.instantiate(await response.arrayBuffer(), {})).instance;
+  }
   const api = instance.exports;
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();

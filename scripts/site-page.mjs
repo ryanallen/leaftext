@@ -249,7 +249,7 @@ export function landingOf(documents) {
 /**
  * The page and the listing that make `folder` into the app, served where its documents already are.
  *
- * `assets` is where the front end is fetched from. `fragment` is the site's own lines. The landing document is drawn into the page, so the first response carries its words for a crawler and for a reader whose module has not arrived yet; the host's first render draws the same document over it. `layout`, where a site has one, is what the landing's drawn words pass through before they are written in, handed the landing's path beside them.
+ * `assets` is where the front end is fetched from. `fragment` is the site's own lines. The landing document is drawn into the page, so the first response carries its words for a crawler and for a reader whose module has not arrived yet; the host's first render keeps those words where they match its own and draws only what differs. `layout`, where a site has one, is what the landing's drawn words pass through before they are written in, handed the landing's path beside them.
  */
 export async function inPlaceSite(leaf, folder, paths, { name, assets, fragment = '', imageSizes = '', layout = null, pages = false, siteRoot = '' }) {
   const found = await listDocuments(leaf, folder, paths);
