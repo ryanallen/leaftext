@@ -6767,6 +6767,34 @@ body.frameless.is-fullscreen .startup-card {
   letter-spacing: var(--lt-tracking-040);
   color: var(--lt-muted-foreground);
 }
+/* The sizes a narrow window reads at: smaller headings at 900 pixels and under, a narrower reading pad and smaller headings still at 600. Here rather than beside the home screen, because a published page's first sheet is cut from this part and the words a phone paints are laid out at these sizes; nothing between this part and the home screen's sets them, so the cascade is the one it was. */
+@media (max-width: 900px) {
+  :root {
+    --type-display-size: calc(var(--type-base) * 2.4);
+    --type-h1-size: calc(var(--type-base) * 1.9);
+    --type-h2-size: calc(var(--type-base) * 1.7);
+    --type-h3-size: calc(var(--type-base) * 1.55);
+    --type-h4-size: calc(var(--type-base) * 1.4);
+    --type-h5-size: calc(var(--type-base) * 1.3);
+    --type-h6-size: calc(var(--type-base) * 1.15);
+  }
+  /* On :root, not the layout: the shell sizes the rail's column from this too, and the two have to shrink together. */
+  :root {
+    --minimap-preview-width: 46px;
+  }
+}
+@media (max-width: 600px) {
+  :root {
+    --reader-content-pad: 16px;
+    --type-display-size: calc(var(--type-base) * 2);
+    --type-h1-size: calc(var(--type-base) * 1.6);
+    --type-h2-size: calc(var(--type-base) * 1.45);
+    --type-h3-size: calc(var(--type-base) * 1.35);
+    --type-h4-size: calc(var(--type-base) * 1.25);
+    --type-h5-size: calc(var(--type-base) * 1.2);
+    --type-h6-size: calc(var(--type-base) * 1.1);
+  }
+}
 /* Every piece of app chrome — this bar, the library pane, its two bands, the search field — takes `--lt-surface` itself. No per-surface tint or mix: any variant shows up as a tone seam where two of them meet. */
 .app-bar {
   position: fixed;
@@ -17220,21 +17248,6 @@ body.is-home-box-dragging button {
   max-height: 0;
   opacity: 0;
 }
-@media (max-width: 900px) {
-  :root {
-    --type-display-size: calc(var(--type-base) * 2.4);
-    --type-h1-size: calc(var(--type-base) * 1.9);
-    --type-h2-size: calc(var(--type-base) * 1.7);
-    --type-h3-size: calc(var(--type-base) * 1.55);
-    --type-h4-size: calc(var(--type-base) * 1.4);
-    --type-h5-size: calc(var(--type-base) * 1.3);
-    --type-h6-size: calc(var(--type-base) * 1.15);
-  }
-  /* On :root, not the layout: the shell sizes the rail's column from this too, and the two have to shrink together. */
-  :root {
-    --minimap-preview-width: 46px;
-  }
-}
 @media (max-width: 640px) {
   /* No padding or gap here: the lead and trailing zones carry their own insets, and adding the bar's on top shifts the logo off the library header's 12px it is meant to line up with — the whole left group slides right as the window narrows. */
   .tab {
@@ -17242,18 +17255,6 @@ body.is-home-box-dragging button {
   }
   .tab-label {
     max-width: 96px;
-  }
-}
-@media (max-width: 600px) {
-  :root {
-    --reader-content-pad: 16px;
-    --type-display-size: calc(var(--type-base) * 2);
-    --type-h1-size: calc(var(--type-base) * 1.6);
-    --type-h2-size: calc(var(--type-base) * 1.45);
-    --type-h3-size: calc(var(--type-base) * 1.35);
-    --type-h4-size: calc(var(--type-base) * 1.25);
-    --type-h5-size: calc(var(--type-base) * 1.2);
-    --type-h6-size: calc(var(--type-base) * 1.1);
   }
 }
 /* leaftext.com's landing: the README laid out by `site/front-page-layout.js` inside the reading column — one band holding the promise, the app recorded moving and both downloads, then the comparison, six cards, the install line and the foot. The app's own bar, pane and rail stand around it as they do around every page, and the desktop never draws this layout; the dotted leaf the hero shows is the start screen's too, so its own rules are in `home.css`. Each element the layout styles wears a class of its own, and a rule that has to outrank the document's own names the tag beside it. */
@@ -19714,118 +19715,6 @@ p.shelf-foot {
   right: 10px;
   z-index: 1;
 }
-/* The app's one scrollbar, worn by everything that draws one: the reader with no minimap, the library pane, any box marked .leaf-scroll, and the five boxes a document brings. Those five are named as a selector rather than given a class because they come out of Markdown with nowhere to carry one; where the markup is ours the box takes .leaf-scroll. Every wearer is in all ten rules and not only the six that paint: the three on the box carry the thumb's color and inset, so a box in half of them reserves a gutter and never draws in it. `.table-lane > table` is redundant under the document selector and stays, named as a wearer by the test that walks this block. Never set `scrollbar-width` on any of them: in Chromium either standard scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
-.leaf-scroll::-webkit-scrollbar,
-.library-scroll::-webkit-scrollbar,
-.reader-shell:not(.has-minimap)::-webkit-scrollbar,
-.console-chat-log:not(.has-rail)::-webkit-scrollbar,
-.table-lane > table::-webkit-scrollbar,
-.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar {
-  /* 4px of inset each side plus the 6px the thumb actually shows. */
-  width: 14px;
-  height: 14px;
-}
-.leaf-scroll::-webkit-scrollbar-track,
-.library-scroll::-webkit-scrollbar-track,
-.reader-shell:not(.has-minimap)::-webkit-scrollbar-track,
-.console-chat-log:not(.has-rail)::-webkit-scrollbar-track,
-.table-lane > table::-webkit-scrollbar-track,
-.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-track {
-  /* Transparent, not the surface color: an opaque track masks the grain and leaves an ungrained strip down the edge it sits on. */
-  background: transparent;
-}
-/* Registered so it can be animated at all: an unregistered custom property has no type to interpolate, and a transition written on the bar itself never runs in this engine — the fade shipped that way and only ever blinked. Inherited, because a scrollbar pseudo has no declarations of its own and reads this off its box. Registering is safe here and is not next door: the one that killed the app fed a grid track off :root, so every frame relaid the window out (see .library-shell). This drives paint on a bar inside a gutter that is reserved either way. */
-@property --lt-scroll-thumb {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: transparent;
-}
-/* How far the thumb is held off each edge of its gutter, registered for the same reason and inherited down to the thumb the same way. Shrinking it thickens the grabber inside the gutter that is reserved either way, so nothing on the page reflows. Zero initially because the box rule below always supplies the resting value; the initial one is only what an element outside that rule would read. */
-@property --lt-scroll-thumb-inset {
-  syntax: "<length>";
-  inherits: true;
-  initial-value: 0px;
-}
-/* The bar answers the scroll, not the pointer over the box: gone at rest, there while that box is moving, and gone again a moment after it stops. Never the whole box's hover — pointing at a list on the way somewhere else is not asking to be told how long it is. `is-scrolling` is stamped on whatever scrolled, and `is-pointing` on whatever has the pointer in its own gutter, both by the watchers in `dom.js`. The fade rides the box because it cannot ride the bar; the resting rule carries the exit and the raised ones the enter, which is what a direction per curve costs. */
-.leaf-scroll,
-.library-scroll,
-.reader-shell:not(.has-minimap),
-.console-chat-log:not(.has-rail),
-.table-lane > table,
-.document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
-  --lt-scroll-thumb: transparent;
-  --lt-scroll-thumb-inset: var(--lt-stroke-4);
-  transition: --lt-scroll-thumb var(--lt-duration-160) var(--lt-ease-accelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
-}
-/* Scrolling changes the color and nothing else: a bar that swells every time the page moves is a bar drawing attention to itself while somebody is reading. The inset still names its exit here, so a pointer leaving mid-scroll thins the thumb while the bar stays up. */
-.leaf-scroll.is-scrolling,
-.library-scroll.is-scrolling,
-.reader-shell:not(.has-minimap).is-scrolling,
-.console-chat-log:not(.has-rail).is-scrolling,
-.table-lane > table.is-scrolling,
-.document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-scrolling {
-  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
-  transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
-}
-/* Aiming at the bar is aiming at a control, so it comes back and thickens to be held: 6px of painted thumb becomes 10px inside the same gutter. Last of the three on purpose — a box that is both scrolling and pointed at takes this one, and the color it sets is the same, so the two reasons never fight. */
-.leaf-scroll.is-pointing,
-.library-scroll.is-pointing,
-.reader-shell:not(.has-minimap).is-pointing,
-.console-chat-log:not(.has-rail).is-pointing,
-.table-lane > table.is-pointing,
-.document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-pointing {
-  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
-  --lt-scroll-thumb-inset: var(--lt-stroke-2);
-  transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-200) var(--lt-ease-decelerate);
-}
-/* Somebody who told their operating system to always show scrollbars gets every bar painted at rest. The flag is stamped on the surface from the platform's own preference, so the app asks nobody: a bar that is gone until you scroll is a target you have to already know is there. Painted, not thickened — the pointer's 10px grabber stays a hover answer, because a bar permanently at its widest takes room from the page for exactly the reader who turned this on. So this sets the color and nothing else, and the inset still comes from the resting and pointing rules above. Last of the four on purpose, and the extra class on the surface outranks all three either way. The railed reader is not a wearer here any more than it is up there: the picture down its side is the same control doing the same job. */
-.app-surface.is-scrollbars-always .leaf-scroll,
-.app-surface.is-scrollbars-always .library-scroll,
-.app-surface.is-scrollbars-always .reader-shell:not(.has-minimap),
-.app-surface.is-scrollbars-always .console-chat-log:not(.has-rail),
-.app-surface.is-scrollbars-always .table-lane > table,
-.app-surface.is-scrollbars-always .document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
-  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
-}
-/* What fades is that property, not an opacity: a scrollbar pseudo has no box of its own to fade. It also means the bar's width is reserved whether or not the thumb is painted, so nothing on the page moves when one appears. */
-.leaf-scroll::-webkit-scrollbar-thumb,
-.library-scroll::-webkit-scrollbar-thumb,
-.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
-.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb,
-.table-lane > table::-webkit-scrollbar-thumb,
-.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb {
-  /* A transparent border with the fill clipped inside it is the only way to inset a webkit thumb. */
-  border: var(--lt-scroll-thumb-inset) solid transparent;
-  background-clip: padding-box;
-  border-radius: var(--lt-radius-md);
-  background-color: var(--lt-scroll-thumb);
-}
-/* Floor the grabber so a long page can't shrink it to a sliver. Per axis: a bare `min-height` on a sideways bar sets its thickness instead of its length, which swells the 14px bar into a 56px band. */
-.leaf-scroll::-webkit-scrollbar-thumb:vertical,
-.library-scroll::-webkit-scrollbar-thumb:vertical,
-.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:vertical,
-.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb:vertical,
-.table-lane > table::-webkit-scrollbar-thumb:vertical,
-.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:vertical {
-  min-height: 56px;
-}
-.leaf-scroll::-webkit-scrollbar-thumb:horizontal,
-.library-scroll::-webkit-scrollbar-thumb:horizontal,
-.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:horizontal,
-.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb:horizontal,
-.table-lane > table::-webkit-scrollbar-thumb:horizontal,
-.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:horizontal {
-  min-width: 56px;
-}
-/* Where two bars meet, so the square between them is not the platform's gray. */
-.leaf-scroll::-webkit-scrollbar-corner,
-.library-scroll::-webkit-scrollbar-corner,
-.reader-shell:not(.has-minimap)::-webkit-scrollbar-corner,
-.console-chat-log:not(.has-rail)::-webkit-scrollbar-corner,
-.table-lane > table::-webkit-scrollbar-corner,
-.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-corner {
-  background: transparent;
-}
 /* The one sheet that can stand on another sheet, so it rides one rung above its own scrim at 42 rather than beside the sheets at 41. */
 .glossary-sheet {
   position: fixed;
@@ -20599,6 +20488,118 @@ p.shelf-foot {
 /* One day is one column: seven would leave it a seventh of the sheet wide. */
 .calendar-month.is-one-day {
   grid-template-columns: minmax(0, 1fr);
+}
+/* The app's one scrollbar, in a part of its own because a published page's first sheet carries it: the reader with no rail wears it, and without it the browser's own bar takes its width out of the column, so the words a slow phone painted moved 16 px when app.css arrived. It is worn by everything that draws one: the reader with no minimap, the library pane, any box marked .leaf-scroll, and the five boxes a document brings. Those five are named as a selector rather than given a class because they come out of Markdown with nowhere to carry one; where the markup is ours the box takes .leaf-scroll. Every wearer is in all ten rules and not only the six that paint: the three on the box carry the thumb's color and inset, so a box in half of them reserves a gutter and never draws in it. `.table-lane > table` is redundant under the document selector and stays, named as a wearer by the test that walks this block. Never set `scrollbar-width` on any of them: in Chromium either standard scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
+.leaf-scroll::-webkit-scrollbar,
+.library-scroll::-webkit-scrollbar,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar,
+.table-lane > table::-webkit-scrollbar,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar {
+  /* 4px of inset each side plus the 6px the thumb actually shows. */
+  width: 14px;
+  height: 14px;
+}
+.leaf-scroll::-webkit-scrollbar-track,
+.library-scroll::-webkit-scrollbar-track,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-track,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-track,
+.table-lane > table::-webkit-scrollbar-track,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-track {
+  /* Transparent, not the surface color: an opaque track masks the grain and leaves an ungrained strip down the edge it sits on. */
+  background: transparent;
+}
+/* Registered so it can be animated at all: an unregistered custom property has no type to interpolate, and a transition written on the bar itself never runs in this engine — the fade shipped that way and only ever blinked. Inherited, because a scrollbar pseudo has no declarations of its own and reads this off its box. Registering is safe here and is not next door: the one that killed the app fed a grid track off :root, so every frame relaid the window out (see .library-shell). This drives paint on a bar inside a gutter that is reserved either way. */
+@property --lt-scroll-thumb {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+/* How far the thumb is held off each edge of its gutter, registered for the same reason and inherited down to the thumb the same way. Shrinking it thickens the grabber inside the gutter that is reserved either way, so nothing on the page reflows. Zero initially because the box rule below always supplies the resting value; the initial one is only what an element outside that rule would read. */
+@property --lt-scroll-thumb-inset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+/* The bar answers the scroll, not the pointer over the box: gone at rest, there while that box is moving, and gone again a moment after it stops. Never the whole box's hover — pointing at a list on the way somewhere else is not asking to be told how long it is. `is-scrolling` is stamped on whatever scrolled, and `is-pointing` on whatever has the pointer in its own gutter, both by the watchers in `dom.js`. The fade rides the box because it cannot ride the bar; the resting rule carries the exit and the raised ones the enter, which is what a direction per curve costs. */
+.leaf-scroll,
+.library-scroll,
+.reader-shell:not(.has-minimap),
+.console-chat-log:not(.has-rail),
+.table-lane > table,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
+  --lt-scroll-thumb: transparent;
+  --lt-scroll-thumb-inset: var(--lt-stroke-4);
+  transition: --lt-scroll-thumb var(--lt-duration-160) var(--lt-ease-accelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+/* Scrolling changes the color and nothing else: a bar that swells every time the page moves is a bar drawing attention to itself while somebody is reading. The inset still names its exit here, so a pointer leaving mid-scroll thins the thumb while the bar stays up. */
+.leaf-scroll.is-scrolling,
+.library-scroll.is-scrolling,
+.reader-shell:not(.has-minimap).is-scrolling,
+.console-chat-log:not(.has-rail).is-scrolling,
+.table-lane > table.is-scrolling,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-scrolling {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+/* Aiming at the bar is aiming at a control, so it comes back and thickens to be held: 6px of painted thumb becomes 10px inside the same gutter. Last of the three on purpose — a box that is both scrolling and pointed at takes this one, and the color it sets is the same, so the two reasons never fight. */
+.leaf-scroll.is-pointing,
+.library-scroll.is-pointing,
+.reader-shell:not(.has-minimap).is-pointing,
+.console-chat-log:not(.has-rail).is-pointing,
+.table-lane > table.is-pointing,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-pointing {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  --lt-scroll-thumb-inset: var(--lt-stroke-2);
+  transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+/* Somebody who told their operating system to always show scrollbars gets every bar painted at rest. The flag is stamped on the surface from the platform's own preference, so the app asks nobody: a bar that is gone until you scroll is a target you have to already know is there. Painted, not thickened — the pointer's 10px grabber stays a hover answer, because a bar permanently at its widest takes room from the page for exactly the reader who turned this on. So this sets the color and nothing else, and the inset still comes from the resting and pointing rules above. Last of the four on purpose, and the extra class on the surface outranks all three either way. The railed reader is not a wearer here any more than it is up there: the picture down its side is the same control doing the same job. */
+.app-surface.is-scrollbars-always .leaf-scroll,
+.app-surface.is-scrollbars-always .library-scroll,
+.app-surface.is-scrollbars-always .reader-shell:not(.has-minimap),
+.app-surface.is-scrollbars-always .console-chat-log:not(.has-rail),
+.app-surface.is-scrollbars-always .table-lane > table,
+.app-surface.is-scrollbars-always .document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+}
+/* What fades is that property, not an opacity: a scrollbar pseudo has no box of its own to fade. It also means the bar's width is reserved whether or not the thumb is painted, so nothing on the page moves when one appears. */
+.leaf-scroll::-webkit-scrollbar-thumb,
+.library-scroll::-webkit-scrollbar-thumb,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb,
+.table-lane > table::-webkit-scrollbar-thumb,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb {
+  /* A transparent border with the fill clipped inside it is the only way to inset a webkit thumb. */
+  border: var(--lt-scroll-thumb-inset) solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--lt-radius-md);
+  background-color: var(--lt-scroll-thumb);
+}
+/* Floor the grabber so a long page can't shrink it to a sliver. Per axis: a bare `min-height` on a sideways bar sets its thickness instead of its length, which swells the 14px bar into a 56px band. */
+.leaf-scroll::-webkit-scrollbar-thumb:vertical,
+.library-scroll::-webkit-scrollbar-thumb:vertical,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:vertical,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb:vertical,
+.table-lane > table::-webkit-scrollbar-thumb:vertical,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:vertical {
+  min-height: 56px;
+}
+.leaf-scroll::-webkit-scrollbar-thumb:horizontal,
+.library-scroll::-webkit-scrollbar-thumb:horizontal,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:horizontal,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb:horizontal,
+.table-lane > table::-webkit-scrollbar-thumb:horizontal,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:horizontal {
+  min-width: 56px;
+}
+/* Where two bars meet, so the square between them is not the platform's gray. */
+.leaf-scroll::-webkit-scrollbar-corner,
+.library-scroll::-webkit-scrollbar-corner,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-corner,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-corner,
+.table-lane > table::-webkit-scrollbar-corner,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-corner {
+  background: transparent;
 }
 /* The Grove's contents: the seeds and the switch in the sheet's header, the total, and the Growth areas with their level bars. The sheet's own frame is in sheets.css and the pill in library.css. */
 /* One balance for the whole Grove, at the head's right end beside the close cross, in every area and inside each one. */

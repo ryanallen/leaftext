@@ -40,6 +40,7 @@ export const FIRST_SHEET_PARTS = [
   'src/assets/reading/reader-page.css',
   'src/assets/reading/document.css',
   'src/assets/reading/minimap.css',
+  'src/assets/reading/scrollbars.css',
 ];
 
 /** Where the composed theme colors end in `app.css`: the tokens part opens with this line. */
@@ -156,21 +157,33 @@ export function sitePage(page, bootScript, { assets = ASSETS, head = '', foot = 
     if (!laidOut) shaped = shaped.replace('<div id="libraryShell" class="library-shell">', (open) => `${open}<script>${FIRST_FRAME}</script>`);
     // The launch card stands over every layer until the module has drawn a document, so over baked words it hides the one thing a slow phone already has to show.
     shaped = shaped.replace(/<div id="startupCard" class="startup-card"(?![^>]*\shidden)/, '$& hidden');
-    if (!laidOut) shaped = firstSheetFirst(afterFirstPaint(shaped, assets), assets);
+    if (!laidOut) {
+      const sheets = firstSheetFirst(shaped, assets);
+      shaped = afterFirstPaint(sheets.shaped, assets, sheets.later);
+    }
   }
   return shaped;
 }
 
-/** The page's stylesheets as a baked page links them: `first.css` holding the paint, `app.css` and the math sheet asked for at once but laid on only when they arrive, each with a `noscript` link for a browser that runs no script. */
+/**
+ * The page's stylesheets as a baked page links them: `first.css` holding the paint, and `app.css` and the math sheet handed to the loader, which adds them when it starts the scripts, each kept as a `noscript` link for a browser that runs no script.
+ *
+ * Not preloaded: a simulated slow phone is charged for every request begun before its largest paint, and the 153 KB whole sheet asked for in the head held the live page's paint at 2.7 to 2.8 seconds where the words were otherwise on screen at 1.8.
+ */
 function firstSheetFirst(shaped, assets) {
   const quoted = assets.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const sheet = new RegExp(`<link rel="stylesheet" href="${quoted}app\\.css"([^>]*)>`).exec(shaped);
-  if (!sheet) return shaped;
-  const later = (href, attributes) => `<link rel="preload" as="style" href="${href}"${attributes} onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="${href}"${attributes}></noscript>`;
-  let out = shaped.replace(sheet[0], `<link rel="stylesheet" href="${assets}first.css"${sheet[1]}>${later(`${assets}app.css`, sheet[1])}`);
-  const math = new RegExp(`<link rel="stylesheet" href="${quoted}katex/katex\\.min\\.css"([^>]*)>`).exec(out);
-  if (math) out = out.replace(math[0], later(`${assets}katex/katex.min.css`, math[1]));
-  return out;
+  if (!sheet) return { shaped, later: [] };
+  const later = [];
+  const kept = (href, attributes) => {
+    later.push({ href, cors: /\bcrossorigin\b/.test(attributes) });
+    return `<noscript><link rel="stylesheet" href="${href}"${attributes}></noscript>`;
+  };
+  const math = new RegExp(`<link rel="stylesheet" href="${quoted}katex/katex\\.min\\.css"([^>]*)>`).exec(shaped);
+  let out = shaped;
+  if (math) out = out.replace(math[0], kept(`${assets}katex/katex.min.css`, math[1]));
+  out = out.replace(sheet[0], `<link rel="stylesheet" href="${assets}first.css"${sheet[1]}>${kept(`${assets}app.css`, sheet[1])}`);
+  return { shaped: out, later };
 }
 
 /**
@@ -178,13 +191,13 @@ function firstSheetFirst(shaped, assets) {
  *
  * A slow phone is charged for every request begun before its largest paint, and the 615 KB script fetched for a `defer` tag begins as the page's first bytes are read: with every app script gone the words were the largest paint at 2.0–2.7 seconds on a simulated slow phone, and with that one tag back it was 6.1. So both are added from a few inline lines two frames after the document is parsed, the loader once the script has run, which is the order the `defer` tag and the module gave them.
  */
-function afterFirstPaint(shaped, assets) {
+function afterFirstPaint(shaped, assets, sheets = []) {
   const script = new RegExp(`<script src="${assets.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}app\\.js"([^>]*)></script>`);
   const tag = script.exec(shaped);
   const loader = `<script type="module" src="${assets}boot.js"></script>`;
   if (!tag || !shaped.includes(loader)) return shaped;
   const crossorigin = /\bcrossorigin(?:="([^"]*)")?/.exec(tag[1]);
   // Started by the browser's own word that the words are painted — a largest-paint entry on a block of the baked words, once the whole page has been parsed — because a frame is no such word: a page holding its paint for a font runs its frames before anything is on screen, and a page painted as it is parsed reports the bar's own label first. A browser that keeps no such entry (Safari) starts once the page has loaded and two frames have passed, and nothing waits past four seconds, so a tab opened behind another, which reports no paint at all, still boots.
-  const load = `<script>(()=>{let started=false;const go=()=>{if(started)return;started=true;const app=document.createElement('script');app.src=${JSON.stringify(`${assets}app.js`)};${crossorigin ? `app.crossOrigin=${JSON.stringify(crossorigin[1] || 'anonymous')};` : ''}app.onload=()=>{const boot=document.createElement('script');boot.type='module';boot.src=${JSON.stringify(`${assets}boot.js`)};document.body.appendChild(boot)};document.body.appendChild(app)};const twoFrames=()=>requestAnimationFrame(()=>requestAnimationFrame(go));const P=window.PerformanceObserver;if(P&&P.supportedEntryTypes&&P.supportedEntryTypes.includes('largest-contentful-paint')){let parsed=false,painted=false;const ready=()=>{if(parsed&&painted)setTimeout(go,0)};const seen=new P((list,watch)=>{if(list.getEntries().some((e)=>e.element&&e.element.closest&&e.element.closest('.baked-page'))){watch.disconnect();painted=true;ready()}});seen.observe({type:'largest-contentful-paint',buffered:true});const whole=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{parsed=true;ready()}));if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',whole);else whole()}else addEventListener('load',twoFrames);setTimeout(go,4000)})();</script>`;
+  const load = `<script>(()=>{let started=false;const go=()=>{if(started)return;started=true;window.__leafPainted=true;for(const one of ${JSON.stringify(sheets)}){const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=one.href;if(one.cors)sheet.crossOrigin='anonymous';document.head.appendChild(sheet)}const app=document.createElement('script');app.src=${JSON.stringify(`${assets}app.js`)};${crossorigin ? `app.crossOrigin=${JSON.stringify(crossorigin[1] || 'anonymous')};` : ''}app.onload=()=>{const boot=document.createElement('script');boot.type='module';boot.src=${JSON.stringify(`${assets}boot.js`)};document.body.appendChild(boot)};document.body.appendChild(app)};const twoFrames=()=>requestAnimationFrame(()=>requestAnimationFrame(go));const P=window.PerformanceObserver;if(P&&P.supportedEntryTypes&&P.supportedEntryTypes.includes('largest-contentful-paint')){let parsed=false,painted=false;const ready=()=>{if(parsed&&painted)setTimeout(go,0)};const seen=new P((list,watch)=>{if(list.getEntries().some((e)=>e.element&&e.element.closest&&e.element.closest('.baked-page'))){watch.disconnect();painted=true;ready()}});seen.observe({type:'largest-contentful-paint',buffered:true});const whole=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{parsed=true;ready()}));if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',whole);else whole()}else addEventListener('load',twoFrames);setTimeout(go,4000)})();</script>`;
   return shaped.replace(tag[0], '').replace(loader, load);
 }

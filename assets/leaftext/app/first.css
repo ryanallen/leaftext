@@ -5559,6 +5559,32 @@ body.frameless.is-fullscreen .startup-card {
   letter-spacing: var(--lt-tracking-040);
   color: var(--lt-muted-foreground);
 }
+@media (max-width: 900px) {
+  :root {
+    --type-display-size: calc(var(--type-base) * 2.4);
+    --type-h1-size: calc(var(--type-base) * 1.9);
+    --type-h2-size: calc(var(--type-base) * 1.7);
+    --type-h3-size: calc(var(--type-base) * 1.55);
+    --type-h4-size: calc(var(--type-base) * 1.4);
+    --type-h5-size: calc(var(--type-base) * 1.3);
+    --type-h6-size: calc(var(--type-base) * 1.15);
+  }
+  :root {
+    --minimap-preview-width: 46px;
+  }
+}
+@media (max-width: 600px) {
+  :root {
+    --reader-content-pad: 16px;
+    --type-display-size: calc(var(--type-base) * 2);
+    --type-h1-size: calc(var(--type-base) * 1.6);
+    --type-h2-size: calc(var(--type-base) * 1.45);
+    --type-h3-size: calc(var(--type-base) * 1.35);
+    --type-h4-size: calc(var(--type-base) * 1.25);
+    --type-h5-size: calc(var(--type-base) * 1.2);
+    --type-h6-size: calc(var(--type-base) * 1.1);
+  }
+}
 
 .app-bar {
   position: fixed;
@@ -10811,4 +10837,104 @@ body.mac-frame .document-minimap-frame {
 }
 .document-minimap-ribbon.is-colored {
   color: var(--lt-primary-ink);
+}
+
+.leaf-scroll::-webkit-scrollbar,
+.library-scroll::-webkit-scrollbar,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar,
+.table-lane > table::-webkit-scrollbar,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+.leaf-scroll::-webkit-scrollbar-track,
+.library-scroll::-webkit-scrollbar-track,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-track,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-track,
+.table-lane > table::-webkit-scrollbar-track,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-track {
+  background: transparent;
+}
+@property --lt-scroll-thumb {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --lt-scroll-thumb-inset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+.leaf-scroll,
+.library-scroll,
+.reader-shell:not(.has-minimap),
+.console-chat-log:not(.has-rail),
+.table-lane > table,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
+  --lt-scroll-thumb: transparent;
+  --lt-scroll-thumb-inset: var(--lt-stroke-4);
+  transition: --lt-scroll-thumb var(--lt-duration-160) var(--lt-ease-accelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+.leaf-scroll.is-scrolling,
+.library-scroll.is-scrolling,
+.reader-shell:not(.has-minimap).is-scrolling,
+.console-chat-log:not(.has-rail).is-scrolling,
+.table-lane > table.is-scrolling,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-scrolling {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+.leaf-scroll.is-pointing,
+.library-scroll.is-pointing,
+.reader-shell:not(.has-minimap).is-pointing,
+.console-chat-log:not(.has-rail).is-pointing,
+.table-lane > table.is-pointing,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-pointing {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  --lt-scroll-thumb-inset: var(--lt-stroke-2);
+  transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+.app-surface.is-scrollbars-always .leaf-scroll,
+.app-surface.is-scrollbars-always .library-scroll,
+.app-surface.is-scrollbars-always .reader-shell:not(.has-minimap),
+.app-surface.is-scrollbars-always .console-chat-log:not(.has-rail),
+.app-surface.is-scrollbars-always .table-lane > table,
+.app-surface.is-scrollbars-always .document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+}
+.leaf-scroll::-webkit-scrollbar-thumb,
+.library-scroll::-webkit-scrollbar-thumb,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb,
+.table-lane > table::-webkit-scrollbar-thumb,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb {
+  border: var(--lt-scroll-thumb-inset) solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--lt-radius-md);
+  background-color: var(--lt-scroll-thumb);
+}
+.leaf-scroll::-webkit-scrollbar-thumb:vertical,
+.library-scroll::-webkit-scrollbar-thumb:vertical,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:vertical,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb:vertical,
+.table-lane > table::-webkit-scrollbar-thumb:vertical,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:vertical {
+  min-height: 56px;
+}
+.leaf-scroll::-webkit-scrollbar-thumb:horizontal,
+.library-scroll::-webkit-scrollbar-thumb:horizontal,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:horizontal,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-thumb:horizontal,
+.table-lane > table::-webkit-scrollbar-thumb:horizontal,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:horizontal {
+  min-width: 56px;
+}
+.leaf-scroll::-webkit-scrollbar-corner,
+.library-scroll::-webkit-scrollbar-corner,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-corner,
+.console-chat-log:not(.has-rail)::-webkit-scrollbar-corner,
+.table-lane > table::-webkit-scrollbar-corner,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-corner {
+  background: transparent;
 }

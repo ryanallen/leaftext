@@ -89,13 +89,16 @@ const SITE_LAYOUTS = {
 
 // The renderer, asked for before anything else and compiled as it arrives. It is 1.2 MB on the wire against a listing of a few hundred bytes, so asking for it only once the listing and the host were ready left a slow phone waiting on the largest file a site serves after everything else had come in. Caught on a branch of its own, because nothing reads it until the host does and a failure before then is still the host's to say.
 const RENDERER = assetBase() + 'leaftext.wasm';
-const rendererCompiling = fetchWatchedStream(addressOf(RENDERER), async (response) => {
-  if (!response.ok) throw new Error(`the server answered ${response.status}`);
-  return compileRenderer(response);
-}).catch((error) => {
-  throw Object.assign(new Error(String((error && error.message) || error)), { file: RENDERER });
-});
-rendererCompiling.catch(() => {});
+// Only on a page whose words were painted before this ran (`window.__leafPainted`, set by the lines that add the scripts after the paint): on a page still painting — leaftext.com's laid-out front page — the renderer asked for first was 1.2 MB on the wire before the page's own largest paint, and a slow phone's paint went from 6.3 to 13 seconds.
+const rendererCompiling = window.__leafPainted
+  ? fetchWatchedStream(addressOf(RENDERER), async (response) => {
+    if (!response.ok) throw new Error(`the server answered ${response.status}`);
+    return compileRenderer(response);
+  }).catch((error) => {
+    throw Object.assign(new Error(String((error && error.message) || error)), { file: RENDERER });
+  })
+  : null;
+if (rendererCompiling) rendererCompiling.catch(() => {});
 
 try {
   // The listing carries the site's own name beside its documents: the pane draws it as the trail's first word, where the desktop draws the vault it is standing in. It also says where the documents are: under `source/` for a folder export, or at their own addresses for a site served in place, where every `.md` a crawler was promised has to keep answering.
