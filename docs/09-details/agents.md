@@ -177,6 +177,8 @@ The settings button beside each row opens that account's own view in the same me
 - So does Antigravity while it works with no session record named, as it does where the Leaftext plugin is not installed for it.
 - **Chat** and **Console** stand in the [floating toolbar](../01-features/02-navigation.md#the-floating-toolbar) whenever the console holds Claude Code, Codex or Antigravity.
 - **Console** takes the chat away and gives you the terminal at any moment, working or not. It stays until you press **Chat**.
+- The lit button is what is on screen: **Console** whenever the terminal shows, whatever put it there, and **Chat** only while the chat stands. Pressing **Chat** while the agent is showing something of its own leaves the terminal up and says what it is waiting on.
+- The chat stands however narrow its column, even when Codex wraps its status line over several rows.
 - Each console keeps its own choice, so a chat that has gone wrong never locks you out of your agent.
 - A console or past chat standing beside a document keeps **Chat** and **Console** in a bar of its own under that column.
 - On a past chat, **Console** starts its agent and opens on the terminal.

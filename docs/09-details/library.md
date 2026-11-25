@@ -985,11 +985,17 @@ A Codex that starts a fresh chat with `/clear` or `/new` goes back to **At rest*
 
 ### Past conversations in the sidebar
 
-Under the pane's rows, **All chats** holds the running agents, then every past Claude Code, Codex and Antigravity conversation, newest first: the newest fifty of each agent, and fifty more each time you scroll to the end, back to the oldest chat the agent still keeps. Chats made under an [account](../01-features/10-agents.md) you added are listed with the rest. Each row has its agent's mark, its title and its age, whatever is in front.
+Under the pane's rows, **All chats** holds the running agents, then every past Claude Code, Codex and Antigravity conversation, newest first. It shows the newest fifty of each agent, and fifty more each time you scroll to the end, back to the oldest chat the agent still keeps. Chats made under an [account](../01-features/10-agents.md) you added are listed with the rest. Each row has its agent's mark, its title and its age, whatever is in front.
 
-Press one, and its whole conversation shows at once, read from the agent's own record, with nothing started. Type in its box, and the agent starts in its old folder, carrying on where it left off. A message sent before it is ready waits and goes in once it is.
+Press one, and its whole conversation shows at once, read from the agent's own record, with nothing started. Click in its box, and the agent starts in its old folder, carrying on where it left off. A message sent before it is ready waits and goes in once it is.
 
-A chat whose agent is still running brings that console forward instead. Nothing has to be closed. A chat at rest and out of sight for ten minutes, with its answer seen, is stopped for you, unless another agent waits on it. Its row stays where it was.
+Keep typing while the agent starts. The conversation stays in front until the agent is ready, then hands over the words you have written, the cursor and the keyboard. The live conversation opens at its foot and stays there as the box grows.
+
+An agent that asks something while it starts, such as Codex offering its own update, takes the keyboard for its question. Letters you type meanwhile still join your sentence, and Escape, Enter and the arrows answer the question. A start that takes longer than twenty seconds shows the agent with your words carried across all the same.
+
+A chat in the chat column comes back after Leaftext restarts, even one closed while its agent was still asking a startup question.
+
+A chat whose agent is still running brings that console forward instead. Nothing has to be closed. A chat at rest and out of sight for ten minutes, with its answer seen, is stopped for you, unless another agent waits on it. One that could not be stopped then is asked about again ten minutes later. Its row stays where it was.
 
 Press **Library** for the files, and again for the chats; the files come back just where you left them. An agent whose saved list cannot be read says so in a line of its own rather than leaving its conversations out without a word.
 
@@ -1012,15 +1018,19 @@ Unread, archived and pinned are Leaftext's own marks, kept in its settings, sinc
 
 Carry a chat out of All chats, and a Pinned section appears to take it, with **New section** under the last one while you carry. A section heading's menu has **Rename section**, **Color**, **Icon** and **Remove section**, which returns its chats to All chats. A section goes away with its last chat.
 
-Each section wears a color of its own: its name in a tinted tag, and a bar of that color before each of its chats. A new section takes a color no other section wears; **Color** opens eight swatches under the heading to pick another, and **Icon** a row of twelve pictures to put in the tag. On a light theme each color is drawn in a deeper shade so the name stays readable. The arrow beside a section's name folds it to its heading, and it stays folded.
+Each section wears a color of its own: its name in a tinted tag, and a bar of that color before each of its chats. A new section takes a color no other section wears. **Color** opens eight swatches under the heading to pick another, and **Icon** a row of twelve pictures to put in the tag.
 
-A chat set under another, with **Put under the chat above**, sits indented with a paler bar, and the chat above it gains an arrow that folds the chats under it away. Carrying a chat that has chats under it carries them along; carrying one of them takes it out. Unpinning the chat above leaves the ones under it pinned where they stood.
+On a light theme each color is drawn in a deeper shade so the name stays readable. The arrow beside a section's name folds it to its heading, and it stays folded.
+
+A chat set under another, with **Put under the chat above**, sits indented with a paler bar. The chat above it gains an arrow that folds the chats under it away. Carrying a chat that has chats under it carries them along; carrying one of them takes it out. Unpinning the chat above leaves the ones under it pinned where they stood.
 
 A chat whose agent is working is carried the same way and stands in Pinned with its state. Its console comes forward when a press is let go, not when it goes down. A console whose agent has no conversation yet has nothing to pin; its row only brings it forward.
 
 Carry a chat past the window's edge instead, and it stands in its own Leaftext window, or beside the page in the window you let it go over. A running agent keeps running there, still signed in, with its conversation and everything it was told. A past chat opens there from its own record.
 
-Leaftext keeps its own copy of every pinned chat, so a pin outlives its agent clearing old chats — Claude Code removes its chats after about 30 days. A pinned chat whose agent no longer has it still opens from that copy, and typing in it puts it back where the agent looks and carries on; a chat made under an added account goes back under that account. The copy follows the chat as it grows, and goes when you unpin or delete it. Only a chat its agent removed before it was ever pinned has no copy; it stays in its section, its title gray and its age reading *gone*, rather than vanishing.
+Leaftext keeps its own copy of every pinned chat, so a pin outlives its agent clearing old chats — Claude Code removes its chats after about 30 days. A pinned chat whose agent no longer has it still opens from that copy. Typing in it puts it back where the agent looks and carries on, and a chat made under an added account goes back under that account.
+
+The copy follows the chat as it grows, and goes when you unpin or delete it. Only a chat its agent removed before it was ever pinned has no copy; it stays in its section, its title gray and its age reading *gone*, rather than vanishing.
 
 Unlike a document, a console shows no fade at its top or bottom edge. So whatever a program puts there, such as Claude Code's starting banner or the line you are typing, reads at full strength.
 

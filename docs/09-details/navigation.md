@@ -273,7 +273,7 @@ The last press in the icon rail, at its foot, opens **More**. It holds everythin
 
 There is no Settings row, because there is no settings panel, and no Full screen row, because the window's own button at the top right does that. On a published site there is no rail and no More.
 
-Over a console holding Claude Code, Codex or Antigravity, the bar carries **Chat** and **Console** in place of the views, with the same sliding pill. Chat shows the conversation; Console shows the agent's own terminal, with the keys, until you press Chat. See [the conversation as a chat](../01-features/10-agents.md#the-conversation-as-a-chat).
+Over a console holding Claude Code, Codex or Antigravity, the bar carries **Chat** and **Console** in place of the views, with the same sliding pill. Chat shows the conversation; Console shows the agent's own terminal, with the keys, until you press Chat. The pill sits on whichever one is on screen, so it moves to Console when the agent shows something of its own. See [the conversation as a chat](../01-features/10-agents.md#the-conversation-as-a-chat).
 
 **The bar stays put while a view changes.** Its horizontal place is the same in reading, source and graph views, including the first time source opens after launch.
 

@@ -44791,6 +44791,8 @@ if (calendarSheet) {
 }
 
 const consoleLayers = new Map();
+
+const consoleLaunches = new Map();
 let consoleRuntime = null;
 var consoleShell = document.getElementById('libraryShell');
 
@@ -45444,7 +45446,9 @@ function readConsoleAgent(id, entry) {
   const antigravityResting = antigravityOnScreen && antigravityBare;
   
   const antigravityBanner = () => antigravityBare && !entry.titleAgent && !entry.screenAgent && consoleBottomLines(entry, entry.terminal.rows || 0).some(line => /^\W*Antigravity CLI \d/.test(line.trim()));
-  if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) || consoleClaudeSetup(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) || antigravityResting || (antigravityOnScreen && consoleAntigravityBoxUnderSpinner(screenLines)) || antigravityBanner() ? 'antigravity' : null;
+  
+  const antigravityLaunched = antigravityBare && !entry.titleAgent && !entry.screenAgent && entry.launched?.agent === 'antigravity';
+  if (!entry.titleAgent && entry.screenAgent !== 'codex') entry.screenAgent = consoleClaudeFolderTrust(screenLines) || consoleClaudeSetup(screenLines) ? 'claude' : screenLines.slice(0, 8).some(consoleAntigravityMark) || antigravityResting || (antigravityOnScreen && consoleAntigravityBoxUnderSpinner(screenLines)) || antigravityBanner() || antigravityLaunched ? 'antigravity' : null;
   if (entry.screenAgent) entry.screenNamed = true;
   entry.agent = heldConsoleAgent(entry);
   reportConsoleAgent(id, entry, screenLines);
@@ -45694,6 +45698,7 @@ function makeConsoleLayer(id) {
   }, true);
   const entry = { layer, host, status, statusRecord: null, nativeSession: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, markers: new Set(), activity: 'quiet', titleMark: null, worked: false, codexRestingState: 'rest', codexUpdating: false, antigravityRestingState: 'rest', lastKey: Date.now(), lastResize: 0, quietTimer: 0 };
   consoleLayers.set(id, entry);
+  entry.launched = consoleLaunches.get(id) || null;
   
   const listed = consoleAgentRows.find(row => Number(row.id) === Number(id));
   entry.hostAgent = listed && consoleAgentIcons[listed.agent] ? listed.agent : null;
@@ -45706,7 +45711,13 @@ function makeConsoleLayer(id) {
     const terminal = new window.GhosttyWeb.Terminal({ scrollback: 1000 * 256 * 16, convertEol: false, theme: entry.theme });
     const fit = new window.GhosttyWeb.FitAddon();
     terminal.loadAddon(fit);
+    
+    const keysInSavedChat = savedChatKeepsKeys();
     terminal.open(host);
+    if (keysInSavedChat && document.activeElement !== savedChat.field) {
+      savedChat.field.focus();
+      savedChat.field.setSelectionRange?.(savedChat.field.value.length, savedChat.field.value.length);
+    }
     terminal.renderer.renderLine = drawConsoleRow;
     terminal.renderer.renderCellText = drawConsoleCell;
     if (terminal.renderer.ctx && terminal.renderer.remeasureFont) {
@@ -45803,7 +45814,7 @@ function makeConsoleLayer(id) {
     });
     if (consoleFrontId === id) {
       refreshConsoleGrid(id, entry);
-      terminal.focus();
+      if (!savedChatKeepsKeys()) terminal.focus();
       bindDocumentMinimap();
       scheduleMinimapPreviewUpdate();
     }
@@ -45811,7 +45822,7 @@ function makeConsoleLayer(id) {
     if (entry.focusOwed) {
       entry.focusOwed = false;
       refreshConsoleGrid(id, entry);
-      terminal.focus();
+      if (!savedChatKeepsKeys()) terminal.focus();
     }
   }).catch(error => leafToast(error.message));
   return entry;
@@ -46189,7 +46200,7 @@ function placeConsoleLayers(state = currentState) {
     entry.layer.classList.toggle('is-right-card', shown && card === rightColumn);
     entry.layer.classList.toggle('is-chat-card', card === 'chat');
     
-    if (card === 'chat' && takeChatFocus(id)) {
+    if (card === 'chat' && takeChatFocus(id) && !savedChatKeepsKeys()) {
       if (entry.terminal && entry.fit) entry.terminal.focus();
       else entry.focusOwed = true;
     }
@@ -46260,7 +46271,7 @@ window.leafConsoleFront = id => {
       const terminal = entry.terminal;
       terminal.renderer.render(terminal.wasmTerm, true, terminal.viewportY, terminal, terminal.scrollbarOpacity);
     }
-    entry.terminal.focus();
+    if (!savedChatKeepsKeys()) entry.terminal.focus();
     scheduleMinimapPreviewUpdate();
     renderConsolePin(entry);
   }
@@ -48789,6 +48800,9 @@ function agentLaunchRenameLaunched(id, entry, button) {
 }
 
 window.leafConsoleLaunched = (id, launched) => {
+  const record = launched && typeof launched === 'object' ? launched : null;
+  if (record) consoleLaunches.set(id, record);
+  else consoleLaunches.delete(id);
   const entry = consoleLayers.get(id) || (launched ? makeConsoleLayer(id) : null);
   if (!entry) return;
   entry.launched = launched && typeof launched === 'object' ? launched : null;
@@ -52420,7 +52434,36 @@ function consoleChatView(id, entry) {
   entry.layer.insertBefore(box, entry.status || null);
   entry.chatView = { box, log, list, pin, pinRow, pinWords, pinPlace, pinBack, pinNext, held: null, pinFrame: 0, nodes: new Map(), open: new Set() };
   makeConsoleComposer(id, entry, box);
+  holdConsoleChatAtFoot(entry.chatView);
   return entry.chatView;
+}
+
+
+function holdConsoleChatAtFoot(view) {
+  view.atFoot = true;
+  if (view.footWatch || typeof ResizeObserver !== 'function') return;
+  const { log } = view;
+  const atFoot = () => log.scrollHeight - log.scrollTop - log.clientHeight <= 2;
+  
+  const reader = () => { view.readerScrolledAt = Date.now(); };
+  for (const type of ['wheel', 'touchmove', 'pointerdown', 'keydown']) log.addEventListener(type, reader, { passive: true });
+  view.pin?.addEventListener?.('pointerdown', reader, { passive: true });
+  
+  log.addEventListener('scroll', () => {
+    if (log.clientHeight <= 0) return;
+    if (atFoot()) view.atFoot = true;
+    else if (Date.now() - (view.readerScrolledAt || 0) < 1500) view.atFoot = false;
+    
+    else if (view.atFoot) log.scrollTop = log.scrollHeight;
+  }, { passive: true });
+  view.footWatch = new ResizeObserver(() => {
+    if (view.atFoot && log.clientHeight > 0 && !atFoot()) log.scrollTop = log.scrollHeight;
+  });
+  view.footWatch.observe(log);
+  view.footWatch.observe(view.list);
+  
+  const composer = view.box?.querySelector?.('.console-composer');
+  if (composer) view.footWatch.observe(composer);
 }
 
 
@@ -55216,6 +55259,13 @@ function savedChatFollowsFront() {
   if (tab) showSavedChat(tab);
   pickerFollowsChat();
   const shown = !!tab || savedChatBridging();
+  
+  if (!shown && !savedChatPage.hidden) {
+    handSavedChatViewOnTimeout();
+    keysToSavedChatQuestion();
+  }
+  
+  const back = shown && savedChatPage.hidden;
   if (savedChatPage.hidden !== !shown) {
     savedChatPage.hidden = !shown;
     
@@ -55225,6 +55275,8 @@ function savedChatFollowsFront() {
     coverSavedChatFront();
     coverWebSurface(shown, savedChatPage);
   }
+  if (back) keysBackFromSavedChatQuestion();
+  keysToLiveBoxAfterStepAside();
   
   const lit = shown ? `${savedChat.agent}:${savedChat.conversation}` : '';
   syncConsoleViewsBar();
@@ -55329,9 +55381,13 @@ function savedChatComposer() {
   const dictate = consoleComposerButton('console-composer-tool console-composer-dictate', 'Speak a message', 'microphone');
   dictate.addEventListener('mousedown', (event) => event.preventDefault());
   dictate.addEventListener('click', () => {
+    
+    dictating = true;
     field.focus();
+    dictating = false;
     send({ command: 'startDictation' });
   });
+  let dictating = false;
   const attach = consoleComposerButton('console-composer-tool', 'Attach a file', 'new');
   const slash = consoleComposerButton('console-composer-tool', savedChat.agent === 'codex' ? 'Skills' : 'Commands and skills');
   slash.textContent = savedChat.agent === 'codex' ? '$' : '/';
@@ -55353,6 +55409,10 @@ function savedChatComposer() {
       event.preventDefault();
       field.focus();
     }
+  });
+  
+  field.addEventListener('focus', () => {
+    if (!dictating) startSavedChat();
   });
   field.addEventListener('input', () => {
     fitConsoleComposerField(field);
@@ -55379,7 +55439,7 @@ function startSavedChat({ toConsole = false, press = '' } = {}) {
     return;
   }
   savedChat.starting = true;
-  const started = { agent: savedChat.agent, conversation: savedChat.conversation, console: 0, tab: savedChatIndex(), until: 0, draft: savedChat.field?.value || '', held: '', toConsole, press };
+  const started = { agent: savedChat.agent, conversation: savedChat.conversation, console: 0, tab: savedChatIndex(), until: 0, draft: savedChat.field?.value || '', held: '', toConsole, press, writing: Boolean(savedChat.field) && document.activeElement === savedChat.field };
   savedChatHandOver = started;
   reopenConsoleRecent(started.agent, started.conversation, (answer) => {
     if (savedChatHandOver !== started) return;
@@ -55426,6 +55486,115 @@ function watchSavedChatHandOver(hand) {
 }
 
 
+function handSavedChatView(hand, entry) {
+  if (hand.viewed) return;
+  hand.viewed = true;
+  hand.writing = false;
+  const field = entry.composer.field;
+  const typing = Boolean(savedChat.field) && document.activeElement === savedChat.field;
+  const draft = savedChat.field ? savedChat.field.value : hand.draft;
+  if (draft && !field.value) {
+    field.value = draft;
+    fitConsoleComposerField(field);
+  }
+  if (savedChat.field) savedChat.field.value = '';
+  hand.draft = '';
+  if (entry.chatView?.log) entry.chatView.log.scrollTop = entry.chatView.log.scrollHeight;
+  if (typing) {
+    field.focus();
+    field.setSelectionRange?.(field.value.length, field.value.length);
+    
+    savedChatKeysToLive = field;
+  }
+}
+let savedChatKeysToLive = null;
+
+
+function keysToLiveBoxAfterStepAside() {
+  const field = savedChatKeysToLive;
+  if (!field || !savedChatPage.hidden) return;
+  savedChatKeysToLive = null;
+  if (document.activeElement === field) return;
+  field.focus();
+  field.setSelectionRange?.(field.value.length, field.value.length);
+}
+
+
+function handSavedChatViewOnTimeout() {
+  const hand = savedChatHandOver;
+  if (!hand?.console || !hand.until || Date.now() <= hand.until) return;
+  const entry = consoleLayers.get(hand.console);
+  if (entry?.composer && entry.chat) handSavedChatView(hand, entry);
+  
+  else if (savedChat.field && document.activeElement === savedChat.field) {
+    hand.writing = false;
+    holdSavedChatLetters(hand);
+  }
+}
+
+
+function keysToSavedChatQuestion() {
+  const hand = savedChatHandOver;
+  if (!hand?.console || !savedChat.field || document.activeElement !== savedChat.field) return;
+  if (!consoleAgentRows.some((row) => Number(row.id) === hand.console && row.state === 'needs')) return;
+  hand.keysAtQuestion = true;
+  hand.writing = false;
+  holdSavedChatLetters(hand);
+  consoleLayers.get(hand.console)?.terminal?.focus?.();
+}
+
+
+function holdSavedChatLetters(hand) {
+  hand.holdingLetters = true;
+  if (hand.keyHold) return;
+  hand.keyHold = (event) => {
+    
+    if (savedChatHandOver !== hand) {
+      document.removeEventListener('keydown', hand.keyHold, true);
+      return;
+    }
+    if (!hand.holdingLetters || event.key?.length !== 1 || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
+    event.preventDefault();
+    event.stopPropagation();
+    savedChat.field.value += event.key;
+    hand.draft = savedChat.field.value;
+  };
+  document.addEventListener('keydown', hand.keyHold, true);
+}
+
+function releaseSavedChatLetters(hand) {
+  hand.holdingLetters = false;
+  if (hand.keyHold) document.removeEventListener('keydown', hand.keyHold, true);
+  hand.keyHold = null;
+}
+
+
+function keysBackFromSavedChatQuestion() {
+  const hand = savedChatHandOver;
+  if (!hand?.keysAtQuestion || !savedChat.field) return;
+  hand.keysAtQuestion = false;
+  hand.writing = true;
+  releaseSavedChatLetters(hand);
+  savedChat.field.focus();
+  savedChat.field.setSelectionRange?.(savedChat.field.value.length, savedChat.field.value.length);
+}
+
+
+document.addEventListener('focusin', (event) => {
+  const hand = savedChatHandOver;
+  const field = savedChat.field;
+  if (!hand?.writing || !field || savedChatPage.hidden || event.target === field) return;
+  if (![...consoleLayers.values()].some((entry) => entry.layer?.contains?.(event.target))) return;
+  field.focus();
+  field.setSelectionRange?.(field.value.length, field.value.length);
+}, true);
+
+
+function savedChatKeepsKeys() {
+  return Boolean(savedChatHandOver && savedChat.field && !savedChatPage.hidden && document.activeElement === savedChat.field);
+}
+
+
 function handSavedChatToPrompt(hand, now = Date.now()) {
   
   if (savedChatHandOver !== hand) return true;
@@ -55440,34 +55609,41 @@ function handSavedChatToPrompt(hand, now = Date.now()) {
   if (now - hand.emptySince < SAVED_CHAT_STEADY_MS) return false;
   savedChatHandOver = null;
   if (entry.composer && entry.chat) {
+    releaseSavedChatLetters(hand);
     const field = entry.composer.field;
     
-    const typing = Boolean(savedChat.field) && document.activeElement === savedChat.field;
-    const draft = savedChat.field ? savedChat.field.value : hand.draft;
     if (hand.held) {
+      const draft = field.value;
       field.value = hand.held;
       sendConsoleComposer(hand.console, entry);
+      if (draft && !field.value) field.value = draft;
     }
-    if (draft && !field.value) {
-      field.value = draft;
-      fitConsoleComposerField(field);
+    const viewed = hand.viewed;
+    
+    if (!viewed && !hand.toConsole) handSavedChatView(hand, entry);
+    else if (!viewed) {
+      const draft = savedChat.field ? savedChat.field.value : hand.draft;
+      if (draft && !field.value) {
+        field.value = draft;
+        fitConsoleComposerField(field);
+      }
     }
     savedChatFollowsFront();
     
     if (hand.press) entry.composer[hand.press]?.click?.();
-    if (hand.toConsole) {
-      setConsoleChatHeldOff(hand.console, entry, true);
-      return true;
-    }
-    
-    if (entry.chatView?.log) entry.chatView.log.scrollTop = entry.chatView.log.scrollHeight;
-    if (typing) {
-      field.focus();
-      field.setSelectionRange?.(field.value.length, field.value.length);
-    }
+    if (hand.toConsole) setConsoleChatHeldOff(hand.console, entry, true);
     return true;
   } else {
+    
+    const holding = hand.holdingLetters;
+    releaseSavedChatLetters(hand);
     const text = hand.held || hand.draft;
+    
+    if (holding || (Boolean(savedChat.field) && document.activeElement === savedChat.field)) {
+      entry.terminal.focus?.();
+      
+      savedChatKeysToLive = entry.terminal;
+    }
     if (text) {
       const marked = Boolean(entry.terminal.getMode?.(2004));
       send({ command: 'consoleInput', id: hand.console, data: marked ? `\x1b[200~${text}\x1b[201~` : text });
@@ -55563,12 +55739,13 @@ function watchIdleConsoles(now = Date.now()) {
   for (const [id, entry] of consoleLayers) {
     if (!consoleIdleNow(id, entry)) {
       entry.idleSince = null;
-      entry.idleAsked = false;
+      entry.idleAsked = null;
       continue;
     }
     if (entry.idleSince == null) entry.idleSince = now;
-    else if (!entry.idleAsked && now - entry.idleSince >= SAVED_CHAT_IDLE_MS) {
-      entry.idleAsked = true;
+    
+    else if (now - entry.idleSince >= SAVED_CHAT_IDLE_MS && (entry.idleAsked == null || now - entry.idleAsked >= SAVED_CHAT_IDLE_MS)) {
+      entry.idleAsked = now;
       send({ command: 'stopIdleConsole', id: Number(id) });
     }
   }
