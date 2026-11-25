@@ -985,7 +985,7 @@ A Codex that starts a fresh chat with `/clear` or `/new` goes back to **At rest*
 
 ### Past conversations in the sidebar
 
-Under the pane's rows, **All chats** holds the running agents, then every past Claude Code, Codex and Antigravity conversation, newest first. Each row has its agent's mark, its title and its age, whatever is in front.
+Under the pane's rows, **All chats** holds the running agents, then every past Claude Code, Codex and Antigravity conversation, newest first: the newest fifty of each agent, and fifty more each time you scroll to the end, back to the oldest chat the agent still keeps. Chats made under an [account](../01-features/10-agents.md) you added are listed with the rest. Each row has its agent's mark, its title and its age, whatever is in front.
 
 Press one, and its whole conversation shows at once, read from the agent's own record, with nothing started. Type in its box, and the agent starts in its old folder, carrying on where it left off. A message sent before it is ready waits and goes in once it is.
 
@@ -999,9 +999,10 @@ Each row has a three-dot button that shows when the pointer is over it, and the 
 | --- | --- |
 | **Mark as unread**, U | The row reads bold until you open the chat again; **Mark as read** takes it off |
 | **Pin**, P | Puts the chat in the first section over All chats, making a **Pinned** section where none stands; **Unpin** sends it back |
+| **Put under the chat above**, N | On a pinned chat with a chat of its own section above it, sets it under that chat, indented; on a chat already under one it reads **Take out** |
 | **Rename**, R | Changes the chat's name in All chats. For Claude Code and Codex the new name is written where the agent keeps its own, so the agent's own resume list shows it too |
 | **Archive**, A | Takes the chat out of the list. The **Filter** button on the All chats heading picks **Active**, **Archived** or **All** under **Status**; under Archived, **Unarchive** brings one back |
-| **Delete**, D | Asks first, naming the chat, then moves every file the agent keeps for that conversation to the Recycle Bin or the Trash, so it can be brought back from there |
+| **Delete**, D | Asks first, naming the chat, then moves every file the agent keeps for that conversation to the Recycle Bin or the Trash, so it can be brought back from there; a pinned chat's copy that Leaftext keeps goes too |
 
 **Filter** narrows and orders the list with five rows. **Type** is all, chats or tasks; **Status** is active, archived or all; **Last activity** is all, or the last 1, 3, 7 or 30 days. **Group by** offers date, type, unread, your own sections, agent, or none. **Sort by** offers last activity, date created or name.
 
@@ -1009,13 +1010,17 @@ The button stands pressed while any of them differs from all, active, all, none 
 
 Unread, archived and pinned are Leaftext's own marks, kept in its settings, since no agent has them.
 
-Carry a chat out of All chats, and a Pinned section appears to take it, with **New section** under the last one while you carry. A section heading's menu has **Rename section** and **Remove section**, which returns its chats to All chats. A section goes away with its last chat.
+Carry a chat out of All chats, and a Pinned section appears to take it, with **New section** under the last one while you carry. A section heading's menu has **Rename section**, **Color**, **Icon** and **Remove section**, which returns its chats to All chats. A section goes away with its last chat.
+
+Each section wears a color of its own: its name in a tinted tag, and a bar of that color before each of its chats. A new section takes a color no other section wears; **Color** opens eight swatches under the heading to pick another, and **Icon** a row of twelve pictures to put in the tag. On a light theme each color is drawn in a deeper shade so the name stays readable. The arrow beside a section's name folds it to its heading, and it stays folded.
+
+A chat set under another, with **Put under the chat above**, sits indented with a paler bar, and the chat above it gains an arrow that folds the chats under it away. Carrying a chat that has chats under it carries them along; carrying one of them takes it out. Unpinning the chat above leaves the ones under it pinned where they stood.
 
 A chat whose agent is working is carried the same way and stands in Pinned with its state. Its console comes forward when a press is let go, not when it goes down. A console whose agent has no conversation yet has nothing to pin; its row only brings it forward.
 
 Carry a chat past the window's edge instead, and it stands in its own Leaftext window, or beside the page in the window you let it go over. A running agent keeps running there, still signed in, with its conversation and everything it was told. A past chat opens there from its own record.
 
-A pinned chat whose agent has since deleted it stays in its section, its title gray and its age reading *gone*, rather than vanishing.
+Leaftext keeps its own copy of every pinned chat, so a pin outlives its agent clearing old chats — Claude Code removes its chats after about 30 days. A pinned chat whose agent no longer has it still opens from that copy, and typing in it puts it back where the agent looks and carries on; a chat made under an added account goes back under that account. The copy follows the chat as it grows, and goes when you unpin or delete it. Only a chat its agent removed before it was ever pinned has no copy; it stays in its section, its title gray and its age reading *gone*, rather than vanishing.
 
 Unlike a document, a console shows no fade at its top or bottom edge. So whatever a program puts there, such as Claude Code's starting banner or the line you are typing, reads at full strength.
 

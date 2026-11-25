@@ -49261,7 +49261,11 @@ leafOnEscape(() => { if (setupWalk.open) setupCancel(); }, window);
 setupBackdrop.addEventListener('click', () => { if (setupWalk.screen !== 'saving') setupCancel(); });
 
 var consoleRecentsBand = document.getElementById('consoleRecents');
-const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true, status: 'active', filterView: null, type: 'all', since: 'all', group: 'none', sort: 'recent', renaming: false, pins: [], carry: null, held: false, listOrder: [] };
+const consoleRecents = { rows: [], unavailable: [], reading: false, stale: true, status: 'active', filterView: null, type: 'all', since: 'all', group: 'none', sort: 'recent', renaming: false, pins: [], carry: null, held: false, listOrder: [], limit: 50, picking: null };
+
+const CONSOLE_PIN_HUES = ['green', 'blue', 'purple', 'pink', 'orange', 'yellow', 'teal', 'gray'];
+
+const CONSOLE_PIN_ICONS = ['folder', 'library', 'document', 'code-view', 'terminal', 'chart-bar', 'comment', 'image', 'wand', 'leaf', 'lotus', 'favorite-on'];
 
 
 function consoleRecentAge(seconds, now = Date.now() / 1000) {
@@ -49279,15 +49283,49 @@ function askConsoleRecents() {
   if (!newMenuHostAnswers('agentLaunch')) return;
   consoleRecents.reading = true;
   consoleRecents.stale = false;
-  agentLaunchAsk('recents').then((answer) => {
+  agentLaunchAsk('recents', { limit: consoleRecents.limit }).then((answer) => {
     consoleRecents.reading = false;
     if (answer.error) {
       consoleRecents.unavailable = [{ agent: '', sentence: String(answer.error) }];
     } else {
       consoleRecents.rows = Array.isArray(answer.recents) ? answer.recents : [];
       consoleRecents.unavailable = Array.isArray(answer.unavailable) ? answer.unavailable : [];
-      consoleRecents.pins = Array.isArray(answer.pins) ? answer.pins.map((section) => ({ name: String(section.name || 'Pinned'), chats: Array.isArray(section.chats) ? section.chats : [] })) : [];
+      consoleRecents.pins = Array.isArray(answer.pins) ? answer.pins.map((section) => ({ name: String(section.name || 'Pinned'), color: CONSOLE_PIN_HUES.includes(section.color) ? section.color : '', folded: section.folded === true, icon: CONSOLE_PIN_ICONS.includes(section.icon) ? section.icon : '', chats: Array.isArray(section.chats) ? section.chats : [] })) : [];
     }
+    drawConsoleRecents();
+  });
+}
+
+
+const CONSOLE_RECENTS_PAGE = 50;
+const CONSOLE_RECENTS_MOST = 1000;
+
+function consoleRecentsMayHoldMore() {
+  const counts = new Map();
+  for (const row of consoleRecents.rows) counts.set(row.agent, (counts.get(row.agent) || 0) + 1);
+  return [...counts.values()].some((count) => count >= consoleRecents.limit);
+}
+
+function askOlderConsoleRecents() {
+  if (consoleRecents.reading || consoleRecents.limit >= CONSOLE_RECENTS_MOST || !consoleRecentsMayHoldMore()) return false;
+  consoleRecents.limit = Math.min(CONSOLE_RECENTS_MOST, consoleRecents.limit + CONSOLE_RECENTS_PAGE);
+  consoleRecents.stale = true;
+  askConsoleRecents();
+  return true;
+}
+
+if (consoleRecentsBand) {
+  
+  document.addEventListener('scroll', (event) => {
+    const box = event.target;
+    if (consoleRecentsBand.hidden || !(box instanceof Element) || !box.contains(consoleRecentsBand)) return;
+    if (box.scrollHeight - box.scrollTop - box.clientHeight > box.clientHeight) return;
+    askOlderConsoleRecents();
+  }, true);
+  
+  consoleRecentsBand.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !consoleRecents.picking) return;
+    consoleRecents.picking = null;
     drawConsoleRecents();
   });
 }
@@ -49602,7 +49640,12 @@ function consoleRecentRowHtml(row, now, where, live = null) {
   const drop = where ? ` data-pin-drop="${where}"` : ' data-pin-drop="recents"';
   const state = live ? (consoleAgentWords[live.state] || '') : gone ? 'gone' : consoleRecentAge(row.time, now);
   const needs = live?.state === 'needs' ? ' console-agent-needs' : '';
-  return `<div class="console-recent-row" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}"><span class="console-agent-icon" aria-hidden="true">${mark}</span><span class="console-agent-name">${escapeText(title)}</span>${consoleChatFolderHtml(folderPath)}<span class="console-agent-state${needs}">${escapeText(live || row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
+  
+  const bar = where ? '<span class="console-pin-bar" aria-hidden="true"></span>' : '';
+  const nested = row.pinNested ? ' console-pin-nested' : '';
+  
+  const fold = row.pinKids ? `<span role="button" class="sidebar-fold console-pin-fold" data-pin-chat="${escapeAttr(consoleChatKey(row))}" aria-expanded="${!row.pinFolded}" title="${row.pinFolded ? 'Show the chats under it' : 'Fold the chats under it'}"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></span>` : '';
+  return `<div class="console-recent-row${nested}" role="listitem"${drop}><button type="button" class="console-agent console-recent${marks}" ${ids} title="${escapeAttr(`${AGENT_LAUNCH_NAMES[agent] || agent}: ${title}${folder}`)}">${bar}<span class="console-agent-icon" aria-hidden="true">${mark}</span><span class="console-agent-name">${escapeText(title)}</span>${fold}${consoleChatFolderHtml(folderPath)}<span class="console-agent-state${needs}">${escapeText(live || row.time || row.gone ? state : '')}</span></button><button type="button" class="console-recent-more" ${ids} aria-label="${escapeAttr(`More for ${title}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`;
 }
 
 function consoleRecentPinsHtml(now) {
@@ -49611,10 +49654,19 @@ function consoleRecentPinsHtml(now) {
   const parts = [];
   const writers = consoleChatWriters();
   for (const { section, at } of sections) {
-    parts.push(`<div class="console-pins" role="group" aria-label="${escapeAttr(section.name)}"><div class="console-pin-heading" data-pin-section="${at}" data-pin-drop="${at}:end"><span class="console-agents-heading">${escapeText(section.name)}</span><button type="button" class="console-pin-more" data-pin-section="${at}" aria-label="${escapeAttr(`More for ${section.name}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`);
+    const hue = CONSOLE_PIN_HUES.includes(section.color) ? section.color : CONSOLE_PIN_HUES[at % CONSOLE_PIN_HUES.length];
+    parts.push(`<div class="console-pins" role="group" aria-label="${escapeAttr(section.name)}" data-pin-color="${hue}"><div class="console-pin-heading" data-pin-section="${at}" data-pin-drop="${at}:end"><span class="console-pin-title"><span class="console-pin-chip">${section.icon ? `<span class="lt-icon lt-icon-${section.icon}" aria-hidden="true"></span>` : ''}${escapeText(section.name)}</span><button type="button" class="sidebar-fold console-pin-fold" data-pin-section="${at}" aria-expanded="${!section.folded}" title="${section.folded ? 'Open section' : 'Fold section'}"><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></button></span><button type="button" class="console-pin-more" data-pin-section="${at}" aria-label="${escapeAttr(`More for ${section.name}`)}" title="More"><span class="lt-icon lt-icon-more" aria-hidden="true"></span></button></div>`);
+    if (consoleRecents.picking?.at === at && consoleRecents.picking.kind === 'color') parts.push(consolePinSwatchesHtml(at, hue));
+    if (consoleRecents.picking?.at === at && consoleRecents.picking.kind === 'icon') parts.push(consolePinIconsHtml(at, section.icon || ''));
+    
+    if (section.folded) { parts.push('</div>'); continue; }
+    const shut = new Set(section.chats.filter((it) => it.folded).map(consoleChatKey));
     section.chats.forEach((chat, index) => {
+      
+      if (chat.under && shut.has(chat.under)) return;
       const known = consoleRecents.rows.find((row) => consoleChatKey(row) === consoleChatKey(chat));
-      parts.push(consoleRecentRowHtml({ ...chat, ...(known || {}), title: chat.title || known?.title, gone: chat.gone }, now, `${at}:${index}`, writers.get(String(chat.id)) || null));
+      const kids = chat.under ? 0 : section.chats.filter((it) => it.under === consoleChatKey(chat)).length;
+      parts.push(consoleRecentRowHtml({ ...chat, ...(known || {}), title: chat.title || known?.title, gone: chat.gone, pinNested: Boolean(chat.under), pinKids: kids, pinFolded: chat.folded === true }, now, `${at}:${index}`, writers.get(String(chat.id)) || null));
     });
     parts.push('</div>');
   }
@@ -49640,7 +49692,7 @@ function consoleChatPinned(chat) {
 function saveConsolePins() {
   consoleRecents.pins = consoleRecents.pins.filter((section) => section.chats.length);
   drawConsoleRecents();
-  const pins = consoleRecents.pins.map((section) => ({ name: section.name, chats: section.chats.map((chat) => ({ key: consoleChatKey(chat), title: String(chat.title || '') })) }));
+  const pins = consoleRecents.pins.map((section) => ({ name: section.name, color: section.color || '', folded: section.folded === true, icon: section.icon || '', chats: section.chats.map((chat) => ({ key: consoleChatKey(chat), title: String(chat.title || ''), under: chat.under || '', folded: chat.folded === true })) }));
   agentLaunchAsk('setPins', { pins }).then((answer) => {
     if (!answer.error) return;
     leafToast(answer.error);
@@ -49657,21 +49709,63 @@ function unpinConsoleChat(chat) {
 
 
 function pinConsoleChatAt(chat, place) {
-  const before = consoleRecents.pins.map((section) => section.chats.map(consoleChatKey));
-  const pin = unpinConsoleChat(chat);
-  if (place === 'new') {
-    consoleRecents.pins.push({ name: consoleRecents.pins.some((section) => section.chats.length) ? 'New section' : 'Pinned', chats: [pin] });
-  } else if (place !== 'recents') {
-    const [at, index] = String(place).split(':');
-    const section = consoleRecents.pins[Number(at)];
-    if (!section) return;
+  const key = consoleChatKey(chat);
+  const home = consoleRecents.pins.find((section) => section.chats.some((it) => consoleChatKey(it) === key));
+  const kids = home ? home.chats.filter((it) => it.under === key) : [];
+  const [at, index] = String(place).split(':');
+  const into = place === 'new' || place === 'recents' ? null : consoleRecents.pins[Number(at)];
+  if (place !== 'new' && place !== 'recents' && !into) return;
+  
+  const onto = into && index !== 'end' ? into.chats[Number(index)] : null;
+  if (place === 'recents') {
     
-    const was = before[Number(at)]?.indexOf(consoleChatKey(chat)) ?? -1;
-    let to = index === 'end' ? section.chats.length : Number(index);
-    if (was >= 0 && was < to) to -= 1;
-    section.chats.splice(Math.max(0, Math.min(to, section.chats.length)), 0, pin);
+    for (const kid of kids) kid.under = '';
+    unpinConsoleChat(chat);
+    consoleOrderPins();
+    saveConsolePins();
+    return;
   }
+  
+  const pin = unpinConsoleChat(chat);
+  if (home) home.chats = home.chats.filter((it) => it.under !== key);
+  const moving = [pin, ...kids];
+  if (place === 'new') {
+    consoleRecents.pins.push({ name: consoleRecents.pins.some((section) => section.chats.length) ? 'New section' : 'Pinned', color: consoleNextPinHue(), chats: moving });
+  } else {
+    let to = onto ? into.chats.indexOf(onto) : -1;
+    if (to < 0) to = index === 'end' ? into.chats.length : Math.min(Number(index), into.chats.length);
+    into.chats.splice(Math.max(0, to), 0, ...moving);
+  }
+  consoleOrderPins();
   saveConsolePins();
+}
+
+
+function consoleOrderPins() {
+  for (const section of consoleRecents.pins) {
+    const keys = new Set(section.chats.filter((it) => !it.under).map(consoleChatKey));
+    for (const chat of section.chats) if (chat.under && !keys.has(chat.under)) chat.under = '';
+    const ordered = [];
+    for (const chat of section.chats) {
+      if (chat.under) continue;
+      ordered.push(chat, ...section.chats.filter((it) => it.under === consoleChatKey(chat)));
+    }
+    section.chats = ordered;
+  }
+}
+
+
+function consolePinNestEntry(chat) {
+  const key = consoleChatKey(chat);
+  const section = consoleRecents.pins.find((each) => each.chats.some((it) => consoleChatKey(it) === key));
+  if (!section) return null;
+  const at = section.chats.findIndex((it) => consoleChatKey(it) === key);
+  const pin = section.chats[at];
+  if (pin.under) return { label: 'Take out', icon: 'row-above', key: 'N', run: () => { pin.under = ''; consoleOrderPins(); saveConsolePins(); } };
+  if (section.chats.some((it) => it.under === key)) return null;
+  const above = section.chats.slice(0, at).reverse().find((it) => !it.under);
+  if (!above) return null;
+  return { label: 'Put under the chat above', icon: 'row-below', key: 'N', run: () => { pin.under = consoleChatKey(above); consoleOrderPins(); saveConsolePins(); } };
 }
 
 function pinConsoleChat(chat) {
@@ -49685,8 +49779,52 @@ function openConsolePinSectionMenu(at, x, y) {
   if (!section) return;
   showConsoleTabMenu(x, y, [
     { label: 'Rename section', icon: 'rename', key: 'R', run: () => renameConsolePinSection(at) },
+    { label: 'Color', icon: 'theme', key: 'C', run: () => pickConsolePin(at, 'color') },
+    { label: 'Icon', icon: section.icon || 'image', key: 'I', run: () => pickConsolePin(at, 'icon') },
     { label: 'Remove section', icon: 'trash', key: 'D', run: () => { consoleRecents.pins.splice(at, 1); saveConsolePins(); } },
   ]);
+}
+
+
+function consoleNextPinHue() {
+  const worn = consoleRecents.pins.filter((section) => section.chats.length).map((section) => section.color);
+  return CONSOLE_PIN_HUES.find((hue) => !worn.includes(hue)) || CONSOLE_PIN_HUES[worn.length % CONSOLE_PIN_HUES.length];
+}
+
+
+function pickConsolePin(at, kind) {
+  consoleRecents.picking = consoleRecents.pins[at] ? { at, kind } : null;
+  drawConsoleRecents();
+  consoleRecentsBand.querySelector('.console-pin-swatch.is-current, .console-pin-icon.is-current')?.focus?.();
+}
+
+function consolePinSwatchesHtml(at, hue) {
+  const swatches = CONSOLE_PIN_HUES.map((each) => `<button type="button" class="console-pin-swatch${each === hue ? ' is-current' : ''}" data-pin-section="${at}" data-pin-hue="${each}" aria-label="${escapeAttr(each)}" aria-pressed="${each === hue}" title="${escapeAttr(each[0].toUpperCase() + each.slice(1))}"></button>`).join('');
+  return `<div class="console-pin-swatches" role="group" aria-label="Section color">${swatches}</div>`;
+}
+
+
+function consolePinIconsHtml(at, worn) {
+  const cells = ['', ...CONSOLE_PIN_ICONS].map((name) => `<button type="button" class="console-pin-icon${name === worn ? ' is-current' : ''}" data-pin-section="${at}" data-pin-icon="${name}" aria-pressed="${name === worn}" title="${escapeAttr(name ? name.replace(/-/g, ' ') : 'No icon')}">${name ? `<span class="lt-icon lt-icon-${name}" aria-hidden="true"></span>` : ''}</button>`).join('');
+  return `<div class="console-pin-icons" role="group" aria-label="Section icon">${cells}</div>`;
+}
+
+
+function setConsolePinIcon(at, icon) {
+  const section = consoleRecents.pins[at];
+  consoleRecents.picking = null;
+  if (!section || (icon && !CONSOLE_PIN_ICONS.includes(icon))) return drawConsoleRecents();
+  section.icon = icon;
+  saveConsolePins();
+}
+
+
+function setConsolePinHue(at, hue) {
+  const section = consoleRecents.pins[at];
+  consoleRecents.picking = null;
+  if (!section || !CONSOLE_PIN_HUES.includes(hue)) return drawConsoleRecents();
+  section.color = hue;
+  saveConsolePins();
 }
 
 function renameConsolePinSection(at) {
@@ -49880,6 +50018,7 @@ function openConsoleRecentMenu(element, x, y) {
     consoleChatPinned(chat)
       ? { label: 'Unpin', icon: 'bookmark-remove', key: 'P', run: () => pinConsoleChatAt(chat, 'recents') }
       : { label: 'Pin', icon: 'favorite-off', key: 'P', run: () => pinConsoleChat(chat) },
+    consolePinNestEntry(chat),
     { label: 'Rename', icon: 'rename', key: 'R', run: () => renameConsoleRecent(chat) },
     'separator',
     chat.archived
@@ -49887,7 +50026,7 @@ function openConsoleRecentMenu(element, x, y) {
       : { label: 'Archive', icon: 'archive', key: 'A', run: () => markConsoleRecent(chat, 'archiveChat', 'archived', true) },
     { label: 'Delete', icon: 'trash', key: 'D', danger: true, run: () => deleteConsoleRecent(chat) },
   ];
-  showConsoleTabMenu(x, y, entries);
+  showConsoleTabMenu(x, y, entries.filter(Boolean));
 }
 
 
@@ -49937,6 +50076,36 @@ if (consoleRecentsBand) {
     if (consoleRecents.carried) {
       consoleRecents.carried = false;
       return;
+    }
+    const pinFold = event.target.closest?.('.console-pin-fold');
+    if (pinFold) {
+      event.stopPropagation?.();
+      
+      const held = pinFold.dataset.pinChat
+        ? consoleRecents.pins.flatMap((section) => section.chats).find((it) => consoleChatKey(it) === pinFold.dataset.pinChat)
+        : consoleRecents.pins[Number(pinFold.dataset.pinSection)];
+      if (held) {
+        held.folded = !held.folded;
+        saveConsolePins();
+      }
+      return;
+    }
+    const iconChoice = event.target.closest?.('.console-pin-icon');
+    if (iconChoice) {
+      event.stopPropagation?.();
+      setConsolePinIcon(Number(iconChoice.dataset.pinSection), iconChoice.dataset.pinIcon || '');
+      return;
+    }
+    const swatch = event.target.closest?.('.console-pin-swatch');
+    if (swatch) {
+      event.stopPropagation?.();
+      setConsolePinHue(Number(swatch.dataset.pinSection), swatch.dataset.pinHue);
+      return;
+    }
+    
+    if (consoleRecents.picking) {
+      consoleRecents.picking = null;
+      drawConsoleRecents();
     }
     const sectionMore = event.target.closest?.('.console-pin-more');
     if (sectionMore) {
@@ -50008,7 +50177,8 @@ if (consoleRecentsBand) {
       leafHoldPointer(consoleRecentsBand, event.pointerId);
       return;
     }
-    if (event.button !== 0 || event.target.closest?.('.console-recent-more')) return;
+    
+    if (event.button !== 0 || event.target.closest?.('.console-recent-more, .console-pin-fold')) return;
     const row = event.target.closest?.('.console-recent');
     const chat = row && consoleRecentOf(row);
     if (!chat || consoleRecents.status === 'archived') return;
