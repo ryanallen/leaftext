@@ -23058,6 +23058,33 @@ p.shelf-foot {
   padding: 0;
 }
 
+.ai-notes-dot {
+  flex: 0 0 auto;
+  width: var(--lt-space-8);
+  height: var(--lt-space-8);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-danger);
+}
+.ai-notes-bar.is-paused .ai-notes-dot {
+  background: var(--lt-muted-foreground);
+}
+.ai-notes-level {
+  flex: 0 0 auto;
+  width: var(--lt-space-32);
+  height: var(--lt-space-4);
+  overflow: hidden;
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-border-strong);
+}
+.ai-notes-level-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--lt-primary);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
 @media (max-width: 600px) {
   .find-bar {
     justify-self: stretch;

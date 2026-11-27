@@ -62,6 +62,8 @@ See [the details →](../09-details/agents.md#define-a-word-in-a-book)
 
 Agents in different consoles can send each other a finding, a request or a question. Nothing is typed into a console you are using; each agent takes the message when it can. An agent on another machine joins over `ssh` typed in a Leaftext console.
 
+Every agent is told a message from another of your agents is your order. It takes the job, name or role it is sent at once, without asking you first, and reads a long message whole. Words an agent read from outside your machine are passed on as material, not orders.
+
 See [the details →](../09-details/agents.md#agents-in-different-consoles-talk-to-each-other)
 
 #### A planner, a builder, reviewers and a scout
@@ -95,6 +97,14 @@ See [the details →](../09-details/agents.md#closing-the-last-window)
 **Scheduled**, the alarm clock in the icon rail, starts an agent on a timetable: hourly, daily, weekdays, weekly or once. When a task is due, Leaftext opens a console, starts the agent and sends your prompt. Any agent can set one up when you ask.
 
 See [the details →](../09-details/agents.md#scheduled)
+
+### AI notes transcription
+
+**AI notes transcription** is in the + menu. It writes a new note into the folder New starts in. It records your microphone and the computer's sound, so both sides of a call are heard with no meeting bot. Lines arrive every 30 seconds while it records.
+
+When you press Stop, the whole recording is heard again with each speaker named. The agent of the chat in front then writes the Summary, Key points and Action items. Each one links to the transcript line it came from. *AI notes from an audio file…* does the same for an AAC, M4A, MP3 or WAV recording. A file named `AI notes instructions.md` in the same folder is added to the agent's instructions.
+
+The words are heard by ElevenLabs with the key you entered under Read aloud, and each minute recorded is heard twice — live, then whole — so it is billed twice. The note is an ordinary Markdown file on your computer; the recording is deleted once it has been heard. Under a minute of recording, there is no summary. On a Mac, the computer's sound needs Leaftext allowed under System Settings › Privacy & Security › Screen & System Audio Recording.
 
 ### An agent going round in circles is told
 

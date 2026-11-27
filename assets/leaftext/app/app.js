@@ -36,15 +36,26 @@ const journalDescribe = (value) => {
   }
 };
 
+
+const journalToldConsole = (error) => {
+  try {
+    if (window.leafConsoleEngineFailure) window.leafConsoleEngineFailure(error);
+  } catch (_ignored) {
+    
+  }
+};
+
 window.onerror = (message, source, line, column, error) => {
   const place = source ? ` (${source}:${line}:${column})` : '';
   journalReport(`${error ? journalDescribe(error) : message}${place}`);
+  journalToldConsole(error);
   
   return false;
 };
 
 window.addEventListener('unhandledrejection', (event) => {
   journalReport(`unhandled rejection: ${journalDescribe(event && event.reason)}`);
+  journalToldConsole(event && event.reason);
 });
 
 const journalConsoleError = console.error.bind(console);
@@ -15023,6 +15034,54 @@ if (readAloudEngine() && readAloudEngine().addEventListener) {
   readAloudEngine().addEventListener('voiceschanged', () => {
     if (readAloudBar && !readAloudBar.hidden) renderReadAloudVoices();
   });
+}
+
+const aiNotesBar = document.getElementById('aiNotesBar');
+const aiNotesTime = document.getElementById('aiNotesTime');
+const aiNotesLevel = document.getElementById('aiNotesLevel');
+const aiNotesSources = document.getElementById('aiNotesSources');
+const aiNotesPause = document.getElementById('aiNotesPause');
+const aiNotesStop = document.getElementById('aiNotesStop');
+
+let aiNotesPaused = false;
+const AI_NOTES_SOURCES = 'Microphone · Computer sound';
+
+
+function aiNotesClock(seconds) {
+  const whole = Math.max(0, Math.floor(Number(seconds) || 0));
+  const hours = Math.floor(whole / 3600);
+  const minutes = Math.floor((whole % 3600) / 60);
+  const rest = String(whole % 60).padStart(2, '0');
+  return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${rest}` : `${minutes}:${rest}`;
+}
+
+window.leafAiNotesBar = (state) => {
+  if (!aiNotesBar || !state || typeof state !== 'object') return;
+  if (state.done) {
+    aiNotesBar.hidden = true;
+    aiNotesPaused = false;
+    return;
+  }
+  aiNotesBar.hidden = false;
+  const refusals = [state.microphone, state.sound].filter((why) => typeof why === 'string' && why);
+  const silent = refusals.length === 2;
+  
+  aiNotesTime.textContent = silent ? refusals[0] : aiNotesClock(state.seconds);
+  aiNotesLevel.style.transform = `scaleX(${silent ? 0 : Math.min(1, Math.max(0, Number(state.level) || 0))})`;
+  aiNotesSources.textContent = silent ? refusals[1] : (refusals[0] || AI_NOTES_SOURCES);
+  aiNotesPaused = !!state.paused;
+  aiNotesBar.classList.toggle('is-paused', aiNotesPaused);
+  aiNotesPause.setAttribute('aria-pressed', aiNotesPaused ? 'true' : 'false');
+  const words = aiNotesPaused ? 'Resume recording' : 'Pause recording';
+  aiNotesPause.setAttribute('aria-label', words);
+  aiNotesPause.title = words;
+  const icon = aiNotesPause.querySelector('.lt-icon');
+  if (icon) icon.className = `lt-icon lt-icon-${aiNotesPaused ? 'play' : 'pause'}`;
+};
+
+if (aiNotesBar) {
+  aiNotesPause.addEventListener('click', () => send({ command: 'aiNotes', action: aiNotesPaused ? 'resume' : 'pause' }));
+  aiNotesStop.addEventListener('click', () => send({ command: 'aiNotes', action: 'stop' }));
 }
 
 
@@ -45407,16 +45466,18 @@ function registerConsoleMarker(entry, offset = 0) {
 
 function holdConsoleMarkers(entry) {
   if (!entry.markers.size || entry.terminal.buffer.active.type !== 'normal') return;
-  const baseY = entry.terminal.getScrollbackLength();
-  for (const marker of [...entry.markers]) {
-    if (marker.text !== null && consoleLineText(entry, marker.line) !== marker.text) {
-      let line = marker.line - 1;
-      while (line >= 0 && consoleLineText(entry, line) !== marker.text) line -= 1;
-      if (line < 0) { marker.dispose(); continue; }
-      marker.line = line;
+  consoleEngineRead(entry, () => {
+    const baseY = entry.terminal.getScrollbackLength();
+    for (const marker of [...entry.markers]) {
+      if (marker.text !== null && consoleLineText(entry, marker.line) !== marker.text) {
+        let line = marker.line - 1;
+        while (line >= 0 && consoleLineText(entry, line) !== marker.text) line -= 1;
+        if (line < 0) { marker.dispose(); continue; }
+        marker.line = line;
+      }
+      if (marker.text === null && marker.line < baseY) marker.text = consoleLineText(entry, marker.line);
     }
-    if (marker.text === null && marker.line < baseY) marker.text = consoleLineText(entry, marker.line);
-  }
+  });
 }
 
 
@@ -45459,7 +45520,7 @@ function consoleWritten(id, entry) {
 
 
 function consoleAntigravityMark(line) {
-  return /^\s*(?:\? for shortcuts|esc to cancel)\s{2,}\S/.test(line) || /(?:^|\s{2})[^\s·][^·]* · (?:minimal|low|medium|high|xhigh|max)\s*$/.test(line) || /^\W*Antigravity CLI \d/.test(line.trim()) || /^\s*Keyboard:\s*↑\/↓\s+Navigate(?:\s+←\/→\s+Effort)?\s+enter\s+Select\s+esc\s+Go Back\s*$/.test(line);
+  return /^\s*(?:\? for shortcuts|esc to cancel)\s{2,}\S/.test(line) || /(?:^|\s{2})(?:[^\s·][^·]* · )?[^\s·][^·]* · (?:minimal|low|medium|high|xhigh|max)\s*$/.test(line) || /^\W*Antigravity CLI \d/.test(line.trim()) || /^\s*Keyboard:\s*↑\/↓\s+Navigate(?:\s+←\/→\s+Effort)?\s+enter\s+Select\s+esc\s+Go Back\s*$/.test(line);
 }
 
 function consoleClaudeFolderTrust(lines) {
@@ -45470,6 +45531,16 @@ function consoleClaudeFolderTrust(lines) {
 }
 
 function readConsoleAgent(id, entry) {
+  consoleEngineRead(entry, () => readConsoleAgentScreen(id, entry));
+}
+
+
+function consoleCodexIdleBox(screenLines) {
+  const box = screenLines.slice(0, 8).find(line => /^\s*›\s/.test(line));
+  return Boolean(box) && /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(box);
+}
+
+function readConsoleAgentScreen(id, entry) {
   const type = entry.terminal.buffer.active.type;
   const antigravityOnScreen = entry.screenAgent === 'antigravity';
   
@@ -45485,7 +45556,7 @@ function readConsoleAgent(id, entry) {
     entry.screenAgent = !shell && (entry.codexUpdating || start >= 0 || (entry.screenAgent === 'codex' && screenLines.some(consoleCodexUpdateEnd))) ? 'codex' : null;
   }
   else if (!entry.titleAgent && !entry.screenAgent) {
-    if (screenLines.slice(0, 4).some(line => /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(line)) || consoleCodexSignIn(screenLines) || (/^\s*enter continue · esc skip\s*$/.test(screenLines[0] || '') && screenLines.some(line => /^\s*Update available · \S+ → \S+\s*$/.test(line)))) entry.screenAgent = 'codex';
+    if (consoleCodexIdleBox(screenLines) || consoleCodexSignIn(screenLines) || (/^\s*enter continue · esc skip\s*$/.test(screenLines[0] || '') && screenLines.some(line => /^\s*Update available · \S+ → \S+\s*$/.test(line)))) entry.screenAgent = 'codex';
   }
   
   const antigravityBare = /^\s*(?:\? for shortcuts|esc to cancel)\s*$/.test(screenLines[0] || '');
@@ -45537,10 +45608,72 @@ function measureConsoleFont() {
 }
 
 
-function fitConsoleTerminal(entry) {
+const CONSOLE_RESIZE_SETTLE_MS = 150;
+
+
+function fitConsoleTerminal(id, entry) {
   const size = entry.fit.proposeDimensions();
   const terminal = entry.terminal;
-  if (size && (size.cols !== terminal.cols || size.rows !== terminal.rows)) terminal.resize(size.cols, size.rows);
+  clearTimeout(entry.resizeTimer);
+  entry.resizeTimer = 0;
+  if (!size || (size.cols === terminal.cols && size.rows === terminal.rows)) return;
+  if (!entry.engineHolds) {
+    terminal.resize(size.cols, size.rows);
+    return;
+  }
+  entry.resizeTimer = setTimeout(() => {
+    entry.resizeTimer = 0;
+    const settled = entry.fit.proposeDimensions();
+    if (settled && (settled.cols !== terminal.cols || settled.rows !== terminal.rows)) resizeConsoleEmpty(id, entry, settled.cols, settled.rows);
+  }, CONSOLE_RESIZE_SETTLE_MS);
+}
+
+
+const CONSOLE_ENGINE_CEILING = 256 * 1024 * 1024;
+
+const CONSOLE_ENGINE_FRESH_BYTES = 1024 * 1024;
+function freshConsoleEngine() {
+  const load = window.GhosttyWeb.Ghostty?.load;
+  return load ? window.GhosttyWeb.Ghostty.load().catch(error => { journalReport(`A console's engine could not be made: ${journalDescribe(error)}`); return undefined; }) : Promise.resolve(undefined);
+}
+
+
+function resizeConsoleEmpty(id, entry, columns, rows) {
+  const terminal = entry.terminal;
+  entry.replayAwaited = true;
+  entry.writtenSinceMove = 0;
+  if (entry.frame) cancelAnimationFrame(entry.frame);
+  entry.frame = 0;
+  entry.pending = [];
+  entry.pendingBytes = 0;
+  
+  const moving = entry.moving = (entry.moving || 0) + 1;
+  freshConsoleEngine().then(ghostty => {
+    if (entry.moving !== moving || entry.terminal !== terminal || !consoleLayers.has(id)) return;
+    if (ghostty) {
+      terminal.ghostty = ghostty;
+      terminal.inputHandler.encoder = ghostty.createKeyEncoder();
+      if (!isMacPlatform) terminal.inputHandler.encoder.setOption(window.GhosttyWeb.KeyEncoderOption.ALT_ESC_PREFIX, true);
+    }
+    terminal.reset();
+    entry.engineHolds = false;
+    
+    const now = entry.fit?.proposeDimensions?.();
+    if (now?.cols > 0 && now?.rows > 0) [columns, rows] = [now.cols, now.rows];
+    if (columns !== terminal.cols || rows !== terminal.rows) terminal.resize(columns, rows);
+    for (const marker of [...entry.markers]) marker.dispose();
+    entry.decoder = new TextDecoder();
+    send({ command: 'consoleRefill', id });
+    sendConsoleSize(id, entry);
+  });
+}
+
+
+function holdConsoleEngineMemory(id, entry) {
+  const memory = entry.terminal?.ghostty?.memory;
+  if (!memory || entry.replayAwaited || memory.buffer.byteLength <= CONSOLE_ENGINE_CEILING) return;
+  if ((entry.writtenSinceMove ?? Infinity) <= CONSOLE_ENGINE_FRESH_BYTES) return;
+  resizeConsoleEmpty(id, entry, entry.terminal.cols, entry.terminal.rows);
 }
 
 function refreshConsoleGrid(id, entry) {
@@ -45549,7 +45682,7 @@ function refreshConsoleGrid(id, entry) {
   if (!terminal || document.body.classList.contains('leaf-paper')) return;
   const renderer = terminal.renderer;
   if (renderer.measureFont !== measureConsoleFont) {
-    fitConsoleTerminal(entry);
+    fitConsoleTerminal(id, entry);
     sendConsoleSize(id, entry);
     return;
   }
@@ -45564,7 +45697,7 @@ function refreshConsoleGrid(id, entry) {
     renderer.consoleLetterGaps = null;
     renderer.resize(terminal.cols, terminal.rows);
   }
-  fitConsoleTerminal(entry);
+  fitConsoleTerminal(id, entry);
   if (changed && !entry.layer.hidden) renderer.render(terminal.wasmTerm, true, terminal.viewportY, terminal);
   sendConsoleSize(id, entry);
 }
@@ -45749,12 +45882,12 @@ function makeConsoleLayer(id) {
   const listed = consoleAgentRows.find(row => Number(row.id) === Number(id));
   entry.hostAgent = listed && consoleAgentIcons[listed.agent] ? listed.agent : null;
   entry.agent = heldConsoleAgent(entry);
-  loadConsoleRuntime().then(() => {
+  loadConsoleRuntime().then(freshConsoleEngine).then(ghostty => {
     if (!consoleLayers.has(id)) return;
     const colors = getComputedStyle(layer);
     entry.theme = { background: colors.backgroundColor, foreground: colors.color };
     
-    const terminal = new window.GhosttyWeb.Terminal({ scrollback: 1000 * 256 * 16, convertEol: false, theme: entry.theme });
+    const terminal = new window.GhosttyWeb.Terminal({ ghostty, scrollback: 1000 * 256 * 16, convertEol: false, theme: entry.theme });
     const fit = new window.GhosttyWeb.FitAddon();
     terminal.loadAddon(fit);
     
@@ -45784,6 +45917,8 @@ function makeConsoleLayer(id) {
       } catch (error) {
         const tab = (currentState.tabs || []).find(tab => tab.kind === 'console' && tab.webId === id);
         journalReport(`Console draw failed in ${tab?.title || 'console ' + id}: ${journalDescribe(error)}`);
+        
+        replaceConsoleEngine(id, entry);
       }
     } });
     
@@ -45839,9 +45974,11 @@ function makeConsoleLayer(id) {
     window.addEventListener('resize', entry.scaleChange);
     entry.observer = new ResizeObserver(() => {
       if (layer.hidden) return;
-      fitConsoleStatus(entry);
-      
-      refreshConsoleGrid(id, entry);
+      consoleEngineRead(entry, () => {
+        fitConsoleStatus(entry);
+        
+        refreshConsoleGrid(id, entry);
+      });
       if (consoleFrontId !== id) return;
       renderConsolePin(entry);
     });
@@ -45852,6 +45989,7 @@ function makeConsoleLayer(id) {
     entry.pendingBytes = 0;
     if (entry.replaySize) terminal.resize(...entry.replaySize);
     entry.replaySize = null;
+    entry.engineHolds = opening.length > 0;
     terminal.write(opening, () => {
       entry.map = null;
       consoleWritten(id, entry);
@@ -46335,6 +46473,7 @@ window.leafConsoleOutput = (id, encoded) => {
   const bytes = consoleBytes(encoded);
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   if (!entry.frame) consoleOutputArrived(id);
+  if (entry.replayAwaited) return;
   if (!entry.terminal) {
     entry.pending.push(bytes);
     entry.pendingBytes += bytes.length;
@@ -46369,6 +46508,8 @@ window.leafConsoleOutput = (id, encoded) => {
 
 function writeConsoleOutput(id, entry, text) {
   if (consoleBellsIn(entry, text)) consoleBellRang(id);
+  if (text.length) entry.engineHolds = true;
+  if (entry.writtenSinceMove !== undefined) entry.writtenSinceMove += text.length;
   
   entry.answering = true;
   try {
@@ -46377,6 +46518,7 @@ function writeConsoleOutput(id, entry, text) {
       consoleWritten(id, entry);
       if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
       scheduleChatRail(id);
+      holdConsoleEngineMemory(id, entry);
     });
   } finally {
     entry.answering = false;
@@ -46411,6 +46553,8 @@ window.leafConsoleReplay = (id, encoded, columns, rows) => {
   entry.terminal.reset();
   if (entry.replaySize) entry.terminal.resize(...entry.replaySize);
   entry.replaySize = null;
+  entry.replayAwaited = false;
+  entry.engineHolds = bytes.length > 0;
   for (const marker of [...entry.markers]) marker.dispose();
   entry.terminal.write(entry.decoder.decode(bytes, { stream: true }), () => {
     entry.map = null;
@@ -46418,6 +46562,26 @@ window.leafConsoleReplay = (id, encoded, columns, rows) => {
     if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
   });
   if (entry.fit && !entry.layer.hidden) refreshConsoleGrid(id, entry);
+};
+
+
+window.leafConsoleRefill = (id, encoded) => {
+  const entry = consoleLayers.get(id);
+  if (!entry?.terminal || !entry.replayAwaited) return;
+  entry.replayAwaited = false;
+  const text = entry.decoder.decode(consoleBytes(encoded), { stream: true });
+  entry.engineHolds = text.length > 0;
+  entry.answering = true;
+  try {
+    entry.terminal.write(text, () => {
+      entry.map = null;
+      consoleWritten(id, entry);
+      if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
+      scheduleChatRail(id);
+    });
+  } finally {
+    entry.answering = false;
+  }
 };
 
 
@@ -46582,6 +46746,54 @@ window.leafConsolePrune = tabs => {
     if (entry.terminal) entry.terminal.dispose();
     entry.layer.remove();
     consoleLayers.delete(id);
+  }
+};
+
+function consoleEngineError(error) {
+  return error?.name === 'RuntimeError' || (error?.name === 'RangeError' && /Invalid code point/.test(String(error.message)));
+}
+
+
+function replaceConsoleEngine(id, entry) {
+  if (consoleLayers.get(id) !== entry || !entry.terminal) return false;
+  if (Date.now() - (entry.refilledAfterFailure || 0) < 1000) return false;
+  entry.refilledAfterFailure = Date.now();
+  setTimeout(() => { if (consoleLayers.get(id) === entry) resizeConsoleEmpty(id, entry, entry.terminal.cols, entry.terminal.rows); }, 0);
+  return true;
+}
+
+function consoleEngineFailed(entry, error) {
+  for (const [id, each] of consoleLayers) {
+    if (each !== entry || !replaceConsoleEngine(id, entry)) continue;
+    const tab = (currentState.tabs || []).find(tab => tab.kind === 'console' && tab.webId === id);
+    journalReport(`A console's engine failed in ${tab?.title || 'console ' + id}: ${journalDescribe(error)}`);
+  }
+}
+
+
+function consoleEngineRead(entry, read, otherwise) {
+  try {
+    return read();
+  } catch (error) {
+    if (!consoleEngineError(error)) throw error;
+    consoleEngineFailed(entry, error);
+    return otherwise;
+  }
+}
+
+
+let consoleEnginesProbed = 0;
+window.leafConsoleEngineFailure = error => {
+  if (!consoleEngineError(error) || Date.now() - consoleEnginesProbed < 1000) return;
+  consoleEnginesProbed = Date.now();
+  for (const entry of [...consoleLayers.values()]) {
+    if (!entry.terminal) continue;
+    consoleEngineRead(entry, () => {
+      entry.terminal.wasmTerm?.update?.();
+      if (entry.terminal.buffer.active.type !== 'normal') return;
+      const held = entry.terminal.getScrollbackLength();
+      for (let line = 0; line <= held; line += 1) entry.terminal.buffer.active.getLine(line);
+    });
   }
 };
 
@@ -47147,6 +47359,11 @@ function placeConsolePin(entry, marker, same = false) {
 
 
 function consolePinInput(entry, data, id) {
+  
+  consoleEngineRead(entry, () => consolePinTyped(entry, data, id));
+}
+
+function consolePinTyped(entry, data, id) {
   const pin = entry.pin;
   if (!pin) return;
   
@@ -47306,6 +47523,11 @@ function consolePinStepButton(label, icon, step) {
 }
 
 function renderConsolePin(entry) {
+  
+  consoleEngineRead(entry, () => renderConsolePinOver(entry));
+}
+
+function renderConsolePinOver(entry) {
   const pin = entry.pin;
   if (!pin || !entry.terminal) return;
   const type = entry.terminal.buffer.active.type;
@@ -48122,12 +48344,36 @@ window.leafNewMenuFolderListed = (request, listing) => {
 window.leafNewMenuFolderChosen = (request, path) => {
   if (path && request === newMenuFolder.request) openNewMenuFolder(path);
 };
+
+function newMenuChatAgentInFront() {
+  const live = consoleFrontId !== null ? consoleFrontId : chatConsoleId();
+  const entry = live !== null ? consoleLayers.get(live) : null;
+  
+  let agent = entry?.statusRecord?.agent || entry?.agent || '';
+  if (!agent && savedChatShowing()) agent = savedChat.agent;
+  return ['claude', 'codex', 'antigravity'].includes(agent) ? agent : '';
+}
 function newMenuMainRows() {
   const rows = [{
     label: 'New page',
     icon: '<span class="lt-icon lt-icon-new" aria-hidden="true"></span>',
     run: () => send({ command: 'newDocument' }),
   }];
+  
+  const summaryAgent = newMenuChatAgentInFront();
+  if (newMenuHostAnswers('newAiNotes')) {
+    rows.push({
+      label: 'AI notes transcription',
+      title: 'Record and transcribe into a new note in the folder New starts in',
+      icon: '<span class="lt-icon lt-icon-microphone" aria-hidden="true"></span>',
+      run: () => send({ command: 'newAiNotes', path: newMenuFolderPath() || '', agent: summaryAgent }),
+    }, {
+      label: 'AI notes from an audio file…',
+      title: 'Transcribe an AAC, M4A, MP3 or WAV recording into a new note in the folder New starts in',
+      icon: '<span class="lt-icon lt-icon-microphone" aria-hidden="true"></span>',
+      run: () => send({ command: 'newAiNotes', path: newMenuFolderPath() || '', file: true, agent: summaryAgent }),
+    });
+  }
   const starts = newMenuHostAnswers('newConsole') || newMenuHostAnswers('agentLaunch');
   
   if (starts && newMenuHostAnswers('newMenuFolderList')) {
@@ -51614,8 +51860,16 @@ function readConsoleChat(entry) {
   if (/ needs$/.test(entry.agentSaid || '')) return null;
   return readConsoleScreenOnce(terminal.wasmTerm, () => {
     const prompt = consoleModelPrompt(entry, agent);
-    if (prompt.kind !== 'empty') return null;
     const rows = consolePromptRows(entry);
+    
+    const starting = agent === 'codex' && prompt.kind === 'draft' && consoleCodexStarting(rows, prompt.top);
+    
+    const sent = prompt.kind === 'draft' && !starting ? consoleSentStanding(entry, prompt.text) : '';
+    if (prompt.kind === 'empty' && entry.composer?.sent && !consoleComposerHolding(entry)) entry.composer.sent = null;
+    
+    const words = prompt.kind === 'draft' && !starting && !sent ? consolePromptJoin(String(prompt.text || '').split('\n'), terminal.cols) : '';
+    const adopt = words && !/^[/$]/.test(words) && !/(?:^|\s)@\S*$/.test(words) ? words : '';
+    if (prompt.kind !== 'empty' && !starting && !sent && !adopt) return null;
     if (consolePromptQuestion(entry, rows)) return null;
     const top = prompt.top;
     const cover = top - 1;
@@ -51623,8 +51877,11 @@ function readConsoleChat(entry) {
     const base = consoleBuffer(entry).baseY;
     const footer = rows.slice(top + 1);
     const chat = { agent, screen, top, cover, base, to: base + cover, placeholder: consolePromptWords(rows[top]), footer };
+    if (sent) chat.queued = { texts: [sent] };
+    if (adopt) chat.boxWords = adopt;
     if (agent === 'codex') {
-      if (!consoleCodexFooter(footer)) return null;
+      if (starting) chat.queued = { texts: [String(prompt.text || '').trim()] };
+      else if (!sent && !adopt && !consoleCodexFooter(footer)) return null;
       keepConsoleCodexAnswers(entry, base + cover);
       chat.from = 0;
       return chat;
@@ -51632,7 +51889,7 @@ function readConsoleChat(entry) {
     if (agent === 'antigravity') {
       
       if (rows.slice(0, top).some(row => /^\s*┃.*Enter\/Esc to dismiss/.test(row))) return null;
-      chat.queued = consoleAntigravityQueued(rows.slice(0, top));
+      if (!sent) chat.queued = consoleAntigravityQueued(rows.slice(0, top));
       chat.from = 0;
       return chat;
     }
@@ -51641,6 +51898,18 @@ function readConsoleChat(entry) {
     chat.notes = consoleChatClaudeNotes(chat.mode, rows.slice(0, top));
     return chat;
   });
+}
+
+
+function consoleSentStanding(entry, text) {
+  const sent = entry.composer?.sent;
+  if (!sent) return '';
+  const box = String(text || '').replace(/\s+/g, '');
+  const whole = sent.replace(/\s+/g, '');
+  if (!box) return '';
+  if (/^\[Pastedtext#\d+/.test(box)) return sent;
+  if (box.length < Math.min(8, whole.length)) return '';
+  return whole.startsWith(box) || box.startsWith(whole) ? sent : '';
 }
 
 
@@ -51699,6 +51968,12 @@ function keepConsoleCodexAnswer(entry, echo, below) {
   const last = kept.at(-1);
   if (last && last.command === answer.command && last.after === answer.after) kept[kept.length - 1] = answer;
   else kept.push(answer);
+}
+
+
+const CONSOLE_CODEX_STARTING = /^\s*Waiting\s*for\s*startup\b/;
+function consoleCodexStarting(rows, top) {
+  return rows.slice(top + 1, top + 4).some(row => CONSOLE_CODEX_STARTING.test(row));
 }
 
 
@@ -51854,6 +52129,7 @@ function refreshConsoleChat(id, entry) {
   }
   if (!read) {
     if (!consoleComposerHolding(entry) && !consoleChatMidRedraw(entry)) {
+      journalConsoleChatLeave(entry);
       leaveConsoleChat(entry);
       placeConsoleChatOverPanel(entry);
     }
@@ -51866,7 +52142,10 @@ function refreshConsoleChat(id, entry) {
     if (/ working$/.test(entry.agentSaid || '')) entry.chatUnrecorded = true;
     if (entry.chatUnrecorded) {
       askConsoleRecord(id, entry);
-      if (!consoleComposerHolding(entry)) leaveConsoleChat(entry);
+      if (!consoleComposerHolding(entry)) {
+        journalConsoleChatLeave(entry);
+        leaveConsoleChat(entry);
+      }
       return;
     }
   }
@@ -51886,6 +52165,7 @@ function refreshConsoleChat(id, entry) {
     
     entry.chatView.log.classList.toggle('has-rail', minimapEnabled);
     drawConsoleComposer(id, entry);
+    adoptConsoleBoxWords(id, entry, read.boxWords || '');
   }
   renderConsolePin(entry);
   if (!was || moved) consoleChatRailChanged(id, entry);
@@ -51965,6 +52245,23 @@ function consoleClaudePanelRule(entry) {
 }
 
 
+function journalConsoleChatLeave(entry) {
+  if (!entry.chat?.shown) return;
+  const agent = entry.agent || 'agent';
+  let reading = 'unknown';
+  try {
+    if (/ needs$/.test(entry.agentSaid || '')) reading = 'a question';
+    else {
+      const prompt = consoleModelPrompt(entry, agent);
+      reading = prompt.kind === 'draft' ? `draft "${String(prompt.text || '').replace(/\s+/g, ' ').trim().slice(0, 40)}"` : prompt.kind;
+    }
+  } catch (_unreadable) {
+    reading = 'unreadable';
+  }
+  journalReport(`The ${agent} chat gave way to its terminal with no press: its box read ${reading}${consoleComposerHolding(entry) ? ', the send hold on' : ''}.`);
+}
+
+
 function leaveConsoleChat(entry) {
   if (!entry.chat?.shown) return;
   entry.chat.shown = false;
@@ -52003,7 +52300,6 @@ function consoleChatRefusal(entry) {
   if (/ needs$/.test(entry.agentSaid || '')) return question;
   return readConsoleScreenOnce(terminal.wasmTerm, () => {
     if (consolePromptQuestion(entry, consolePromptRows(entry))) return question;
-    if (consoleModelPrompt(entry, entry.agent).kind === 'draft') return `${name} has words typed in its own box. Send or clear them there, then press Chat.`;
     return `${name} has a screen of its own open in the console. Close it there, then press Chat.`;
   });
 }
@@ -53894,6 +54190,8 @@ function onConsoleComposerInput(id, entry) {
   const state = entry.composer;
   state.back = -1;
   state.discarded = null;
+  
+  if (state.adopted && !state.field.value) clearConsoleBoxWords(id, entry);
   consoleComposerMention(id, entry);
   drawConsoleComposer(id, entry);
 }
@@ -54090,12 +54388,15 @@ function sendConsoleComposer(id, entry) {
       return;
     }
     const prompt = consoleModelPrompt(entry, 'codex');
-    if (prompt.kind !== 'empty') {
+    
+    if (prompt.kind !== 'empty' && !state.adopted) {
       leafToast(prompt.kind === 'draft' ? 'Wait for your last message to go in.' : "Return to the agent's empty prompt first.");
       return;
     }
   }
   state.discarded = null;
+  
+  if (state.adopted) clearConsoleBoxWords(id, entry);
   const command = text.startsWith('/');
   const opening = /^\$([^\s]+)(?:\s|$)/.exec(text);
   const skill = opening && consoleComposerCommandRows(entry).some(row => row.prefix === '$' && row.kind === 'skill' && row.name === opening[1]);
@@ -54144,6 +54445,8 @@ function sendConsoleComposer(id, entry) {
     if (paths.length) setTimeout(rest, 100);
     else rest();
   }
+  
+  state.sent = text || null;
   if (text) {
     consolePromptTold(id, true, text);
     if (state.history.at(-1) !== text) state.history.push(text);
@@ -54152,6 +54455,37 @@ function sendConsoleComposer(id, entry) {
   state.field.value = '';
   state.attached = [];
   drawConsoleComposer(id, entry);
+}
+
+
+function adoptConsoleBoxWords(id, entry, words) {
+  const state = entry.composer;
+  if (!state) return;
+  if (words) {
+    
+    if (state.field.value || state.adopted === words || consoleComposerHolding(entry) || (state.cleared || 0) > Date.now()) return;
+    state.field.value = words;
+    state.adopted = words;
+    fitConsoleComposerField(state.field);
+    drawConsoleComposer(id, entry);
+    return;
+  }
+  if (!state.adopted) return;
+  if (state.field.value === state.adopted) {
+    state.field.value = '';
+    drawConsoleComposer(id, entry);
+  }
+  state.adopted = null;
+}
+
+
+function clearConsoleBoxWords(id, entry) {
+  const state = entry.composer;
+  const words = state.adopted;
+  state.adopted = null;
+  if (!words) return;
+  state.cleared = Date.now() + CONSOLE_COMPOSER_HOLD_MS;
+  send({ command: 'consoleInput', id, data: '\x7f'.repeat(Array.from(words).length + Math.ceil(words.length / Math.max(1, entry.terminal?.cols || 80)) + 1) });
 }
 
 

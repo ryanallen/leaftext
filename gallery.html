@@ -23199,6 +23199,33 @@ p.shelf-foot {
 .find-bar .library-results {
   padding: 0;
 }
+/* AI notes' recording bar: a red dot while it records, dimmed while it is held, and a level that grows from its left edge. */
+.ai-notes-dot {
+  flex: 0 0 auto;
+  width: var(--lt-space-8);
+  height: var(--lt-space-8);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-danger);
+}
+.ai-notes-bar.is-paused .ai-notes-dot {
+  background: var(--lt-muted-foreground);
+}
+.ai-notes-level {
+  flex: 0 0 auto;
+  width: var(--lt-space-32);
+  height: var(--lt-space-4);
+  overflow: hidden;
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-border-strong);
+}
+.ai-notes-level-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--lt-primary);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
 /* At a phone's width the bar spans the page instead of floating in the corner, held off both edges by the same 8px. The reader's own breakpoint, so there is one number and not two. */
 @media (max-width: 600px) {
   .find-bar {
@@ -23555,7 +23582,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 240 values that do not change with the theme, all 120 icons, and all 220 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 24 themes, in light and dark: all 96 colors, the 240 values that do not change with the theme, all 120 icons, and all 221 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -23590,7 +23617,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>96</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>240</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>120</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>220</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>221</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -24116,7 +24143,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">220 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">221 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -24596,6 +24623,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Read aloud bar</h3><code class="built">.read-aloud-bar</code><span class="built">app-shell.html, driven by read-aloud.js while the page is read — back a sentence, a pause that turns into a play while the reading is held, forward a sentence, then the voice, the speed and the cross — in the find bar's place and wearing its classes</span></header>
 <div class="stage"><div class="find-bar read-aloud-bar" style="position:static"><div class="find-row"><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-skip-back"></span></button><button type="button" class="find-step icon-button" aria-pressed="false"><span class="lt-icon lt-icon-pause"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-skip-forward"></span></button><label class="reader-subselect leaf-select"><select aria-label="Voice"><option>System</option><option selected>David</option><option>Zira</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label><label class="reader-subselect leaf-select"><select aria-label="Speed"><option>0.75×</option><option selected>1×</option><option>1.25×</option><option>1.5×</option><option>2×</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-close"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>AI notes bar</h3><code class="built">.ai-notes-bar</code><span class="built">app-shell.html, driven by ai-notes.js while an AI notes recording runs — a red dot, the time, a level growing from its left edge, which sources are recording or why one is not, then Pause (Resume while held) and Stop — in the find bar's place and wearing its classes</span></header>
+<div class="stage"><div class="find-bar ai-notes-bar" style="position:static"><div class="find-row"><span class="ai-notes-dot" aria-hidden="true"></span><span class="find-count">12:41</span><span class="ai-notes-level" aria-hidden="true"><span class="ai-notes-level-fill" style="transform:scaleX(0.55)"></span></span><span class="find-count">Microphone · Computer sound</span><button type="button" class="find-step icon-button" aria-pressed="false"><span class="lt-icon lt-icon-pause"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-check"></span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>ElevenLabs sheet</h3><code class="built">.elevenlabs-sheet</code><span class="built">app-shell.html, opened from the read aloud voice list</span></header>

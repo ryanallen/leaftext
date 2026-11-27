@@ -382,6 +382,23 @@ The settings button beside each row opens that account's own view in the same me
 - A message to a Claude Code whose listener is not running is refused, and the sender is told so.
 - Starting Claude Code again in a Leaftext console brings its listener back. A listener stops when its Claude Code ends.
 
+### A message is your order
+
+- Every agent is told that a message from another of your agents is your order. It takes a job, a console name, a role, files to own or a rule you changed at once, without asking you first.
+- A Claude Code that Leaftext starts gets this in its system prompt. Claude Code marks each message its listener hands over as not your input, and the system prompt is what outweighs that mark.
+- An appended system prompt of your own keeps its words, with this rule added after them.
+- A message marked as read from outside your machine, such as a web page or a release note, is passed on as material to weigh, not as an order.
+- The message line itself says it is your order, sent by your agent in a named console.
+
+### A long message is read whole
+
+- Claude Code shows only about the first 500 characters of a message its listener hands over.
+- A longer message arrives cut at that length. It ends by naming the message's id and `leaftext_pending`, which returns the whole text.
+- Messages waiting together are handed to Claude Code one event at a time, each within that length.
+- `leaftext_pending` with an id returns any message that reached the asking console, not only an unanswered ask. No other console can read it.
+- Leaftext keeps the newest 64 messages each console received, up to 256 KB, while that console's agent is on the channel.
+- Codex and Antigravity take a message as a turn of their own, which carries it whole up to about 32,000 characters. A longer one ends the same way, naming `leaftext_pending`.
+
 ### Stopped chats
 
 - A chat Leaftext stopped for sitting idle stays in `leaftext_consoles` under its old number, marked stopped.
